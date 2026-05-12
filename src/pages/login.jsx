@@ -1,11 +1,12 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { FaUserShield, FaBuilding, FaUser } from "react-icons/fa";
+import { FaShieldAlt, FaIdBadge, FaUserCircle } from "react-icons/fa";
 import { useState } from "react";
 
 function Login() {
 
     const { tipo } = useParams();
     const navigate = useNavigate();
+
     const [usuario, setUsuario] = useState("");
     const [senha, setSenha] = useState("");
     const [erro, setErro] = useState("");
@@ -13,28 +14,27 @@ function Login() {
     const perfis = {
 
         sindico: {
-            titulo: "Acesso Síndico / Administrador",
+            titulo: "Login - Síndico / Administrador",
             cor: "#7b2cbf",
-            icon: <FaUserShield size={70} />
+            icon: <FaShieldAlt size={40} color="white" />
         },
 
         porteiro: {
-            titulo: "Acesso Porteiro",
+            titulo: "Login - Porteiro",
             cor: "#1c7c3c",
-            icon: <FaBuilding size={70} />
+            icon: <FaIdBadge size={40} color="white" />
         },
 
         morador: {
-            titulo: "Acesso Morador",
-            cor: "#4cc9f0",
-            icon: <FaUser size={70} />
+            titulo: "Login - Morador",
+            cor: "#2563eb",
+            icon: <FaUserCircle size={40} color="white" />
         }
 
     };
 
     const perfil = perfis[tipo];
 
-    // Simulação de usuários cadastrados
     const usuarios = {
 
         sindico: [
@@ -75,17 +75,15 @@ function Login() {
 
     return (
 
-        <div style={{ ...styles.container, backgroundColor: perfil.cor }}>
+        <div style={styles.container}>
 
             <div style={styles.card}>
 
-                <div style={styles.icon}>
+                <div style={{...styles.iconCircle, backgroundColor: perfil.cor}}>
                     {perfil.icon}
                 </div>
 
-                <h2 style={styles.title}>
-                    {perfil.titulo}
-                </h2>
+                <h2 style={styles.title}>{perfil.titulo}</h2>
 
                 <input
                     style={styles.input}
@@ -103,13 +101,11 @@ function Login() {
                 />
 
                 {erro && (
-                    <p style={styles.erro}>
-                        {erro}
-                    </p>
+                    <p style={styles.erro}>{erro}</p>
                 )}
 
                 <button
-                    style={styles.button}
+                    style={{...styles.button, backgroundColor: perfil.cor}}
                     onClick={fazerLogin}
                 >
                     Entrar
@@ -129,51 +125,61 @@ const styles = {
         height: "100vh",
         display: "flex",
         justifyContent: "center",
-        alignItems: "center"
+        alignItems: "center",
+        background: "linear-gradient(135deg, #ffffff, #e5e5e5)"
     },
 
     card: {
-        width: "320px",
+        width: "420px",
         backgroundColor: "white",
-        padding: "35px",
-        borderRadius: "10px",
+        padding: "45px",
+        borderRadius: "12px",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        boxShadow: "0px 8px 25px rgba(0,0,0,0.3)"
+        boxShadow: "0px 10px 30px rgba(0,0,0,0.15)"
     },
 
-    icon: {
-        marginBottom: "10px"
+    iconCircle: {
+        width: "80px",
+        height: "80px",
+        borderRadius: "50%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        marginBottom: "15px"
     },
 
     title: {
-        marginBottom: "20px",
+        marginBottom: "25px",
         color: "#333"
     },
 
     input: {
         width: "100%",
-        padding: "10px",
-        marginBottom: "12px",
+        padding: "12px",
+        marginBottom: "14px",
         borderRadius: "6px",
-        border: "1px solid #ccc"
+        border: "1px solid #ccc",
+        fontSize: "14px"
     },
 
     erro: {
         color: "red",
-        fontSize: "14px",
+        fontSize: "13px",
         marginBottom: "10px"
     },
 
     button: {
         width: "100%",
-        padding: "10px",
+        padding: "12px",
         border: "none",
         borderRadius: "6px",
-        backgroundColor: "#333",
         color: "white",
-        cursor: "pointer"
+        cursor: "pointer",
+        fontWeight: "bold",
+        fontSize: "15px",
+        marginTop: "10px"
     }
 
 };

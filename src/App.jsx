@@ -22,7 +22,7 @@ import Relatorios from "./pages/Relatorios";
 import Configuracoes from "./pages/Configuracoes";
 import Reservas from "./pages/Reservas";
 
-/* FALTAVAM ESTES */
+/* PÁGINAS */
 import Encomendas from "./pages/Encomendas";
 import Avisos from "./pages/Avisos";
 
@@ -111,6 +111,9 @@ function App() {
           <Route path="movimentacoes" element={<Movimentacoes />} />
 
           <Route path="encomendas" element={<Encomendas />} />
+
+          {/* ESTA ROTA FALTAVA */}
+          <Route path="reservas" element={<Reservas />} />
 
           <Route path="areas-comuns" element={<AreasComuns />} />
 
