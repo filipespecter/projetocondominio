@@ -4,7 +4,7 @@ import { FaUserShield } from "react-icons/fa";
 import { FaBuilding } from "react-icons/fa";
 import { FaUser } from "react-icons/fa";
 
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate, Navigate } from "react-router-dom";
 
 import Login from "./pages/Login";
 
@@ -94,7 +94,11 @@ function App() {
         <Route path="/login/:tipo" element={<Login />} />
 
         {/* ÁREA DO SISTEMA */}
+
         <Route path="/dashboard" element={<DashboardLayout />}>
+
+          {/* REDIRECIONAMENTO AUTOMÁTICO */}
+          <Route index element={<Navigate to="sindico" />} />
 
           {/* DASHBOARD */}
           <Route path="sindico" element={<DashboardSindico />} />
@@ -112,7 +116,6 @@ function App() {
 
           <Route path="encomendas" element={<Encomendas />} />
 
-          {/* ESTA ROTA FALTAVA */}
           <Route path="reservas" element={<Reservas />} />
 
           <Route path="areas-comuns" element={<AreasComuns />} />

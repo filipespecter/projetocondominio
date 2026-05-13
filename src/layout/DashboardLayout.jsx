@@ -9,7 +9,8 @@ import {
   FaCalendarAlt,
   FaDoorOpen,
   FaClipboardList,
-  FaBuilding
+  FaBuilding,
+  FaCog
 } from "react-icons/fa";
 
 function DashboardLayout() {
@@ -28,6 +29,10 @@ function DashboardLayout() {
           <FaChartPie /> Dashboard
         </Link>
 
+        <Link style={styles.menuItem} to="/dashboard/apartamentos">
+          <FaBuilding /> Apartamentos
+        </Link>
+
         <Link style={styles.menuItem} to="/dashboard/moradores">
           <FaUsers /> Moradores
         </Link>
@@ -44,12 +49,10 @@ function DashboardLayout() {
           <FaClipboardList /> Visitantes
         </Link>
 
-        {/* RESERVAS */}
         <Link style={styles.menuItem} to="/dashboard/reservas">
           <FaCalendarAlt /> Reservas
         </Link>
 
-        {/* ÁREAS COMUNS */}
         <Link style={styles.menuItem} to="/dashboard/areas-comuns">
           <FaDoorOpen /> Áreas comuns
         </Link>
@@ -63,12 +66,12 @@ function DashboardLayout() {
         </Link>
 
         <Link style={styles.menuItem} to="/dashboard/configuracoes">
-          <FaBuilding /> Configurações
+          <FaCog /> Configurações
         </Link>
 
       </div>
 
-      {/* CONTEÚDO */}
+      {/* CONTEÚDO DO SISTEMA */}
 
       <div style={styles.content}>
         <Outlet />
@@ -99,7 +102,8 @@ const styles = {
   },
 
   logo: {
-    marginBottom: "20px"
+    marginBottom: "20px",
+    fontSize: "18px"
   },
 
   menuItem: {
