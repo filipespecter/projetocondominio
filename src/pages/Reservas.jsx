@@ -2,153 +2,462 @@ import { useState, useEffect } from "react";
 
 function Reservas() {
 
-  const [area, setArea] = useState("");
-  const [data, setData] = useState("");
-  const [horario, setHorario] = useState("");
-  const [obs, setObs] = useState("");
-
   const [reservas, setReservas] = useState([]);
 
-  // carregar reservas salvas
+  const [mostrarModal, setMostrarModal] = useState(false);
+
+  const [novaReserva, setNovaReserva] = useState({
+    area: "",
+    data: "",
+    horario: "",
+    obs: ""
+  });
+
+  const [editId, setEditId] = useState(null);
+
+
   useEffect(() => {
 
-    const reservasSalvas = localStorage.getItem("reservas");
+    const dados = localStorage.getItem("reservas");
 
-    if (reservasSalvas) {
-      setReservas(JSON.parse(reservasSalvas));
+    if (dados) {
+      setReservas(JSON.parse(dados));
     }
 
   }, []);
 
-  // salvar sempre que mudar
+
   useEffect(() => {
 
-    localStorage.setItem("reservas", JSON.stringify(reservas));
+    localStorage.setItem(
+      "reservas",
+      JSON.stringify(reservas)
+    );
 
   }, [reservas]);
 
-  function criarReserva() {
 
-    if (!area || !data || !horario) {
-      alert("Preencha todos os campos");
+  function salvarReserva() {
+
+    if (
+      !novaReserva.area ||
+      !novaReserva.data ||
+      !novaReserva.horario
+    ) {
+
+      alert("Preencha os campos obrigatórios");
+
       return;
     }
 
-    const novaReserva = {
-      id: Date.now(),
-      area: area,
-      data: data,
-      horario: horario,
-      obs: obs
-    };
 
-    setReservas([...reservas, novaReserva]);
+    if (editId !== null) {
 
-    setArea("");
-    setData("");
-    setHorario("");
-    setObs("");
+      const lista = reservas.map((r) =>
+        r.id === editId
+          ? { ...novaReserva, id: editId }
+          : r
+      );
+
+      setReservas(lista);
+
+      setEditId(null);
+
+    } else {
+
+      const nova = {
+        id: Date.now(),
+        ...novaReserva
+      };
+
+      setReservas([
+        ...reservas,
+        nova
+      ]);
+    }
+
+
+    setNovaReserva({
+      area: "",
+      data: "",
+      horario: "",
+      obs: ""
+    });
+
+    setMostrarModal(false);
   }
 
-  function cancelarReserva(id) {
-    setReservas(reservas.filter((r) => r.id !== id));
+
+  function excluirReserva(id) {
+
+    const lista = reservas.filter(
+      (r) => r.id !== id
+    );
+
+    setReservas(lista);
   }
+
+
+  function editarReserva(reserva) {
+
+    setNovaReserva(reserva);
+
+    setEditId(reserva.id);
+
+    setMostrarModal(true);
+  }
+
 
   return (
-    <div style={{ padding: 30 }}>
 
-      <h1 style={{ fontSize: 28, marginBottom: 20 }}>
-        📅 Reservas
-      </h1>
+    <div>
 
-      <div style={{
-        background: "#fff",
-        padding: 20,
-        borderRadius: 10,
-        marginBottom: 30,
-        boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
-      }}>
+      {/* TOPO */}
 
-        <h2>Nova Reserva</h2>
+      <div style={styles.header}>
 
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <h2>Reservas</h2>
 
-          <select
-            value={area}
-            onChange={(e)=>setArea(e.target.value)}
-          >
-            <option value="">Escolher Área</option>
-            <option>Churrasqueira</option>
-            <option>Salão de Festas</option>
-            <option>Piscina</option>
-            <option>Quadra</option>
-          </select>
+        <button
+          style={styles.button}
+          onClick={() => {
 
-          <input
-            type="date"
-            value={data}
-            onChange={(e)=>setData(e.target.value)}
-          />
+            setEditId(null);
 
-          <input
-            type="time"
-            value={horario}
-            onChange={(e)=>setHorario(e.target.value)}
-          />
+            setNovaReserva({
+              area: "",
+              data: "",
+              horario: "",
+              obs: ""
+            });
 
-          <input
-            placeholder="Observação"
-            value={obs}
-            onChange={(e)=>setObs(e.target.value)}
-          />
+            setMostrarModal(true);
 
-          <button onClick={criarReserva}>
-            Reservar
-          </button>
+          }}
+        >
+          + Nova reserva
+        </button>
 
-        </div>
       </div>
 
-      <div style={{
-        background: "#fff",
-        padding: 20,
-        borderRadius: 10
-      }}>
 
-        <h2>Reservas Feitas</h2>
+      {/* TABELA */}
 
-        {reservas.length === 0 && (
-          <p>Nenhuma reserva ainda.</p>
-        )}
+      <div style={styles.card}>
 
-        {reservas.map((r)=>(
-          <div
-            key={r.id}
-            style={{
-              display:"flex",
-              justifyContent:"space-between",
-              borderBottom:"1px solid #eee",
-              padding:"10px 0"
-            }}
-          >
+        <table style={styles.table}>
 
-            <div>
-              <strong>{r.area}</strong><br/>
-              {r.data} - {r.horario}<br/>
-              <small>{r.obs}</small>
+          <thead>
+
+            <tr>
+
+              <th style={styles.th}>Área</th>
+              <th style={styles.th}>Data</th>
+              <th style={styles.th}>Horário</th>
+              <th style={styles.th}>Observação</th>
+              <th style={styles.th}>Ações</th>
+
+            </tr>
+
+          </thead>
+
+          <tbody>
+
+            {reservas.length === 0 ? (
+
+              <tr>
+
+                <td
+                  colSpan="5"
+                  style={styles.empty}
+                >
+                  Nenhuma reserva cadastrada
+                </td>
+
+              </tr>
+
+            ) : (
+
+              reservas.map((r) => (
+
+                <tr key={r.id}>
+
+                  <td style={styles.td}>
+                    {r.area}
+                  </td>
+
+                  <td style={styles.td}>
+                    {r.data}
+                  </td>
+
+                  <td style={styles.td}>
+                    {r.horario}
+                  </td>
+
+                  <td style={styles.td}>
+                    {r.obs}
+                  </td>
+
+                  <td style={styles.td}>
+
+                    <span
+                      style={styles.icon}
+                      onClick={() =>
+                        editarReserva(r)
+                      }
+                    >
+                      ✏️
+                    </span>
+
+                    <span
+                      style={styles.icon}
+                      onClick={() =>
+                        excluirReserva(r.id)
+                      }
+                    >
+                      🗑️
+                    </span>
+
+                  </td>
+
+                </tr>
+
+              ))
+
+            )}
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+
+      {/* MODAL */}
+
+      {mostrarModal && (
+
+        <div style={styles.modalBackground}>
+
+          <div style={styles.modal}>
+
+            <h3>
+
+              {editId
+                ? "Editar reserva"
+                : "Nova reserva"}
+
+            </h3>
+
+            <select
+              value={novaReserva.area}
+              onChange={(e) =>
+                setNovaReserva({
+                  ...novaReserva,
+                  area: e.target.value
+                })
+              }
+              style={styles.input}
+            >
+
+              <option value="">
+                Selecione uma área
+              </option>
+
+              <option>
+                Salão de festas
+              </option>
+
+              <option>
+                Churrasqueira
+              </option>
+
+              <option>
+                Piscina
+              </option>
+
+              <option>
+                Quadra
+              </option>
+
+            </select>
+
+
+            <input
+              type="date"
+              value={novaReserva.data}
+              onChange={(e) =>
+                setNovaReserva({
+                  ...novaReserva,
+                  data: e.target.value
+                })
+              }
+              style={styles.input}
+            />
+
+
+            <input
+              type="time"
+              value={novaReserva.horario}
+              onChange={(e) =>
+                setNovaReserva({
+                  ...novaReserva,
+                  horario: e.target.value
+                })
+              }
+              style={styles.input}
+            />
+
+
+            <input
+              placeholder="Observação"
+              value={novaReserva.obs}
+              onChange={(e) =>
+                setNovaReserva({
+                  ...novaReserva,
+                  obs: e.target.value
+                })
+              }
+              style={styles.input}
+            />
+
+
+            <div style={styles.modalButtons}>
+
+              <button
+                style={styles.saveButton}
+                onClick={salvarReserva}
+              >
+                Salvar
+              </button>
+
+              <button
+                style={styles.cancelButton}
+                onClick={() =>
+                  setMostrarModal(false)
+                }
+              >
+                Cancelar
+              </button>
+
             </div>
 
-            <button onClick={()=>cancelarReserva(r.id)}>
-              Cancelar
-            </button>
-
           </div>
-        ))}
 
-      </div>
+        </div>
+
+      )}
 
     </div>
+
   );
+
 }
+
+
+const styles = {
+
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "20px"
+  },
+
+  button: {
+    backgroundColor: "#6c3eb8",
+    color: "white",
+    border: "none",
+    padding: "10px 16px",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontWeight: "bold"
+  },
+
+  card: {
+    backgroundColor: "white",
+    padding: "20px",
+    borderRadius: "10px",
+    boxShadow: "0 2px 10px rgba(0,0,0,0.05)"
+  },
+
+  table: {
+    width: "100%",
+    borderCollapse: "collapse"
+  },
+
+  th: {
+    textAlign: "left",
+    padding: "14px",
+    borderBottom: "2px solid #e5e7eb"
+  },
+
+  td: {
+    padding: "14px",
+    borderBottom: "1px solid #e5e7eb"
+  },
+
+  empty: {
+    textAlign: "center",
+    padding: "20px"
+  },
+
+  icon: {
+    cursor: "pointer",
+    marginRight: "10px"
+  },
+
+  modalBackground: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    backgroundColor: "rgba(0,0,0,0.5)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center"
+  },
+
+  modal: {
+    backgroundColor: "white",
+    padding: "30px",
+    borderRadius: "10px",
+    width: "320px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px"
+  },
+
+  input: {
+    padding: "10px",
+    borderRadius: "6px",
+    border: "1px solid #ccc"
+  },
+
+  modalButtons: {
+    display: "flex",
+    justifyContent: "space-between",
+    marginTop: "10px"
+  },
+
+  saveButton: {
+    backgroundColor: "#6c3eb8",
+    color: "white",
+    border: "none",
+    padding: "8px 14px",
+    borderRadius: "5px",
+    cursor: "pointer"
+  },
+
+  cancelButton: {
+    backgroundColor: "#ccc",
+    border: "none",
+    padding: "8px 14px",
+    borderRadius: "5px",
+    cursor: "pointer"
+  }
+
+};
 
 export default Reservas;

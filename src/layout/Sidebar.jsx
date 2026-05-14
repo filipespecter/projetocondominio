@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
+
 import {
   FaChartPie,
   FaUsers,
@@ -8,7 +9,8 @@ import {
   FaCalendarAlt,
   FaDoorOpen,
   FaClipboardList,
-  FaBuilding
+  FaBuilding,
+  FaSignOutAlt
 } from "react-icons/fa";
 
 function Sidebar() {
@@ -17,51 +19,171 @@ function Sidebar() {
 
     <div style={styles.sidebar}>
 
-      <h2 style={styles.logo}>Condomínio Residencial</h2>
+      {/* LOGO */}
 
-      <Link style={styles.item} to="/dashboard/sindico">
-        <FaChartPie /> Dashboard
-      </Link>
+      <div style={styles.logoContainer}>
 
-      <Link style={styles.item} to="/dashboard/apartamentos">
-        <FaBuilding /> Apartamentos
-      </Link>
+        <h2 style={styles.logo}>
 
-      <Link style={styles.item} to="/dashboard/moradores">
-        <FaUsers /> Moradores
-      </Link>
+          Condomínio
+          <br />
+          Residencial
 
-      <Link style={styles.item} to="/dashboard/porteiros">
-        <FaUserShield /> Porteiros
-      </Link>
+        </h2>
 
-      <Link style={styles.item} to="/dashboard/encomendas">
-        <FaBox /> Encomendas
-      </Link>
+      </div>
 
-      <Link style={styles.item} to="/dashboard/visitantes">
-        <FaClipboardList /> Visitantes
-      </Link>
 
-      <Link style={styles.item} to="/dashboard/areas-comuns">
-        <FaDoorOpen /> Áreas comuns
-      </Link>
+      {/* MENU */}
 
-      <Link style={styles.item} to="/dashboard/reservas">
-        <FaCalendarAlt /> Reservas
-      </Link>
+      <div style={styles.menu}>
 
-      <Link style={styles.item} to="/dashboard/avisos">
-        <FaBell /> Avisos
-      </Link>
+        <NavLink
+          to="/dashboard/sindico"
+          style={({ isActive }) => ({
+            ...styles.item,
+            ...(isActive && styles.active)
+          })}
+        >
+          <FaChartPie />
+          Dashboard
+        </NavLink>
 
-      <Link style={styles.item} to="/dashboard/relatorios">
-        <FaChartPie /> Relatórios
-      </Link>
 
-      <Link style={styles.item} to="/dashboard/configuracoes">
-        <FaBuilding /> Configurações
-      </Link>
+        <NavLink
+          to="/dashboard/apartamentos"
+          style={({ isActive }) => ({
+            ...styles.item,
+            ...(isActive && styles.active)
+          })}
+        >
+          <FaBuilding />
+          Apartamentos
+        </NavLink>
+
+
+        <NavLink
+          to="/dashboard/moradores"
+          style={({ isActive }) => ({
+            ...styles.item,
+            ...(isActive && styles.active)
+          })}
+        >
+          <FaUsers />
+          Moradores
+        </NavLink>
+
+
+        <NavLink
+          to="/dashboard/porteiros"
+          style={({ isActive }) => ({
+            ...styles.item,
+            ...(isActive && styles.active)
+          })}
+        >
+          <FaUserShield />
+          Porteiros
+        </NavLink>
+
+
+        <NavLink
+          to="/dashboard/encomendas"
+          style={({ isActive }) => ({
+            ...styles.item,
+            ...(isActive && styles.active)
+          })}
+        >
+          <FaBox />
+          Encomendas
+        </NavLink>
+
+
+        <NavLink
+          to="/dashboard/visitantes"
+          style={({ isActive }) => ({
+            ...styles.item,
+            ...(isActive && styles.active)
+          })}
+        >
+          <FaClipboardList />
+          Visitantes
+        </NavLink>
+
+
+        <NavLink
+          to="/dashboard/areas-comuns"
+          style={({ isActive }) => ({
+            ...styles.item,
+            ...(isActive && styles.active)
+          })}
+        >
+          <FaDoorOpen />
+          Áreas comuns
+        </NavLink>
+
+
+        <NavLink
+          to="/dashboard/reservas"
+          style={({ isActive }) => ({
+            ...styles.item,
+            ...(isActive && styles.active)
+          })}
+        >
+          <FaCalendarAlt />
+          Reservas
+        </NavLink>
+
+
+        <NavLink
+          to="/dashboard/avisos"
+          style={({ isActive }) => ({
+            ...styles.item,
+            ...(isActive && styles.active)
+          })}
+        >
+          <FaBell />
+          Avisos
+        </NavLink>
+
+
+        <NavLink
+          to="/dashboard/relatorios"
+          style={({ isActive }) => ({
+            ...styles.item,
+            ...(isActive && styles.active)
+          })}
+        >
+          <FaChartPie />
+          Relatórios
+        </NavLink>
+
+
+        <NavLink
+          to="/dashboard/configuracoes"
+          style={({ isActive }) => ({
+            ...styles.item,
+            ...(isActive && styles.active)
+          })}
+        >
+          <FaBuilding />
+          Configurações
+        </NavLink>
+
+      </div>
+
+
+      {/* SAIR */}
+
+      <div style={styles.footer}>
+
+        <button style={styles.logout}>
+
+          <FaSignOutAlt />
+          Sair
+
+        </button>
+
+      </div>
 
     </div>
 
@@ -72,17 +194,31 @@ function Sidebar() {
 const styles = {
 
   sidebar: {
-    width: "240px",
-    backgroundColor: "#1c1f3a",
+    width: "220px",
+    backgroundColor: "#13192d",
     color: "white",
-    padding: "20px",
+    padding: "20px 14px",
     display: "flex",
     flexDirection: "column",
-    gap: "16px"
+    justifyContent: "space-between",
+    height: "100vh"
+  },
+
+  logoContainer: {
+    marginBottom: "25px"
   },
 
   logo: {
-    marginBottom: "30px"
+    fontSize: "18px",
+    lineHeight: "24px",
+    margin: 0
+  },
+
+  menu: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
+    flex: 1
   },
 
   item: {
@@ -91,7 +227,30 @@ const styles = {
     gap: "10px",
     textDecoration: "none",
     color: "white",
-    padding: "8px"
+    padding: "10px 12px",
+    borderRadius: "8px",
+    fontSize: "14px",
+    transition: ".2s"
+  },
+
+  active: {
+    backgroundColor: "#2563eb"
+  },
+
+  footer: {
+    marginTop: "20px"
+  },
+
+  logout: {
+    width: "100%",
+    border: "none",
+    background: "transparent",
+    color: "white",
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    cursor: "pointer",
+    padding: "10px"
   }
 
 };
