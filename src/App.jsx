@@ -4,34 +4,59 @@ import { FaUserShield } from "react-icons/fa";
 import { FaBuilding } from "react-icons/fa";
 import { FaUser } from "react-icons/fa";
 
-import { BrowserRouter, Routes, Route, useNavigate, Navigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  useNavigate,
+  Navigate
+} from "react-router-dom";
 
-import Login from "./pages/Login";
+import Login from "./pages/login";
 
 import DashboardLayout from "./layout/DashboardLayout";
 
-import DashboardSindico from "./pages/DashboardSindico";
-import Moradores from "./pages/Moradores";
-import Movimentacoes from "./pages/Movimentacoes";
+/* =========================
+   SÍNDICO
+========================= */
 
-import Apartamentos from "./pages/Apartamentos";
-import Porteiros from "./pages/Porteiros";
-import Visitantes from "./pages/Visitantes";
-import AreasComuns from "./pages/AreasComuns";
-import Relatorios from "./pages/Relatorios";
-import Configuracoes from "./pages/Configuracoes";
-import Reservas from "./pages/Reservas";
+import DashboardSindico from "./pages/Sindico/DashboardSindico";
+import Apartamentos from "./pages/Sindico/Apartamentos";
+import Moradores from "./pages/Sindico/Moradores";
+import Porteiros from "./pages/Sindico/Porteiros";
+import Visitantes from "./pages/Sindico/Visitantes";
+import Movimentacoes from "./pages/Sindico/Movimentacoes";
+import Encomendas from "./pages/Sindico/Encomendas";
+import Reservas from "./pages/Sindico/Reservas";
+import AreasComuns from "./pages/Sindico/AreasComuns";
+import Avisos from "./pages/Sindico/Avisos";
+import Relatorios from "./pages/Sindico/Relatorios";
+import Configuracoes from "./pages/Sindico/Configuracoes";
 
-/* PÁGINAS */
-import Encomendas from "./pages/Encomendas";
-import Avisos from "./pages/Avisos";
+/* =========================
+   PORTEIRO
+========================= */
 
+import DashboardPorteiro from "./pages/porteiro/DashboardPorteiro";
+import EncomendasPorteiro from "./pages/porteiro/EncomendasPorteiro";
+import VisitantesPorteiro from "./pages/porteiro/VisitantesPorteiro";
+import MoradoresPorteiro from "./pages/porteiro/MoradoresPorteiro";
+
+/* =========================
+   MORADOR
+========================= */
+
+import DashboardMorador from "./pages/morador/DashboardMorador";
+import AvisosMorador from "./pages/morador/AvisosMorador";
+import EncomendasMorador from "./pages/morador/EncomendasMorador";
+import ReservasMorador from "./pages/morador/ReservasMorador";
 
 function Home() {
 
   const navigate = useNavigate();
 
   return (
+
     <div style={styles.container}>
 
       <div style={styles.logo}>🏢</div>
@@ -77,9 +102,9 @@ function Home() {
       </div>
 
     </div>
+
   );
 }
-
 
 function App() {
 
@@ -89,21 +114,22 @@ function App() {
 
       <Routes>
 
+        {/* HOME */}
         <Route path="/" element={<Home />} />
 
+        {/* LOGIN */}
         <Route path="/login/:tipo" element={<Login />} />
 
-        {/* ÁREA DO SISTEMA */}
+        {/* =========================
+            SÍNDICO
+        ========================= */}
 
         <Route path="/dashboard" element={<DashboardLayout />}>
 
-          {/* REDIRECIONAMENTO AUTOMÁTICO */}
           <Route index element={<Navigate to="sindico" />} />
 
-          {/* DASHBOARD */}
           <Route path="sindico" element={<DashboardSindico />} />
 
-          {/* MENU */}
           <Route path="apartamentos" element={<Apartamentos />} />
 
           <Route path="moradores" element={<Moradores />} />
@@ -128,14 +154,44 @@ function App() {
 
         </Route>
 
+        {/* =========================
+            PORTEIRO
+        ========================= */}
+
+        <Route path="/porteiro" element={<DashboardLayout />}>
+
+          <Route index element={<DashboardPorteiro />} />
+
+          <Route path="encomendas" element={<EncomendasPorteiro />} />
+
+          <Route path="visitantes" element={<VisitantesPorteiro />} />
+
+          <Route path="moradores" element={<MoradoresPorteiro />} />
+
+        </Route>
+
+        {/* =========================
+            MORADOR
+        ========================= */}
+
+        <Route path="/morador" element={<DashboardLayout />}>
+
+          <Route index element={<DashboardMorador />} />
+
+          <Route path="avisos" element={<AvisosMorador />} />
+
+          <Route path="encomendas" element={<EncomendasMorador />} />
+
+          <Route path="reservas" element={<ReservasMorador />} />
+
+        </Route>
+
       </Routes>
 
     </BrowserRouter>
 
   );
-
 }
-
 
 const styles = {
 
