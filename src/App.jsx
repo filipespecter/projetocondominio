@@ -12,9 +12,13 @@ import {
   Navigate
 } from "react-router-dom";
 
-import Login from "./pages/login";
+import Login from "./pages/Login";
+
+/* LAYOUTS */
 
 import DashboardLayout from "./layout/DashboardLayout";
+import DashboardPorteiroLayout from "./layout/DashboardPorteiroLayout";
+import DashboardMoradorLayout from "./layout/DashboardMoradorLayout";
 
 /* =========================
    SÍNDICO
@@ -37,19 +41,19 @@ import Configuracoes from "./pages/Sindico/Configuracoes";
    PORTEIRO
 ========================= */
 
-import DashboardPorteiro from "./pages/porteiro/DashboardPorteiro";
-import EncomendasPorteiro from "./pages/porteiro/EncomendasPorteiro";
-import VisitantesPorteiro from "./pages/porteiro/VisitantesPorteiro";
-import MoradoresPorteiro from "./pages/porteiro/MoradoresPorteiro";
+import DashboardPorteiro from "./pages/Porteiro/DashboardPorteiro";
+import EncomendasPorteiro from "./pages/Porteiro/EncomendasPorteiro";
+import VisitantesPorteiro from "./pages/Porteiro/VisitantesPorteiro";
+import MoradoresPorteiro from "./pages/Porteiro/MoradoresPorteiro";
 
 /* =========================
    MORADOR
 ========================= */
 
-import DashboardMorador from "./pages/morador/DashboardMorador";
-import AvisosMorador from "./pages/morador/AvisosMorador";
-import EncomendasMorador from "./pages/morador/EncomendasMorador";
-import ReservasMorador from "./pages/morador/ReservasMorador";
+import DashboardMorador from "./pages/Morador/DashboardMorador";
+import AvisosMorador from "./pages/Morador/AvisosMorador";
+import EncomendasMorador from "./pages/Morador/EncomendasMorador";
+import ReservasMorador from "./pages/Morador/ReservasMorador";
 
 function Home() {
 
@@ -61,7 +65,9 @@ function Home() {
 
       <div style={styles.logo}>🏢</div>
 
-      <h1 style={styles.title}>PORTARIA</h1>
+      <h1 style={styles.title}>
+        PORTARIA
+      </h1>
 
       <p style={styles.subtitle}>
         Selecione o tipo de acesso ao sistema
@@ -70,6 +76,7 @@ function Home() {
       <div style={styles.cards}>
 
         <div onClick={() => navigate("/login/sindico")}>
+
           <AccessCard
             icon={<FaUserShield />}
             title="Síndico / Adm"
@@ -77,9 +84,11 @@ function Home() {
             color="#7b2cbf"
             buttonColor="#7b2cbf"
           />
+
         </div>
 
         <div onClick={() => navigate("/login/porteiro")}>
+
           <AccessCard
             icon={<FaBuilding />}
             title="Porteiro"
@@ -87,9 +96,11 @@ function Home() {
             color="#1c7c3c"
             buttonColor="#1c7c3c"
           />
+
         </div>
 
         <div onClick={() => navigate("/login/morador")}>
+
           <AccessCard
             icon={<FaUser />}
             title="Morador"
@@ -97,6 +108,7 @@ function Home() {
             color="#4cc9f0"
             buttonColor="#4cc9f0"
           />
+
         </div>
 
       </div>
@@ -104,6 +116,7 @@ function Home() {
     </div>
 
   );
+
 }
 
 function App() {
@@ -115,42 +128,92 @@ function App() {
       <Routes>
 
         {/* HOME */}
-        <Route path="/" element={<Home />} />
+
+        <Route
+          path="/"
+          element={<Home />}
+        />
 
         {/* LOGIN */}
-        <Route path="/login/:tipo" element={<Login />} />
+
+        <Route
+          path="/login/:tipo"
+          element={<Login />}
+        />
 
         {/* =========================
             SÍNDICO
         ========================= */}
 
-        <Route path="/dashboard" element={<DashboardLayout />}>
+        <Route
+          path="/dashboard"
+          element={<DashboardLayout />}
+        >
 
-          <Route index element={<Navigate to="sindico" />} />
+          <Route
+            index
+            element={<Navigate to="/dashboard/sindico" />}
+          />
 
-          <Route path="sindico" element={<DashboardSindico />} />
+          <Route
+            path="sindico"
+            element={<DashboardSindico />}
+          />
 
-          <Route path="apartamentos" element={<Apartamentos />} />
+          <Route
+            path="apartamentos"
+            element={<Apartamentos />}
+          />
 
-          <Route path="moradores" element={<Moradores />} />
+          <Route
+            path="moradores"
+            element={<Moradores />}
+          />
 
-          <Route path="porteiros" element={<Porteiros />} />
+          <Route
+            path="porteiros"
+            element={<Porteiros />}
+          />
 
-          <Route path="visitantes" element={<Visitantes />} />
+          <Route
+            path="visitantes"
+            element={<Visitantes />}
+          />
 
-          <Route path="movimentacoes" element={<Movimentacoes />} />
+          <Route
+            path="movimentacoes"
+            element={<Movimentacoes />}
+          />
 
-          <Route path="encomendas" element={<Encomendas />} />
+          <Route
+            path="encomendas"
+            element={<Encomendas />}
+          />
 
-          <Route path="reservas" element={<Reservas />} />
+          <Route
+            path="reservas"
+            element={<Reservas />}
+          />
 
-          <Route path="areas-comuns" element={<AreasComuns />} />
+          <Route
+            path="areas-comuns"
+            element={<AreasComuns />}
+          />
 
-          <Route path="avisos" element={<Avisos />} />
+          <Route
+            path="avisos"
+            element={<Avisos />}
+          />
 
-          <Route path="relatorios" element={<Relatorios />} />
+          <Route
+            path="relatorios"
+            element={<Relatorios />}
+          />
 
-          <Route path="configuracoes" element={<Configuracoes />} />
+          <Route
+            path="configuracoes"
+            element={<Configuracoes />}
+          />
 
         </Route>
 
@@ -158,15 +221,30 @@ function App() {
             PORTEIRO
         ========================= */}
 
-        <Route path="/porteiro" element={<DashboardLayout />}>
+        <Route
+          path="/dashboard/porteiro"
+          element={<DashboardPorteiroLayout />}
+        >
 
-          <Route index element={<DashboardPorteiro />} />
+          <Route
+            index
+            element={<DashboardPorteiro />}
+          />
 
-          <Route path="encomendas" element={<EncomendasPorteiro />} />
+          <Route
+            path="encomendas"
+            element={<EncomendasPorteiro />}
+          />
 
-          <Route path="visitantes" element={<VisitantesPorteiro />} />
+          <Route
+            path="visitantes"
+            element={<VisitantesPorteiro />}
+          />
 
-          <Route path="moradores" element={<MoradoresPorteiro />} />
+          <Route
+            path="moradores"
+            element={<MoradoresPorteiro />}
+          />
 
         </Route>
 
@@ -174,15 +252,29 @@ function App() {
             MORADOR
         ========================= */}
 
-        <Route path="/morador" element={<DashboardLayout />}>
+        <Route
+          path="/dashboard/morador"
+          element={<DashboardMoradorLayout />}
+        >
+          <Route
+            index
+            element={<DashboardMorador />}
+          />
 
-          <Route index element={<DashboardMorador />} />
+          <Route
+            path="avisos"
+            element={<AvisosMorador />}
+          />
 
-          <Route path="avisos" element={<AvisosMorador />} />
+          <Route
+            path="encomendas"
+            element={<EncomendasMorador />}
+          />
 
-          <Route path="encomendas" element={<EncomendasMorador />} />
-
-          <Route path="reservas" element={<ReservasMorador />} />
+          <Route
+            path="reservas"
+            element={<ReservasMorador />}
+          />
 
         </Route>
 
@@ -191,6 +283,7 @@ function App() {
     </BrowserRouter>
 
   );
+
 }
 
 const styles = {
