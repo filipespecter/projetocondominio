@@ -1,25 +1,42 @@
 import { useEffect, useState } from "react";
 
+import {
+  salvarMovimentacao
+} from "../../Services/movimentacaoService";
+
 function PackageModal({
   apartamento,
   onClose
 }) {
 
-  const [descricao, setDescricao] = useState("");
+  const [descricao, setDescricao] =
+    useState("");
 
-  const [encomendas, setEncomendas] = useState([]);
+  const [tipo, setTipo] =
+    useState("");
+
+  const [encomendas, setEncomendas] =
+    useState([]);
 
   useEffect(() => {
+
     carregarEncomendas();
+
   }, []);
 
   function carregarEncomendas() {
 
     const data =
-      JSON.parse(localStorage.getItem("encomendas")) || [];
+      JSON.parse(
+        localStorage.getItem("encomendas")
+      ) || [];
 
     const filtradas = data.filter(
       (e) => e.apartamento === apartamento
+    );
+
+    filtradas.sort(
+      (a, b) => b.id - a.id
     );
 
     setEncomendas(filtradas);
@@ -28,33 +45,68 @@ function PackageModal({
 
   function registrarEncomenda() {
 
-    if (!descricao) return;
+    if (!descricao || !tipo) return;
 
     const todas =
-      JSON.parse(localStorage.getItem("encomendas")) || [];
+      JSON.parse(
+        localStorage.getItem("encomendas")
+      ) || [];
+
+    const codigo =
+      `${apartamento}-${Date.now()
+        .toString()
+        .slice(-4)}`;
 
     const nova = {
 
       id: Date.now(),
 
+      codigo,
+
       apartamento,
+
+      tipo,
 
       descricao,
 
       status: "pendente",
 
-      data: new Date().toLocaleString()
+      data:
+        new Date().toLocaleString()
 
     };
 
-    const atualizadas = [...todas, nova];
+    const atualizadas = [
+      ...todas,
+      nova
+    ];
 
     localStorage.setItem(
       "encomendas",
       JSON.stringify(atualizadas)
     );
 
+    /* MOVIMENTAÇÃO */
+
+    salvarMovimentacao({
+
+      id: Date.now(),
+
+      tipo: "encomenda_recebida",
+
+      apartamento,
+
+      mensagem:
+        `Nova encomenda registrada no AP ${apartamento}`,
+
+      data:
+        new Date().toLocaleString()
+
+    });
+
     setDescricao("");
+
+    setTipo("");
 
     carregarEncomendas();
 
@@ -63,12 +115,25 @@ function PackageModal({
   function retirarEncomenda(id) {
 
     const todas =
-      JSON.parse(localStorage.getItem("encomendas")) || [];
+      JSON.parse(
+        localStorage.getItem("encomendas")
+      ) || [];
 
     const atualizadas = todas.map((e) =>
 
       e.id === id
-        ? { ...e, status: "retirada" }
+
+        ? {
+
+            ...e,
+
+            status: "retirada",
+
+            retiradaEm:
+              new Date().toLocaleString()
+
+          }
+
         : e
 
     );
@@ -78,6 +143,24 @@ function PackageModal({
       JSON.stringify(atualizadas)
     );
 
+    /* MOVIMENTAÇÃO */
+
+    salvarMovimentacao({
+
+      id: Date.now(),
+
+      tipo: "encomenda_retirada",
+
+      apartamento,
+
+      mensagem:
+        `Encomenda retirada no AP ${apartamento}`,
+
+      data:
+        new Date().toLocaleString()
+
+    });
+
     carregarEncomendas();
 
   }
@@ -85,11 +168,14 @@ function PackageModal({
   function excluirEncomenda(id) {
 
     const todas =
-      JSON.parse(localStorage.getItem("encomendas")) || [];
+      JSON.parse(
+        localStorage.getItem("encomendas")
+      ) || [];
 
-    const atualizadas = todas.filter(
-      (e) => e.id !== id
-    );
+    const atualizadas =
+      todas.filter(
+        (e) => e.id !== id
+      );
 
     localStorage.setItem(
       "encomendas",
@@ -106,63 +192,201 @@ function PackageModal({
 
       <div style={styles.modal}>
 
-        <h2>
-          Apartamento {apartamento}
-        </h2>
+        {/* HEADER */}
 
-        <input
-          placeholder="Descrição da encomenda"
-          value={descricao}
-          onChange={(e) =>
-            setDescricao(e.target.value)
-          }
-          style={styles.input}
-        />
+        <div style={styles.header}>
 
-        <button
-          style={styles.primary}
-          onClick={registrarEncomenda}
-        >
-          Registrar Encomenda
-        </button>
+          <div>
+
+            <h2 style={styles.title}>
+              Apartamento {apartamento}
+            </h2>
+
+            <p style={styles.subtitle}>
+              Controle de encomendas
+            </p>
+
+          </div>
+
+          <div style={styles.badge}>
+
+            📦 {
+
+              encomendas.filter(
+                (e) =>
+                  e.status === "pendente"
+              ).length
+
+            }
+
+          </div>
+
+        </div>
+
+        {/* FORM */}
+
+        <div style={styles.form}>
+
+          <select
+            value={tipo}
+            onChange={(e) =>
+              setTipo(e.target.value)
+            }
+            style={styles.input}
+          >
+
+            <option value="">
+              Tipo da encomenda
+            </option>
+
+            <option value="Pacote pequeno">
+              Pacote pequeno
+            </option>
+
+            <option value="Pacote médio">
+              Pacote médio
+            </option>
+
+            <option value="Pacote grande">
+              Pacote grande
+            </option>
+
+            <option value="Documento">
+              Documento
+            </option>
+
+            <option value="Caixa">
+              Caixa
+            </option>
+
+          </select>
+
+          <input
+            placeholder="Descrição / transportadora / observação"
+            value={descricao}
+            onChange={(e) =>
+              setDescricao(e.target.value)
+            }
+            style={styles.input}
+          />
+
+          <button
+            style={styles.primary}
+            onClick={registrarEncomenda}
+          >
+
+            + Registrar Encomenda
+
+          </button>
+
+        </div>
+
+        {/* LISTA */}
 
         <div style={styles.list}>
 
           {encomendas.length === 0 && (
-            <p>
-              Nenhuma encomenda
-            </p>
+
+            <div style={styles.empty}>
+
+              <h3>
+                Nenhuma encomenda
+              </h3>
+
+              <p>
+                Este apartamento não possui encomendas registradas.
+              </p>
+
+            </div>
+
           )}
 
           {encomendas.map((item) => (
 
             <div
               key={item.id}
-              style={styles.package}
+              style={{
+                ...styles.package,
+
+                borderLeft:
+
+                  item.status === "pendente"
+
+                    ? "6px solid #f59e0b"
+
+                    : "6px solid #16a34a"
+
+              }}
             >
 
-              <div>
+              <div style={styles.packageContent}>
 
-                <strong>
-                  📦 {item.descricao}
-                </strong>
+                <div style={styles.packageTop}>
 
-                <p style={styles.info}>
-                  {item.data}
+                  <h3 style={styles.packageTitle}>
+
+                    📦 {item.tipo}
+
+                  </h3>
+
+                  <span
+                    style={{
+                      ...styles.status,
+
+                      background:
+
+                        item.status === "pendente"
+
+                          ? "#fef3c7"
+
+                          : "#dcfce7",
+
+                      color:
+
+                        item.status === "pendente"
+
+                          ? "#92400e"
+
+                          : "#166534"
+
+                    }}
+                  >
+
+                    {item.status}
+
+                  </span>
+
+                </div>
+
+                <p style={styles.description}>
+                  {item.descricao}
                 </p>
 
-                <p
-                  style={{
-                    color:
-                      item.status === "pendente"
-                        ? "#d97706"
-                        : "#16a34a"
-                  }}
-                >
+                <div style={styles.infoArea}>
 
-                  {item.status}
+                  <span style={styles.info}>
+                    Código:
+                    {" "}
+                    {item.codigo}
+                  </span>
 
-                </p>
+                  <span style={styles.info}>
+                    {item.data}
+                  </span>
+
+                </div>
+
+                {item.retiradaEm && (
+
+                  <div style={styles.retirada}>
+
+                    ✅ Retirada em:
+                    {" "}
+                    {item.retiradaEm}
+
+                  </div>
+
+                )}
 
               </div>
 
@@ -176,7 +400,9 @@ function PackageModal({
                       retirarEncomenda(item.id)
                     }
                   >
+
                     Retirar
+
                   </button>
 
                 )}
@@ -187,7 +413,9 @@ function PackageModal({
                     excluirEncomenda(item.id)
                   }
                 >
+
                   Excluir
+
                 </button>
 
               </div>
@@ -198,11 +426,15 @@ function PackageModal({
 
         </div>
 
+        {/* FOOTER */}
+
         <button
           style={styles.close}
           onClick={onClose}
         >
+
           Fechar
+
         </button>
 
       </div>
@@ -221,93 +453,196 @@ const styles = {
     left: 0,
     width: "100%",
     height: "100%",
-    background: "rgba(0,0,0,0.4)",
+    background:
+      "rgba(0,0,0,0.45)",
+    backdropFilter: "blur(4px)",
     display: "flex",
     justifyContent: "center",
-    alignItems: "center"
+    alignItems: "center",
+    zIndex: 999
   },
 
   modal: {
+    background: "#f9fafb",
+    width: "700px",
+    borderRadius: "22px",
+    padding: "28px",
+    maxHeight: "85vh",
+    overflowY: "auto",
+    boxShadow:
+      "0 20px 40px rgba(0,0,0,0.15)"
+  },
+
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "25px"
+  },
+
+  title: {
+    margin: 0,
+    color: "#111827"
+  },
+
+  subtitle: {
+    marginTop: "6px",
+    color: "#6b7280"
+  },
+
+  badge: {
+    background: "#14532d",
+    color: "white",
+    width: "55px",
+    height: "55px",
+    borderRadius: "16px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontWeight: "700"
+  },
+
+  form: {
     background: "white",
-    width: "500px",
-    borderRadius: "12px",
-    padding: "25px",
-    maxHeight: "80vh",
-    overflowY: "auto"
+    padding: "20px",
+    borderRadius: "16px",
+    marginBottom: "25px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "14px"
   },
 
   input: {
     width: "100%",
-    padding: "12px",
-    marginTop: "15px",
-    marginBottom: "15px",
-    borderRadius: "8px",
-    border: "1px solid #ddd"
+    padding: "14px",
+    borderRadius: "10px",
+    border:
+      "1px solid #d1d5db",
+    fontSize: "14px",
+    outline: "none",
+    boxSizing: "border-box"
   },
 
   primary: {
-    width: "100%",
-    padding: "12px",
-    background: "#166534",
+    background: "#14532d",
     color: "white",
     border: "none",
-    borderRadius: "8px",
+    padding: "14px",
+    borderRadius: "10px",
     cursor: "pointer",
-    marginBottom: "20px"
+    fontWeight: "600",
+    fontSize: "15px"
   },
 
   list: {
     display: "flex",
     flexDirection: "column",
-    gap: "12px"
+    gap: "16px"
+  },
+
+  empty: {
+    background: "white",
+    borderRadius: "16px",
+    padding: "30px",
+    textAlign: "center",
+    color: "#6b7280"
   },
 
   package: {
-    border: "1px solid #e5e7eb",
-    borderRadius: "10px",
-    padding: "15px",
+    background: "white",
+    borderRadius: "16px",
+    padding: "18px",
     display: "flex",
     justifyContent: "space-between",
-    alignItems: "center"
+    gap: "20px",
+    boxShadow:
+      "0 2px 10px rgba(0,0,0,0.05)"
+  },
+
+  packageContent: {
+    flex: 1
+  },
+
+  packageTop: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "12px"
+  },
+
+  packageTitle: {
+    margin: 0,
+    color: "#111827"
+  },
+
+  status: {
+    padding: "6px 12px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "700"
+  },
+
+  description: {
+    color: "#374151",
+    marginBottom: "14px",
+    lineHeight: "22px"
+  },
+
+  infoArea: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "6px"
   },
 
   info: {
-    fontSize: "12px",
+    fontSize: "13px",
     color: "#6b7280"
+  },
+
+  retirada: {
+    marginTop: "12px",
+    color: "#16a34a",
+    fontSize: "13px",
+    fontWeight: "600"
   },
 
   actions: {
     display: "flex",
-    gap: "8px"
+    flexDirection: "column",
+    gap: "10px"
   },
 
   success: {
     background: "#16a34a",
     color: "white",
     border: "none",
-    padding: "8px 12px",
-    borderRadius: "6px",
-    cursor: "pointer"
+    padding: "10px 14px",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontWeight: "600"
   },
 
   delete: {
     background: "#dc2626",
     color: "white",
     border: "none",
-    padding: "8px 12px",
-    borderRadius: "6px",
-    cursor: "pointer"
+    padding: "10px 14px",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontWeight: "600"
   },
 
   close: {
     width: "100%",
-    marginTop: "20px",
-    padding: "12px",
+    marginTop: "25px",
+    padding: "14px",
     background: "#6b7280",
     color: "white",
     border: "none",
-    borderRadius: "8px",
-    cursor: "pointer"
+    borderRadius: "12px",
+    cursor: "pointer",
+    fontWeight: "600",
+    fontSize: "15px"
   }
 
 };

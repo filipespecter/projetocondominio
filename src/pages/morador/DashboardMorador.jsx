@@ -29,74 +29,129 @@ function DashboardMorador() {
 
   return (
 
-    <div>
+    <div style={styles.container}>
 
-      <h1 style={styles.title}>
-        🏠 Dashboard do Morador
-      </h1>
+      {/* TOPO */}
 
-      <p style={styles.subtitle}>
-        Bem-vindo ao painel do condomínio
-      </p>
+      <div style={styles.header}>
 
-      {/* CARDS */}
+        <div>
 
-      <div style={styles.grid}>
+          <h1 style={styles.title}>
+            Olá, Morador 👋
+          </h1>
 
-        <div style={styles.card}>
-
-          <div style={styles.icon}>
-            📢
-          </div>
-
-          <h3>Avisos</h3>
-
-          <h1>{dados.avisos}</h1>
-
-        </div>
-
-        <div style={styles.card}>
-
-          <div style={styles.icon}>
-            📦
-          </div>
-
-          <h3>Encomendas</h3>
-
-          <h1>{dados.encomendas}</h1>
-
-        </div>
-
-        <div style={styles.card}>
-
-          <div style={styles.icon}>
-            📅
-          </div>
-
-          <h3>Reservas</h3>
-
-          <h1>{dados.reservas}</h1>
+          <p style={styles.subtitle}>
+            Bem-vindo ao painel do condomínio
+          </p>
 
         </div>
 
       </div>
 
-      {/* ÁREA INFORMATIVA */}
+      {/* AÇÕES RÁPIDAS */}
 
-      <div style={styles.infoCard}>
+      <div style={styles.actions}>
 
-        <h2>
-          👋 Bem-vindo
+        <button style={styles.actionButton}>
+          📦 Minhas Encomendas
+        </button>
+
+        <button style={styles.actionButton}>
+          📅 Fazer Reserva
+        </button>
+
+      </div>
+
+      {/* CARDS */}
+
+      <div style={styles.cards}>
+
+        <div style={styles.card}>
+
+          <div style={styles.cardIcon}>
+            📢
+          </div>
+
+          <div>
+
+            <p style={styles.cardLabel}>
+              Avisos do condomínio
+            </p>
+
+            <h1 style={styles.cardNumber}>
+              {dados.avisos}
+            </h1>
+
+          </div>
+
+        </div>
+
+        <div style={styles.card}>
+
+          <div style={styles.cardIcon}>
+            📦
+          </div>
+
+          <div>
+
+            <p style={styles.cardLabel}>
+              Encomendas pendentes
+            </p>
+
+            <h1 style={styles.cardNumber}>
+              {dados.encomendas}
+            </h1>
+
+          </div>
+
+        </div>
+
+        <div style={styles.card}>
+
+          <div style={styles.cardIcon}>
+            📅
+          </div>
+
+          <div>
+
+            <p style={styles.cardLabel}>
+              Reservas realizadas
+            </p>
+
+            <h1 style={styles.cardNumber}>
+              {dados.reservas}
+            </h1>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* HISTÓRICO */}
+
+      <div style={styles.history}>
+
+        <h2 style={styles.historyTitle}>
+          Atividades recentes
         </h2>
 
-        <p style={styles.text}>
+        <div style={styles.historyItem}>
+          📦 Você possui encomendas aguardando retirada
+        </div>
 
-          Aqui você pode:
-          acompanhar encomendas,
-          visualizar avisos do condomínio
-          e reservar áreas comuns.
+        <div style={styles.historyItem}>
+          📢 Novo aviso publicado pelo condomínio
+        </div>
 
-        </p>
+        <div style={styles.historyItem}>
+          📅 Reserva confirmada para área comum
+        </div>
+
+        <div style={styles.historyItem}>
+          🏢 Bem-vindo ao sistema do condomínio
+        </div>
 
       </div>
 
@@ -108,46 +163,98 @@ function DashboardMorador() {
 
 const styles = {
 
-  title: {
-    fontSize: "32px",
-    marginBottom: "8px"
+  container: {
+    width: "100%",
+    padding: "30px",
+    boxSizing: "border-box"
   },
 
-  subtitle: {
-    color: "#64748b",
+  header: {
     marginBottom: "30px"
   },
 
-  grid: {
+  title: {
+    margin: 0,
+    fontSize: "34px",
+    color: "#111827"
+  },
+
+  subtitle: {
+    marginTop: "8px",
+    color: "#6b7280",
+    fontSize: "15px"
+  },
+
+  actions: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "20px",
+    marginBottom: "30px"
+  },
+
+  actionButton: {
+    background: "#0f766e",
+    color: "white",
+    border: "none",
+    padding: "22px",
+    borderRadius: "14px",
+    cursor: "pointer",
+    fontSize: "16px",
+    fontWeight: "600",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "10px"
+  },
+
+  cards: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3,1fr)",
     gap: "20px",
     marginBottom: "30px"
   },
 
   card: {
     background: "white",
-    borderRadius: "14px",
-    padding: "25px",
+    borderRadius: "16px",
+    padding: "28px",
+    display: "flex",
+    alignItems: "center",
+    gap: "20px",
     boxShadow: "0 2px 10px rgba(0,0,0,0.05)"
   },
 
-  icon: {
-    fontSize: "35px",
-    marginBottom: "15px"
+  cardIcon: {
+    fontSize: "42px"
   },
 
-  infoCard: {
+  cardLabel: {
+    color: "#6b7280",
+    marginBottom: "8px"
+  },
+
+  cardNumber: {
+    margin: 0,
+    fontSize: "34px",
+    color: "#111827"
+  },
+
+  history: {
     background: "white",
-    borderRadius: "14px",
-    padding: "25px",
+    borderRadius: "16px",
+    padding: "28px",
     boxShadow: "0 2px 10px rgba(0,0,0,0.05)"
   },
 
-  text: {
-    marginTop: "10px",
-    color: "#475569",
-    lineHeight: "24px"
+  historyTitle: {
+    marginBottom: "20px",
+    color: "#111827"
+  },
+
+  historyItem: {
+    padding: "14px 0",
+    borderBottom: "1px solid #e5e7eb",
+    color: "#374151"
   }
 
 };
