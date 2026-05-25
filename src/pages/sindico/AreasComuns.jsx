@@ -1,29 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 function AreasComuns() {
 
-  const [areas, setAreas] = useState([
-    {
-      nome: "Salão de festas",
-      capacidade: "50 pessoas",
-      horario: "08:00 - 22:00",
-      status: "Disponível"
-    },
-    {
-      nome: "Churrasqueira",
-      capacidade: "15 pessoas",
-      horario: "09:00 - 23:00",
-      status: "Ocupado"
-    },
-    {
-      nome: "Piscina",
-      capacidade: "30 pessoas",
-      horario: "07:00 - 20:00",
-      status: "Manutenção"
-    }
-  ]);
+  const [areas, setAreas] = useState([]);
 
   const [mostrarModal, setMostrarModal] = useState(false);
+
+  const [busca, setBusca] = useState("");
 
   const [novaArea, setNovaArea] = useState({
     nome: "",
@@ -32,23 +15,114 @@ function AreasComuns() {
     status: "Disponível"
   });
 
-  const [editIndex, setEditIndex] = useState(null);
+  const [editId, setEditId] = useState(null);
 
 
-  function salvarArea() {
+  // CARREGAR DADOS
 
-    if (editIndex !== null) {
+  useEffect(() => {
 
-      const lista = [...areas];
-      lista[editIndex] = novaArea;
+    const dados = localStorage.getItem("areasComuns");
 
-      setAreas(lista);
+    if (dados) {
 
-      setEditIndex(null);
+      setAreas(JSON.parse(dados));
 
     } else {
 
-      setAreas([...areas, novaArea]);
+      setAreas([
+        {
+          id: 1,
+          nome: "Salão de festas",
+          capacidade: "50 pessoas",
+          horario: "08:00 - 22:00",
+          status: "Disponível"
+        },
+        {
+          id: 2,
+          nome: "Churrasqueira",
+          capacidade: "15 pessoas",
+          horario: "09:00 - 23:00",
+          status: "Ocupado"
+        },
+        {
+          id: 3,
+          nome: "Piscina",
+          capacidade: "30 pessoas",
+          horario: "07:00 - 20:00",
+          status: "Manutenção"
+        }
+      ]);
+
+    }
+
+  }, []);
+
+
+  // SALVAR
+
+  useEffect(() => {
+
+    localStorage.setItem(
+      "areasComuns",
+      JSON.stringify(areas)
+    );
+
+  }, [areas]);
+
+
+  // FILTRO
+
+  const areasFiltradas = areas.filter((area) =>
+
+    area.nome.toLowerCase().includes(busca.toLowerCase()) ||
+    area.capacidade.toLowerCase().includes(busca.toLowerCase()) ||
+    area.status.toLowerCase().includes(busca.toLowerCase())
+
+  );
+
+
+  // SALVAR ÁREA
+
+  function salvarArea() {
+
+    if (
+      !novaArea.nome ||
+      !novaArea.capacidade ||
+      !novaArea.horario
+    ) {
+
+      alert("Preencha todos os campos");
+
+      return;
+
+    }
+
+    if (editId !== null) {
+
+      const lista = areas.map((area) =>
+
+        area.id === editId
+          ? { ...novaArea, id: editId }
+          : area
+
+      );
+
+      setAreas(lista);
+
+      setEditId(null);
+
+    } else {
+
+      const nova = {
+        id: Date.now(),
+        ...novaArea
+      };
+
+      setAreas([
+        ...areas,
+        nova
+      ]);
 
     }
 
@@ -60,123 +134,334 @@ function AreasComuns() {
     });
 
     setMostrarModal(false);
+
   }
 
 
-  function excluirArea(index) {
+  // EDITAR
 
-    const lista = areas.filter((_, i) => i !== index);
+  function editarArea(area) {
 
-    setAreas(lista);
-  }
+    setNovaArea(area);
 
-
-  function editarArea(index) {
-
-    setNovaArea(areas[index]);
-
-    setEditIndex(index);
+    setEditId(area.id);
 
     setMostrarModal(true);
+
+  }
+
+
+  // EXCLUIR
+
+  function excluirArea(id) {
+
+    const lista = areas.filter(
+      (area) => area.id !== id
+    );
+
+    setAreas(lista);
+
+  }
+
+
+  // STATUS
+
+  function corStatus(status) {
+
+    switch (status) {
+
+      case "Disponível":
+        return {
+          background: "#dcfce7",
+          color: "#166534"
+        };
+
+      case "Ocupado":
+        return {
+          background: "#fef3c7",
+          color: "#92400e"
+        };
+
+      case "Manutenção":
+        return {
+          background: "#fee2e2",
+          color: "#dc2626"
+        };
+
+      default:
+        return {
+          background: "#e5e7eb",
+          color: "#374151"
+        };
+
+    }
+
   }
 
 
   return (
 
-    <div>
+    <div style={styles.container}>
 
-      {/* TOPO */}
+
+      {/* HEADER */}
+
 
       <div style={styles.header}>
 
-        <h2>Áreas Comuns</h2>
 
-        <button
-          style={styles.button}
-          onClick={() => {
+        <div>
 
-            setEditIndex(null);
+          <h1 style={styles.title}>
+            Áreas Comuns
+          </h1>
 
-            setNovaArea({
-              nome: "",
-              capacidade: "",
-              horario: "",
-              status: "Disponível"
-            });
+          <p style={styles.subtitle}>
+            Gerencie os espaços do condomínio
+          </p>
 
-            setMostrarModal(true);
+        </div>
 
-          }}
-        >
-          + Nova área
-        </button>
+
+        <div style={styles.headerActions}>
+
+
+          <input
+            placeholder="Buscar área..."
+            value={busca}
+            onChange={(e) =>
+              setBusca(e.target.value)
+            }
+            style={styles.search}
+          />
+
+
+          <button
+            style={styles.button}
+            onClick={() => {
+
+              setEditId(null);
+
+              setNovaArea({
+                nome: "",
+                capacidade: "",
+                horario: "",
+                status: "Disponível"
+              });
+
+              setMostrarModal(true);
+
+            }}
+          >
+
+            + Nova área
+
+          </button>
+
+
+        </div>
 
       </div>
 
 
+
+      {/* RESUMO */}
+
+
+      <div style={styles.resumeGrid}>
+
+
+        <div style={styles.resumeCard}>
+
+          <div style={styles.resumeIcon}>
+            🏢
+          </div>
+
+          <div>
+
+            <p style={styles.resumeLabel}>
+              Total de áreas
+            </p>
+
+            <h2 style={styles.resumeNumber}>
+              {areas.length}
+            </h2>
+
+          </div>
+
+        </div>
+
+
+        <div style={styles.resumeCard}>
+
+          <div style={styles.resumeIcon}>
+            ✅
+          </div>
+
+          <div>
+
+            <p style={styles.resumeLabel}>
+              Disponíveis
+            </p>
+
+            <h2 style={styles.resumeNumber}>
+              {
+                areas.filter(
+                  (a) => a.status === "Disponível"
+                ).length
+              }
+            </h2>
+
+          </div>
+
+        </div>
+
+
+      </div>
+
+
+
       {/* TABELA */}
+
 
       <div style={styles.card}>
 
+
         <table style={styles.table}>
+
 
           <thead>
 
             <tr>
 
-              <th style={styles.th}>Área</th>
-              <th style={styles.th}>Capacidade</th>
-              <th style={styles.th}>Horário</th>
-              <th style={styles.th}>Status</th>
-              <th style={styles.th}>Ações</th>
+              <th style={styles.th}>
+                Área
+              </th>
+
+              <th style={styles.th}>
+                Capacidade
+              </th>
+
+              <th style={styles.th}>
+                Horário
+              </th>
+
+              <th style={styles.th}>
+                Status
+              </th>
+
+              <th style={styles.thCenter}>
+                Ações
+              </th>
 
             </tr>
 
           </thead>
 
+
           <tbody>
 
-            {areas.map((area, index) => (
 
-              <tr key={index}>
+            {areasFiltradas.length === 0 ? (
 
-                <td style={styles.td}>
-                  {area.nome}
-                </td>
+              <tr>
 
-                <td style={styles.td}>
-                  {area.capacidade}
-                </td>
+                <td
+                  colSpan="5"
+                  style={styles.empty}
+                >
 
-                <td style={styles.td}>
-                  {area.horario}
-                </td>
-
-                <td style={styles.td}>
-                  {area.status}
-                </td>
-
-                <td style={styles.td}>
-
-                  <span
-                    style={styles.icon}
-                    onClick={() => editarArea(index)}
-                  >
-                    ✏️
-                  </span>
-
-                  <span
-                    style={styles.icon}
-                    onClick={() => excluirArea(index)}
-                  >
-                    🗑️
-                  </span>
+                  Nenhuma área encontrada
 
                 </td>
 
               </tr>
 
-            ))}
+            ) : (
+
+              areasFiltradas.map((area) => (
+
+                <tr key={area.id}>
+
+
+                  <td style={styles.td}>
+
+                    <div style={styles.areaInfo}>
+
+                      <div style={styles.areaIcon}>
+                        🏢
+                      </div>
+
+                      <strong>
+                        {area.nome}
+                      </strong>
+
+                    </div>
+
+                  </td>
+
+
+                  <td style={styles.td}>
+                    {area.capacidade}
+                  </td>
+
+
+                  <td style={styles.td}>
+                    {area.horario}
+                  </td>
+
+
+                  <td style={styles.td}>
+
+                    <span
+                      style={{
+                        ...styles.statusBadge,
+                        ...corStatus(area.status)
+                      }}
+                    >
+
+                      {area.status}
+
+                    </span>
+
+                  </td>
+
+
+                  <td style={styles.tdCenter}>
+
+
+                    <button
+                      style={styles.editButton}
+                      onClick={() =>
+                        editarArea(area)
+                      }
+                    >
+
+                      Editar
+
+                    </button>
+
+
+                    <button
+                      style={styles.deleteButton}
+                      onClick={() =>
+                        excluirArea(area.id)
+                      }
+                    >
+
+                      Excluir
+
+                    </button>
+
+
+                  </td>
+
+                </tr>
+
+              ))
+
+            )}
+
 
           </tbody>
 
@@ -185,79 +470,112 @@ function AreasComuns() {
       </div>
 
 
+
       {/* MODAL */}
+
 
       {mostrarModal && (
 
         <div style={styles.modalBackground}>
 
+
           <div style={styles.modal}>
 
-            <h3>
-              {editIndex !== null
+
+            <h2 style={styles.modalTitle}>
+
+              {editId !== null
                 ? "Editar área"
                 : "Nova área"}
-            </h3>
+
+            </h2>
+
 
             <input
               placeholder="Nome da área"
               value={novaArea.nome}
               onChange={(e) =>
+
                 setNovaArea({
                   ...novaArea,
                   nome: e.target.value
                 })
+
               }
               style={styles.input}
             />
+
 
             <input
               placeholder="Capacidade"
               value={novaArea.capacidade}
               onChange={(e) =>
+
                 setNovaArea({
                   ...novaArea,
                   capacidade: e.target.value
                 })
+
               }
               style={styles.input}
             />
+
 
             <input
               placeholder="Horário"
               value={novaArea.horario}
               onChange={(e) =>
+
                 setNovaArea({
                   ...novaArea,
                   horario: e.target.value
                 })
+
               }
               style={styles.input}
             />
 
+
             <select
               value={novaArea.status}
               onChange={(e) =>
+
                 setNovaArea({
                   ...novaArea,
                   status: e.target.value
                 })
+
               }
               style={styles.input}
             >
-              <option>Disponível</option>
-              <option>Ocupado</option>
-              <option>Manutenção</option>
+
+              <option>
+                Disponível
+              </option>
+
+              <option>
+                Ocupado
+              </option>
+
+              <option>
+                Manutenção
+              </option>
+
             </select>
 
+
             <div style={styles.modalButtons}>
+
 
               <button
                 style={styles.saveButton}
                 onClick={salvarArea}
               >
+
                 Salvar
+
               </button>
+
 
               <button
                 style={styles.cancelButton}
@@ -265,8 +583,11 @@ function AreasComuns() {
                   setMostrarModal(false)
                 }
               >
+
                 Cancelar
+
               </button>
+
 
             </div>
 
@@ -285,28 +606,95 @@ function AreasComuns() {
 
 const styles = {
 
+  container: {
+    width: "100%"
+  },
+
   header: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: "20px"
+    marginBottom: "30px"
+  },
+
+  title: {
+    margin: 0,
+    fontSize: "32px",
+    color: "#14532d"
+  },
+
+  subtitle: {
+    marginTop: "8px",
+    color: "#6b7280"
+  },
+
+  headerActions: {
+    display: "flex",
+    gap: "12px"
+  },
+
+  search: {
+    padding: "12px 14px",
+    borderRadius: "12px",
+    border: "1px solid #d1d5db",
+    outline: "none",
+    minWidth: "220px"
   },
 
   button: {
-    backgroundColor: "#6c3eb8",
+    background:
+      "linear-gradient(135deg,#14532d,#166534)",
     color: "white",
     border: "none",
-    padding: "10px 16px",
-    borderRadius: "6px",
+    padding: "12px 18px",
+    borderRadius: "12px",
     cursor: "pointer",
-    fontWeight: "bold"
+    fontWeight: "700",
+    boxShadow:
+      "0 4px 14px rgba(20,83,45,0.25)"
+  },
+
+  resumeGrid: {
+    display: "grid",
+    gridTemplateColumns:
+      "repeat(auto-fit,minmax(260px,1fr))",
+    gap: "20px",
+    marginBottom: "30px"
+  },
+
+  resumeCard: {
+    background:
+      "linear-gradient(135deg,#14532d,#166534)",
+    color: "white",
+    borderRadius: "22px",
+    padding: "25px",
+    display: "flex",
+    alignItems: "center",
+    gap: "18px",
+    boxShadow:
+      "0 10px 30px rgba(20,83,45,0.18)"
+  },
+
+  resumeIcon: {
+    fontSize: "40px"
+  },
+
+  resumeLabel: {
+    margin: 0,
+    opacity: 0.8
+  },
+
+  resumeNumber: {
+    margin: "6px 0 0",
+    fontSize: "34px"
   },
 
   card: {
-    backgroundColor: "white",
-    padding: "20px",
-    borderRadius: "10px",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.05)"
+    background: "white",
+    borderRadius: "24px",
+    padding: "25px",
+    boxShadow:
+      "0 10px 30px rgba(0,0,0,0.06)"
   },
 
   table: {
@@ -316,18 +704,80 @@ const styles = {
 
   th: {
     textAlign: "left",
-    padding: "14px",
-    borderBottom: "2px solid #e5e7eb"
+    padding: "18px",
+    borderBottom: "2px solid #f3f4f6",
+    color: "#374151"
+  },
+
+  thCenter: {
+    textAlign: "center",
+    padding: "18px",
+    borderBottom: "2px solid #f3f4f6",
+    color: "#374151"
   },
 
   td: {
-    padding: "14px",
-    borderBottom: "1px solid #e5e7eb"
+    padding: "18px",
+    borderBottom: "1px solid #f3f4f6"
   },
 
-  icon: {
+  tdCenter: {
+    padding: "18px",
+    textAlign: "center",
+    borderBottom: "1px solid #f3f4f6"
+  },
+
+  empty: {
+    textAlign: "center",
+    padding: "40px",
+    color: "#6b7280"
+  },
+
+  areaInfo: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px"
+  },
+
+  areaIcon: {
+    width: "42px",
+    height: "42px",
+    borderRadius: "50%",
+    background:
+      "linear-gradient(135deg,#14532d,#166534)",
+    color: "white",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontWeight: "700"
+  },
+
+  statusBadge: {
+    padding: "8px 14px",
+    borderRadius: "999px",
+    fontWeight: "700",
+    fontSize: "13px"
+  },
+
+  editButton: {
+    background: "#dcfce7",
+    color: "#166534",
+    border: "none",
+    padding: "10px 14px",
+    borderRadius: "10px",
     cursor: "pointer",
+    fontWeight: "700",
     marginRight: "10px"
+  },
+
+  deleteButton: {
+    background: "#fee2e2",
+    color: "#dc2626",
+    border: "none",
+    padding: "10px 14px",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontWeight: "700"
   },
 
   modalBackground: {
@@ -336,26 +786,36 @@ const styles = {
     left: 0,
     width: "100%",
     height: "100%",
-    backgroundColor: "rgba(0,0,0,0.5)",
+    background: "rgba(0,0,0,0.45)",
     display: "flex",
     justifyContent: "center",
-    alignItems: "center"
+    alignItems: "center",
+    backdropFilter: "blur(4px)"
   },
 
   modal: {
-    backgroundColor: "white",
+    width: "400px",
+    background: "white",
     padding: "30px",
-    borderRadius: "10px",
-    width: "320px",
+    borderRadius: "24px",
     display: "flex",
     flexDirection: "column",
-    gap: "10px"
+    gap: "14px",
+    boxShadow:
+      "0 20px 40px rgba(0,0,0,0.15)"
+  },
+
+  modalTitle: {
+    margin: 0,
+    color: "#14532d"
   },
 
   input: {
-    padding: "10px",
-    borderRadius: "6px",
-    border: "1px solid #ccc"
+    padding: "14px",
+    borderRadius: "12px",
+    border: "1px solid #d1d5db",
+    outline: "none",
+    fontSize: "14px"
   },
 
   modalButtons: {
@@ -365,20 +825,24 @@ const styles = {
   },
 
   saveButton: {
-    backgroundColor: "#6c3eb8",
+    background:
+      "linear-gradient(135deg,#14532d,#166534)",
     color: "white",
     border: "none",
-    padding: "8px 14px",
-    borderRadius: "5px",
-    cursor: "pointer"
+    padding: "12px 18px",
+    borderRadius: "12px",
+    cursor: "pointer",
+    fontWeight: "700"
   },
 
   cancelButton: {
-    backgroundColor: "#ccc",
+    background: "#f3f4f6",
+    color: "#374151",
     border: "none",
-    padding: "8px 14px",
-    borderRadius: "5px",
-    cursor: "pointer"
+    padding: "12px 18px",
+    borderRadius: "12px",
+    cursor: "pointer",
+    fontWeight: "700"
   }
 
 };

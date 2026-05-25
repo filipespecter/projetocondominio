@@ -4,38 +4,37 @@ function Reservas() {
 
   const [reservas, setReservas] = useState([]);
 
-  const [mostrarModal, setMostrarModal] = useState(false);
+  const [mostrarModal, setMostrarModal] =
+    useState(false);
 
-  const [novaReserva, setNovaReserva] = useState({
-    area: "",
-    data: "",
-    horario: "",
-    obs: ""
-  });
+  const [novaReserva, setNovaReserva] =
+    useState({
+      area: "",
+      data: "",
+      horario: "",
+      obs: "",
+      status: "pendente"
+    });
 
-  const [editId, setEditId] = useState(null);
-
+  const [editId, setEditId] =
+    useState(null);
 
   useEffect(() => {
 
-    const dados = localStorage.getItem("reservas");
-
-    if (dados) {
-      setReservas(JSON.parse(dados));
-    }
+    carregarReservas();
 
   }, []);
 
+  function carregarReservas() {
 
-  useEffect(() => {
+    const dados =
+      JSON.parse(
+        localStorage.getItem("reservas")
+      ) || [];
 
-    localStorage.setItem(
-      "reservas",
-      JSON.stringify(reservas)
-    );
+    setReservas(dados);
 
-  }, [reservas]);
-
+  }
 
   function salvarReserva() {
 
@@ -48,15 +47,25 @@ function Reservas() {
       alert("Preencha os campos obrigatórios");
 
       return;
-    }
 
+    }
 
     if (editId !== null) {
 
       const lista = reservas.map((r) =>
+
         r.id === editId
-          ? { ...novaReserva, id: editId }
+          ? {
+              ...novaReserva,
+              id: editId
+            }
           : r
+
+      );
+
+      localStorage.setItem(
+        "reservas",
+        JSON.stringify(lista)
       );
 
       setReservas(lista);
@@ -66,27 +75,41 @@ function Reservas() {
     } else {
 
       const nova = {
+
         id: Date.now(),
-        ...novaReserva
+
+        ...novaReserva,
+
+        criadoEm:
+          new Date().toLocaleString()
+
       };
 
-      setReservas([
+      const atualizadas = [
         ...reservas,
         nova
-      ]);
-    }
+      ];
 
+      localStorage.setItem(
+        "reservas",
+        JSON.stringify(atualizadas)
+      );
+
+      setReservas(atualizadas);
+
+    }
 
     setNovaReserva({
       area: "",
       data: "",
       horario: "",
-      obs: ""
+      obs: "",
+      status: "pendente"
     });
 
     setMostrarModal(false);
-  }
 
+  }
 
   function excluirReserva(id) {
 
@@ -94,9 +117,14 @@ function Reservas() {
       (r) => r.id !== id
     );
 
-    setReservas(lista);
-  }
+    localStorage.setItem(
+      "reservas",
+      JSON.stringify(lista)
+    );
 
+    setReservas(lista);
+
+  }
 
   function editarReserva(reserva) {
 
@@ -105,18 +133,84 @@ function Reservas() {
     setEditId(reserva.id);
 
     setMostrarModal(true);
+
   }
 
+  function aprovarReserva(id) {
+
+    const lista = reservas.map((r) =>
+
+      r.id === id
+        ? {
+            ...r,
+            status: "aprovada"
+          }
+        : r
+
+    );
+
+    localStorage.setItem(
+      "reservas",
+      JSON.stringify(lista)
+    );
+
+    setReservas(lista);
+
+  }
+
+  function recusarReserva(id) {
+
+    const lista = reservas.map((r) =>
+
+      r.id === id
+        ? {
+            ...r,
+            status: "recusada"
+          }
+        : r
+
+    );
+
+    localStorage.setItem(
+      "reservas",
+      JSON.stringify(lista)
+    );
+
+    setReservas(lista);
+
+  }
+
+  const pendentes = reservas.filter(
+    (r) => r.status === "pendente"
+  );
+
+  const aprovadas = reservas.filter(
+    (r) => r.status === "aprovada"
+  );
+
+  const recusadas = reservas.filter(
+    (r) => r.status === "recusada"
+  );
 
   return (
 
-    <div>
+    <div style={styles.container}>
 
-      {/* TOPO */}
+      {/* HEADER */}
 
       <div style={styles.header}>
 
-        <h2>Reservas</h2>
+        <div>
+
+          <h1 style={styles.title}>
+            Reservas
+          </h1>
+
+          <p style={styles.subtitle}>
+            Gerencie reservas das áreas comuns
+          </p>
+
+        </div>
 
         <button
           style={styles.button}
@@ -128,22 +222,110 @@ function Reservas() {
               area: "",
               data: "",
               horario: "",
-              obs: ""
+              obs: "",
+              status: "pendente"
             });
 
             setMostrarModal(true);
 
           }}
         >
-          + Nova reserva
+
+          + Nova Reserva
+
         </button>
 
       </div>
 
+      {/* CARDS */}
+
+      <div style={styles.cardsGrid}>
+
+        <div style={styles.card}>
+
+          <div style={styles.cardIcon}>
+            📅
+          </div>
+
+          <div>
+
+            <p style={styles.cardLabel}>
+              Total
+            </p>
+
+            <h2 style={styles.cardNumber}>
+              {reservas.length}
+            </h2>
+
+          </div>
+
+        </div>
+
+        <div style={styles.card}>
+
+          <div style={styles.cardIcon}>
+            ⏳
+          </div>
+
+          <div>
+
+            <p style={styles.cardLabel}>
+              Pendentes
+            </p>
+
+            <h2 style={styles.cardNumber}>
+              {pendentes.length}
+            </h2>
+
+          </div>
+
+        </div>
+
+        <div style={styles.card}>
+
+          <div style={styles.cardIcon}>
+            ✅
+          </div>
+
+          <div>
+
+            <p style={styles.cardLabel}>
+              Aprovadas
+            </p>
+
+            <h2 style={styles.cardNumber}>
+              {aprovadas.length}
+            </h2>
+
+          </div>
+
+        </div>
+
+        <div style={styles.card}>
+
+          <div style={styles.cardIcon}>
+            ❌
+          </div>
+
+          <div>
+
+            <p style={styles.cardLabel}>
+              Recusadas
+            </p>
+
+            <h2 style={styles.cardNumber}>
+              {recusadas.length}
+            </h2>
+
+          </div>
+
+        </div>
+
+      </div>
 
       {/* TABELA */}
 
-      <div style={styles.card}>
+      <div style={styles.tableCard}>
 
         <table style={styles.table}>
 
@@ -151,11 +333,29 @@ function Reservas() {
 
             <tr>
 
-              <th style={styles.th}>Área</th>
-              <th style={styles.th}>Data</th>
-              <th style={styles.th}>Horário</th>
-              <th style={styles.th}>Observação</th>
-              <th style={styles.th}>Ações</th>
+              <th style={styles.th}>
+                Área
+              </th>
+
+              <th style={styles.th}>
+                Data
+              </th>
+
+              <th style={styles.th}>
+                Horário
+              </th>
+
+              <th style={styles.th}>
+                Observação
+              </th>
+
+              <th style={styles.th}>
+                Status
+              </th>
+
+              <th style={styles.th}>
+                Ações
+              </th>
 
             </tr>
 
@@ -163,75 +363,140 @@ function Reservas() {
 
           <tbody>
 
-            {reservas.length === 0 ? (
+            {reservas.length === 0 && (
 
               <tr>
 
                 <td
-                  colSpan="5"
+                  colSpan="6"
                   style={styles.empty}
                 >
-                  Nenhuma reserva cadastrada
+
+                  Nenhuma reserva encontrada
+
                 </td>
 
               </tr>
 
-            ) : (
+            )}
 
-              reservas.map((r) => (
+            {reservas.map((r) => (
 
-                <tr key={r.id}>
+              <tr key={r.id}>
 
-                  <td style={styles.td}>
-                    {r.area}
-                  </td>
+                <td style={styles.td}>
+                  {r.area}
+                </td>
 
-                  <td style={styles.td}>
-                    {r.data}
-                  </td>
+                <td style={styles.td}>
+                  {r.data}
+                </td>
 
-                  <td style={styles.td}>
-                    {r.horario}
-                  </td>
+                <td style={styles.td}>
+                  {r.horario}
+                </td>
 
-                  <td style={styles.td}>
-                    {r.obs}
-                  </td>
+                <td style={styles.td}>
+                  {r.obs || "-"}
+                </td>
 
-                  <td style={styles.td}>
+                <td style={styles.td}>
 
-                    <span
-                      style={styles.icon}
+                  <span
+                    style={{
+                      ...styles.status,
+
+                      background:
+                        r.status === "pendente"
+                          ? "#fef9c3"
+                          : r.status === "aprovada"
+                          ? "#dcfce7"
+                          : "#fee2e2",
+
+                      color:
+                        r.status === "pendente"
+                          ? "#854d0e"
+                          : r.status === "aprovada"
+                          ? "#166534"
+                          : "#991b1b"
+                    }}
+                  >
+
+                    {r.status}
+
+                  </span>
+
+                </td>
+
+                <td style={styles.td}>
+
+                  <div style={styles.actions}>
+
+                    {r.status === "pendente" && (
+
+                      <>
+
+                        <button
+                          style={styles.approve}
+                          onClick={() =>
+                            aprovarReserva(r.id)
+                          }
+                        >
+
+                          Aprovar
+
+                        </button>
+
+                        <button
+                          style={styles.reject}
+                          onClick={() =>
+                            recusarReserva(r.id)
+                          }
+                        >
+
+                          Recusar
+
+                        </button>
+
+                      </>
+
+                    )}
+
+                    <button
+                      style={styles.edit}
                       onClick={() =>
                         editarReserva(r)
                       }
                     >
-                      ✏️
-                    </span>
 
-                    <span
-                      style={styles.icon}
+                      Editar
+
+                    </button>
+
+                    <button
+                      style={styles.delete}
                       onClick={() =>
                         excluirReserva(r.id)
                       }
                     >
-                      🗑️
-                    </span>
 
-                  </td>
+                      Excluir
 
-                </tr>
+                    </button>
 
-              ))
+                  </div>
 
-            )}
+                </td>
+
+              </tr>
+
+            ))}
 
           </tbody>
 
         </table>
 
       </div>
-
 
       {/* MODAL */}
 
@@ -241,13 +506,13 @@ function Reservas() {
 
           <div style={styles.modal}>
 
-            <h3>
+            <h2 style={styles.modalTitle}>
 
               {editId
-                ? "Editar reserva"
-                : "Nova reserva"}
+                ? "Editar Reserva"
+                : "Nova Reserva"}
 
-            </h3>
+            </h2>
 
             <select
               value={novaReserva.area}
@@ -282,7 +547,6 @@ function Reservas() {
 
             </select>
 
-
             <input
               type="date"
               value={novaReserva.data}
@@ -294,7 +558,6 @@ function Reservas() {
               }
               style={styles.input}
             />
-
 
             <input
               type="time"
@@ -308,8 +571,7 @@ function Reservas() {
               style={styles.input}
             />
 
-
-            <input
+            <textarea
               placeholder="Observação"
               value={novaReserva.obs}
               onChange={(e) =>
@@ -318,9 +580,8 @@ function Reservas() {
                   obs: e.target.value
                 })
               }
-              style={styles.input}
+              style={styles.textarea}
             />
-
 
             <div style={styles.modalButtons}>
 
@@ -328,7 +589,9 @@ function Reservas() {
                 style={styles.saveButton}
                 onClick={salvarReserva}
               >
+
                 Salvar
+
               </button>
 
               <button
@@ -337,7 +600,9 @@ function Reservas() {
                   setMostrarModal(false)
                 }
               >
+
                 Cancelar
+
               </button>
 
             </div>
@@ -354,31 +619,84 @@ function Reservas() {
 
 }
 
-
 const styles = {
+
+  container: {
+    width: "100%"
+  },
 
   header: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: "20px"
+    marginBottom: "30px"
+  },
+
+  title: {
+    margin: 0,
+    fontSize: "32px",
+    color: "#14532d"
+  },
+
+  subtitle: {
+    marginTop: "6px",
+    color: "#6b7280"
   },
 
   button: {
-    backgroundColor: "#6c3eb8",
+    background:
+      "linear-gradient(135deg,#14532d,#16a34a)",
     color: "white",
     border: "none",
-    padding: "10px 16px",
-    borderRadius: "6px",
+    padding: "14px 18px",
+    borderRadius: "12px",
     cursor: "pointer",
-    fontWeight: "bold"
+    fontWeight: "700",
+    fontSize: "14px"
+  },
+
+  cardsGrid: {
+    display: "grid",
+    gridTemplateColumns:
+      "repeat(auto-fit,minmax(220px,1fr))",
+    gap: "20px",
+    marginBottom: "30px"
   },
 
   card: {
-    backgroundColor: "white",
-    padding: "20px",
-    borderRadius: "10px",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.05)"
+    background:
+      "linear-gradient(135deg,#dcfce7,#ffffff)",
+    borderRadius: "18px",
+    padding: "24px",
+    display: "flex",
+    alignItems: "center",
+    gap: "18px",
+    boxShadow:
+      "0 2px 10px rgba(0,0,0,0.05)"
+  },
+
+  cardIcon: {
+    fontSize: "38px"
+  },
+
+  cardLabel: {
+    color: "#6b7280",
+    marginBottom: "5px"
+  },
+
+  cardNumber: {
+    margin: 0,
+    fontSize: "30px",
+    color: "#14532d"
+  },
+
+  tableCard: {
+    background: "white",
+    borderRadius: "18px",
+    padding: "24px",
+    overflowX: "auto",
+    boxShadow:
+      "0 2px 10px rgba(0,0,0,0.05)"
   },
 
   table: {
@@ -388,23 +706,73 @@ const styles = {
 
   th: {
     textAlign: "left",
-    padding: "14px",
-    borderBottom: "2px solid #e5e7eb"
+    padding: "16px",
+    borderBottom: "2px solid #e5e7eb",
+    color: "#374151"
   },
 
   td: {
-    padding: "14px",
-    borderBottom: "1px solid #e5e7eb"
+    padding: "16px",
+    borderBottom: "1px solid #f3f4f6"
   },
 
   empty: {
     textAlign: "center",
-    padding: "20px"
+    padding: "30px",
+    color: "#6b7280"
   },
 
-  icon: {
+  status: {
+    padding: "8px 14px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "700"
+  },
+
+  actions: {
+    display: "flex",
+    gap: "8px",
+    flexWrap: "wrap"
+  },
+
+  approve: {
+    background: "#16a34a",
+    color: "white",
+    border: "none",
+    padding: "8px 12px",
+    borderRadius: "8px",
     cursor: "pointer",
-    marginRight: "10px"
+    fontWeight: "600"
+  },
+
+  reject: {
+    background: "#dc2626",
+    color: "white",
+    border: "none",
+    padding: "8px 12px",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontWeight: "600"
+  },
+
+  edit: {
+    background: "#2563eb",
+    color: "white",
+    border: "none",
+    padding: "8px 12px",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontWeight: "600"
+  },
+
+  delete: {
+    background: "#6b7280",
+    color: "white",
+    border: "none",
+    padding: "8px 12px",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontWeight: "600"
   },
 
   modalBackground: {
@@ -413,49 +781,75 @@ const styles = {
     left: 0,
     width: "100%",
     height: "100%",
-    backgroundColor: "rgba(0,0,0,0.5)",
+    background:
+      "rgba(0,0,0,0.45)",
     display: "flex",
     justifyContent: "center",
-    alignItems: "center"
+    alignItems: "center",
+    zIndex: 999
   },
 
   modal: {
-    backgroundColor: "white",
+    background: "white",
+    borderRadius: "20px",
     padding: "30px",
-    borderRadius: "10px",
-    width: "320px",
+    width: "420px",
     display: "flex",
     flexDirection: "column",
-    gap: "10px"
+    gap: "16px",
+    boxShadow:
+      "0 10px 30px rgba(0,0,0,0.15)"
+  },
+
+  modalTitle: {
+    margin: 0,
+    color: "#14532d"
   },
 
   input: {
-    padding: "10px",
-    borderRadius: "6px",
-    border: "1px solid #ccc"
+    padding: "14px",
+    borderRadius: "10px",
+    border: "1px solid #d1d5db",
+    outline: "none",
+    fontSize: "14px"
+  },
+
+  textarea: {
+    minHeight: "100px",
+    resize: "none",
+    padding: "14px",
+    borderRadius: "10px",
+    border: "1px solid #d1d5db",
+    outline: "none",
+    fontSize: "14px"
   },
 
   modalButtons: {
     display: "flex",
-    justifyContent: "space-between",
+    gap: "12px",
     marginTop: "10px"
   },
 
   saveButton: {
-    backgroundColor: "#6c3eb8",
+    flex: 1,
+    background: "#16a34a",
     color: "white",
     border: "none",
-    padding: "8px 14px",
-    borderRadius: "5px",
-    cursor: "pointer"
+    padding: "14px",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontWeight: "700"
   },
 
   cancelButton: {
-    backgroundColor: "#ccc",
+    flex: 1,
+    background: "#e5e7eb",
+    color: "#374151",
     border: "none",
-    padding: "8px 14px",
-    borderRadius: "5px",
-    cursor: "pointer"
+    padding: "14px",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontWeight: "700"
   }
 
 };

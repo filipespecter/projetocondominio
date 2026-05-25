@@ -1,4 +1,5 @@
 import AccessCard from "./components/AccessCard";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 import { FaUserShield } from "react-icons/fa";
 import { FaBuilding } from "react-icons/fa";
@@ -157,62 +158,110 @@ function App() {
 
           <Route
             path="sindico"
-            element={<DashboardSindico />}
+            element={
+              <ProtectedRoute tipoPermitido="sindico">
+                <DashboardSindico />
+              </ProtectedRoute>
+            }
           />
 
           <Route
             path="apartamentos"
-            element={<Apartamentos />}
+            element={
+              <ProtectedRoute tipoPermitido="sindico">
+                <Apartamentos />
+              </ProtectedRoute>
+            }
           />
 
           <Route
             path="moradores"
-            element={<Moradores />}
+            element={
+              <ProtectedRoute tipoPermitido="sindico">
+                <Moradores />
+              </ProtectedRoute>
+            }
           />
 
           <Route
             path="porteiros"
-            element={<Porteiros />}
+            element={
+              <ProtectedRoute tipoPermitido="sindico">
+                <Porteiros />
+              </ProtectedRoute>
+            }
           />
 
           <Route
             path="visitantes"
-            element={<Visitantes />}
+            element={
+              <ProtectedRoute tipoPermitido="sindico">
+                <Visitantes />
+              </ProtectedRoute>
+            }
           />
 
           <Route
             path="movimentacoes"
-            element={<Movimentacoes />}
+            element={
+              <ProtectedRoute tipoPermitido="sindico">
+                <Movimentacoes />
+              </ProtectedRoute>
+            }
           />
 
           <Route
             path="encomendas"
-            element={<Encomendas />}
+            element={
+              <ProtectedRoute tipoPermitido="sindico">
+                <Encomendas />
+              </ProtectedRoute>
+            }
           />
 
           <Route
             path="reservas"
-            element={<Reservas />}
+            element={
+              <ProtectedRoute tipoPermitido="sindico">
+                <Reservas />
+              </ProtectedRoute>
+            }
           />
 
           <Route
             path="areas-comuns"
-            element={<AreasComuns />}
+            element={
+              <ProtectedRoute tipoPermitido="sindico">
+                <AreasComuns />
+              </ProtectedRoute>
+            }
           />
 
           <Route
             path="avisos"
-            element={<Avisos />}
+            element={
+              <ProtectedRoute tipoPermitido="sindico">
+                <Avisos />
+              </ProtectedRoute>
+            }
           />
 
           <Route
             path="relatorios"
-            element={<Relatorios />}
+            element={
+              <ProtectedRoute tipoPermitido="sindico">
+                <Relatorios />
+              </ProtectedRoute>
+            }
           />
 
           <Route
             path="configuracoes"
-            element={<Configuracoes />}
+            element={
+              <ProtectedRoute tipoPermitido="sindico">
+                <Configuracoes />
+              </ProtectedRoute>
+            }
           />
 
         </Route>
@@ -228,22 +277,38 @@ function App() {
 
           <Route
             index
-            element={<DashboardPorteiro />}
+            element={
+              <ProtectedRoute tipoPermitido="porteiro">
+                <DashboardPorteiro />
+              </ProtectedRoute>
+            }
           />
 
           <Route
             path="encomendas"
-            element={<EncomendasPorteiro />}
+            element={
+              <ProtectedRoute tipoPermitido="porteiro">
+                <EncomendasPorteiro />
+              </ProtectedRoute>
+            }
           />
 
           <Route
             path="visitantes"
-            element={<VisitantesPorteiro />}
+            element={
+              <ProtectedRoute tipoPermitido="porteiro">
+                <VisitantesPorteiro />
+              </ProtectedRoute>
+            }
           />
 
           <Route
             path="moradores"
-            element={<MoradoresPorteiro />}
+            element={
+              <ProtectedRoute tipoPermitido="porteiro">
+                <MoradoresPorteiro />
+              </ProtectedRoute>
+            }
           />
 
         </Route>
@@ -256,24 +321,41 @@ function App() {
           path="/dashboard/morador"
           element={<DashboardMoradorLayout />}
         >
+
           <Route
             index
-            element={<DashboardMorador />}
+            element={
+              <ProtectedRoute tipoPermitido="morador">
+                <DashboardMorador />
+              </ProtectedRoute>
+            }
           />
 
           <Route
             path="avisos"
-            element={<AvisosMorador />}
+            element={
+              <ProtectedRoute tipoPermitido="morador">
+                <AvisosMorador />
+              </ProtectedRoute>
+            }
           />
 
           <Route
             path="encomendas"
-            element={<EncomendasMorador />}
+            element={
+              <ProtectedRoute tipoPermitido="morador">
+                <EncomendasMorador />
+              </ProtectedRoute>
+            }
           />
 
           <Route
             path="reservas"
-            element={<ReservasMorador />}
+            element={
+              <ProtectedRoute tipoPermitido="morador">
+                <ReservasMorador />
+              </ProtectedRoute>
+            }
           />
 
         </Route>

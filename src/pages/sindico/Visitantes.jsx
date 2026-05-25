@@ -1,649 +1,1193 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 function Visitantes() {
 
-  const [visitantes, setVisitantes] = useState([
-    {
-      id: 1,
-      nome: "Pedro Alves",
-      documento: "123.456.789-00",
-      apartamento: "101",
-      entrada: "10:30",
-      status: "Em visita"
-    },
-    {
-      id: 2,
-      nome: "Ana Costa",
-      documento: "987.654.321-00",
-      apartamento: "202",
-      entrada: "11:00",
-      status: "Autorizado"
+  const [visitantes, setVisitantes] =
+    useState([]);
+
+  const [mostrarModal, setMostrarModal] =
+    useState(false);
+
+  const [busca, setBusca] =
+    useState("");
+
+  const [novoVisitante, setNovoVisitante] =
+    useState({
+      nome: "",
+      documento: "",
+      apartamento: "",
+      morador: "",
+      observacao: "",
+      entrada: "",
+      status: "Autorizado",
+      tipo: "Visita"
+    });
+
+  const [editId, setEditId] =
+    useState(null);
+
+  useEffect(() => {
+
+    const data =
+      JSON.parse(
+        localStorage.getItem("visitantes")
+      ) || [];
+
+    if (data.length > 0) {
+
+      setVisitantes(data);
+
+    } else {
+
+      const mock = [
+
+        {
+          id: 1,
+          nome: "Pedro Alves",
+          documento: "123.456.789-00",
+          apartamento: "101",
+          morador: "João Silva",
+          observacao: "Entrega de documentos",
+          entrada: "10:30",
+          status: "Em visita",
+          tipo: "Entrega",
+          data: new Date().toLocaleDateString(),
+          hora: "10:30",
+          timestamp: Date.now(),
+          porteiro: "Sistema"
+        },
+
+        {
+          id: 2,
+          nome: "Ana Costa",
+          documento: "987.654.321-00",
+          apartamento: "202",
+          morador: "Maria Souza",
+          observacao: "Visita familiar",
+          entrada: "11:00",
+          status: "Autorizado",
+          tipo: "Visita",
+          data: new Date().toLocaleDateString(),
+          hora: "11:00",
+          timestamp: Date.now(),
+          porteiro: "Sistema"
+        }
+
+      ];
+
+      setVisitantes(mock);
+
+      localStorage.setItem(
+        "visitantes",
+        JSON.stringify(mock)
+      );
+
     }
-  ]);
 
-  const [mostrarModal,setMostrarModal] = useState(false);
+  }, []);
 
-  const [busca,setBusca] = useState("");
+  useEffect(() => {
 
-  const [novoVisitante,setNovoVisitante] = useState({
-    nome:"",
-    documento:"",
-    apartamento:"",
-    entrada:"",
-    status:"Em visita"
-  });
+    localStorage.setItem(
+      "visitantes",
+      JSON.stringify(visitantes)
+    );
 
-  const [editId,setEditId] = useState(null);
+  }, [visitantes]);
 
+  const visitantesFiltrados =
+    visitantes.filter((v) =>
 
+      v.nome
+        .toLowerCase()
+        .includes(busca.toLowerCase()) ||
 
-  const visitantesFiltrados = visitantes.filter((v)=>
+      v.documento
+        .toLowerCase()
+        .includes(busca.toLowerCase()) ||
 
-      v.nome.toLowerCase().includes(busca.toLowerCase()) ||
-      v.documento.toLowerCase().includes(busca.toLowerCase()) ||
-      v.apartamento.toLowerCase().includes(busca.toLowerCase())
+      v.apartamento
+        .toLowerCase()
+        .includes(busca.toLowerCase())
 
+    );
+
+  const emVisita = visitantes.filter(
+    (v) => v.status === "Em visita"
   );
 
+  const autorizados = visitantes.filter(
+    (v) => v.status === "Autorizado"
+  );
 
+  const bloqueados = visitantes.filter(
+    (v) => v.status === "Bloqueado"
+  );
 
-  function salvarVisitante(){
+  function salvarHistorico(acao, visitante) {
 
-    if(editId !== null){
+    const historico =
+      JSON.parse(
+        localStorage.getItem(
+          "movimentacoes"
+        )
+      ) || [];
 
-      const lista = visitantes.map((v)=>
+    historico.unshift({
 
-      v.id===editId
-      ? {...novoVisitante,id:editId}
-      :v
+      id: Date.now(),
+
+      tipo: "visitante",
+
+      acao,
+
+      nome: visitante.nome,
+
+      apartamento:
+        visitante.apartamento,
+
+      data:
+        new Date().toLocaleDateString(),
+
+      hora:
+        new Date().toLocaleTimeString(),
+
+      timestamp: Date.now()
+
+    });
+
+    localStorage.setItem(
+      "movimentacoes",
+      JSON.stringify(historico)
+    );
+
+  }
+
+  function salvarVisitante() {
+
+    if (
+      !novoVisitante.nome ||
+      !novoVisitante.documento ||
+      !novoVisitante.apartamento
+    ) {
+      return;
+    }
+
+    const agora = new Date();
+
+    const visitanteCompleto = {
+
+      ...novoVisitante,
+
+      data:
+        agora.toLocaleDateString(),
+
+      hora:
+        agora.toLocaleTimeString(),
+
+      timestamp:
+        agora.getTime(),
+
+      mes:
+        agora.getMonth() + 1,
+
+      ano:
+        agora.getFullYear(),
+
+      porteiro:
+        "Porteiro",
+
+      entrada:
+        novoVisitante.entrada ||
+        agora.toLocaleTimeString()
+
+    };
+
+    if (editId !== null) {
+
+      const lista = visitantes.map((v) =>
+
+        v.id === editId
+          ? {
+              ...visitanteCompleto,
+              id: editId
+            }
+          : v
 
       );
 
       setVisitantes(lista);
 
+      salvarHistorico(
+        "edição",
+        visitanteCompleto
+      );
+
       setEditId(null);
 
-    }
+    } else {
 
-    else{
+      const novo = {
 
-      const novo={
+        id: Date.now(),
 
-      id:Date.now(),
-      ...novoVisitante
+        ...visitanteCompleto
 
       };
 
       setVisitantes([
-      ...visitantes,
-      novo
+        ...visitantes,
+        novo
       ]);
+
+      salvarHistorico(
+        "cadastro",
+        novo
+      );
 
     }
 
-
     setNovoVisitante({
-
-      nome:"",
-      documento:"",
-      apartamento:"",
-      entrada:"",
-      status:"Em visita"
-
+      nome: "",
+      documento: "",
+      apartamento: "",
+      morador: "",
+      observacao: "",
+      entrada: "",
+      status: "Autorizado",
+      tipo: "Visita"
     });
-
 
     setMostrarModal(false);
 
   }
 
+  function excluirVisitante(id) {
 
+    const visitante =
+      visitantes.find(
+        (v) => v.id === id
+      );
 
-function excluirVisitante(id){
+    salvarHistorico(
+      "exclusão",
+      visitante
+    );
 
-setVisitantes(
+    setVisitantes(
 
-visitantes.filter(
-(v)=>v.id !== id
-)
+      visitantes.filter(
+        (v) => v.id !== id
+      )
 
-);
+    );
+
+  }
+
+  function editarVisitante(v) {
+
+    setNovoVisitante(v);
+
+    setEditId(v.id);
+
+    setMostrarModal(true);
+
+  }
+
+  function mudarStatus(id, status) {
+
+    const lista = visitantes.map((v) =>
+
+      v.id === id
+        ? { ...v, status }
+        : v
+
+    );
+
+    const visitante =
+      lista.find(
+        (v) => v.id === id
+      );
+
+    salvarHistorico(
+      `status: ${status}`,
+      visitante
+    );
+
+    setVisitantes(lista);
+
+  }
+
+  function corStatus(status) {
+
+    switch (status) {
+
+      case "Em visita":
+        return {
+          bg: "#dcfce7",
+          color: "#166534"
+        };
+
+      case "Autorizado":
+        return {
+          bg: "#dbeafe",
+          color: "#1d4ed8"
+        };
+
+      case "Bloqueado":
+        return {
+          bg: "#fee2e2",
+          color: "#dc2626"
+        };
+
+      case "Saiu":
+        return {
+          bg: "#e5e7eb",
+          color: "#374151"
+        };
+
+      default:
+        return {
+          bg: "#e5e7eb",
+          color: "#374151"
+        };
+
+    }
+
+  }
+
+  return (
+
+    <div style={styles.container}>
+
+      {/* HEADER */}
+
+      <div style={styles.header}>
+
+        <div>
+
+          <h1 style={styles.title}>
+            Visitantes
+          </h1>
+
+          <p style={styles.subtitle}>
+            Controle e monitoramento de visitantes
+          </p>
+
+        </div>
+
+        <div style={styles.actions}>
+
+          <input
+            placeholder="Buscar visitante..."
+            value={busca}
+            onChange={(e) =>
+              setBusca(e.target.value)
+            }
+            style={styles.search}
+          />
+
+          <button
+            style={styles.button}
+            onClick={() => {
+
+              setEditId(null);
+
+              setNovoVisitante({
+                nome: "",
+                documento: "",
+                apartamento: "",
+                morador: "",
+                observacao: "",
+                entrada: "",
+                status: "Autorizado",
+                tipo: "Visita"
+              });
+
+              setMostrarModal(true);
+
+            }}
+          >
+
+            + Novo Visitante
+
+          </button>
+
+        </div>
+
+      </div>
+
+      {/* RESUMO */}
+
+      <div style={styles.resumeGrid}>
+
+        <div style={styles.resumeCard}>
+
+          <div style={styles.resumeIcon}>
+            👥
+          </div>
+
+          <div>
+
+            <p style={styles.resumeLabel}>
+              Total
+            </p>
+
+            <h2 style={styles.resumeNumber}>
+              {visitantes.length}
+            </h2>
+
+          </div>
+
+        </div>
+
+        <div style={styles.resumeCard}>
+
+          <div style={styles.resumeIcon}>
+            🟢
+          </div>
+
+          <div>
+
+            <p style={styles.resumeLabel}>
+              Em visita
+            </p>
+
+            <h2 style={styles.resumeNumber}>
+              {emVisita.length}
+            </h2>
+
+          </div>
+
+        </div>
+
+        <div style={styles.resumeCard}>
+
+          <div style={styles.resumeIcon}>
+            🔵
+          </div>
+
+          <div>
+
+            <p style={styles.resumeLabel}>
+              Autorizados
+            </p>
+
+            <h2 style={styles.resumeNumber}>
+              {autorizados.length}
+            </h2>
+
+          </div>
+
+        </div>
+
+        <div style={styles.resumeCard}>
+
+          <div style={styles.resumeIcon}>
+            🔴
+          </div>
+
+          <div>
+
+            <p style={styles.resumeLabel}>
+              Bloqueados
+            </p>
+
+            <h2 style={styles.resumeNumber}>
+              {bloqueados.length}
+            </h2>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* TABELA */}
+
+      <div style={styles.card}>
+
+        <table style={styles.table}>
+
+          <thead>
+
+            <tr>
+
+              <th style={styles.th}>
+                Visitante
+              </th>
+
+              <th style={styles.th}>
+                Apartamento
+              </th>
+
+              <th style={styles.th}>
+                Entrada
+              </th>
+
+              <th style={styles.th}>
+                Status
+              </th>
+
+              <th style={styles.thCenter}>
+                Ações
+              </th>
+
+            </tr>
+
+          </thead>
+
+          <tbody>
+
+            {visitantesFiltrados.map((v) => (
+
+              <tr key={v.id}>
+
+                <td style={styles.td}>
+
+                  <div style={styles.userArea}>
+
+                    <div style={styles.avatar}>
+
+                      {v.nome
+                        .charAt(0)
+                        .toUpperCase()}
+
+                    </div>
+
+                    <div>
+
+                      <strong>
+                        {v.nome}
+                      </strong>
+
+                      <p style={styles.info}>
+                        {v.documento}
+                      </p>
+
+                      <p style={styles.info}>
+                        Morador:
+                        {" "}
+                        {v.morador || "N/A"}
+                      </p>
+
+                      <p style={styles.info}>
+                        Tipo:
+                        {" "}
+                        {v.tipo}
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                </td>
+
+                <td style={styles.td}>
+
+                  <span style={styles.apto}>
+                    {v.apartamento}
+                  </span>
+
+                </td>
+
+                <td style={styles.td}>
+                  {v.entrada}
+                </td>
+
+                <td style={styles.td}>
+
+                  <span
+                    style={{
+                      ...styles.status,
+
+                      background:
+                        corStatus(v.status).bg,
+
+                      color:
+                        corStatus(v.status).color
+                    }}
+                  >
+
+                    {v.status}
+
+                  </span>
+
+                </td>
+
+                <td style={styles.tdCenter}>
+
+                  <button
+                    style={styles.enterBtn}
+                    onClick={() =>
+                      mudarStatus(
+                        v.id,
+                        "Em visita"
+                      )
+                    }
+                  >
+
+                    Entrou
+
+                  </button>
+
+                  <button
+                    style={styles.exitBtn}
+                    onClick={() =>
+                      mudarStatus(
+                        v.id,
+                        "Saiu"
+                      )
+                    }
+                  >
+
+                    Saiu
+
+                  </button>
+
+                  <button
+                    style={styles.editBtn}
+                    onClick={() =>
+                      editarVisitante(v)
+                    }
+                  >
+
+                    Editar
+
+                  </button>
+
+                  <button
+                    style={styles.deleteBtn}
+                    onClick={() =>
+                      excluirVisitante(v.id)
+                    }
+                  >
+
+                    Excluir
+
+                  </button>
+
+                </td>
+
+              </tr>
+
+            ))}
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+      {/* MODAL */}
+
+      {mostrarModal && (
+
+        <div style={styles.modalBg}>
+
+          <div style={styles.modal}>
+
+            <div style={styles.modalHeader}>
+
+              <h2 style={styles.modalTitle}>
+
+                {editId
+                  ? "Editar visitante"
+                  : "Novo visitante"}
+
+              </h2>
+
+              <button
+                style={styles.close}
+                onClick={() =>
+                  setMostrarModal(false)
+                }
+              >
+                ✕
+              </button>
+
+            </div>
+
+            <div style={styles.form}>
+
+              <input
+                placeholder="Nome"
+                value={novoVisitante.nome}
+                onChange={(e) =>
+
+                  setNovoVisitante({
+                    ...novoVisitante,
+                    nome: e.target.value
+                  })
+
+                }
+                style={styles.input}
+              />
+
+              <input
+                placeholder="Documento"
+                value={novoVisitante.documento}
+                onChange={(e) =>
+
+                  setNovoVisitante({
+                    ...novoVisitante,
+                    documento: e.target.value
+                  })
+
+                }
+                style={styles.input}
+              />
+
+              <input
+                placeholder="Apartamento"
+                value={novoVisitante.apartamento}
+                onChange={(e) =>
+
+                  setNovoVisitante({
+                    ...novoVisitante,
+                    apartamento: e.target.value
+                  })
+
+                }
+                style={styles.input}
+              />
+
+              <input
+                placeholder="Morador responsável"
+                value={novoVisitante.morador}
+                onChange={(e) =>
+
+                  setNovoVisitante({
+                    ...novoVisitante,
+                    morador: e.target.value
+                  })
+
+                }
+                style={styles.input}
+              />
+
+              <select
+                value={novoVisitante.tipo}
+                onChange={(e) =>
+
+                  setNovoVisitante({
+                    ...novoVisitante,
+                    tipo: e.target.value
+                  })
+
+                }
+                style={styles.input}
+              >
+
+                <option>
+                  Visita
+                </option>
+
+                <option>
+                  Entrega
+                </option>
+
+                <option>
+                  Prestador
+                </option>
+
+                <option>
+                  Familiar
+                </option>
+
+              </select>
+
+              <input
+                placeholder="Hora entrada"
+                value={novoVisitante.entrada}
+                onChange={(e) =>
+
+                  setNovoVisitante({
+                    ...novoVisitante,
+                    entrada: e.target.value
+                  })
+
+                }
+                style={styles.input}
+              />
+
+              <textarea
+                placeholder="Observações"
+                value={novoVisitante.observacao}
+                onChange={(e) =>
+
+                  setNovoVisitante({
+                    ...novoVisitante,
+                    observacao: e.target.value
+                  })
+
+                }
+                style={styles.textarea}
+              />
+
+              <select
+                value={novoVisitante.status}
+                onChange={(e) =>
+
+                  setNovoVisitante({
+                    ...novoVisitante,
+                    status: e.target.value
+                  })
+
+                }
+                style={styles.input}
+              >
+
+                <option>
+                  Autorizado
+                </option>
+
+                <option>
+                  Em visita
+                </option>
+
+                <option>
+                  Bloqueado
+                </option>
+
+              </select>
+
+            </div>
+
+            <div style={styles.modalButtons}>
+
+              <button
+                style={styles.saveBtn}
+                onClick={salvarVisitante}
+              >
+
+                Salvar Visitante
+
+              </button>
+
+              <button
+                style={styles.cancelBtn}
+                onClick={() =>
+                  setMostrarModal(false)
+                }
+              >
+
+                Cancelar
+
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      )}
+
+    </div>
+
+  );
 
 }
 
-
-
-function editarVisitante(v){
-
-setNovoVisitante(v);
-
-setEditId(v.id);
-
-setMostrarModal(true);
-
-}
-
-
-
-function mudarStatus(id,status){
-
-const lista=visitantes.map((v)=>
-
-v.id===id
-?{...v,status}
-:v
-
-);
-
-setVisitantes(lista);
-
-}
-
-
-
-
-return(
-
-<div style={styles.container}>
-
-
-<div style={styles.header}>
-
-
-<div>
-
-<h2 style={styles.title}>
-Visitantes
-</h2>
-
-<p style={styles.subtitle}>
-Controle de visitantes do condomínio
-</p>
-
-</div>
-
-
-<div style={styles.actions}>
-
-
-<input
-placeholder="Buscar..."
-value={busca}
-onChange={(e)=>setBusca(e.target.value)}
-style={styles.search}
-/>
-
-
-<button
-
-style={styles.button}
-
-onClick={()=>{
-
-setEditId(null);
-
-setNovoVisitante({
-
-nome:"",
-documento:"",
-apartamento:"",
-entrada:"",
-status:"Em visita"
-
-});
-
-setMostrarModal(true);
-
-}}
-
->
-
-+ Novo visitante
-
-</button>
-
-
-</div>
-
-
-</div>
-
-
-
-
-<div style={styles.card}>
-
-
-<table style={styles.table}>
-
-
-<thead>
-
-<tr>
-
-<th style={styles.th}>
-Nome
-</th>
-
-<th style={styles.th}>
-Documento
-</th>
-
-<th style={styles.th}>
-Apartamento
-</th>
-
-<th style={styles.th}>
-Entrada
-</th>
-
-<th style={styles.th}>
-Status
-</th>
-
-<th style={styles.thCenter}>
-Ações
-</th>
-
-</tr>
-
-</thead>
-
-
-<tbody>
-
-
-{visitantesFiltrados.map((v)=>(
-
-
-<tr key={v.id}>
-
-
-<td style={styles.td}>
-{v.nome}
-</td>
-
-
-<td style={styles.td}>
-{v.documento}
-</td>
-
-
-<td style={styles.td}>
-{v.apartamento}
-</td>
-
-
-<td style={styles.td}>
-{v.entrada}
-</td>
-
-
-<td style={styles.td}>
-
-<span
-style={{
-...styles.status,
-
-backgroundColor:
-v.status==="Em visita"
-? "#dcfce7"
-: "#e5e7eb",
-
-color:
-v.status==="Em visita"
-? "#166534"
-: "#555"
-}}
->
-
-{v.status}
-
-</span>
-
-</td>
-
-
-
-<td style={styles.tdCenter}>
-
-
-<button
-
-style={styles.smallBtn}
-
-onClick={()=>
-mudarStatus(v.id,"Em visita")
-}
-
->
-
-Entrou
-
-</button>
-
-
-<button
-
-style={styles.smallBtn}
-
-onClick={()=>
-mudarStatus(v.id,"Saiu")
-}
-
->
-
-Saiu
-
-</button>
-
-
-<span
-style={styles.icon}
-onClick={()=>
-editarVisitante(v)
-}
->
-
-✏️
-
-</span>
-
-
-<span
-style={styles.icon}
-onClick={()=>
-excluirVisitante(v.id)
-}
->
-
-🗑️
-
-</span>
-
-
-</td>
-
-</tr>
-
-))}
-
-
-</tbody>
-
-</table>
-
-</div>
-
-
-
-
-{mostrarModal && (
-
-
-<div style={styles.modalBg}>
-
-
-<div style={styles.modal}>
-
-
-<h3>
-
-{editId
-? "Editar visitante"
-: "Novo visitante"}
-
-</h3>
-
-
-<input
-placeholder="Nome"
-value={novoVisitante.nome}
-onChange={(e)=>
-
-setNovoVisitante({
-...novoVisitante,
-nome:e.target.value
-})
-
-}
-style={styles.input}
-/>
-
-
-
-<input
-placeholder="Documento"
-value={novoVisitante.documento}
-onChange={(e)=>
-
-setNovoVisitante({
-...novoVisitante,
-documento:e.target.value
-})
-
-}
-style={styles.input}
-/>
-
-
-
-<input
-placeholder="Apartamento"
-value={novoVisitante.apartamento}
-onChange={(e)=>
-
-setNovoVisitante({
-...novoVisitante,
-apartamento:e.target.value
-})
-
-}
-style={styles.input}
-/>
-
-
-
-<input
-placeholder="Hora entrada"
-value={novoVisitante.entrada}
-onChange={(e)=>
-
-setNovoVisitante({
-...novoVisitante,
-entrada:e.target.value
-})
-
-}
-style={styles.input}
-/>
-
-
-<div style={styles.modalButtons}>
-
-
-<button
-style={styles.saveBtn}
-onClick={salvarVisitante}
->
-
-Salvar
-
-</button>
-
-
-<button
-style={styles.cancelBtn}
-onClick={()=>
-setMostrarModal(false)
-}
->
-
-Cancelar
-
-</button>
-
-
-</div>
-
-</div>
-
-</div>
-
-)}
-
-</div>
-
-)
-
-}
-
-
-
-const styles={
-
-container:{
-width:"100%"
-},
-
-header:{
-display:"flex",
-justifyContent:"space-between",
-alignItems:"center",
-marginBottom:"25px"
-},
-
-title:{
-margin:"0"
-},
-
-subtitle:{
-margin:"5px 0 0",
-color:"#777"
-},
-
-actions:{
-display:"flex",
-gap:"10px"
-},
-
-search:{
-padding:"10px",
-border:"1px solid #ddd",
-borderRadius:"8px"
-},
-
-button:{
-background:"#6c3eb8",
-color:"white",
-border:"none",
-padding:"10px 16px",
-borderRadius:"8px",
-cursor:"pointer",
-fontWeight:"bold"
-},
-
-card:{
-background:"white",
-padding:"25px",
-borderRadius:"12px",
-boxShadow:"0 2px 10px rgba(0,0,0,.05)"
-},
-
-table:{
-width:"100%",
-borderCollapse:"collapse"
-},
-
-th:{
-padding:"15px",
-textAlign:"left",
-borderBottom:"2px solid #eee"
-},
-
-thCenter:{
-padding:"15px",
-textAlign:"center",
-borderBottom:"2px solid #eee"
-},
-
-td:{
-padding:"15px",
-borderBottom:"1px solid #eee"
-},
-
-tdCenter:{
-padding:"15px",
-textAlign:"center",
-borderBottom:"1px solid #eee"
-},
-
-icon:{
-cursor:"pointer",
-marginLeft:"10px"
-},
-
-smallBtn:{
-border:"none",
-padding:"7px 10px",
-marginRight:"5px",
-borderRadius:"6px",
-cursor:"pointer"
-},
-
-status:{
-padding:"6px 10px",
-borderRadius:"20px",
-fontSize:"13px"
-},
-
-modalBg:{
-position:"fixed",
-top:0,
-left:0,
-width:"100%",
-height:"100%",
-background:"rgba(0,0,0,.5)",
-display:"flex",
-justifyContent:"center",
-alignItems:"center"
-},
-
-modal:{
-width:"350px",
-background:"white",
-padding:"30px",
-borderRadius:"12px",
-display:"flex",
-flexDirection:"column",
-gap:"10px"
-},
-
-input:{
-padding:"10px",
-border:"1px solid #ddd",
-borderRadius:"8px"
-},
-
-modalButtons:{
-display:"flex",
-justifyContent:"space-between"
-},
-
-saveBtn:{
-background:"#6c3eb8",
-border:"none",
-padding:"10px 18px",
-borderRadius:"8px",
-color:"white"
-},
-
-cancelBtn:{
-background:"#ddd",
-border:"none",
-padding:"10px 18px",
-borderRadius:"8px"
-}
+const styles = {
+
+  container: {
+    width: "100%"
+  },
+
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "30px"
+  },
+
+  title: {
+    margin: 0,
+    fontSize: "34px",
+    color: "#14532d"
+  },
+
+  subtitle: {
+    marginTop: "8px",
+    color: "#6b7280"
+  },
+
+  actions: {
+    display: "flex",
+    gap: "12px"
+  },
+
+  search: {
+    padding: "12px 16px",
+    borderRadius: "12px",
+    border: "1px solid #d1d5db",
+    width: "240px",
+    outline: "none"
+  },
+
+  button: {
+    background:
+      "linear-gradient(135deg,#14532d,#166534)",
+    color: "white",
+    border: "none",
+    padding: "12px 18px",
+    borderRadius: "12px",
+    cursor: "pointer",
+    fontWeight: "700"
+  },
+
+  resumeGrid: {
+    display: "grid",
+    gridTemplateColumns:
+      "repeat(auto-fit,minmax(240px,1fr))",
+    gap: "20px",
+    marginBottom: "30px"
+  },
+
+  resumeCard: {
+    background:
+      "linear-gradient(135deg,#14532d,#166534)",
+    color: "white",
+    borderRadius: "20px",
+    padding: "24px",
+    display: "flex",
+    alignItems: "center",
+    gap: "18px",
+    boxShadow:
+      "0 6px 20px rgba(20,83,45,0.18)"
+  },
+
+  resumeIcon: {
+    fontSize: "42px"
+  },
+
+  resumeLabel: {
+    opacity: 0.9
+  },
+
+  resumeNumber: {
+    margin: "6px 0 0",
+    fontSize: "34px"
+  },
+
+  card: {
+    background: "white",
+    borderRadius: "24px",
+    overflow: "hidden",
+    boxShadow:
+      "0 4px 20px rgba(0,0,0,0.05)"
+  },
+
+  table: {
+    width: "100%",
+    borderCollapse: "collapse"
+  },
+
+  th: {
+    padding: "18px",
+    textAlign: "left",
+    background: "#f0fdf4",
+    color: "#14532d",
+    borderBottom: "1px solid #dcfce7"
+  },
+
+  thCenter: {
+    padding: "18px",
+    textAlign: "center",
+    background: "#f0fdf4",
+    color: "#14532d",
+    borderBottom: "1px solid #dcfce7"
+  },
+
+  td: {
+    padding: "18px",
+    borderBottom: "1px solid #f3f4f6"
+  },
+
+  tdCenter: {
+    padding: "18px",
+    textAlign: "center",
+    borderBottom: "1px solid #f3f4f6"
+  },
+
+  userArea: {
+    display: "flex",
+    alignItems: "center",
+    gap: "14px"
+  },
+
+  avatar: {
+    width: "44px",
+    height: "44px",
+    borderRadius: "50%",
+    background:
+      "linear-gradient(135deg,#166534,#22c55e)",
+    color: "white",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    fontWeight: "700"
+  },
+
+  info: {
+    marginTop: "4px",
+    color: "#6b7280",
+    fontSize: "13px"
+  },
+
+  apto: {
+    background: "#dcfce7",
+    color: "#166534",
+    padding: "8px 14px",
+    borderRadius: "999px",
+    fontWeight: "700",
+    fontSize: "13px"
+  },
+
+  status: {
+    padding: "8px 14px",
+    borderRadius: "999px",
+    fontWeight: "700",
+    fontSize: "13px"
+  },
+
+  enterBtn: {
+    background: "#dcfce7",
+    color: "#166534",
+    border: "none",
+    padding: "9px 12px",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontWeight: "700",
+    marginRight: "6px"
+  },
+
+  exitBtn: {
+    background: "#e5e7eb",
+    color: "#374151",
+    border: "none",
+    padding: "9px 12px",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontWeight: "700",
+    marginRight: "6px"
+  },
+
+  editBtn: {
+    background: "#dbeafe",
+    color: "#1d4ed8",
+    border: "none",
+    padding: "9px 12px",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontWeight: "700",
+    marginRight: "6px"
+  },
+
+  deleteBtn: {
+    background: "#fee2e2",
+    color: "#dc2626",
+    border: "none",
+    padding: "9px 12px",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontWeight: "700"
+  },
+
+  modalBg: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    background: "rgba(0,0,0,0.45)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 999
+  },
+
+  modal: {
+    width: "480px",
+    background: "white",
+    borderRadius: "24px",
+    padding: "28px",
+    boxShadow:
+      "0 10px 40px rgba(0,0,0,0.15)"
+  },
+
+  modalHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "25px"
+  },
+
+  modalTitle: {
+    margin: 0,
+    color: "#14532d"
+  },
+
+  close: {
+    width: "34px",
+    height: "34px",
+    borderRadius: "50%",
+    border: "none",
+    cursor: "pointer"
+  },
+
+  form: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "14px"
+  },
+
+  input: {
+    padding: "14px",
+    borderRadius: "12px",
+    border: "1px solid #d1d5db",
+    outline: "none"
+  },
+
+  textarea: {
+    padding: "14px",
+    borderRadius: "12px",
+    border: "1px solid #d1d5db",
+    resize: "none",
+    minHeight: "90px",
+    outline: "none"
+  },
+
+  modalButtons: {
+    display: "flex",
+    gap: "12px",
+    marginTop: "24px"
+  },
+
+  saveBtn: {
+    flex: 1,
+    background:
+      "linear-gradient(135deg,#14532d,#166534)",
+    color: "white",
+    border: "none",
+    padding: "14px",
+    borderRadius: "12px",
+    cursor: "pointer",
+    fontWeight: "700"
+  },
+
+  cancelBtn: {
+    flex: 1,
+    background: "#f3f4f6",
+    color: "#374151",
+    border: "none",
+    padding: "14px",
+    borderRadius: "12px",
+    cursor: "pointer",
+    fontWeight: "700"
+  }
 
 };
 

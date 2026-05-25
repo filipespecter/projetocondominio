@@ -1,13 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 function Apartamentos() {
 
-  const [apartamentos, setApartamentos] = useState([
-    { bloco: "A", numero: "101", andar: "1º", morador: "João da Silva" },
-    { bloco: "A", numero: "102", andar: "1º", morador: "Maria Oliveira" },
-    { bloco: "A", numero: "201", andar: "2º", morador: "Carlos Santos" },
-    { bloco: "B", numero: "101", andar: "1º", morador: "Ana Paula" }
-  ]);
+  const [apartamentos, setApartamentos] = useState([]);
 
   const [mostrarModal, setMostrarModal] = useState(false);
 
@@ -17,46 +12,140 @@ function Apartamentos() {
     bloco: "",
     numero: "",
     andar: "",
-    morador: ""
+    morador: "",
+    status: "Ocupado"
   });
 
-  const [editIndex, setEditIndex] = useState(null);
+  const [editId, setEditId] = useState(null);
 
 
-  const apartamentosFiltrados = apartamentos.filter((ap) =>
-    ap.bloco.toLowerCase().includes(busca.toLowerCase()) ||
-    ap.numero.toLowerCase().includes(busca.toLowerCase()) ||
-    ap.andar.toLowerCase().includes(busca.toLowerCase()) ||
-    ap.morador.toLowerCase().includes(busca.toLowerCase())
-  );
+  // CARREGAR DADOS
 
+  useEffect(() => {
 
-  function adicionarApartamento() {
+    const dados = localStorage.getItem("apartamentos");
 
-    if (editIndex !== null) {
+    if (dados) {
 
-      const lista = [...apartamentos];
-
-      lista[editIndex] = novoAp;
-
-      setApartamentos(lista);
-
-      setEditIndex(null);
+      setApartamentos(JSON.parse(dados));
 
     } else {
 
       setApartamentos([
+        {
+          id: 1,
+          bloco: "A",
+          numero: "101",
+          andar: "1º",
+          morador: "João da Silva",
+          status: "Ocupado"
+        },
+        {
+          id: 2,
+          bloco: "A",
+          numero: "102",
+          andar: "1º",
+          morador: "Maria Oliveira",
+          status: "Ocupado"
+        },
+        {
+          id: 3,
+          bloco: "A",
+          numero: "201",
+          andar: "2º",
+          morador: "Carlos Santos",
+          status: "Ocupado"
+        },
+        {
+          id: 4,
+          bloco: "B",
+          numero: "101",
+          andar: "1º",
+          morador: "",
+          status: "Disponível"
+        }
+      ]);
+
+    }
+
+  }, []);
+
+
+  // SALVAR DADOS
+
+  useEffect(() => {
+
+    localStorage.setItem(
+      "apartamentos",
+      JSON.stringify(apartamentos)
+    );
+
+  }, [apartamentos]);
+
+
+  // FILTRO
+
+  const apartamentosFiltrados = apartamentos.filter((ap) =>
+
+    ap.bloco.toLowerCase().includes(busca.toLowerCase()) ||
+    ap.numero.toLowerCase().includes(busca.toLowerCase()) ||
+    ap.andar.toLowerCase().includes(busca.toLowerCase()) ||
+    ap.morador.toLowerCase().includes(busca.toLowerCase()) ||
+    ap.status.toLowerCase().includes(busca.toLowerCase())
+
+  );
+
+
+  // SALVAR APARTAMENTO
+
+  function salvarApartamento() {
+
+    if (
+      !novoAp.bloco ||
+      !novoAp.numero ||
+      !novoAp.andar
+    ) {
+
+      alert("Preencha os campos obrigatórios");
+
+      return;
+
+    }
+
+    if (editId !== null) {
+
+      const lista = apartamentos.map((ap) =>
+
+        ap.id === editId
+          ? { ...novoAp, id: editId }
+          : ap
+
+      );
+
+      setApartamentos(lista);
+
+      setEditId(null);
+
+    } else {
+
+      const novo = {
+        id: Date.now(),
+        ...novoAp
+      };
+
+      setApartamentos([
         ...apartamentos,
-        novoAp
+        novo
       ]);
 
     }
 
     setNovoAp({
-      bloco:"",
-      numero:"",
-      andar:"",
-      morador:""
+      bloco: "",
+      numero: "",
+      andar: "",
+      morador: "",
+      status: "Ocupado"
     });
 
     setMostrarModal(false);
@@ -64,10 +153,25 @@ function Apartamentos() {
   }
 
 
-  function excluirApartamento(index){
+  // EDITAR
+
+  function editarApartamento(ap) {
+
+    setNovoAp(ap);
+
+    setEditId(ap.id);
+
+    setMostrarModal(true);
+
+  }
+
+
+  // EXCLUIR
+
+  function excluirApartamento(id) {
 
     const lista = apartamentos.filter(
-      (_,i)=> i !== index
+      (ap) => ap.id !== id
     );
 
     setApartamentos(lista);
@@ -75,15 +179,37 @@ function Apartamentos() {
   }
 
 
-  function editarApartamento(index){
+  // STATUS
 
-    setNovoAp(
-      apartamentos[index]
-    );
+  function corStatus(status) {
 
-    setEditIndex(index);
+    switch (status) {
 
-    setMostrarModal(true);
+      case "Ocupado":
+        return {
+          background: "#dbeafe",
+          color: "#1d4ed8"
+        };
+
+      case "Disponível":
+        return {
+          background: "#dcfce7",
+          color: "#166534"
+        };
+
+      case "Manutenção":
+        return {
+          background: "#fee2e2",
+          color: "#dc2626"
+        };
+
+      default:
+        return {
+          background: "#f3f4f6",
+          color: "#374151"
+        };
+
+    }
 
   }
 
@@ -93,44 +219,50 @@ function Apartamentos() {
     <div style={styles.container}>
 
 
-      {/* CABEÇALHO */}
+      {/* HEADER */}
 
 
       <div style={styles.header}>
 
+
         <div>
 
-          <h2 style={styles.title}>
+          <h1 style={styles.title}>
             Apartamentos
-          </h2>
+          </h1>
 
           <p style={styles.subtitle}>
-            Gerenciamento dos apartamentos
+            Gerenciamento completo das unidades
           </p>
 
         </div>
 
 
-        <div style={styles.actions}>
+        <div style={styles.headerActions}>
 
 
           <input
-            placeholder="Buscar..."
+            placeholder="Buscar apartamento..."
             value={busca}
-            onChange={(e)=>setBusca(e.target.value)}
+            onChange={(e) =>
+              setBusca(e.target.value)
+            }
             style={styles.search}
           />
 
+
           <button
             style={styles.button}
-            onClick={()=>{
-              setEditIndex(null);
+            onClick={() => {
+
+              setEditId(null);
 
               setNovoAp({
-                bloco:"",
-                numero:"",
-                andar:"",
-                morador:""
+                bloco: "",
+                numero: "",
+                andar: "",
+                morador: "",
+                status: "Ocupado"
               });
 
               setMostrarModal(true);
@@ -142,7 +274,89 @@ function Apartamentos() {
 
           </button>
 
+
         </div>
+
+      </div>
+
+
+
+      {/* RESUMO */}
+
+
+      <div style={styles.resumeGrid}>
+
+
+        <div style={styles.resumeCard}>
+
+          <div style={styles.resumeIcon}>
+            🏢
+          </div>
+
+          <div>
+
+            <p style={styles.resumeLabel}>
+              Total de unidades
+            </p>
+
+            <h2 style={styles.resumeNumber}>
+              {apartamentos.length}
+            </h2>
+
+          </div>
+
+        </div>
+
+
+        <div style={styles.resumeCard}>
+
+          <div style={styles.resumeIcon}>
+            ✅
+          </div>
+
+          <div>
+
+            <p style={styles.resumeLabel}>
+              Disponíveis
+            </p>
+
+            <h2 style={styles.resumeNumber}>
+              {
+                apartamentos.filter(
+                  (a) => a.status === "Disponível"
+                ).length
+              }
+            </h2>
+
+          </div>
+
+        </div>
+
+
+        <div style={styles.resumeCard}>
+
+          <div style={styles.resumeIcon}>
+            👥
+          </div>
+
+          <div>
+
+            <p style={styles.resumeLabel}>
+              Ocupados
+            </p>
+
+            <h2 style={styles.resumeNumber}>
+              {
+                apartamentos.filter(
+                  (a) => a.status === "Ocupado"
+                ).length
+              }
+            </h2>
+
+          </div>
+
+        </div>
+
 
       </div>
 
@@ -159,19 +373,29 @@ function Apartamentos() {
 
           <thead>
 
-          <tr>
+            <tr>
 
-            <th style={styles.th}>Bloco</th>
+              <th style={styles.th}>
+                Apartamento
+              </th>
 
-            <th style={styles.th}>Número</th>
+              <th style={styles.th}>
+                Andar
+              </th>
 
-            <th style={styles.th}>Andar</th>
+              <th style={styles.th}>
+                Morador
+              </th>
 
-            <th style={styles.th}>Morador</th>
+              <th style={styles.th}>
+                Status
+              </th>
 
-            <th style={styles.thCenter}>Ações</th>
+              <th style={styles.thCenter}>
+                Ações
+              </th>
 
-          </tr>
+            </tr>
 
           </thead>
 
@@ -179,54 +403,111 @@ function Apartamentos() {
           <tbody>
 
 
-          {apartamentosFiltrados.map((ap,index)=>(
+            {apartamentosFiltrados.length === 0 ? (
 
-          <tr key={index}>
+              <tr>
 
-            <td style={styles.td}>
-              {ap.bloco}
-            </td>
+                <td
+                  colSpan="5"
+                  style={styles.empty}
+                >
 
-            <td style={styles.td}>
-              {ap.numero}
-            </td>
+                  Nenhum apartamento encontrado
 
-            <td style={styles.td}>
-              {ap.andar}
-            </td>
+                </td>
 
-            <td style={styles.td}>
-              {ap.morador}
-            </td>
+              </tr>
 
-            <td style={styles.tdCenter}>
+            ) : (
 
+              apartamentosFiltrados.map((ap) => (
 
-              <span
-              style={styles.icon}
-              onClick={()=>editarApartamento(index)}
-              >
-
-              ✏️
-
-              </span>
+                <tr key={ap.id}>
 
 
-              <span
-              style={styles.icon}
-              onClick={()=>excluirApartamento(index)}
-              >
+                  <td style={styles.td}>
 
-              🗑️
+                    <div style={styles.apInfo}>
 
-              </span>
+                      <div style={styles.apIcon}>
+                        🏢
+                      </div>
+
+                      <div>
+
+                        <strong>
+                          Bloco {ap.bloco} - {ap.numero}
+                        </strong>
+
+                      </div>
+
+                    </div>
+
+                  </td>
 
 
-            </td>
+                  <td style={styles.td}>
+                    {ap.andar}
+                  </td>
 
-          </tr>
 
-          ))}
+                  <td style={styles.td}>
+
+                    {ap.morador || "Sem morador"}
+
+                  </td>
+
+
+                  <td style={styles.td}>
+
+                    <span
+                      style={{
+                        ...styles.statusBadge,
+                        ...corStatus(ap.status)
+                      }}
+                    >
+
+                      {ap.status}
+
+                    </span>
+
+                  </td>
+
+
+                  <td style={styles.tdCenter}>
+
+
+                    <button
+                      style={styles.editButton}
+                      onClick={() =>
+                        editarApartamento(ap)
+                      }
+                    >
+
+                      Editar
+
+                    </button>
+
+
+                    <button
+                      style={styles.deleteButton}
+                      onClick={() =>
+                        excluirApartamento(ap.id)
+                      }
+                    >
+
+                      Excluir
+
+                    </button>
+
+
+                  </td>
+
+                </tr>
+
+              ))
+
+            )}
 
 
           </tbody>
@@ -242,103 +523,139 @@ function Apartamentos() {
 
       {mostrarModal && (
 
-      <div style={styles.modalBackground}>
+        <div style={styles.modalBackground}>
 
 
-      <div style={styles.modal}>
+          <div style={styles.modal}>
 
 
-      <h3>
+            <h2 style={styles.modalTitle}>
 
-      {editIndex !== null
-      ? "Editar apartamento"
-      :"Novo apartamento"}
+              {editId !== null
+                ? "Editar apartamento"
+                : "Novo apartamento"}
 
-      </h3>
-
-
-      <input
-      placeholder="Bloco"
-      value={novoAp.bloco}
-      onChange={(e)=>
-      setNovoAp({
-      ...novoAp,
-      bloco:e.target.value
-      })
-      }
-      style={styles.input}
-      />
+            </h2>
 
 
-      <input
-      placeholder="Número"
-      value={novoAp.numero}
-      onChange={(e)=>
-      setNovoAp({
-      ...novoAp,
-      numero:e.target.value
-      })
-      }
-      style={styles.input}
-      />
+            <input
+              placeholder="Bloco"
+              value={novoAp.bloco}
+              onChange={(e) =>
+
+                setNovoAp({
+                  ...novoAp,
+                  bloco: e.target.value
+                })
+
+              }
+              style={styles.input}
+            />
 
 
-      <input
-      placeholder="Andar"
-      value={novoAp.andar}
-      onChange={(e)=>
-      setNovoAp({
-      ...novoAp,
-      andar:e.target.value
-      })
-      }
-      style={styles.input}
-      />
+            <input
+              placeholder="Número"
+              value={novoAp.numero}
+              onChange={(e) =>
+
+                setNovoAp({
+                  ...novoAp,
+                  numero: e.target.value
+                })
+
+              }
+              style={styles.input}
+            />
 
 
-      <input
-      placeholder="Morador"
-      value={novoAp.morador}
-      onChange={(e)=>
-      setNovoAp({
-      ...novoAp,
-      morador:e.target.value
-      })
-      }
-      style={styles.input}
-      />
+            <input
+              placeholder="Andar"
+              value={novoAp.andar}
+              onChange={(e) =>
+
+                setNovoAp({
+                  ...novoAp,
+                  andar: e.target.value
+                })
+
+              }
+              style={styles.input}
+            />
 
 
-      <div style={styles.modalButtons}>
+            <input
+              placeholder="Morador"
+              value={novoAp.morador}
+              onChange={(e) =>
+
+                setNovoAp({
+                  ...novoAp,
+                  morador: e.target.value
+                })
+
+              }
+              style={styles.input}
+            />
 
 
-      <button
-      style={styles.saveButton}
-      onClick={adicionarApartamento}
-      >
+            <select
+              value={novoAp.status}
+              onChange={(e) =>
 
-      Salvar
+                setNovoAp({
+                  ...novoAp,
+                  status: e.target.value
+                })
 
-      </button>
+              }
+              style={styles.input}
+            >
+
+              <option>
+                Ocupado
+              </option>
+
+              <option>
+                Disponível
+              </option>
+
+              <option>
+                Manutenção
+              </option>
+
+            </select>
 
 
-      <button
-      style={styles.cancelButton}
-      onClick={()=>
-      setMostrarModal(false)
-      }
-      >
-
-      Cancelar
-
-      </button>
+            <div style={styles.modalButtons}>
 
 
-      </div>
+              <button
+                style={styles.saveButton}
+                onClick={salvarApartamento}
+              >
 
-      </div>
+                Salvar
 
-      </div>
+              </button>
+
+
+              <button
+                style={styles.cancelButton}
+                onClick={() =>
+                  setMostrarModal(false)
+                }
+              >
+
+                Cancelar
+
+              </button>
+
+
+            </div>
+
+          </div>
+
+        </div>
 
       )}
 
@@ -349,140 +666,245 @@ function Apartamentos() {
 }
 
 
+const styles = {
 
-const styles={
+  container: {
+    width: "100%"
+  },
 
-container:{
-width:"100%"
-},
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "30px"
+  },
 
-header:{
-display:"flex",
-justifyContent:"space-between",
-alignItems:"center",
-marginBottom:"25px"
-},
+  title: {
+    margin: 0,
+    fontSize: "32px",
+    color: "#1e3a8a"
+  },
 
-title:{
-margin:"0"
-},
+  subtitle: {
+    marginTop: "8px",
+    color: "#6b7280"
+  },
 
-subtitle:{
-margin:"5px 0 0",
-color:"#777"
-},
+  headerActions: {
+    display: "flex",
+    gap: "12px"
+  },
 
-actions:{
-display:"flex",
-gap:"10px"
-},
+  search: {
+    padding: "12px 14px",
+    borderRadius: "12px",
+    border: "1px solid #d1d5db",
+    outline: "none",
+    minWidth: "240px"
+  },
 
-search:{
-padding:"10px",
-border:"1px solid #ddd",
-borderRadius:"8px",
-outline:"none"
-},
+  button: {
+    background:
+      "linear-gradient(135deg,#1e3a8a,#2563eb)",
+    color: "white",
+    border: "none",
+    padding: "12px 18px",
+    borderRadius: "12px",
+    cursor: "pointer",
+    fontWeight: "700",
+    boxShadow:
+      "0 4px 14px rgba(37,99,235,0.25)"
+  },
 
-button:{
-background:"#6c3eb8",
-color:"white",
-border:"none",
-padding:"10px 16px",
-borderRadius:"8px",
-cursor:"pointer",
-fontWeight:"bold"
-},
+  resumeGrid: {
+    display: "grid",
+    gridTemplateColumns:
+      "repeat(auto-fit,minmax(250px,1fr))",
+    gap: "20px",
+    marginBottom: "30px"
+  },
 
-card:{
-background:"white",
-padding:"25px",
-borderRadius:"12px",
-boxShadow:"0 2px 10px rgba(0,0,0,.05)"
-},
+  resumeCard: {
+    background:
+      "linear-gradient(135deg,#1e3a8a,#2563eb)",
+    color: "white",
+    borderRadius: "22px",
+    padding: "25px",
+    display: "flex",
+    alignItems: "center",
+    gap: "18px",
+    boxShadow:
+      "0 10px 30px rgba(37,99,235,0.18)"
+  },
 
-table:{
-width:"100%",
-borderCollapse:"collapse"
-},
+  resumeIcon: {
+    fontSize: "40px"
+  },
 
-th:{
-padding:"15px",
-textAlign:"left",
-borderBottom:"2px solid #eee"
-},
+  resumeLabel: {
+    margin: 0,
+    opacity: 0.8
+  },
 
-thCenter:{
-padding:"15px",
-textAlign:"center",
-borderBottom:"2px solid #eee"
-},
+  resumeNumber: {
+    margin: "6px 0 0",
+    fontSize: "34px"
+  },
 
-td:{
-padding:"15px",
-borderBottom:"1px solid #eee"
-},
+  card: {
+    background: "white",
+    borderRadius: "24px",
+    padding: "25px",
+    boxShadow:
+      "0 10px 30px rgba(0,0,0,0.06)"
+  },
 
-tdCenter:{
-padding:"15px",
-textAlign:"center",
-borderBottom:"1px solid #eee"
-},
+  table: {
+    width: "100%",
+    borderCollapse: "collapse"
+  },
 
-icon:{
-cursor:"pointer",
-margin:"0 5px"
-},
+  th: {
+    textAlign: "left",
+    padding: "18px",
+    borderBottom: "2px solid #f3f4f6",
+    color: "#374151"
+  },
 
-modalBackground:{
-position:"fixed",
-top:0,
-left:0,
-width:"100%",
-height:"100%",
-background:"rgba(0,0,0,.5)",
-display:"flex",
-alignItems:"center",
-justifyContent:"center"
-},
+  thCenter: {
+    textAlign: "center",
+    padding: "18px",
+    borderBottom: "2px solid #f3f4f6",
+    color: "#374151"
+  },
 
-modal:{
-width:"350px",
-background:"white",
-padding:"30px",
-borderRadius:"12px",
-display:"flex",
-flexDirection:"column",
-gap:"12px"
-},
+  td: {
+    padding: "18px",
+    borderBottom: "1px solid #f3f4f6"
+  },
 
-input:{
-padding:"10px",
-border:"1px solid #ddd",
-borderRadius:"8px"
-},
+  tdCenter: {
+    padding: "18px",
+    textAlign: "center",
+    borderBottom: "1px solid #f3f4f6"
+  },
 
-modalButtons:{
-display:"flex",
-justifyContent:"space-between"
-},
+  empty: {
+    textAlign: "center",
+    padding: "40px",
+    color: "#6b7280"
+  },
 
-saveButton:{
-background:"#6c3eb8",
-border:"none",
-padding:"10px 18px",
-borderRadius:"8px",
-color:"white",
-cursor:"pointer"
-},
+  apInfo: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px"
+  },
 
-cancelButton:{
-background:"#ddd",
-border:"none",
-padding:"10px 18px",
-borderRadius:"8px",
-cursor:"pointer"
-}
+  apIcon: {
+    width: "42px",
+    height: "42px",
+    borderRadius: "50%",
+    background:
+      "linear-gradient(135deg,#1e3a8a,#2563eb)",
+    color: "white",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+
+  statusBadge: {
+    padding: "8px 14px",
+    borderRadius: "999px",
+    fontWeight: "700",
+    fontSize: "13px"
+  },
+
+  editButton: {
+    background: "#dbeafe",
+    color: "#1d4ed8",
+    border: "none",
+    padding: "10px 14px",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontWeight: "700",
+    marginRight: "10px"
+  },
+
+  deleteButton: {
+    background: "#fee2e2",
+    color: "#dc2626",
+    border: "none",
+    padding: "10px 14px",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontWeight: "700"
+  },
+
+  modalBackground: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    background: "rgba(0,0,0,0.45)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    backdropFilter: "blur(4px)"
+  },
+
+  modal: {
+    width: "420px",
+    background: "white",
+    padding: "30px",
+    borderRadius: "24px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "14px",
+    boxShadow:
+      "0 20px 40px rgba(0,0,0,0.15)"
+  },
+
+  modalTitle: {
+    margin: 0,
+    color: "#1e3a8a"
+  },
+
+  input: {
+    padding: "14px",
+    borderRadius: "12px",
+    border: "1px solid #d1d5db",
+    outline: "none",
+    fontSize: "14px"
+  },
+
+  modalButtons: {
+    display: "flex",
+    justifyContent: "space-between",
+    marginTop: "10px"
+  },
+
+  saveButton: {
+    background:
+      "linear-gradient(135deg,#1e3a8a,#2563eb)",
+    color: "white",
+    border: "none",
+    padding: "12px 18px",
+    borderRadius: "12px",
+    cursor: "pointer",
+    fontWeight: "700"
+  },
+
+  cancelButton: {
+    background: "#f3f4f6",
+    color: "#374151",
+    border: "none",
+    padding: "12px 18px",
+    borderRadius: "12px",
+    cursor: "pointer",
+    fontWeight: "700"
+  }
 
 };
 

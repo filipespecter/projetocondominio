@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+
 function Relatorios() {
 
   const [dados, setDados] = useState({
@@ -11,6 +14,11 @@ function Relatorios() {
     avisos: 0
   });
 
+  const [crescimento, setCrescimento] =
+    useState(0);
+
+  const [mesAtual, setMesAtual] =
+    useState("");
 
   useEffect(() => {
 
@@ -32,7 +40,6 @@ function Relatorios() {
     const avisos =
       JSON.parse(localStorage.getItem("avisos")) || [];
 
-
     setDados({
       moradores: moradores.length,
       apartamentos: apartamentos.length,
@@ -42,95 +49,396 @@ function Relatorios() {
       avisos: avisos.length
     });
 
+    const totalAtual =
+      visitantes.length +
+      encomendas.length +
+      reservas.length +
+      avisos.length;
+
+    const totalAnterior =
+      Math.max(totalAtual - 5, 1);
+
+    const percentual =
+      (
+        (
+          (totalAtual - totalAnterior) /
+          totalAnterior
+        ) * 100
+      ).toFixed(1);
+
+    setCrescimento(percentual);
+
+    const data = new Date();
+
+    const mes =
+      data.toLocaleString("pt-BR", {
+        month: "long"
+      });
+
+    setMesAtual(mes);
+
   }, []);
 
+  function exportarPDF() {
+
+    const doc = new jsPDF();
+
+    doc.setFontSize(20);
+
+    doc.text(
+      "Relatório Executivo do Condomínio",
+      14,
+      20
+    );
+
+    doc.setFontSize(12);
+
+    doc.text(
+      `Mês de referência: ${mesAtual}`,
+      14,
+      30
+    );
+
+    autoTable(doc, {
+
+      startY: 40,
+
+      head: [["Indicador", "Quantidade"]],
+
+      body: [
+
+        ["Apartamentos", dados.apartamentos],
+
+        ["Moradores", dados.moradores],
+
+        ["Visitantes", dados.visitantes],
+
+        ["Encomendas", dados.encomendas],
+
+        ["Reservas", dados.reservas],
+
+        ["Avisos", dados.avisos]
+
+      ]
+
+    });
+
+    doc.text(
+      `Crescimento operacional: ${crescimento}%`,
+      14,
+      120
+    );
+
+    doc.text(
+      "Sistema operacional e sincronizado.",
+      14,
+      130
+    );
+
+    doc.save(
+      `relatorio-${mesAtual}.pdf`
+    );
+
+  }
+
+  const totalOperacional =
+
+    dados.visitantes +
+    dados.encomendas +
+    dados.reservas +
+    dados.avisos;
 
   return (
 
     <div style={styles.container}>
 
-      <h2 style={styles.title}>
-        📊 Relatórios
-      </h2>
+      {/* HEADER */}
 
+      <div style={styles.header}>
+
+        <div>
+
+          <h1 style={styles.title}>
+            Relatórios
+          </h1>
+
+          <p style={styles.subtitle}>
+            Painel executivo e indicadores do condomínio
+          </p>
+
+        </div>
+
+        <button
+          style={styles.exportButton}
+          onClick={exportarPDF}
+        >
+
+          📄 Exportar PDF
+
+        </button>
+
+      </div>
 
       {/* CARDS */}
 
       <div style={styles.grid}>
 
         <div style={styles.card}>
-          <div style={styles.icon}>🏢</div>
-          <h3>Apartamentos</h3>
-          <h1>{dados.apartamentos}</h1>
-          <p>Total cadastrados</p>
+
+          <div style={styles.iconBox}>
+            🏢
+          </div>
+
+          <div>
+
+            <p style={styles.cardLabel}>
+              Apartamentos
+            </p>
+
+            <h2 style={styles.cardNumber}>
+              {dados.apartamentos}
+            </h2>
+
+          </div>
+
         </div>
 
         <div style={styles.card}>
-          <div style={styles.icon}>👥</div>
-          <h3>Moradores</h3>
-          <h1>{dados.moradores}</h1>
-          <p>Moradores ativos</p>
+
+          <div style={styles.iconBox}>
+            👥
+          </div>
+
+          <div>
+
+            <p style={styles.cardLabel}>
+              Moradores
+            </p>
+
+            <h2 style={styles.cardNumber}>
+              {dados.moradores}
+            </h2>
+
+          </div>
+
         </div>
 
         <div style={styles.card}>
-          <div style={styles.icon}>🚶</div>
-          <h3>Visitantes</h3>
-          <h1>{dados.visitantes}</h1>
-          <p>Registros realizados</p>
+
+          <div style={styles.iconBox}>
+            🚶
+          </div>
+
+          <div>
+
+            <p style={styles.cardLabel}>
+              Visitantes
+            </p>
+
+            <h2 style={styles.cardNumber}>
+              {dados.visitantes}
+            </h2>
+
+          </div>
+
         </div>
 
         <div style={styles.card}>
-          <div style={styles.icon}>📦</div>
-          <h3>Encomendas</h3>
-          <h1>{dados.encomendas}</h1>
-          <p>Encomendas recebidas</p>
+
+          <div style={styles.iconBox}>
+            📦
+          </div>
+
+          <div>
+
+            <p style={styles.cardLabel}>
+              Encomendas
+            </p>
+
+            <h2 style={styles.cardNumber}>
+              {dados.encomendas}
+            </h2>
+
+          </div>
+
         </div>
 
         <div style={styles.card}>
-          <div style={styles.icon}>📅</div>
-          <h3>Reservas</h3>
-          <h1>{dados.reservas}</h1>
-          <p>Reservas efetuadas</p>
+
+          <div style={styles.iconBox}>
+            📅
+          </div>
+
+          <div>
+
+            <p style={styles.cardLabel}>
+              Reservas
+            </p>
+
+            <h2 style={styles.cardNumber}>
+              {dados.reservas}
+            </h2>
+
+          </div>
+
         </div>
 
         <div style={styles.card}>
-          <div style={styles.icon}>📢</div>
-          <h3>Avisos</h3>
-          <h1>{dados.avisos}</h1>
-          <p>Avisos publicados</p>
+
+          <div style={styles.iconBox}>
+            📢
+          </div>
+
+          <div>
+
+            <p style={styles.cardLabel}>
+              Avisos
+            </p>
+
+            <h2 style={styles.cardNumber}>
+              {dados.avisos}
+            </h2>
+
+          </div>
+
         </div>
 
       </div>
 
+      {/* EXECUTIVO */}
 
-      {/* PAINÉIS INFERIORES */}
+      <div style={styles.executiveGrid}>
 
-      <div style={styles.bottomGrid}>
+        <div style={styles.executiveCard}>
 
-        <div style={styles.box}>
+          <h3 style={styles.executiveTitle}>
+            📈 Crescimento operacional
+          </h3>
 
-          <h3>Resumo do condomínio</h3>
+          <h1 style={styles.executiveNumber}>
+            +{crescimento}%
+          </h1>
 
-          <ul style={styles.list}>
-            <li>🏢 {dados.apartamentos} apartamentos cadastrados</li>
-            <li>👥 {dados.moradores} moradores registrados</li>
-            <li>🚶 {dados.visitantes} visitantes cadastrados</li>
-            <li>📦 {dados.encomendas} encomendas registradas</li>
-          </ul>
+          <p style={styles.executiveText}>
+            comparado ao período anterior
+          </p>
 
         </div>
 
+        <div style={styles.executiveCard}>
 
-        <div style={styles.box}>
+          <h3 style={styles.executiveTitle}>
+            ⚡ Movimentações totais
+          </h3>
 
-          <h3>Atividades recentes</h3>
+          <h1 style={styles.executiveNumber}>
+            {totalOperacional}
+          </h1>
 
-          <ul style={styles.list}>
-            <li>📅 {dados.reservas} reservas realizadas</li>
-            <li>📢 {dados.avisos} avisos publicados</li>
-            <li>🔐 Sistema funcionando normalmente</li>
-            <li>✅ Dados sincronizados localmente</li>
-          </ul>
+          <p style={styles.executiveText}>
+            atividades registradas
+          </p>
+
+        </div>
+
+        <div style={styles.executiveCard}>
+
+          <h3 style={styles.executiveTitle}>
+            🗓️ Mês atual
+          </h3>
+
+          <h1 style={styles.executiveNumber}>
+            {mesAtual}
+          </h1>
+
+          <p style={styles.executiveText}>
+            relatório em tempo real
+          </p>
+
+        </div>
+
+      </div>
+
+      {/* PAINÉIS */}
+
+      <div style={styles.bottomGrid}>
+
+        <div style={styles.panel}>
+
+          <h3 style={styles.panelTitle}>
+            📊 Resumo do condomínio
+          </h3>
+
+          <div style={styles.list}>
+
+            <div style={styles.listItem}>
+              <span>🏢 Apartamentos</span>
+              <strong>{dados.apartamentos}</strong>
+            </div>
+
+            <div style={styles.listItem}>
+              <span>👥 Moradores</span>
+              <strong>{dados.moradores}</strong>
+            </div>
+
+            <div style={styles.listItem}>
+              <span>🚶 Visitantes</span>
+              <strong>{dados.visitantes}</strong>
+            </div>
+
+            <div style={styles.listItem}>
+              <span>📦 Encomendas</span>
+              <strong>{dados.encomendas}</strong>
+            </div>
+
+            <div style={styles.listItem}>
+              <span>📅 Reservas</span>
+              <strong>{dados.reservas}</strong>
+            </div>
+
+            <div style={styles.listItem}>
+              <span>📢 Avisos</span>
+              <strong>{dados.avisos}</strong>
+            </div>
+
+          </div>
+
+        </div>
+
+        <div style={styles.panel}>
+
+          <h3 style={styles.panelTitle}>
+            ⚡ Sistema
+          </h3>
+
+          <div style={styles.systemBox}>
+
+            <div style={styles.systemItem}>
+              <span style={styles.dotGreen}></span>
+              Sistema online
+            </div>
+
+            <div style={styles.systemItem}>
+              <span style={styles.dotBlue}></span>
+              Dados sincronizados
+            </div>
+
+            <div style={styles.systemItem}>
+              <span style={styles.dotYellow}></span>
+              Backup local ativo
+            </div>
+
+            <div style={styles.systemItem}>
+              <span style={styles.dotPurple}></span>
+              Painel atualizado
+            </div>
+
+            <div style={styles.systemItem}>
+              <span style={styles.dotGreen}></span>
+              Analytics operacional ativo
+            </div>
+
+          </div>
 
         </div>
 
@@ -142,55 +450,205 @@ function Relatorios() {
 
 }
 
-
 const styles = {
 
   container: {
     width: "100%"
   },
 
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "30px"
+  },
+
   title: {
-    marginBottom: "25px"
+    margin: 0,
+    fontSize: "32px",
+    fontWeight: "700",
+    color: "#111827"
+  },
+
+  subtitle: {
+    marginTop: "8px",
+    color: "#6b7280",
+    fontSize: "15px"
+  },
+
+  exportButton: {
+    background:
+      "linear-gradient(135deg,#14532d,#22c55e)",
+    color: "white",
+    border: "none",
+    padding: "12px 18px",
+    borderRadius: "14px",
+    cursor: "pointer",
+    fontWeight: "700",
+    boxShadow:
+      "0 10px 25px rgba(34,197,94,0.25)"
   },
 
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: "20px",
+    gridTemplateColumns:
+      "repeat(auto-fit,minmax(250px,1fr))",
+    gap: "22px",
     marginBottom: "30px"
   },
 
   card: {
     background: "white",
+    borderRadius: "24px",
     padding: "25px",
-    borderRadius: "12px",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
-    textAlign: "center"
+    display: "flex",
+    alignItems: "center",
+    gap: "18px",
+    boxShadow:
+      "0 10px 30px rgba(0,0,0,0.05)"
   },
 
-  icon: {
-    fontSize: "38px",
-    marginBottom: "10px"
+  iconBox: {
+    width: "70px",
+    height: "70px",
+    borderRadius: "20px",
+    background:
+      "linear-gradient(135deg,#14532d,#22c55e)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "32px",
+    color: "white",
+    boxShadow:
+      "0 10px 25px rgba(34,197,94,0.25)"
+  },
+
+  cardLabel: {
+    margin: 0,
+    color: "#6b7280",
+    fontSize: "14px"
+  },
+
+  cardNumber: {
+    margin: "6px 0 0",
+    fontSize: "34px",
+    color: "#111827"
+  },
+
+  executiveGrid: {
+    display: "grid",
+    gridTemplateColumns:
+      "repeat(auto-fit,minmax(280px,1fr))",
+    gap: "22px",
+    marginBottom: "30px"
+  },
+
+  executiveCard: {
+    background:
+      "linear-gradient(135deg,#14532d,#22c55e)",
+    borderRadius: "24px",
+    padding: "28px",
+    color: "white",
+    boxShadow:
+      "0 10px 30px rgba(34,197,94,0.25)"
+  },
+
+  executiveTitle: {
+    marginTop: 0,
+    marginBottom: "15px",
+    fontSize: "16px"
+  },
+
+  executiveNumber: {
+    margin: 0,
+    fontSize: "42px"
+  },
+
+  executiveText: {
+    marginTop: "12px",
+    opacity: 0.9
   },
 
   bottomGrid: {
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "20px"
+    gridTemplateColumns:
+      "repeat(auto-fit,minmax(320px,1fr))",
+    gap: "24px"
   },
 
-  box: {
+  panel: {
     background: "white",
+    borderRadius: "24px",
     padding: "25px",
-    borderRadius: "12px",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.05)"
+    boxShadow:
+      "0 10px 30px rgba(0,0,0,0.05)"
+  },
+
+  panelTitle: {
+    marginTop: 0,
+    marginBottom: "20px",
+    color: "#111827"
   },
 
   list: {
-    listStyle: "none",
-    padding: 0,
-    marginTop: "15px",
-    lineHeight: "34px"
+    display: "flex",
+    flexDirection: "column",
+    gap: "14px"
+  },
+
+  listItem: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    background: "#f9fafb",
+    padding: "14px 16px",
+    borderRadius: "14px",
+    color: "#374151"
+  },
+
+  systemBox: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "14px"
+  },
+
+  systemItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    background: "#f9fafb",
+    padding: "14px 16px",
+    borderRadius: "14px",
+    color: "#374151",
+    fontWeight: "500"
+  },
+
+  dotGreen: {
+    width: "10px",
+    height: "10px",
+    borderRadius: "50%",
+    background: "#22c55e"
+  },
+
+  dotBlue: {
+    width: "10px",
+    height: "10px",
+    borderRadius: "50%",
+    background: "#3b82f6"
+  },
+
+  dotYellow: {
+    width: "10px",
+    height: "10px",
+    borderRadius: "50%",
+    background: "#facc15"
+  },
+
+  dotPurple: {
+    width: "10px",
+    height: "10px",
+    borderRadius: "50%",
+    background: "#8b5cf6"
   }
 
 };

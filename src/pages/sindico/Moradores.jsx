@@ -1,36 +1,102 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 function Moradores() {
 
-  const [moradores, setMoradores] = useState([
-    { nome: "João Silva", apto: "101", telefone: "99999-1111" },
-    { nome: "Maria Souza", apto: "202", telefone: "99999-2222" },
-    { nome: "Carlos Lima", apto: "305", telefone: "99999-3333" }
-  ]);
+  const [moradores, setMoradores] = useState([]);
 
-  const [mostrarModal, setMostrarModal] = useState(false);
+  const [mostrarModal, setMostrarModal] =
+    useState(false);
 
   const [busca, setBusca] = useState("");
 
-  const [novoMorador, setNovoMorador] = useState({
-    nome: "",
-    apto: "",
-    telefone: ""
-  });
+  const [novoMorador, setNovoMorador] =
+    useState({
+      nome: "",
+      apto: "",
+      telefone: "",
+      email: "",
+      status: "Ativo"
+    });
 
-  const [editIndex, setEditIndex] = useState(null);
+  const [editIndex, setEditIndex] =
+    useState(null);
 
+  useEffect(() => {
 
-  const moradoresFiltrados = moradores.filter((morador) =>
+    const data =
+      JSON.parse(
+        localStorage.getItem("moradores")
+      ) || [];
 
-    morador.nome.toLowerCase().includes(busca.toLowerCase()) ||
-    morador.apto.toLowerCase().includes(busca.toLowerCase()) ||
-    morador.telefone.toLowerCase().includes(busca.toLowerCase())
+    if (data.length > 0) {
 
-  );
+      setMoradores(data);
 
+    } else {
+
+      const mock = [
+        {
+          nome: "João Silva",
+          apto: "101",
+          telefone: "(11) 99999-1111",
+          email: "joao@email.com",
+          status: "Ativo"
+        },
+        {
+          nome: "Maria Souza",
+          apto: "202",
+          telefone: "(11) 98888-2222",
+          email: "maria@email.com",
+          status: "Ativo"
+        }
+      ];
+
+      setMoradores(mock);
+
+      localStorage.setItem(
+        "moradores",
+        JSON.stringify(mock)
+      );
+
+    }
+
+  }, []);
+
+  useEffect(() => {
+
+    localStorage.setItem(
+      "moradores",
+      JSON.stringify(moradores)
+    );
+
+  }, [moradores]);
+
+  const moradoresFiltrados =
+    moradores.filter((morador) =>
+
+      morador.nome
+        .toLowerCase()
+        .includes(busca.toLowerCase()) ||
+
+      morador.apto
+        .toLowerCase()
+        .includes(busca.toLowerCase()) ||
+
+      morador.telefone
+        .toLowerCase()
+        .includes(busca.toLowerCase())
+
+    );
 
   function salvarMorador() {
+
+    if (
+      !novoMorador.nome ||
+      !novoMorador.apto ||
+      !novoMorador.telefone
+    ) {
+      return;
+    }
 
     if (editIndex !== null) {
 
@@ -52,28 +118,28 @@ function Moradores() {
     }
 
     setNovoMorador({
-      nome:"",
-      apto:"",
-      telefone:""
+      nome: "",
+      apto: "",
+      telefone: "",
+      email: "",
+      status: "Ativo"
     });
 
     setMostrarModal(false);
 
   }
 
-
-  function excluirMorador(index){
+  function excluirMorador(index) {
 
     const lista = moradores.filter(
-      (_,i)=> i !== index
+      (_, i) => i !== index
     );
 
     setMoradores(lista);
 
   }
 
-
-  function editarMorador(index){
+  function editarMorador(index) {
 
     setNovoMorador(
       moradores[index]
@@ -85,52 +151,49 @@ function Moradores() {
 
   }
 
-
   return (
 
     <div style={styles.container}>
 
-
-      {/* CABEÇALHO */}
-
+      {/* HEADER */}
 
       <div style={styles.header}>
 
-
         <div>
 
-          <h2 style={styles.title}>
+          <h1 style={styles.title}>
             Moradores
-          </h2>
+          </h1>
 
           <p style={styles.subtitle}>
-            Gerenciamento dos moradores
+            Gestão completa dos moradores do condomínio
           </p>
 
         </div>
 
-
         <div style={styles.actions}>
 
-
           <input
-            placeholder="Buscar..."
+            placeholder="Buscar morador..."
             value={busca}
-            onChange={(e)=>setBusca(e.target.value)}
+            onChange={(e) =>
+              setBusca(e.target.value)
+            }
             style={styles.search}
           />
 
-
           <button
             style={styles.button}
-            onClick={()=>{
+            onClick={() => {
 
               setEditIndex(null);
 
               setNovoMorador({
-                nome:"",
-                apto:"",
-                telefone:""
+                nome: "",
+                apto: "",
+                telefone: "",
+                email: "",
+                status: "Ativo"
               });
 
               setMostrarModal(true);
@@ -138,32 +201,72 @@ function Moradores() {
             }}
           >
 
-          + Novo morador
+            + Novo Morador
 
           </button>
-
 
         </div>
 
       </div>
 
+      {/* CARDS RESUMO */}
 
+      <div style={styles.resumeGrid}>
+
+        <div style={styles.resumeCard}>
+
+          <div style={styles.resumeIcon}>
+            👥
+          </div>
+
+          <div>
+
+            <p style={styles.resumeLabel}>
+              Total de moradores
+            </p>
+
+            <h2 style={styles.resumeNumber}>
+              {moradores.length}
+            </h2>
+
+          </div>
+
+        </div>
+
+        <div style={styles.resumeCard}>
+
+          <div style={styles.resumeIcon}>
+            🏢
+          </div>
+
+          <div>
+
+            <p style={styles.resumeLabel}>
+              Apartamentos ocupados
+            </p>
+
+            <h2 style={styles.resumeNumber}>
+              {moradores.length}
+            </h2>
+
+          </div>
+
+        </div>
+
+      </div>
 
       {/* TABELA */}
 
-
       <div style={styles.card}>
 
-
         <table style={styles.table}>
-
 
           <thead>
 
             <tr>
 
               <th style={styles.th}>
-                Nome
+                Morador
               </th>
 
               <th style={styles.th}>
@@ -171,7 +274,11 @@ function Moradores() {
               </th>
 
               <th style={styles.th}>
-                Telefone
+                Contato
+              </th>
+
+              <th style={styles.th}>
+                Status
               </th>
 
               <th style={styles.thCenter}>
@@ -182,48 +289,110 @@ function Moradores() {
 
           </thead>
 
-
           <tbody>
 
+            {moradoresFiltrados.length === 0 && (
 
-            {moradoresFiltrados.map((morador,index)=>(
+              <tr>
+
+                <td
+                  colSpan="5"
+                  style={styles.empty}
+                >
+
+                  Nenhum morador encontrado
+
+                </td>
+
+              </tr>
+
+            )}
+
+            {moradoresFiltrados.map(
+              (morador, index) => (
 
               <tr key={index}>
 
                 <td style={styles.td}>
-                  {morador.nome}
+
+                  <div style={styles.userArea}>
+
+                    <div style={styles.avatar}>
+
+                      {morador.nome
+                        .charAt(0)
+                        .toUpperCase()}
+
+                    </div>
+
+                    <div>
+
+                      <strong>
+                        {morador.nome}
+                      </strong>
+
+                      <p style={styles.email}>
+
+                        {morador.email ||
+                          "Sem email"}
+
+                      </p>
+
+                    </div>
+
+                  </div>
+
                 </td>
 
                 <td style={styles.td}>
-                  {morador.apto}
+
+                  <span style={styles.aptoBadge}>
+
+                    {morador.apto}
+
+                  </span>
+
                 </td>
 
                 <td style={styles.td}>
+
                   {morador.telefone}
+
+                </td>
+
+                <td style={styles.td}>
+
+                  <span style={styles.status}>
+
+                    {morador.status}
+
+                  </span>
+
                 </td>
 
                 <td style={styles.tdCenter}>
 
-
-                  <span
-                  style={styles.icon}
-                  onClick={()=>editarMorador(index)}
+                  <button
+                    style={styles.editButton}
+                    onClick={() =>
+                      editarMorador(index)
+                    }
                   >
 
-                  ✏️
+                    Editar
 
-                  </span>
+                  </button>
 
-
-                  <span
-                  style={styles.icon}
-                  onClick={()=>excluirMorador(index)}
+                  <button
+                    style={styles.deleteButton}
+                    onClick={() =>
+                      excluirMorador(index)
+                    }
                   >
 
-                  🗑️
+                    Excluir
 
-                  </span>
-
+                  </button>
 
                 </td>
 
@@ -231,107 +400,143 @@ function Moradores() {
 
             ))}
 
-
           </tbody>
 
         </table>
 
       </div>
 
-
-
       {/* MODAL */}
-
 
       {mostrarModal && (
 
-      <div style={styles.modalBackground}>
+        <div style={styles.modalBackground}>
 
+          <div style={styles.modal}>
 
-      <div style={styles.modal}>
+            <div style={styles.modalHeader}>
 
+              <h2 style={styles.modalTitle}>
 
-      <h3>
+                {editIndex !== null
+                  ? "Editar morador"
+                  : "Novo morador"}
 
-      {editIndex !== null
-      ? "Editar morador"
-      : "Novo morador"}
+              </h2>
 
-      </h3>
+              <button
+                style={styles.close}
+                onClick={() =>
+                  setMostrarModal(false)
+                }
+              >
+                ✕
+              </button>
 
+            </div>
 
-      <input
-      placeholder="Nome"
-      value={novoMorador.nome}
-      onChange={(e)=>
-      setNovoMorador({
-      ...novoMorador,
-      nome:e.target.value
-      })
-      }
-      style={styles.input}
-      />
+            <div style={styles.form}>
 
+              <input
+                placeholder="Nome completo"
+                value={novoMorador.nome}
+                onChange={(e) =>
+                  setNovoMorador({
+                    ...novoMorador,
+                    nome: e.target.value
+                  })
+                }
+                style={styles.input}
+              />
 
-      <input
-      placeholder="Apartamento"
-      value={novoMorador.apto}
-      onChange={(e)=>
-      setNovoMorador({
-      ...novoMorador,
-      apto:e.target.value
-      })
-      }
-      style={styles.input}
-      />
+              <input
+                placeholder="Apartamento"
+                value={novoMorador.apto}
+                onChange={(e) =>
+                  setNovoMorador({
+                    ...novoMorador,
+                    apto: e.target.value
+                  })
+                }
+                style={styles.input}
+              />
 
+              <input
+                placeholder="Telefone"
+                value={novoMorador.telefone}
+                onChange={(e) =>
+                  setNovoMorador({
+                    ...novoMorador,
+                    telefone: e.target.value
+                  })
+                }
+                style={styles.input}
+              />
 
-      <input
-      placeholder="Telefone"
-      value={novoMorador.telefone}
-      onChange={(e)=>
-      setNovoMorador({
-      ...novoMorador,
-      telefone:e.target.value
-      })
-      }
-      style={styles.input}
-      />
+              <input
+                placeholder="Email"
+                value={novoMorador.email}
+                onChange={(e) =>
+                  setNovoMorador({
+                    ...novoMorador,
+                    email: e.target.value
+                  })
+                }
+                style={styles.input}
+              />
 
+              <select
+                value={novoMorador.status}
+                onChange={(e) =>
+                  setNovoMorador({
+                    ...novoMorador,
+                    status: e.target.value
+                  })
+                }
+                style={styles.input}
+              >
 
-      <div style={styles.modalButtons}>
+                <option>
+                  Ativo
+                </option>
 
+                <option>
+                  Inativo
+                </option>
 
-      <button
-      style={styles.saveButton}
-      onClick={salvarMorador}
-      >
+              </select>
 
-      Salvar
+            </div>
 
-      </button>
+            <div style={styles.modalButtons}>
 
+              <button
+                style={styles.saveButton}
+                onClick={salvarMorador}
+              >
 
-      <button
-      style={styles.cancelButton}
-      onClick={()=>
-      setMostrarModal(false)
-      }
-      >
+                Salvar Morador
 
-      Cancelar
+              </button>
 
-      </button>
+              <button
+                style={styles.cancelButton}
+                onClick={() =>
+                  setMostrarModal(false)
+                }
+              >
 
+                Cancelar
 
-      </div>
+              </button>
 
-      </div>
+            </div>
 
-      </div>
+          </div>
+
+        </div>
 
       )}
-
 
     </div>
 
@@ -339,140 +544,290 @@ function Moradores() {
 
 }
 
-
 const styles = {
 
-container:{
-width:"100%"
-},
+  container: {
+    width: "100%"
+  },
 
-header:{
-display:"flex",
-justifyContent:"space-between",
-alignItems:"center",
-marginBottom:"25px"
-},
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "30px"
+  },
 
-title:{
-margin:"0"
-},
+  title: {
+    margin: 0,
+    fontSize: "34px",
+    color: "#14532d"
+  },
 
-subtitle:{
-margin:"5px 0 0",
-color:"#777"
-},
+  subtitle: {
+    marginTop: "8px",
+    color: "#6b7280"
+  },
 
-actions:{
-display:"flex",
-gap:"10px"
-},
+  actions: {
+    display: "flex",
+    gap: "12px"
+  },
 
-search:{
-padding:"10px",
-border:"1px solid #ddd",
-borderRadius:"8px",
-outline:"none"
-},
+  search: {
+    padding: "12px 16px",
+    borderRadius: "12px",
+    border: "1px solid #d1d5db",
+    outline: "none",
+    width: "240px",
+    background: "#fff"
+  },
 
-button:{
-background:"#6c3eb8",
-color:"white",
-border:"none",
-padding:"10px 16px",
-borderRadius:"8px",
-cursor:"pointer",
-fontWeight:"bold"
-},
+  button: {
+    background:
+      "linear-gradient(135deg,#14532d,#166534)",
+    color: "white",
+    border: "none",
+    padding: "12px 18px",
+    borderRadius: "12px",
+    cursor: "pointer",
+    fontWeight: "700",
+    boxShadow:
+      "0 4px 12px rgba(20,83,45,0.25)"
+  },
 
-card:{
-background:"white",
-padding:"25px",
-borderRadius:"12px",
-boxShadow:"0 2px 10px rgba(0,0,0,.05)"
-},
+  resumeGrid: {
+    display: "grid",
+    gridTemplateColumns:
+      "repeat(auto-fit,minmax(260px,1fr))",
+    gap: "20px",
+    marginBottom: "30px"
+  },
 
-table:{
-width:"100%",
-borderCollapse:"collapse"
-},
+  resumeCard: {
+    background:
+      "linear-gradient(135deg,#14532d,#166534)",
+    borderRadius: "20px",
+    padding: "24px",
+    color: "white",
+    display: "flex",
+    alignItems: "center",
+    gap: "18px",
+    boxShadow:
+      "0 8px 25px rgba(20,83,45,0.18)"
+  },
 
-th:{
-padding:"15px",
-textAlign:"left",
-borderBottom:"2px solid #eee"
-},
+  resumeIcon: {
+    fontSize: "42px"
+  },
 
-thCenter:{
-padding:"15px",
-textAlign:"center",
-borderBottom:"2px solid #eee"
-},
+  resumeLabel: {
+    marginBottom: "6px",
+    opacity: 0.9
+  },
 
-td:{
-padding:"15px",
-borderBottom:"1px solid #eee"
-},
+  resumeNumber: {
+    margin: 0,
+    fontSize: "34px"
+  },
 
-tdCenter:{
-padding:"15px",
-textAlign:"center",
-borderBottom:"1px solid #eee"
-},
+  card: {
+    background: "white",
+    borderRadius: "22px",
+    overflow: "hidden",
+    boxShadow:
+      "0 4px 20px rgba(0,0,0,0.05)"
+  },
 
-icon:{
-cursor:"pointer",
-margin:"0 5px"
-},
+  table: {
+    width: "100%",
+    borderCollapse: "collapse"
+  },
 
-modalBackground:{
-position:"fixed",
-top:0,
-left:0,
-width:"100%",
-height:"100%",
-background:"rgba(0,0,0,.5)",
-display:"flex",
-alignItems:"center",
-justifyContent:"center"
-},
+  th: {
+    textAlign: "left",
+    padding: "20px",
+    background: "#f0fdf4",
+    color: "#14532d",
+    fontWeight: "700",
+    borderBottom: "1px solid #dcfce7"
+  },
 
-modal:{
-width:"350px",
-background:"white",
-padding:"30px",
-borderRadius:"12px",
-display:"flex",
-flexDirection:"column",
-gap:"12px"
-},
+  thCenter: {
+    textAlign: "center",
+    padding: "20px",
+    background: "#f0fdf4",
+    color: "#14532d",
+    fontWeight: "700",
+    borderBottom: "1px solid #dcfce7"
+  },
 
-input:{
-padding:"10px",
-border:"1px solid #ddd",
-borderRadius:"8px"
-},
+  td: {
+    padding: "20px",
+    borderBottom: "1px solid #f3f4f6"
+  },
 
-modalButtons:{
-display:"flex",
-justifyContent:"space-between"
-},
+  tdCenter: {
+    padding: "20px",
+    textAlign: "center",
+    borderBottom: "1px solid #f3f4f6"
+  },
 
-saveButton:{
-background:"#6c3eb8",
-border:"none",
-padding:"10px 18px",
-borderRadius:"8px",
-color:"white",
-cursor:"pointer"
-},
+  empty: {
+    padding: "40px",
+    textAlign: "center",
+    color: "#6b7280"
+  },
 
-cancelButton:{
-background:"#ddd",
-border:"none",
-padding:"10px 18px",
-borderRadius:"8px",
-cursor:"pointer"
-}
+  userArea: {
+    display: "flex",
+    alignItems: "center",
+    gap: "14px"
+  },
+
+  avatar: {
+    width: "45px",
+    height: "45px",
+    borderRadius: "50%",
+    background:
+      "linear-gradient(135deg,#166534,#22c55e)",
+    color: "white",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontWeight: "700"
+  },
+
+  email: {
+    marginTop: "5px",
+    color: "#6b7280",
+    fontSize: "13px"
+  },
+
+  aptoBadge: {
+    background: "#dcfce7",
+    color: "#166534",
+    padding: "8px 14px",
+    borderRadius: "999px",
+    fontWeight: "700",
+    fontSize: "13px"
+  },
+
+  status: {
+    background: "#dcfce7",
+    color: "#166534",
+    padding: "8px 14px",
+    borderRadius: "999px",
+    fontWeight: "700",
+    fontSize: "13px"
+  },
+
+  editButton: {
+    background: "#dcfce7",
+    color: "#166534",
+    border: "none",
+    padding: "10px 14px",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontWeight: "700",
+    marginRight: "8px"
+  },
+
+  deleteButton: {
+    background: "#fee2e2",
+    color: "#dc2626",
+    border: "none",
+    padding: "10px 14px",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontWeight: "700"
+  },
+
+  modalBackground: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    background: "rgba(0,0,0,0.45)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 999
+  },
+
+  modal: {
+    width: "450px",
+    background: "white",
+    borderRadius: "24px",
+    padding: "28px",
+    boxShadow:
+      "0 10px 40px rgba(0,0,0,0.15)"
+  },
+
+  modalHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "25px"
+  },
+
+  modalTitle: {
+    margin: 0,
+    color: "#14532d"
+  },
+
+  close: {
+    background: "#f3f4f6",
+    border: "none",
+    width: "34px",
+    height: "34px",
+    borderRadius: "50%",
+    cursor: "pointer"
+  },
+
+  form: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "14px"
+  },
+
+  input: {
+    padding: "14px",
+    borderRadius: "12px",
+    border: "1px solid #d1d5db",
+    outline: "none",
+    fontSize: "14px"
+  },
+
+  modalButtons: {
+    display: "flex",
+    justifyContent: "space-between",
+    marginTop: "24px",
+    gap: "12px"
+  },
+
+  saveButton: {
+    flex: 1,
+    background:
+      "linear-gradient(135deg,#14532d,#166534)",
+    color: "white",
+    border: "none",
+    padding: "14px",
+    borderRadius: "12px",
+    cursor: "pointer",
+    fontWeight: "700"
+  },
+
+  cancelButton: {
+    flex: 1,
+    background: "#f3f4f6",
+    color: "#374151",
+    border: "none",
+    padding: "14px",
+    borderRadius: "12px",
+    cursor: "pointer",
+    fontWeight: "700"
+  }
 
 };
 

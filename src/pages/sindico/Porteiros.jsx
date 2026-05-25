@@ -6,6 +6,8 @@ function Porteiros() {
 
   const [mostrarModal, setMostrarModal] = useState(false);
 
+  const [busca, setBusca] = useState("");
+
   const [novoPorteiro, setNovoPorteiro] = useState({
     nome: "",
     turno: "",
@@ -15,7 +17,8 @@ function Porteiros() {
   const [editId, setEditId] = useState(null);
 
 
-  // carregar dados
+  // CARREGAR DADOS
+
   useEffect(() => {
 
     const dados = localStorage.getItem("porteiros");
@@ -28,16 +31,16 @@ function Porteiros() {
 
       setPorteiros([
         {
-          id:1,
-          nome:"José Carlos",
-          turno:"Manhã",
-          telefone:"99999-1111"
+          id: 1,
+          nome: "José Carlos",
+          turno: "Manhã",
+          telefone: "99999-1111"
         },
         {
-          id:2,
-          nome:"Marcos Silva",
-          turno:"Noite",
-          telefone:"99999-2222"
+          id: 2,
+          nome: "Marcos Silva",
+          turno: "Noite",
+          telefone: "99999-2222"
         }
       ]);
 
@@ -46,36 +49,52 @@ function Porteiros() {
   }, []);
 
 
-  // salvar
-  useEffect(()=>{
+  // SALVAR AUTOMATICAMENTE
+
+  useEffect(() => {
 
     localStorage.setItem(
       "porteiros",
       JSON.stringify(porteiros)
     );
 
-  },[porteiros]);
+  }, [porteiros]);
 
 
-  function salvarPorteiro(){
+  // FILTRO
 
-    if(
+  const porteirosFiltrados = porteiros.filter((p) =>
+
+    p.nome.toLowerCase().includes(busca.toLowerCase()) ||
+    p.turno.toLowerCase().includes(busca.toLowerCase()) ||
+    p.telefone.toLowerCase().includes(busca.toLowerCase())
+
+  );
+
+
+  // SALVAR
+
+  function salvarPorteiro() {
+
+    if (
       !novoPorteiro.nome ||
       !novoPorteiro.turno ||
       !novoPorteiro.telefone
-    ){
+    ) {
+
       alert("Preencha todos os campos");
+
       return;
+
     }
 
+    if (editId !== null) {
 
-    if(editId !== null){
-
-      const lista = porteiros.map((p)=>
+      const lista = porteiros.map((p) =>
 
         p.id === editId
-        ? { ...novoPorteiro,id:editId }
-        : p
+          ? { ...novoPorteiro, id: editId }
+          : p
 
       );
 
@@ -83,10 +102,10 @@ function Porteiros() {
 
       setEditId(null);
 
-    }else{
+    } else {
 
       const novo = {
-        id:Date.now(),
+        id: Date.now(),
         ...novoPorteiro
       };
 
@@ -97,11 +116,10 @@ function Porteiros() {
 
     }
 
-
     setNovoPorteiro({
-      nome:"",
-      turno:"",
-      telefone:""
+      nome: "",
+      turno: "",
+      telefone: ""
     });
 
     setMostrarModal(false);
@@ -109,7 +127,9 @@ function Porteiros() {
   }
 
 
-  function editarPorteiro(porteiro){
+  // EDITAR
+
+  function editarPorteiro(porteiro) {
 
     setNovoPorteiro(porteiro);
 
@@ -120,10 +140,12 @@ function Porteiros() {
   }
 
 
-  function excluirPorteiro(id){
+  // EXCLUIR
+
+  function excluirPorteiro(id) {
 
     const lista = porteiros.filter(
-      (p)=>p.id !== id
+      (p) => p.id !== id
     );
 
     setPorteiros(lista);
@@ -133,41 +155,133 @@ function Porteiros() {
 
   return (
 
-    <div>
+    <div style={styles.container}>
 
-      {/* TOPO */}
+
+      {/* HEADER */}
+
 
       <div style={styles.header}>
 
-        <h2>🛡️ Porteiros</h2>
 
-        <button
-          style={styles.button}
-          onClick={()=>{
+        <div>
 
-            setEditId(null);
+          <h1 style={styles.title}>
+            Porteiros
+          </h1>
 
-            setNovoPorteiro({
-              nome:"",
-              turno:"",
-              telefone:""
-            });
+          <p style={styles.subtitle}>
+            Gerenciamento da equipe da portaria
+          </p>
 
-            setMostrarModal(true);
+        </div>
 
-          }}
-        >
-          + Novo porteiro
-        </button>
+
+        <div style={styles.headerActions}>
+
+
+          <input
+            placeholder="Buscar porteiro..."
+            value={busca}
+            onChange={(e) =>
+              setBusca(e.target.value)
+            }
+            style={styles.search}
+          />
+
+
+          <button
+            style={styles.button}
+            onClick={() => {
+
+              setEditId(null);
+
+              setNovoPorteiro({
+                nome: "",
+                turno: "",
+                telefone: ""
+              });
+
+              setMostrarModal(true);
+
+            }}
+          >
+
+            + Novo porteiro
+
+          </button>
+
+
+        </div>
 
       </div>
 
 
+
+      {/* CARDS */}
+
+
+      <div style={styles.resumeGrid}>
+
+
+        <div style={styles.resumeCard}>
+
+          <div style={styles.resumeIcon}>
+            🛡️
+          </div>
+
+          <div>
+
+            <p style={styles.resumeLabel}>
+              Total de porteiros
+            </p>
+
+            <h2 style={styles.resumeNumber}>
+              {porteiros.length}
+            </h2>
+
+          </div>
+
+        </div>
+
+
+        <div style={styles.resumeCard}>
+
+          <div style={styles.resumeIcon}>
+            🌙
+          </div>
+
+          <div>
+
+            <p style={styles.resumeLabel}>
+              Turno noturno
+            </p>
+
+            <h2 style={styles.resumeNumber}>
+              {
+                porteiros.filter(
+                  (p) => p.turno === "Noite"
+                ).length
+              }
+            </h2>
+
+          </div>
+
+        </div>
+
+
+      </div>
+
+
+
       {/* TABELA */}
+
 
       <div style={styles.card}>
 
+
         <table style={styles.table}>
+
 
           <thead>
 
@@ -185,7 +299,7 @@ function Porteiros() {
                 Telefone
               </th>
 
-              <th style={styles.th}>
+              <th style={styles.thCenter}>
                 Ações
               </th>
 
@@ -193,49 +307,120 @@ function Porteiros() {
 
           </thead>
 
+
           <tbody>
 
-            {porteiros.map((p)=>(
 
-              <tr key={p.id}>
+            {porteirosFiltrados.length === 0 ? (
 
-                <td style={styles.td}>
-                  {p.nome}
-                </td>
+              <tr>
 
-                <td style={styles.td}>
-                  {p.turno}
-                </td>
+                <td
+                  colSpan="4"
+                  style={styles.empty}
+                >
 
-                <td style={styles.td}>
-                  {p.telefone}
-                </td>
-
-                <td style={styles.td}>
-
-                  <span
-                    style={styles.icon}
-                    onClick={()=>
-                      editarPorteiro(p)
-                    }
-                  >
-                    ✏️
-                  </span>
-
-                  <span
-                    style={styles.icon}
-                    onClick={()=>
-                      excluirPorteiro(p.id)
-                    }
-                  >
-                    🗑️
-                  </span>
+                  Nenhum porteiro encontrado
 
                 </td>
 
               </tr>
 
-            ))}
+            ) : (
+
+              porteirosFiltrados.map((p) => (
+
+                <tr key={p.id}>
+
+
+                  <td style={styles.td}>
+
+                    <div style={styles.userInfo}>
+
+                      <div style={styles.avatar}>
+
+                        {p.nome.charAt(0)}
+
+                      </div>
+
+                      <div>
+
+                        <strong>
+                          {p.nome}
+                        </strong>
+
+                      </div>
+
+                    </div>
+
+                  </td>
+
+
+                  <td style={styles.td}>
+
+                    <span
+                      style={{
+                        ...styles.turnoBadge,
+
+                        background:
+                          p.turno === "Noite"
+                            ? "#dcfce7"
+                            : "#ecfdf5",
+
+                        color:
+                          p.turno === "Noite"
+                            ? "#14532d"
+                            : "#166534"
+                      }}
+                    >
+
+                      {p.turno}
+
+                    </span>
+
+                  </td>
+
+
+                  <td style={styles.td}>
+                    {p.telefone}
+                  </td>
+
+
+                  <td style={styles.tdCenter}>
+
+
+                    <button
+                      style={styles.editButton}
+                      onClick={() =>
+                        editarPorteiro(p)
+                      }
+                    >
+
+                      Editar
+
+                    </button>
+
+
+                    <button
+                      style={styles.deleteButton}
+                      onClick={() =>
+                        excluirPorteiro(p.id)
+                      }
+                    >
+
+                      Excluir
+
+                    </button>
+
+
+                  </td>
+
+                </tr>
+
+              ))
+
+            )}
+
 
           </tbody>
 
@@ -244,44 +429,49 @@ function Porteiros() {
       </div>
 
 
+
       {/* MODAL */}
+
 
       {mostrarModal && (
 
         <div style={styles.modalBg}>
 
+
           <div style={styles.modal}>
 
-            <h3>
+
+            <h2 style={styles.modalTitle}>
 
               {editId !== null
-              ? "Editar porteiro"
-              : "Novo porteiro"}
+                ? "Editar porteiro"
+                : "Novo porteiro"}
 
-            </h3>
+            </h2>
 
 
             <input
-              placeholder="Nome"
+              placeholder="Nome completo"
               value={novoPorteiro.nome}
-              onChange={(e)=>
+              onChange={(e) =>
 
                 setNovoPorteiro({
                   ...novoPorteiro,
-                  nome:e.target.value
+                  nome: e.target.value
                 })
 
               }
               style={styles.input}
             />
 
+
             <select
               value={novoPorteiro.turno}
-              onChange={(e)=>
+              onChange={(e) =>
 
                 setNovoPorteiro({
                   ...novoPorteiro,
-                  turno:e.target.value
+                  turno: e.target.value
                 })
 
               }
@@ -289,7 +479,7 @@ function Porteiros() {
             >
 
               <option value="">
-                Escolha turno
+                Escolha o turno
               </option>
 
               <option>
@@ -306,14 +496,15 @@ function Porteiros() {
 
             </select>
 
+
             <input
               placeholder="Telefone"
               value={novoPorteiro.telefone}
-              onChange={(e)=>
+              onChange={(e) =>
 
                 setNovoPorteiro({
                   ...novoPorteiro,
-                  telefone:e.target.value
+                  telefone: e.target.value
                 })
 
               }
@@ -323,21 +514,28 @@ function Porteiros() {
 
             <div style={styles.modalButtons}>
 
+
               <button
                 style={styles.saveBtn}
                 onClick={salvarPorteiro}
               >
+
                 Salvar
+
               </button>
+
 
               <button
                 style={styles.cancelBtn}
-                onClick={()=>
+                onClick={() =>
                   setMostrarModal(false)
                 }
               >
+
                 Cancelar
+
               </button>
+
 
             </div>
 
@@ -354,101 +552,246 @@ function Porteiros() {
 }
 
 
-const styles={
+const styles = {
 
-header:{
-display:"flex",
-justifyContent:"space-between",
-alignItems:"center",
-marginBottom:"20px"
-},
+  container: {
+    width: "100%"
+  },
 
-button:{
-background:"#6c3eb8",
-color:"white",
-border:"none",
-padding:"10px 16px",
-borderRadius:"6px",
-cursor:"pointer"
-},
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "30px"
+  },
 
-card:{
-background:"white",
-padding:"20px",
-borderRadius:"10px",
-boxShadow:"0 2px 10px rgba(0,0,0,0.05)"
-},
+  title: {
+    margin: 0,
+    fontSize: "32px",
+    color: "#14532d"
+  },
 
-table:{
-width:"100%",
-borderCollapse:"collapse"
-},
+  subtitle: {
+    marginTop: "8px",
+    color: "#6b7280"
+  },
 
-th:{
-padding:"14px",
-textAlign:"left",
-borderBottom:"2px solid #eee"
-},
+  headerActions: {
+    display: "flex",
+    gap: "12px"
+  },
 
-td:{
-padding:"14px",
-borderBottom:"1px solid #eee"
-},
+  search: {
+    padding: "12px 14px",
+    borderRadius: "12px",
+    border: "1px solid #d1d5db",
+    outline: "none",
+    minWidth: "220px"
+  },
 
-icon:{
-cursor:"pointer",
-marginRight:"10px"
-},
+  button: {
+    background:
+      "linear-gradient(135deg,#14532d,#166534)",
+    color: "white",
+    border: "none",
+    padding: "12px 18px",
+    borderRadius: "12px",
+    cursor: "pointer",
+    fontWeight: "700",
+    boxShadow:
+      "0 4px 14px rgba(20,83,45,0.25)"
+  },
 
-modalBg:{
-position:"fixed",
-top:0,
-left:0,
-width:"100%",
-height:"100%",
-background:"rgba(0,0,0,0.4)",
-display:"flex",
-justifyContent:"center",
-alignItems:"center"
-},
+  resumeGrid: {
+    display: "grid",
+    gridTemplateColumns:
+      "repeat(auto-fit,minmax(260px,1fr))",
+    gap: "20px",
+    marginBottom: "30px"
+  },
 
-modal:{
-background:"white",
-padding:"30px",
-borderRadius:"10px",
-width:"320px",
-display:"flex",
-flexDirection:"column",
-gap:"10px"
-},
+  resumeCard: {
+    background:
+      "linear-gradient(135deg,#14532d,#166534)",
+    color: "white",
+    borderRadius: "22px",
+    padding: "25px",
+    display: "flex",
+    alignItems: "center",
+    gap: "18px",
+    boxShadow:
+      "0 10px 30px rgba(20,83,45,0.18)"
+  },
 
-input:{
-padding:"10px",
-border:"1px solid #ccc",
-borderRadius:"6px"
-},
+  resumeIcon: {
+    fontSize: "40px"
+  },
 
-modalButtons:{
-display:"flex",
-justifyContent:"space-between"
-},
+  resumeLabel: {
+    margin: 0,
+    opacity: 0.8
+  },
 
-saveBtn:{
-background:"#6c3eb8",
-color:"white",
-border:"none",
-padding:"8px 14px",
-borderRadius:"5px",
-cursor:"pointer"
-},
+  resumeNumber: {
+    margin: "6px 0 0",
+    fontSize: "34px"
+  },
 
-cancelBtn:{
-background:"#ccc",
-border:"none",
-padding:"8px 14px",
-borderRadius:"5px",
-cursor:"pointer"
-}
+  card: {
+    background: "white",
+    borderRadius: "24px",
+    padding: "25px",
+    boxShadow:
+      "0 10px 30px rgba(0,0,0,0.06)"
+  },
+
+  table: {
+    width: "100%",
+    borderCollapse: "collapse"
+  },
+
+  th: {
+    textAlign: "left",
+    padding: "18px",
+    borderBottom: "2px solid #f3f4f6",
+    color: "#374151"
+  },
+
+  thCenter: {
+    textAlign: "center",
+    padding: "18px",
+    borderBottom: "2px solid #f3f4f6",
+    color: "#374151"
+  },
+
+  td: {
+    padding: "18px",
+    borderBottom: "1px solid #f3f4f6"
+  },
+
+  tdCenter: {
+    padding: "18px",
+    textAlign: "center",
+    borderBottom: "1px solid #f3f4f6"
+  },
+
+  empty: {
+    textAlign: "center",
+    padding: "40px",
+    color: "#6b7280"
+  },
+
+  userInfo: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px"
+  },
+
+  avatar: {
+    width: "42px",
+    height: "42px",
+    borderRadius: "50%",
+    background:
+      "linear-gradient(135deg,#14532d,#166534)",
+    color: "white",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontWeight: "700"
+  },
+
+  turnoBadge: {
+    padding: "8px 14px",
+    borderRadius: "999px",
+    fontWeight: "700",
+    fontSize: "13px"
+  },
+
+  editButton: {
+    background: "#dcfce7",
+    color: "#166534",
+    border: "none",
+    padding: "10px 14px",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontWeight: "700",
+    marginRight: "10px"
+  },
+
+  deleteButton: {
+    background: "#fee2e2",
+    color: "#dc2626",
+    border: "none",
+    padding: "10px 14px",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontWeight: "700"
+  },
+
+  modalBg: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    background: "rgba(0,0,0,0.45)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    backdropFilter: "blur(4px)"
+  },
+
+  modal: {
+    width: "400px",
+    background: "white",
+    padding: "30px",
+    borderRadius: "24px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "14px",
+    boxShadow:
+      "0 20px 40px rgba(0,0,0,0.15)"
+  },
+
+  modalTitle: {
+    margin: 0,
+    color: "#14532d"
+  },
+
+  input: {
+    padding: "14px",
+    border: "1px solid #d1d5db",
+    borderRadius: "12px",
+    outline: "none",
+    fontSize: "14px"
+  },
+
+  modalButtons: {
+    display: "flex",
+    justifyContent: "space-between",
+    marginTop: "10px"
+  },
+
+  saveBtn: {
+    background:
+      "linear-gradient(135deg,#14532d,#166534)",
+    color: "white",
+    border: "none",
+    padding: "12px 18px",
+    borderRadius: "12px",
+    cursor: "pointer",
+    fontWeight: "700"
+  },
+
+  cancelBtn: {
+    background: "#f3f4f6",
+    color: "#374151",
+    border: "none",
+    padding: "12px 18px",
+    borderRadius: "12px",
+    cursor: "pointer",
+    fontWeight: "700"
+  }
 
 };
 
