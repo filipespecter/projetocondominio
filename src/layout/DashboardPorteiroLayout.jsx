@@ -1,43 +1,223 @@
-import { Outlet } from "react-router-dom";
-import SidebarPorteiro from "./SidebarPorteiro";
+import {
+  Outlet,
+  Link,
+  useNavigate,
+  useLocation
+} from "react-router-dom";
+
+import {
+  FaBox,
+  FaClipboardList,
+  FaUsers,
+  FaSignOutAlt
+} from "react-icons/fa";
+
+import { useEffect, useState } from "react";
 
 function DashboardPorteiroLayout() {
+
+  const navigate = useNavigate();
+
+  const location = useLocation();
+
+  const [usuarioLogado, setUsuarioLogado] =
+    useState(null);
+
+  /* =========================
+     CARREGA USUÁRIO
+  ========================= */
+
+  useEffect(() => {
+
+    const usuarioSalvo =
+      localStorage.getItem("usuarioPorteiro") ||
+      sessionStorage.getItem("usuarioPorteiro");
+
+    if (usuarioSalvo) {
+
+      try {
+
+        const usuario =
+          JSON.parse(usuarioSalvo);
+
+        if (
+          usuario.tipo !== "porteiro"
+        ) {
+
+          navigate("/login/porteiro");
+
+          return;
+
+        }
+
+        setUsuarioLogado(usuario);
+
+      } catch {
+
+        localStorage.removeItem(
+          "usuarioPorteiro"
+        );
+
+        sessionStorage.removeItem(
+          "usuarioPorteiro"
+        );
+
+        navigate("/login/porteiro");
+
+      }
+
+    } else {
+
+      navigate("/login/porteiro");
+
+    }
+
+  }, [navigate]);
+
+  /* =========================
+     MENU ATIVO
+  ========================= */
+
+  function ativo(path) {
+
+    return location.pathname === path;
+
+  }
+
+  /* =========================
+     LOGOUT
+  ========================= */
+
+  function sair() {
+
+    localStorage.removeItem(
+      "usuarioPorteiro"
+    );
+
+    sessionStorage.removeItem(
+      "usuarioPorteiro"
+    );
+
+    navigate("/");
+
+  }
 
   return (
 
     <div style={styles.container}>
 
       {/* SIDEBAR */}
-      <SidebarPorteiro />
 
-      {/* ÁREA DIREITA */}
-      <div style={styles.rightArea}>
+      <div style={styles.sidebar}>
 
-        {/* HEADER */}
-        <header style={styles.header}>
+        <div>
 
-          <h2 style={styles.title}>
-            Condomínio Residencial
+          <h2 style={styles.logo}>
+            🛡️ Portaria
           </h2>
+
+          {/* USUÁRIO */}
 
           <div style={styles.userBox}>
 
-            <div style={styles.userIcon}>
-              👮
+            <div style={styles.avatar}>
+              👤
             </div>
 
-            <span style={styles.userName}>
-              Porteiro
-            </span>
+            <div>
+
+              <div style={styles.userName}>
+                {usuarioLogado?.nome ||
+                  "Porteiro"}
+              </div>
+
+              <div style={styles.userRole}>
+                Porteiro
+              </div>
+
+            </div>
 
           </div>
 
-        </header>
+          {/* MENU */}
 
-        {/* CONTEÚDO */}
-        <main style={styles.content}>
-          <Outlet />
-        </main>
+          <div style={styles.menu}>
+
+            <Link
+              to="/dashboard/porteiro"
+              style={{
+                ...styles.menuItem,
+                ...(ativo("/dashboard/porteiro")
+                  ? styles.active
+                  : {})
+              }}
+            >
+              🏠 Dashboard
+            </Link>
+
+            <Link
+              to="/dashboard/porteiro/encomendas"
+              style={{
+                ...styles.menuItem,
+                ...(ativo("/dashboard/porteiro/encomendas")
+                  ? styles.active
+                  : {})
+              }}
+            >
+              <FaBox />
+              Encomendas
+            </Link>
+
+            <Link
+              to="/dashboard/porteiro/visitantes"
+              style={{
+                ...styles.menuItem,
+                ...(ativo("/dashboard/porteiro/visitantes")
+                  ? styles.active
+                  : {})
+              }}
+            >
+              <FaClipboardList />
+              Visitantes
+            </Link>
+
+            <Link
+              to="/dashboard/porteiro/moradores"
+              style={{
+                ...styles.menuItem,
+                ...(ativo("/dashboard/porteiro/moradores")
+                  ? styles.active
+                  : {})
+              }}
+            >
+              <FaUsers />
+              Moradores
+            </Link>
+
+          </div>
+
+        </div>
+
+        {/* LOGOUT */}
+
+        <button
+          style={styles.logoutButton}
+          onClick={sair}
+        >
+
+          <FaSignOutAlt />
+
+          Sair
+
+        </button>
+
+      </div>
+
+      {/* CONTEÚDO */}
+
+      <div style={styles.content}>
+
+        <Outlet />
 
       </div>
 
@@ -51,65 +231,89 @@ const styles = {
 
   container: {
     display: "flex",
-    width: "100%",
     minHeight: "100vh",
-    backgroundColor: "#eaedf3"
+    background: "#f3f4f6"
   },
 
-  rightArea: {
-    flex: 1,
+  sidebar: {
+    width: "260px",
+    minHeight: "100vh",
+    background:
+      "linear-gradient(180deg,#14532d,#166534)",
+    color: "white",
+    padding: "24px",
     display: "flex",
     flexDirection: "column",
-    width: "100%"
+    justifyContent: "space-between"
   },
 
-  header: {
-    height: "70px",
-    backgroundColor: "white",
-    borderBottom: "1px solid #e5e7eb",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: "0 30px",
-    boxShadow: "0 1px 3px rgba(0,0,0,0.05)"
-  },
-
-  title: {
-    margin: 0,
-    fontSize: "24px",
-    fontWeight: "600",
-    color: "#111827"
+  logo: {
+    marginBottom: "30px"
   },
 
   userBox: {
     display: "flex",
     alignItems: "center",
-    gap: "10px",
-    fontWeight: "500",
-    color: "#374151"
+    gap: "12px",
+    background: "rgba(255,255,255,0.1)",
+    padding: "14px",
+    borderRadius: "14px",
+    marginBottom: "24px"
   },
 
-  userIcon: {
-    width: "38px",
-    height: "38px",
-    borderRadius: "50%",
-    backgroundColor: "#166534",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "18px",
-    color: "white"
+  avatar: {
+    fontSize: "26px"
   },
 
   userName: {
-    fontSize: "14px"
+    fontWeight: "700"
+  },
+
+  userRole: {
+    fontSize: "13px",
+    opacity: 0.8
+  },
+
+  menu: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px"
+  },
+
+  menuItem: {
+    color: "white",
+    textDecoration: "none",
+    padding: "14px",
+    borderRadius: "12px",
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    background: "rgba(255,255,255,0.08)",
+    transition: "0.2s"
+  },
+
+  active: {
+    background: "rgba(255,255,255,0.18)"
+  },
+
+  logoutButton: {
+    border: "none",
+    background: "rgba(255,255,255,0.1)",
+    color: "white",
+    padding: "14px",
+    borderRadius: "12px",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "10px",
+    fontWeight: "700"
   },
 
   content: {
     flex: 1,
-    width: "100%",
     padding: "30px",
-    boxSizing: "border-box"
+    overflowY: "auto"
   }
 
 };

@@ -21,7 +21,6 @@ function Login() {
 
   const [erro, setErro] = useState("");
 
-
   const perfis = {
 
     sindico: {
@@ -56,119 +55,210 @@ function Login() {
 
   };
 
-
   const perfil = perfis[tipo];
 
+  function obterChaveSessao() {
 
-  const usuarios = {
+    switch (tipo) {
 
-    sindico: [
-      {
-        usuario: "admin",
-        senha: "1234"
-      }
-    ],
+      case "sindico":
+        return "usuarioSindico";
 
-    porteiro: [
-      {
-        usuario: "joao",
-        senha: "123"
-      },
-      {
-        usuario: "maria",
-        senha: "123"
-      }
-    ],
+      case "porteiro":
+        return "usuarioPorteiro";
 
-    morador: [
-      {
-        usuario: "carlos",
-        senha: "123"
-      },
-      {
-        usuario: "ana",
-        senha: "123"
-      }
-    ]
+      case "morador":
+        return "usuarioMorador";
 
-  };
-
-
-  function fazerLogin() {
-
-    setErro("");
-
-    const lista = usuarios[tipo];
-
-    const encontrado = lista.find(
-
-      (u) =>
-
-        u.usuario === usuario &&
-        u.senha === senha
-
-    );
-
-
-    if (encontrado) {
-
-      let dadosUsuario = {
-
-        tipo,
-        usuario,
-        loginEm: new Date().toISOString()
-
-      };
-
-      // MORADOR
-      if (tipo === "morador") {
-
-        dadosUsuario = {
-
-          ...dadosUsuario,
-
-          apartamento:
-            usuario === "carlos"
-              ? "101"
-              : "102"
-
-        };
-
-      }
-
-      // PORTEIRO
-      if (tipo === "porteiro") {
-
-        dadosUsuario = {
-
-          ...dadosUsuario,
-
-          turno:
-            usuario === "joao"
-              ? "Diurno"
-              : "Noturno"
-
-        };
-
-      }
-
-      localStorage.setItem(
-        "usuarioLogado",
-        JSON.stringify(dadosUsuario)
-      );
-
-      navigate("/dashboard/" + tipo);
-
-    } else {
-
-      setErro(
-        "Usuário ou senha inválidos"
-      );
+      default:
+        return "usuarioLogado";
 
     }
 
   }
 
+  function limparSessoes() {
+
+    localStorage.removeItem("usuarioSindico");
+    localStorage.removeItem("usuarioPorteiro");
+    localStorage.removeItem("usuarioMorador");
+
+    sessionStorage.removeItem("usuarioSindico");
+    sessionStorage.removeItem("usuarioPorteiro");
+    sessionStorage.removeItem("usuarioMorador");
+
+  }
+
+  function salvarSessao(dadosUsuario) {
+
+    limparSessoes();
+
+    const chave = obterChaveSessao();
+
+    const dados =
+      JSON.stringify(dadosUsuario);
+
+    localStorage.setItem(
+      chave,
+      dados
+    );
+
+    sessionStorage.setItem(
+      chave,
+      dados
+    );
+
+  }
+
+  function fazerLogin() {
+
+    setErro("");
+
+    const usuarioDigitado =
+      usuario.trim().toLowerCase();
+
+    const senhaDigitada =
+      senha.trim();
+
+    /* =========================
+       LOGIN SÍNDICO
+    ========================= */
+
+    if (tipo === "sindico") {
+
+      if (
+        usuarioDigitado === "admin" &&
+        senhaDigitada === "1234"
+      ) {
+
+        salvarSessao({
+          tipo: "sindico",
+          usuario: "admin",
+          nome: "Administrador",
+          loginEm: new Date().toISOString()
+        });
+
+        navigate("/dashboard/sindico", {
+          replace: true
+        });
+
+        return;
+
+      }
+
+      setErro(
+        "Usuário ou senha inválidos"
+      );
+
+      return;
+
+    }
+
+    /* =========================
+       LOGIN PORTEIRO
+    ========================= */
+
+    if (tipo === "porteiro") {
+
+      const porteiros =
+        JSON.parse(
+          localStorage.getItem("porteiros")
+        ) || [];
+
+      const encontrado = porteiros.find(
+
+        (p) =>
+
+          p.usuario
+            ?.trim()
+            .toLowerCase() ===
+            usuarioDigitado &&
+
+          p.senha?.trim() ===
+            senhaDigitada
+
+      );
+
+      if (encontrado) {
+
+        salvarSessao({
+          tipo: "porteiro",
+          id: encontrado.id,
+          nome: encontrado.nome,
+          usuario: encontrado.usuario,
+          turno: encontrado.turno,
+          telefone: encontrado.telefone,
+          loginEm: new Date().toISOString()
+        });
+
+        navigate("/dashboard/porteiro", {
+          replace: true
+        });
+
+      } else {
+
+        setErro(
+          "Usuário ou senha inválidos"
+        );
+
+      }
+
+      return;
+
+    }
+
+    /* =========================
+       LOGIN MORADOR
+    ========================= */
+
+    if (tipo === "morador") {
+
+      const moradores =
+        JSON.parse(
+          localStorage.getItem("moradores")
+        ) || [];
+
+      const encontrado = moradores.find(
+
+        (m) =>
+
+          m.usuario
+            ?.trim()
+            .toLowerCase() ===
+            usuarioDigitado &&
+
+          m.senha?.trim() ===
+            senhaDigitada
+
+      );
+
+      if (encontrado) {
+
+        salvarSessao({
+          tipo: "morador",
+          id: encontrado.id,
+          nome: encontrado.nome,
+          apartamento:
+            encontrado.apartamento,
+          usuario: encontrado.usuario,
+          loginEm: new Date().toISOString()
+        });
+
+        navigate("/dashboard/morador", {
+          replace: true
+        });
+
+      } else {
+
+        setErro(
+          "Usuário ou senha inválidos"
+        );
+
+      }
+
+    }
+
+  }
 
   function handleKeyPress(e) {
 
@@ -180,20 +270,11 @@ function Login() {
 
   }
 
-
   return (
 
     <div style={styles.container}>
 
-
-      {/* CARD */}
-
-
       <div style={styles.card}>
-
-
-        {/* BOTÃO VOLTAR */}
-
 
         <button
           style={styles.backButton}
@@ -201,14 +282,9 @@ function Login() {
         >
 
           <FaArrowLeft />
-
           Voltar
 
         </button>
-
-
-        {/* ÍCONE */}
-
 
         <div
           style={{
@@ -221,26 +297,13 @@ function Login() {
 
         </div>
 
-
-        {/* TÍTULO */}
-
-
         <h1 style={styles.title}>
-
           {perfil.titulo}
-
         </h1>
 
-
         <p style={styles.subtitle}>
-
           {perfil.subtitulo}
-
         </p>
-
-
-        {/* INPUTS */}
-
 
         <input
           style={styles.input}
@@ -251,7 +314,6 @@ function Login() {
           }
           onKeyDown={handleKeyPress}
         />
-
 
         <input
           style={styles.input}
@@ -264,23 +326,13 @@ function Login() {
           onKeyDown={handleKeyPress}
         />
 
-
-        {/* ERRO */}
-
-
         {erro && (
 
           <div style={styles.errorBox}>
-
             {erro}
-
           </div>
 
         )}
-
-
-        {/* BOTÃO */}
-
 
         <button
           style={{
@@ -294,32 +346,6 @@ function Login() {
 
         </button>
 
-
-        {/* LOGIN TESTE */}
-
-
-        <div style={styles.testBox}>
-
-
-          <strong>
-            Usuários de teste
-          </strong>
-
-
-          <p>
-            Admin → admin / 1234
-          </p>
-
-          <p>
-            Porteiro → joao / 123
-          </p>
-
-          <p>
-            Morador → carlos / 123
-          </p>
-
-        </div>
-
       </div>
 
     </div>
@@ -327,7 +353,6 @@ function Login() {
   );
 
 }
-
 
 const styles = {
 
@@ -377,9 +402,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: "20px",
-    boxShadow:
-      "0 10px 30px rgba(0,0,0,0.15)"
+    marginBottom: "20px"
   },
 
   title: {
@@ -393,8 +416,7 @@ const styles = {
     marginTop: "10px",
     marginBottom: "30px",
     color: "#6b7280",
-    textAlign: "center",
-    lineHeight: "24px"
+    textAlign: "center"
   },
 
   input: {
@@ -404,8 +426,7 @@ const styles = {
     borderRadius: "16px",
     border: "1px solid #d1d5db",
     fontSize: "15px",
-    outline: "none",
-    transition: "0.2s"
+    outline: "none"
   },
 
   errorBox: {
@@ -428,20 +449,7 @@ const styles = {
     fontWeight: "700",
     fontSize: "15px",
     cursor: "pointer",
-    marginTop: "8px",
-    boxShadow:
-      "0 10px 25px rgba(0,0,0,0.15)"
-  },
-
-  testBox: {
-    marginTop: "28px",
-    background: "#f9fafb",
-    width: "100%",
-    padding: "18px",
-    borderRadius: "18px",
-    color: "#374151",
-    fontSize: "14px",
-    lineHeight: "26px"
+    marginTop: "8px"
   }
 
 };

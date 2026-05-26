@@ -10,24 +10,61 @@ function VisitantesPorteiro() {
 
   const [observacao, setObservacao] = useState("");
 
+  const [tipoVisitante, setTipoVisitante] =
+    useState("Pessoa comum");
+
+  const [documento, setDocumento] =
+    useState("");
+
+
   useEffect(() => {
 
     carregarVisitantes();
 
   }, []);
 
+
   function carregarVisitantes() {
 
     const data =
-      JSON.parse(localStorage.getItem("visitantes")) || [];
+      JSON.parse(
+        localStorage.getItem("visitantes")
+      ) || [];
 
     setVisitantes(data);
 
   }
 
+
   function cadastrarVisitante() {
 
-    if (!nome || !apartamento) return;
+    if (!nome || !apartamento) {
+
+      alert("Preencha os campos obrigatórios");
+
+      return;
+
+    }
+
+    // DOCUMENTO OBRIGATÓRIO
+    if (
+      tipoVisitante === "Prestador de serviço" &&
+      !documento
+    ) {
+
+      alert(
+        "Documento obrigatório para prestador de serviço"
+      );
+
+      return;
+
+    }
+
+    // USUÁRIO LOGADO
+    const usuarioLogado =
+      JSON.parse(
+        localStorage.getItem("usuarioLogado")
+      ) || {};
 
     const novo = {
 
@@ -39,17 +76,40 @@ function VisitantesPorteiro() {
 
       observacao,
 
-      horario: new Date().toLocaleTimeString(),
+      tipoVisitante,
 
-      status: "aguardando"
+      documento,
+
+      horarioEntrada:
+        new Date().toLocaleTimeString(),
+
+      horarioSaida: "",
+
+      data:
+        new Date().toLocaleDateString(),
+
+      status: "aguardando",
+
+      porteiro: usuarioLogado.nome || "Não identificado",
+
+      turno: usuarioLogado.turno || "-"
 
     };
 
-    const atualizados = [...visitantes, novo];
+    const atualizados = [
+      ...visitantes,
+      novo
+    ];
 
     localStorage.setItem(
       "visitantes",
       JSON.stringify(atualizados)
+    );
+
+    // LOG DE MOVIMENTAÇÃO
+    salvarMovimentacao(
+      "Novo visitante cadastrado",
+      novo.nome
     );
 
     setVisitantes(atualizados);
@@ -60,17 +120,99 @@ function VisitantesPorteiro() {
 
     setObservacao("");
 
+    setDocumento("");
+
+    setTipoVisitante("Pessoa comum");
+
   }
 
-  function alterarStatus(id, novoStatus) {
 
-    const atualizados = visitantes.map((v) =>
+  function salvarMovimentacao(
+    acao,
+    visitante
+  ) {
 
-      v.id === id
-        ? { ...v, status: novoStatus }
-        : v
+    const usuarioLogado =
+      JSON.parse(
+        localStorage.getItem("usuarioLogado")
+      ) || {};
 
+    const movimentacoes =
+      JSON.parse(
+        localStorage.getItem("movimentacoesPorteiro")
+      ) || [];
+
+    const novaMovimentacao = {
+
+      id: Date.now(),
+
+      acao,
+
+      visitante,
+
+      porteiro:
+        usuarioLogado.nome || "Sem identificação",
+
+      turno:
+        usuarioLogado.turno || "-",
+
+      data:
+        new Date().toLocaleDateString(),
+
+      hora:
+        new Date().toLocaleTimeString()
+
+    };
+
+    movimentacoes.push(
+      novaMovimentacao
     );
+
+    localStorage.setItem(
+      "movimentacoesPorteiro",
+      JSON.stringify(movimentacoes)
+    );
+
+  }
+
+
+  function alterarStatus(
+    id,
+    novoStatus
+  ) {
+
+    const atualizados = visitantes.map((v) => {
+
+      if (v.id === id) {
+
+        const atualizado = {
+
+          ...v,
+
+          status: novoStatus
+
+        };
+
+        // HORÁRIO SAÍDA AUTOMÁTICO
+        if (novoStatus === "saiu") {
+
+          atualizado.horarioSaida =
+            new Date().toLocaleTimeString();
+
+        }
+
+        salvarMovimentacao(
+          `Visitante ${novoStatus}`,
+          v.nome
+        );
+
+        return atualizado;
+
+      }
+
+      return v;
+
+    });
 
     localStorage.setItem(
       "visitantes",
@@ -81,7 +223,13 @@ function VisitantesPorteiro() {
 
   }
 
+
   function excluirVisitante(id) {
+
+    const visitante =
+      visitantes.find(
+        (v) => v.id === id
+      );
 
     const atualizados = visitantes.filter(
       (v) => v.id !== id
@@ -92,23 +240,34 @@ function VisitantesPorteiro() {
       JSON.stringify(atualizados)
     );
 
+    salvarMovimentacao(
+      "Visitante removido",
+      visitante?.nome
+    );
+
     setVisitantes(atualizados);
 
   }
 
+
   function corStatus(status) {
 
-    if (status === "aguardando") return "#f59e0b";
+    if (status === "aguardando")
+      return "#f59e0b";
 
-    if (status === "liberado") return "#2563eb";
+    if (status === "liberado")
+      return "#2563eb";
 
-    if (status === "entrou") return "#16a34a";
+    if (status === "entrou")
+      return "#16a34a";
 
-    if (status === "saiu") return "#6b7280";
+    if (status === "saiu")
+      return "#6b7280";
 
     return "#111827";
 
   }
+
 
   return (
 
@@ -126,7 +285,9 @@ function VisitantesPorteiro() {
 
       </div>
 
+
       {/* FORM */}
+
 
       <div style={styles.form}>
 
@@ -148,6 +309,26 @@ function VisitantesPorteiro() {
           style={styles.input}
         />
 
+        <select
+          value={tipoVisitante}
+          onChange={(e) =>
+            setTipoVisitante(
+              e.target.value
+            )
+          }
+          style={styles.input}
+        >
+
+          <option>
+            Pessoa comum
+          </option>
+
+          <option>
+            Prestador de serviço
+          </option>
+
+        </select>
+
         <input
           placeholder="Observação"
           value={observacao}
@@ -157,16 +338,38 @@ function VisitantesPorteiro() {
           style={styles.input}
         />
 
+        {/* DOCUMENTO */}
+
+        {tipoVisitante ===
+          "Prestador de serviço" && (
+
+          <input
+            placeholder="Documento obrigatório"
+            value={documento}
+            onChange={(e) =>
+              setDocumento(
+                e.target.value
+              )
+            }
+            style={styles.input}
+          />
+
+        )}
+
         <button
           style={styles.button}
           onClick={cadastrarVisitante}
         >
+
           Cadastrar
+
         </button>
 
       </div>
 
+
       {/* LISTA */}
+
 
       <div style={styles.grid}>
 
@@ -184,11 +387,53 @@ function VisitantesPorteiro() {
               </h3>
 
               <p style={styles.info}>
-                Apartamento: {item.apartamento}
+                Apartamento:
+                {" "}
+                {item.apartamento}
               </p>
 
               <p style={styles.info}>
-                {item.horario}
+                Tipo:
+                {" "}
+                {item.tipoVisitante}
+              </p>
+
+              {item.documento && (
+
+                <p style={styles.info}>
+                  Documento:
+                  {" "}
+                  {item.documento}
+                </p>
+
+              )}
+
+              <p style={styles.info}>
+                Entrada:
+                {" "}
+                {item.horarioEntrada}
+              </p>
+
+              {item.horarioSaida && (
+
+                <p style={styles.info}>
+                  Saída:
+                  {" "}
+                  {item.horarioSaida}
+                </p>
+
+              )}
+
+              <p style={styles.info}>
+                Porteiro:
+                {" "}
+                {item.porteiro}
+              </p>
+
+              <p style={styles.info}>
+                Turno:
+                {" "}
+                {item.turno}
               </p>
 
               {item.observacao && (
@@ -202,7 +447,9 @@ function VisitantesPorteiro() {
               <p
                 style={{
                   ...styles.status,
-                  color: corStatus(item.status)
+                  color: corStatus(
+                    item.status
+                  )
                 }}
               >
 
@@ -217,37 +464,56 @@ function VisitantesPorteiro() {
               <button
                 style={styles.blue}
                 onClick={() =>
-                  alterarStatus(item.id, "liberado")
+                  alterarStatus(
+                    item.id,
+                    "liberado"
+                  )
                 }
               >
+
                 Liberar
+
               </button>
 
               <button
                 style={styles.green}
                 onClick={() =>
-                  alterarStatus(item.id, "entrou")
+                  alterarStatus(
+                    item.id,
+                    "entrou"
+                  )
                 }
               >
+
                 Entrada
+
               </button>
 
               <button
                 style={styles.gray}
                 onClick={() =>
-                  alterarStatus(item.id, "saiu")
+                  alterarStatus(
+                    item.id,
+                    "saiu"
+                  )
                 }
               >
+
                 Saída
+
               </button>
 
               <button
                 style={styles.red}
                 onClick={() =>
-                  excluirVisitante(item.id)
+                  excluirVisitante(
+                    item.id
+                  )
                 }
               >
+
                 Excluir
+
               </button>
 
             </div>
@@ -263,6 +529,7 @@ function VisitantesPorteiro() {
   );
 
 }
+
 
 const styles = {
 
@@ -289,16 +556,19 @@ const styles = {
     padding: "20px",
     borderRadius: "14px",
     display: "grid",
-    gridTemplateColumns: "repeat(4,1fr)",
+    gridTemplateColumns:
+      "repeat(4,1fr)",
     gap: "15px",
     marginBottom: "30px",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.05)"
+    boxShadow:
+      "0 2px 10px rgba(0,0,0,0.05)"
   },
 
   input: {
     padding: "12px",
     borderRadius: "8px",
-    border: "1px solid #d1d5db",
+    border:
+      "1px solid #d1d5db",
     outline: "none"
   },
 
@@ -313,7 +583,8 @@ const styles = {
 
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(3,1fr)",
+    gridTemplateColumns:
+      "repeat(3,1fr)",
     gap: "20px"
   },
 
@@ -321,7 +592,8 @@ const styles = {
     background: "white",
     borderRadius: "14px",
     padding: "20px",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
+    boxShadow:
+      "0 2px 10px rgba(0,0,0,0.05)",
     display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
@@ -351,7 +623,8 @@ const styles = {
 
   actions: {
     display: "grid",
-    gridTemplateColumns: "repeat(2,1fr)",
+    gridTemplateColumns:
+      "repeat(2,1fr)",
     gap: "10px"
   },
 

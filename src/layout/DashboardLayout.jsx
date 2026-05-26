@@ -1,4 +1,9 @@
-import { Link, Outlet, useNavigate } from "react-router-dom";
+import {
+  Link,
+  Outlet,
+  useNavigate,
+  Navigate
+} from "react-router-dom";
 
 import {
   FaChartPie,
@@ -15,19 +20,69 @@ import {
   FaSignOutAlt
 } from "react-icons/fa";
 
+import { useState } from "react";
+
 function DashboardLayout() {
 
   const navigate = useNavigate();
 
-  const usuarioLogado =
-    JSON.parse(
-      localStorage.getItem("usuarioLogado")
+  /* =========================
+     CARREGA USUÁRIO
+  ========================= */
+
+  const usuarioSalvo =
+    localStorage.getItem("usuarioSindico") ||
+    sessionStorage.getItem("usuarioSindico");
+
+  if (!usuarioSalvo) {
+
+    return (
+      <Navigate
+        to="/login/sindico"
+        replace
+      />
     );
+
+  }
+
+  let usuarioLogado = null;
+
+  try {
+
+    usuarioLogado =
+      JSON.parse(usuarioSalvo);
+
+  } catch {
+
+    localStorage.removeItem(
+      "usuarioSindico"
+    );
+
+    sessionStorage.removeItem(
+      "usuarioSindico"
+    );
+
+    return (
+      <Navigate
+        to="/login/sindico"
+        replace
+      />
+    );
+
+  }
+
+  /* =========================
+     LOGOUT
+  ========================= */
 
   function sair() {
 
     localStorage.removeItem(
-      "usuarioLogado"
+      "usuarioSindico"
+    );
+
+    sessionStorage.removeItem(
+      "usuarioSindico"
     );
 
     navigate("/");
@@ -38,26 +93,19 @@ function DashboardLayout() {
 
     <div style={styles.container}>
 
-
       {/* SIDEBAR */}
-
 
       <div style={styles.sidebar}>
 
-
-        {/* LOGO */}
-
-
         <div>
 
+          {/* LOGO */}
 
           <div style={styles.logoContainer}>
-
 
             <div style={styles.logoIcon}>
               🏢
             </div>
-
 
             <div>
 
@@ -73,137 +121,147 @@ function DashboardLayout() {
 
           </div>
 
-
           {/* USUÁRIO */}
 
-
           <div style={styles.userBox}>
-
 
             <div style={styles.userAvatar}>
               👤
             </div>
 
-
             <div>
 
               <div style={styles.userName}>
 
-                {usuarioLogado?.usuario || "Administrador"}
+                {usuarioLogado?.usuario ||
+                  "Administrador"}
 
               </div>
 
-
               <div style={styles.userRole}>
-
                 Síndico / Administrador
-
               </div>
 
             </div>
 
           </div>
 
-
           {/* MENU */}
-
 
           <div style={styles.menu}>
 
-
-            <Link style={styles.menuItem} to="/dashboard/sindico">
+            <Link
+              style={styles.menuItem}
+              to="/dashboard/sindico"
+            >
               <FaChartPie />
               Dashboard
             </Link>
 
-
-            <Link style={styles.menuItem} to="/dashboard/apartamentos">
+            <Link
+              style={styles.menuItem}
+              to="/dashboard/apartamentos"
+            >
               <FaBuilding />
               Apartamentos
             </Link>
 
-
-            <Link style={styles.menuItem} to="/dashboard/moradores">
+            <Link
+              style={styles.menuItem}
+              to="/dashboard/moradores"
+            >
               <FaUsers />
               Moradores
             </Link>
 
-
-            <Link style={styles.menuItem} to="/dashboard/porteiros">
+            <Link
+              style={styles.menuItem}
+              to="/dashboard/porteiros"
+            >
               <FaUserShield />
               Porteiros
             </Link>
 
-
-            <Link style={styles.menuItem} to="/dashboard/encomendas">
+            <Link
+              style={styles.menuItem}
+              to="/dashboard/encomendas"
+            >
               <FaBox />
               Encomendas
             </Link>
 
-
-            <Link style={styles.menuItem} to="/dashboard/visitantes">
+            <Link
+              style={styles.menuItem}
+              to="/dashboard/visitantes"
+            >
               <FaClipboardList />
               Visitantes
             </Link>
 
-
-            <Link style={styles.menuItem} to="/dashboard/movimentacoes">
+            <Link
+              style={styles.menuItem}
+              to="/dashboard/movimentacoes"
+            >
               <FaExchangeAlt />
               Movimentações
             </Link>
 
-
-            <Link style={styles.menuItem} to="/dashboard/reservas">
+            <Link
+              style={styles.menuItem}
+              to="/dashboard/reservas"
+            >
               <FaCalendarAlt />
               Reservas
             </Link>
 
-
-            <Link style={styles.menuItem} to="/dashboard/areas-comuns">
+            <Link
+              style={styles.menuItem}
+              to="/dashboard/areas-comuns"
+            >
               <FaDoorOpen />
               Áreas comuns
             </Link>
 
-
-            <Link style={styles.menuItem} to="/dashboard/avisos">
+            <Link
+              style={styles.menuItem}
+              to="/dashboard/avisos"
+            >
               <FaBell />
               Avisos
             </Link>
 
-
-            <Link style={styles.menuItem} to="/dashboard/relatorios">
+            <Link
+              style={styles.menuItem}
+              to="/dashboard/relatorios"
+            >
               <FaChartPie />
               Relatórios
             </Link>
 
-
-            <Link style={styles.menuItem} to="/dashboard/configuracoes">
+            <Link
+              style={styles.menuItem}
+              to="/dashboard/configuracoes"
+            >
               <FaCog />
               Configurações
             </Link>
-
 
           </div>
 
         </div>
 
-
         {/* FOOTER */}
 
-
         <div style={styles.footer}>
-
 
           <button
             style={styles.logoutButton}
             onClick={sair}
           >
 
-
             <FaSignOutAlt />
 
             Sair
-
 
           </button>
 
@@ -211,15 +269,11 @@ function DashboardLayout() {
 
       </div>
 
-
       {/* CONTEÚDO */}
-
 
       <div style={styles.content}>
 
-
         <Outlet />
-
 
       </div>
 
@@ -233,7 +287,7 @@ const styles = {
 
   container: {
     display: "flex",
-    height: "100vh",
+    minHeight: "100vh",
     background: "#f5f7fb",
     fontFamily: "Arial"
   },
@@ -241,8 +295,7 @@ const styles = {
   sidebar: {
     width: "270px",
     minWidth: "270px",
-    height: "100vh",
-    overflowY: "auto",
+    minHeight: "100vh",
     background:
       "linear-gradient(180deg,#14532d,#166534,#052e16)",
     padding: "24px 18px",

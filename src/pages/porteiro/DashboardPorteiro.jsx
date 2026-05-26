@@ -16,56 +16,82 @@ function DashboardPorteiro() {
   const [movimentacoes, setMovimentacoes] =
     useState([]);
 
+  const [porteiro, setPorteiro] =
+    useState(null);
+
   useEffect(() => {
 
+    // 🔐 SEM USAR usuarioLogado (evita conflito geral do sistema)
+    const usuarioSalvo =
+      localStorage.getItem("usuarioPorteiro") ||
+      sessionStorage.getItem("usuarioPorteiro");
+
+    let usuario = null;
+
+    try {
+      usuario = usuarioSalvo
+        ? JSON.parse(usuarioSalvo)
+        : null;
+    } catch (e) {
+      usuario = null;
+    }
+
+    setPorteiro(usuario);
+
     carregarDashboard();
+
+    const interval = setInterval(() => {
+      carregarDashboard();
+    }, 1000);
+
+    const handleStorage = (event) => {
+      if (
+        event.key === "visitantes" ||
+        event.key === "encomendas" ||
+        event.key === "moradores" ||
+        event.key === "encomendas_esperadas" ||
+        event.key === "movimentacoes"
+      ) {
+        carregarDashboard();
+      }
+    };
+
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("storage", handleStorage);
+    };
 
   }, []);
 
   function carregarDashboard() {
 
     const visitantes =
-      JSON.parse(
-        localStorage.getItem("visitantes")
-      ) || [];
+      JSON.parse(localStorage.getItem("visitantes")) || [];
 
     const encomendas =
-      JSON.parse(
-        localStorage.getItem("encomendas")
-      ) || [];
+      JSON.parse(localStorage.getItem("encomendas")) || [];
 
     const moradores =
-      JSON.parse(
-        localStorage.getItem("moradores")
-      ) || [];
+      JSON.parse(localStorage.getItem("moradores")) || [];
 
     const esperadas =
-      JSON.parse(
-        localStorage.getItem(
-          "encomendas_esperadas"
-        )
-      ) || [];
+      JSON.parse(localStorage.getItem("encomendas_esperadas")) || [];
 
     const pendentes = encomendas.filter(
       (e) => e.status === "pendente"
     );
 
     setDados({
-
       visitantes: visitantes.length,
-
       encomendas: pendentes.length,
-
       moradores: moradores.length,
-
       esperadas: esperadas.length
-
     });
 
-    const movs = buscarMovimentacoes();
-
+    const movs = buscarMovimentacoes() || [];
     setMovimentacoes(movs);
-
   }
 
   return (
@@ -85,6 +111,15 @@ function DashboardPorteiro() {
           <p style={styles.subtitle}>
             Central operacional do porteiro
           </p>
+
+          {porteiro && (
+
+            <p style={styles.userInfo}>
+              Plantão ativo:{" "}
+              <strong>{porteiro.nome}</strong>
+            </p>
+
+          )}
 
         </div>
 
@@ -106,108 +141,48 @@ function DashboardPorteiro() {
 
       <div style={styles.cards}>
 
-        {/* ENCOMENDAS */}
-
         <div style={styles.card}>
-
           <div style={styles.cardTop}>
-
-            <div style={styles.iconGreen}>
-              📦
-            </div>
-
-            <span style={styles.badgeWarning}>
-              Pendentes
-            </span>
-
+            <div style={styles.iconGreen}>📦</div>
+            <span style={styles.badgeWarning}>Pendentes</span>
           </div>
-
           <p style={styles.cardLabel}>
             Encomendas aguardando retirada
           </p>
-
-          <h1 style={styles.cardNumber}>
-            {dados.encomendas}
-          </h1>
-
+          <h1 style={styles.cardNumber}>{dados.encomendas}</h1>
         </div>
 
-        {/* VISITANTES */}
-
         <div style={styles.card}>
-
           <div style={styles.cardTop}>
-
-            <div style={styles.iconBlue}>
-              🚶
-            </div>
-
-            <span style={styles.badgeBlue}>
-              Ativos
-            </span>
-
+            <div style={styles.iconBlue}>🚶</div>
+            <span style={styles.badgeBlue}>Ativos</span>
           </div>
-
           <p style={styles.cardLabel}>
-            Visitantes no condomínio
+            Visitantes registrados
           </p>
-
-          <h1 style={styles.cardNumber}>
-            {dados.visitantes}
-          </h1>
-
+          <h1 style={styles.cardNumber}>{dados.visitantes}</h1>
         </div>
 
-        {/* MORADORES */}
-
         <div style={styles.card}>
-
           <div style={styles.cardTop}>
-
-            <div style={styles.iconDark}>
-              👥
-            </div>
-
-            <span style={styles.badgeGreen}>
-              Cadastrados
-            </span>
-
+            <div style={styles.iconDark}>👥</div>
+            <span style={styles.badgeGreen}>Cadastrados</span>
           </div>
-
           <p style={styles.cardLabel}>
             Moradores ativos
           </p>
-
-          <h1 style={styles.cardNumber}>
-            {dados.moradores}
-          </h1>
-
+          <h1 style={styles.cardNumber}>{dados.moradores}</h1>
         </div>
 
-        {/* ENCOMENDAS ESPERADAS */}
-
         <div style={styles.card}>
-
           <div style={styles.cardTop}>
-
-            <div style={styles.iconYellow}>
-              📬
-            </div>
-
-            <span style={styles.badgeYellow}>
-              Esperadas
-            </span>
-
+            <div style={styles.iconYellow}>📬</div>
+            <span style={styles.badgeYellow}>Esperadas</span>
           </div>
-
           <p style={styles.cardLabel}>
-            Entregas aguardadas pelos moradores
+            Entregas aguardadas
           </p>
-
-          <h1 style={styles.cardNumber}>
-            {dados.esperadas}
-          </h1>
-
+          <h1 style={styles.cardNumber}>{dados.esperadas}</h1>
         </div>
 
       </div>
@@ -221,48 +196,29 @@ function DashboardPorteiro() {
         <div style={styles.history}>
 
           <div style={styles.sectionHeader}>
-
             <h2 style={styles.historyTitle}>
               Movimentações recentes
             </h2>
-
-            <span style={styles.live}>
-              ● AO VIVO
-            </span>
-
+            <span style={styles.live}>● AO VIVO</span>
           </div>
 
           {movimentacoes.length === 0 && (
-
             <div style={styles.empty}>
-
               Nenhuma movimentação encontrada
-
             </div>
-
           )}
 
           {movimentacoes.map((item) => (
-
-            <div
-              key={item.id}
-              style={styles.historyItem}
-            >
+            <div key={item.id} style={styles.historyItem}>
 
               <div style={styles.historyIcon}>
-
-                {item.tipo ===
-                "encomenda_recebida"
-
+                {item.tipo === "encomenda_recebida"
                   ? "📦"
-
-                  : item.tipo ===
-                    "encomenda_retirada"
-
+                  : item.tipo === "encomenda_retirada"
                   ? "✅"
-
+                  : item.tipo === "visitante"
+                  ? "🚶"
                   : "📌"}
-
               </div>
 
               <div>
@@ -272,13 +228,12 @@ function DashboardPorteiro() {
                 </p>
 
                 <span style={styles.historyTime}>
-                  {item.data}
+                  {item.data} • {item.porteiro}
                 </span>
 
               </div>
 
             </div>
-
           ))}
 
         </div>
@@ -292,69 +247,49 @@ function DashboardPorteiro() {
           </h2>
 
           {dados.encomendas > 0 && (
-
             <div style={styles.alertCardWarning}>
-
               <h3 style={styles.alertCardTitle}>
                 ⚠️ Encomendas pendentes
               </h3>
-
               <p style={styles.alertText}>
                 Existem encomendas aguardando retirada.
               </p>
-
             </div>
-
           )}
 
           {dados.esperadas > 0 && (
-
             <div style={styles.alertCardBlue}>
-
               <h3 style={styles.alertCardTitle}>
                 📬 Entregas esperadas
               </h3>
-
               <p style={styles.alertText}>
-                Moradores informaram novas entregas aguardadas.
+                Existem entregas aguardadas pelos moradores.
               </p>
-
             </div>
-
           )}
 
           {dados.visitantes > 0 && (
-
             <div style={styles.alertCardGreen}>
-
               <h3 style={styles.alertCardTitle}>
                 🚶 Visitantes ativos
               </h3>
-
               <p style={styles.alertText}>
                 Existem visitantes registrados no sistema.
               </p>
-
             </div>
-
           )}
 
           {dados.encomendas === 0 &&
             dados.visitantes === 0 &&
             dados.esperadas === 0 && (
-
             <div style={styles.alertCardNeutral}>
-
               <h3 style={styles.alertCardTitle}>
                 ✅ Operação tranquila
               </h3>
-
               <p style={styles.alertText}>
                 Nenhum alerta operacional no momento.
               </p>
-
             </div>
-
           )}
 
         </div>
@@ -362,9 +297,7 @@ function DashboardPorteiro() {
       </div>
 
     </div>
-
   );
-
 }
 
 const styles = {
@@ -393,6 +326,12 @@ const styles = {
     marginTop: "8px",
     color: "#6b7280",
     fontSize: "15px"
+  },
+
+  userInfo: {
+    marginTop: "10px",
+    color: "#14532d",
+    fontSize: "14px"
   },
 
   dateBox: {

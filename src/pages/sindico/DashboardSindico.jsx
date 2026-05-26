@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function DashboardSindico() {
+
+  const navigate = useNavigate();
 
   const [dados, setDados] = useState({
     encomendas: 0,
@@ -13,23 +16,79 @@ function DashboardSindico() {
 
   useEffect(() => {
 
+    // PROTEÇÃO LOGIN
+
+    const usuarioSalvo =
+      localStorage.getItem("usuarioSindico") ||
+      sessionStorage.getItem("usuarioSindico");
+
+    const usuarioLogado =
+      usuarioSalvo
+        ? JSON.parse(usuarioSalvo)
+        : null;
+
+    if (
+      !usuarioLogado ||
+      usuarioLogado.tipo !== "sindico"
+    ) {
+
+      navigate("/login/sindico");
+
+      return;
+
+    }
+
     carregarDados();
+
+    // ATUALIZA AUTOMÁTICO
+
+    const interval = setInterval(() => {
+
+      carregarDados();
+
+    }, 1000);
+
+    // ESCUTA ALTERAÇÃO LOCALSTORAGE
+
+    window.addEventListener(
+      "storage",
+      carregarDados
+    );
+
+    return () => {
+
+      clearInterval(interval);
+
+      window.removeEventListener(
+        "storage",
+        carregarDados
+      );
+
+    };
 
   }, []);
 
   function carregarDados() {
 
     const encomendas =
-      JSON.parse(localStorage.getItem("encomendas")) || [];
+      JSON.parse(
+        localStorage.getItem("encomendas")
+      ) || [];
 
     const visitantes =
-      JSON.parse(localStorage.getItem("visitantes")) || [];
+      JSON.parse(
+        localStorage.getItem("visitantes")
+      ) || [];
 
     const reservas =
-      JSON.parse(localStorage.getItem("reservas")) || [];
+      JSON.parse(
+        localStorage.getItem("reservas")
+      ) || [];
 
     const avisos =
-      JSON.parse(localStorage.getItem("avisos")) || [];
+      JSON.parse(
+        localStorage.getItem("avisos")
+      ) || [];
 
     setDados({
 
@@ -55,26 +114,31 @@ function DashboardSindico() {
         icon: "📦",
         texto:
           `Encomenda recebida - Apto ${e.apartamento}`,
-        tempo: e.data
+        tempo:
+          e.data || e.horario || "Agora"
       })),
 
       ...reservas.slice(-2).map((r) => ({
         icon: "📅",
         texto:
           `Reserva solicitada - ${r.area}`,
-        tempo: r.criadoEm
+        tempo:
+          r.criadoEm || "Agora"
       })),
 
-      ...visitantes.slice(-2).map((v) => ({
+      ...visitantes.slice(-5).map((v) => ({
         icon: "👤",
         texto:
           `Visitante registrado - ${v.nome}`,
-        tempo: v.data
+        tempo:
+          v.horario || "Agora"
       }))
 
     ];
 
-    setAtividades(historico.reverse());
+    setAtividades(
+      historico.reverse()
+    );
 
   }
 
@@ -100,7 +164,7 @@ function DashboardSindico() {
 
       </div>
 
-      {/* AÇÕES RÁPIDAS */}
+      {/* AÇÕES */}
 
       <div style={styles.actions}>
 

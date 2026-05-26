@@ -11,11 +11,14 @@ function Porteiros() {
   const [novoPorteiro, setNovoPorteiro] = useState({
     nome: "",
     turno: "",
-    telefone: ""
+    telefone: "",
+    usuario: "",
+    senha: "",
+    status: "Ativo",
+    ultimoLogin: null
   });
 
   const [editId, setEditId] = useState(null);
-
 
   // CARREGAR DADOS
 
@@ -29,25 +32,39 @@ function Porteiros() {
 
     } else {
 
-      setPorteiros([
+      const iniciais = [
         {
           id: 1,
           nome: "José Carlos",
           turno: "Manhã",
-          telefone: "99999-1111"
+          telefone: "99999-1111",
+          usuario: "jose",
+          senha: "123",
+          status: "Ativo",
+          ultimoLogin: null
         },
         {
           id: 2,
           nome: "Marcos Silva",
           turno: "Noite",
-          telefone: "99999-2222"
+          telefone: "99999-2222",
+          usuario: "marcos",
+          senha: "123",
+          status: "Ativo",
+          ultimoLogin: null
         }
-      ]);
+      ];
+
+      setPorteiros(iniciais);
+
+      localStorage.setItem(
+        "porteiros",
+        JSON.stringify(iniciais)
+      );
 
     }
 
   }, []);
-
 
   // SALVAR AUTOMATICAMENTE
 
@@ -60,17 +77,16 @@ function Porteiros() {
 
   }, [porteiros]);
 
-
   // FILTRO
 
   const porteirosFiltrados = porteiros.filter((p) =>
 
     p.nome.toLowerCase().includes(busca.toLowerCase()) ||
     p.turno.toLowerCase().includes(busca.toLowerCase()) ||
-    p.telefone.toLowerCase().includes(busca.toLowerCase())
+    p.telefone.toLowerCase().includes(busca.toLowerCase()) ||
+    p.usuario.toLowerCase().includes(busca.toLowerCase())
 
   );
-
 
   // SALVAR
 
@@ -79,10 +95,26 @@ function Porteiros() {
     if (
       !novoPorteiro.nome ||
       !novoPorteiro.turno ||
-      !novoPorteiro.telefone
+      !novoPorteiro.telefone ||
+      !novoPorteiro.usuario ||
+      !novoPorteiro.senha
     ) {
 
       alert("Preencha todos os campos");
+
+      return;
+
+    }
+
+    const usuarioExistente = porteiros.find(
+      (p) =>
+        p.usuario === novoPorteiro.usuario &&
+        p.id !== editId
+    );
+
+    if (usuarioExistente) {
+
+      alert("Esse usuário já existe");
 
       return;
 
@@ -93,7 +125,10 @@ function Porteiros() {
       const lista = porteiros.map((p) =>
 
         p.id === editId
-          ? { ...novoPorteiro, id: editId }
+          ? {
+              ...novoPorteiro,
+              id: editId
+            }
           : p
 
       );
@@ -119,13 +154,16 @@ function Porteiros() {
     setNovoPorteiro({
       nome: "",
       turno: "",
-      telefone: ""
+      telefone: "",
+      usuario: "",
+      senha: "",
+      status: "Ativo",
+      ultimoLogin: null
     });
 
     setMostrarModal(false);
 
   }
-
 
   // EDITAR
 
@@ -139,7 +177,6 @@ function Porteiros() {
 
   }
 
-
   // EXCLUIR
 
   function excluirPorteiro(id) {
@@ -152,17 +189,13 @@ function Porteiros() {
 
   }
 
-
   return (
 
     <div style={styles.container}>
 
-
       {/* HEADER */}
 
-
       <div style={styles.header}>
-
 
         <div>
 
@@ -176,9 +209,7 @@ function Porteiros() {
 
         </div>
 
-
         <div style={styles.headerActions}>
-
 
           <input
             placeholder="Buscar porteiro..."
@@ -189,7 +220,6 @@ function Porteiros() {
             style={styles.search}
           />
 
-
           <button
             style={styles.button}
             onClick={() => {
@@ -199,7 +229,11 @@ function Porteiros() {
               setNovoPorteiro({
                 nome: "",
                 turno: "",
-                telefone: ""
+                telefone: "",
+                usuario: "",
+                senha: "",
+                status: "Ativo",
+                ultimoLogin: null
               });
 
               setMostrarModal(true);
@@ -211,18 +245,13 @@ function Porteiros() {
 
           </button>
 
-
         </div>
 
       </div>
 
-
-
       {/* CARDS */}
 
-
       <div style={styles.resumeGrid}>
-
 
         <div style={styles.resumeCard}>
 
@@ -243,7 +272,6 @@ function Porteiros() {
           </div>
 
         </div>
-
 
         <div style={styles.resumeCard}>
 
@@ -269,19 +297,13 @@ function Porteiros() {
 
         </div>
 
-
       </div>
-
-
 
       {/* TABELA */}
 
-
       <div style={styles.card}>
 
-
         <table style={styles.table}>
-
 
           <thead>
 
@@ -299,6 +321,14 @@ function Porteiros() {
                 Telefone
               </th>
 
+              <th style={styles.th}>
+                Usuário
+              </th>
+
+              <th style={styles.th}>
+                Status
+              </th>
+
               <th style={styles.thCenter}>
                 Ações
               </th>
@@ -307,16 +337,14 @@ function Porteiros() {
 
           </thead>
 
-
           <tbody>
-
 
             {porteirosFiltrados.length === 0 ? (
 
               <tr>
 
                 <td
-                  colSpan="4"
+                  colSpan="6"
                   style={styles.empty}
                 >
 
@@ -331,7 +359,6 @@ function Porteiros() {
               porteirosFiltrados.map((p) => (
 
                 <tr key={p.id}>
-
 
                   <td style={styles.td}>
 
@@ -354,7 +381,6 @@ function Porteiros() {
                     </div>
 
                   </td>
-
 
                   <td style={styles.td}>
 
@@ -380,14 +406,19 @@ function Porteiros() {
 
                   </td>
 
-
                   <td style={styles.td}>
                     {p.telefone}
                   </td>
 
+                  <td style={styles.td}>
+                    {p.usuario}
+                  </td>
+
+                  <td style={styles.td}>
+                    {p.status}
+                  </td>
 
                   <td style={styles.tdCenter}>
-
 
                     <button
                       style={styles.editButton}
@@ -400,7 +431,6 @@ function Porteiros() {
 
                     </button>
 
-
                     <button
                       style={styles.deleteButton}
                       onClick={() =>
@@ -412,7 +442,6 @@ function Porteiros() {
 
                     </button>
 
-
                   </td>
 
                 </tr>
@@ -421,25 +450,19 @@ function Porteiros() {
 
             )}
 
-
           </tbody>
 
         </table>
 
       </div>
 
-
-
       {/* MODAL */}
-
 
       {mostrarModal && (
 
         <div style={styles.modalBg}>
 
-
           <div style={styles.modal}>
-
 
             <h2 style={styles.modalTitle}>
 
@@ -448,7 +471,6 @@ function Porteiros() {
                 : "Novo porteiro"}
 
             </h2>
-
 
             <input
               placeholder="Nome completo"
@@ -463,7 +485,6 @@ function Porteiros() {
               }
               style={styles.input}
             />
-
 
             <select
               value={novoPorteiro.turno}
@@ -496,7 +517,6 @@ function Porteiros() {
 
             </select>
 
-
             <input
               placeholder="Telefone"
               value={novoPorteiro.telefone}
@@ -511,9 +531,36 @@ function Porteiros() {
               style={styles.input}
             />
 
+            <input
+              placeholder="Usuário de login"
+              value={novoPorteiro.usuario}
+              onChange={(e) =>
+
+                setNovoPorteiro({
+                  ...novoPorteiro,
+                  usuario: e.target.value
+                })
+
+              }
+              style={styles.input}
+            />
+
+            <input
+              type="password"
+              placeholder="Senha"
+              value={novoPorteiro.senha}
+              onChange={(e) =>
+
+                setNovoPorteiro({
+                  ...novoPorteiro,
+                  senha: e.target.value
+                })
+
+              }
+              style={styles.input}
+            />
 
             <div style={styles.modalButtons}>
-
 
               <button
                 style={styles.saveBtn}
@@ -523,7 +570,6 @@ function Porteiros() {
                 Salvar
 
               </button>
-
 
               <button
                 style={styles.cancelBtn}
@@ -535,7 +581,6 @@ function Porteiros() {
                 Cancelar
 
               </button>
-
 
             </div>
 
@@ -550,7 +595,6 @@ function Porteiros() {
   );
 
 }
-
 
 const styles = {
 

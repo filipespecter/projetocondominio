@@ -1,11 +1,32 @@
-export function salvarMovimentacao(novaMovimentacao) {
+export function salvarMovimentacao(
+  tipo,
+  mensagem,
+  dados = {}
+) {
 
   const movimentacoes =
     JSON.parse(
       localStorage.getItem("movimentacoes")
     ) || [];
 
-  movimentacoes.unshift(novaMovimentacao);
+  const novaMovimentacao = {
+
+    id: Date.now(),
+
+    tipo,
+
+    mensagem,
+
+    data:
+      new Date().toLocaleString(),
+
+    ...dados
+
+  };
+
+  movimentacoes.unshift(
+    novaMovimentacao
+  );
 
   localStorage.setItem(
     "movimentacoes",
