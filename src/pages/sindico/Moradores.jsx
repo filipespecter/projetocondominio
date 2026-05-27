@@ -1,8 +1,17 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 function Moradores() {
 
-  const [moradores, setMoradores] = useState([]);
+  const [moradores, setMoradores] = useState(() => {
+
+    const dados =
+      localStorage.getItem("moradores");
+
+    return dados
+      ? JSON.parse(dados)
+      : [];
+
+  });
 
   const [mostrarModal, setMostrarModal] =
     useState(false);
@@ -11,117 +20,135 @@ function Moradores() {
 
   const [novoMorador, setNovoMorador] =
     useState({
+      id: null,
       nome: "",
       apto: "",
       telefone: "",
       email: "",
+      usuario: "",
+      senha: "",
       status: "Ativo"
     });
 
-  const [editIndex, setEditIndex] =
+  const [editId, setEditId] =
     useState(null);
 
-  useEffect(() => {
-
-    const data =
-      JSON.parse(
-        localStorage.getItem("moradores")
-      ) || [];
-
-    if (data.length > 0) {
-
-      setMoradores(data);
-
-    } else {
-
-      const mock = [
-        {
-          nome: "João Silva",
-          apto: "101",
-          telefone: "(11) 99999-1111",
-          email: "joao@email.com",
-          status: "Ativo"
-        },
-        {
-          nome: "Maria Souza",
-          apto: "202",
-          telefone: "(11) 98888-2222",
-          email: "maria@email.com",
-          status: "Ativo"
-        }
-      ];
-
-      setMoradores(mock);
-
-      localStorage.setItem(
-        "moradores",
-        JSON.stringify(mock)
-      );
-
-    }
-
-  }, []);
-
-  useEffect(() => {
-
-    localStorage.setItem(
-      "moradores",
-      JSON.stringify(moradores)
-    );
-
-  }, [moradores]);
+  /* =========================
+     FILTRO
+  ========================= */
 
   const moradoresFiltrados =
     moradores.filter((morador) =>
 
       morador.nome
-        .toLowerCase()
+        ?.toLowerCase()
         .includes(busca.toLowerCase()) ||
 
       morador.apto
-        .toLowerCase()
+        ?.toLowerCase()
         .includes(busca.toLowerCase()) ||
 
       morador.telefone
-        .toLowerCase()
+        ?.toLowerCase()
+        .includes(busca.toLowerCase()) ||
+
+      morador.usuario
+        ?.toLowerCase()
         .includes(busca.toLowerCase())
 
     );
+
+  /* =========================
+     SALVAR
+  ========================= */
 
   function salvarMorador() {
 
     if (
       !novoMorador.nome ||
       !novoMorador.apto ||
-      !novoMorador.telefone
+      !novoMorador.telefone ||
+      !novoMorador.usuario ||
+      !novoMorador.senha
     ) {
+
+      alert("Preencha todos os campos");
+
       return;
+
     }
 
-    if (editIndex !== null) {
+    const usuarioExistente =
+      moradores.find(
+        (m) =>
 
-      const lista = [...moradores];
+          m.usuario
+            ?.toLowerCase() ===
+            novoMorador.usuario.toLowerCase() &&
 
-      lista[editIndex] = novoMorador;
+          m.id !== editId
+      );
 
-      setMoradores(lista);
+    if (usuarioExistente) {
 
-      setEditIndex(null);
+      alert("Esse usuário já existe");
+
+      return;
+
+    }
+
+    if (editId !== null) {
+
+      const listaAtualizada =
+        moradores.map((morador) =>
+
+          morador.id === editId
+            ? {
+                ...novoMorador,
+                id: editId
+              }
+            : morador
+
+        );
+
+      setMoradores(listaAtualizada);
+
+      localStorage.setItem(
+        "moradores",
+        JSON.stringify(listaAtualizada)
+      );
+
+      setEditId(null);
 
     } else {
 
-      setMoradores([
+      const novo = {
+        ...novoMorador,
+        id: Date.now()
+      };
+
+      const listaAtualizada = [
         ...moradores,
-        novoMorador
-      ]);
+        novo
+      ];
+
+      setMoradores(listaAtualizada);
+
+      localStorage.setItem(
+        "moradores",
+        JSON.stringify(listaAtualizada)
+      );
 
     }
 
     setNovoMorador({
+      id: null,
       nome: "",
       apto: "",
       telefone: "",
       email: "",
+      usuario: "",
+      senha: "",
       status: "Ativo"
     });
 
@@ -129,23 +156,36 @@ function Moradores() {
 
   }
 
-  function excluirMorador(index) {
+  /* =========================
+     EXCLUIR
+  ========================= */
 
-    const lista = moradores.filter(
-      (_, i) => i !== index
-    );
+  function excluirMorador(id) {
+
+    const lista =
+      moradores.filter(
+        (morador) =>
+          morador.id !== id
+      );
 
     setMoradores(lista);
 
-  }
-
-  function editarMorador(index) {
-
-    setNovoMorador(
-      moradores[index]
+    localStorage.setItem(
+      "moradores",
+      JSON.stringify(lista)
     );
 
-    setEditIndex(index);
+  }
+
+  /* =========================
+     EDITAR
+  ========================= */
+
+  function editarMorador(morador) {
+
+    setNovoMorador(morador);
+
+    setEditId(morador.id);
 
     setMostrarModal(true);
 
@@ -186,13 +226,16 @@ function Moradores() {
             style={styles.button}
             onClick={() => {
 
-              setEditIndex(null);
+              setEditId(null);
 
               setNovoMorador({
+                id: null,
                 nome: "",
                 apto: "",
                 telefone: "",
                 email: "",
+                usuario: "",
+                senha: "",
                 status: "Ativo"
               });
 
@@ -278,6 +321,10 @@ function Moradores() {
               </th>
 
               <th style={styles.th}>
+                Usuário
+              </th>
+
+              <th style={styles.th}>
                 Status
               </th>
 
@@ -296,7 +343,7 @@ function Moradores() {
               <tr>
 
                 <td
-                  colSpan="5"
+                  colSpan="6"
                   style={styles.empty}
                 >
 
@@ -309,9 +356,9 @@ function Moradores() {
             )}
 
             {moradoresFiltrados.map(
-              (morador, index) => (
+              (morador) => (
 
-              <tr key={index}>
+              <tr key={morador.id}>
 
                 <td style={styles.td}>
 
@@ -362,6 +409,12 @@ function Moradores() {
 
                 <td style={styles.td}>
 
+                  {morador.usuario}
+
+                </td>
+
+                <td style={styles.td}>
+
                   <span style={styles.status}>
 
                     {morador.status}
@@ -375,7 +428,7 @@ function Moradores() {
                   <button
                     style={styles.editButton}
                     onClick={() =>
-                      editarMorador(index)
+                      editarMorador(morador)
                     }
                   >
 
@@ -386,7 +439,9 @@ function Moradores() {
                   <button
                     style={styles.deleteButton}
                     onClick={() =>
-                      excluirMorador(index)
+                      excluirMorador(
+                        morador.id
+                      )
                     }
                   >
 
@@ -418,7 +473,7 @@ function Moradores() {
 
               <h2 style={styles.modalTitle}>
 
-                {editIndex !== null
+                {editId !== null
                   ? "Editar morador"
                   : "Novo morador"}
 
@@ -480,6 +535,31 @@ function Moradores() {
                   setNovoMorador({
                     ...novoMorador,
                     email: e.target.value
+                  })
+                }
+                style={styles.input}
+              />
+
+              <input
+                placeholder="Usuário de login"
+                value={novoMorador.usuario}
+                onChange={(e) =>
+                  setNovoMorador({
+                    ...novoMorador,
+                    usuario: e.target.value
+                  })
+                }
+                style={styles.input}
+              />
+
+              <input
+                type="password"
+                placeholder="Senha"
+                value={novoMorador.senha}
+                onChange={(e) =>
+                  setNovoMorador({
+                    ...novoMorador,
+                    senha: e.target.value
                   })
                 }
                 style={styles.input}

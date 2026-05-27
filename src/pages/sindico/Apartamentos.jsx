@@ -1,102 +1,95 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 function Apartamentos() {
 
-  const [apartamentos, setApartamentos] = useState([]);
+  const [apartamentos, setApartamentos] =
+    useState(() => {
 
-  const [mostrarModal, setMostrarModal] = useState(false);
+      const dados =
+        localStorage.getItem(
+          "apartamentos"
+        );
 
-  const [busca, setBusca] = useState("");
+      return dados
+        ? JSON.parse(dados)
+        : [];
 
-  const [novoAp, setNovoAp] = useState({
-    bloco: "",
-    numero: "",
-    andar: "",
-    morador: "",
-    status: "Ocupado"
-  });
+    });
 
-  const [editId, setEditId] = useState(null);
+  const [moradores] =
+    useState(() => {
 
+      const dados =
+        localStorage.getItem(
+          "moradores"
+        );
 
-  // CARREGAR DADOS
+      return dados
+        ? JSON.parse(dados)
+        : [];
 
-  useEffect(() => {
+    });
 
-    const dados = localStorage.getItem("apartamentos");
+  const [mostrarModal, setMostrarModal] =
+    useState(false);
 
-    if (dados) {
+  const [busca, setBusca] =
+    useState("");
 
-      setApartamentos(JSON.parse(dados));
+  const [novoAp, setNovoAp] =
+    useState({
+      bloco: "",
+      numero: "",
+      andar: "",
+      morador: "",
+      status: "Ocupado"
+    });
 
-    } else {
+  const [editId, setEditId] =
+    useState(null);
 
-      setApartamentos([
-        {
-          id: 1,
-          bloco: "A",
-          numero: "101",
-          andar: "1º",
-          morador: "João da Silva",
-          status: "Ocupado"
-        },
-        {
-          id: 2,
-          bloco: "A",
-          numero: "102",
-          andar: "1º",
-          morador: "Maria Oliveira",
-          status: "Ocupado"
-        },
-        {
-          id: 3,
-          bloco: "A",
-          numero: "201",
-          andar: "2º",
-          morador: "Carlos Santos",
-          status: "Ocupado"
-        },
-        {
-          id: 4,
-          bloco: "B",
-          numero: "101",
-          andar: "1º",
-          morador: "",
-          status: "Disponível"
-        }
-      ]);
+  // =========================
+  // FILTRO
+  // =========================
 
-    }
+  const apartamentosFiltrados =
+    apartamentos.filter((ap) =>
 
-  }, []);
+      ap.bloco
+        .toLowerCase()
+        .includes(
+          busca.toLowerCase()
+        ) ||
 
+      ap.numero
+        .toLowerCase()
+        .includes(
+          busca.toLowerCase()
+        ) ||
 
-  // SALVAR DADOS
+      ap.andar
+        .toLowerCase()
+        .includes(
+          busca.toLowerCase()
+        ) ||
 
-  useEffect(() => {
+      ap.morador
+        .toLowerCase()
+        .includes(
+          busca.toLowerCase()
+        ) ||
 
-    localStorage.setItem(
-      "apartamentos",
-      JSON.stringify(apartamentos)
+      ap.status
+        .toLowerCase()
+        .includes(
+          busca.toLowerCase()
+        )
+
     );
 
-  }, [apartamentos]);
-
-
-  // FILTRO
-
-  const apartamentosFiltrados = apartamentos.filter((ap) =>
-
-    ap.bloco.toLowerCase().includes(busca.toLowerCase()) ||
-    ap.numero.toLowerCase().includes(busca.toLowerCase()) ||
-    ap.andar.toLowerCase().includes(busca.toLowerCase()) ||
-    ap.morador.toLowerCase().includes(busca.toLowerCase()) ||
-    ap.status.toLowerCase().includes(busca.toLowerCase())
-
-  );
-
-
-  // SALVAR APARTAMENTO
+  // =========================
+  // SALVAR AP
+  // =========================
 
   function salvarApartamento() {
 
@@ -106,7 +99,29 @@ function Apartamentos() {
       !novoAp.andar
     ) {
 
-      alert("Preencha os campos obrigatórios");
+      alert(
+        "Preencha os campos obrigatórios"
+      );
+
+      return;
+
+    }
+
+    const apartamentoExiste =
+      apartamentos.find(
+        (ap) =>
+
+          ap.bloco === novoAp.bloco &&
+          ap.numero === novoAp.numero &&
+          ap.id !== editId
+
+      );
+
+    if (apartamentoExiste) {
+
+      alert(
+        "Esse apartamento já existe"
+      );
 
       return;
 
@@ -114,15 +129,28 @@ function Apartamentos() {
 
     if (editId !== null) {
 
-      const lista = apartamentos.map((ap) =>
+      const listaAtualizada =
+        apartamentos.map((ap) =>
 
-        ap.id === editId
-          ? { ...novoAp, id: editId }
-          : ap
+          ap.id === editId
+            ? {
+                ...novoAp,
+                id: editId
+              }
+            : ap
 
+        );
+
+      setApartamentos(
+        listaAtualizada
       );
 
-      setApartamentos(lista);
+      localStorage.setItem(
+        "apartamentos",
+        JSON.stringify(
+          listaAtualizada
+        )
+      );
 
       setEditId(null);
 
@@ -133,10 +161,21 @@ function Apartamentos() {
         ...novoAp
       };
 
-      setApartamentos([
+      const listaAtualizada = [
         ...apartamentos,
         novo
-      ]);
+      ];
+
+      setApartamentos(
+        listaAtualizada
+      );
+
+      localStorage.setItem(
+        "apartamentos",
+        JSON.stringify(
+          listaAtualizada
+        )
+      );
 
     }
 
@@ -152,8 +191,9 @@ function Apartamentos() {
 
   }
 
-
+  // =========================
   // EDITAR
+  // =========================
 
   function editarApartamento(ap) {
 
@@ -165,45 +205,68 @@ function Apartamentos() {
 
   }
 
-
+  // =========================
   // EXCLUIR
+  // =========================
 
   function excluirApartamento(id) {
 
-    const lista = apartamentos.filter(
-      (ap) => ap.id !== id
+    const confirmar =
+      window.confirm(
+        "Deseja excluir esse apartamento?"
+      );
+
+    if (!confirmar) return;
+
+    const listaAtualizada =
+      apartamentos.filter(
+        (ap) => ap.id !== id
+      );
+
+    setApartamentos(
+      listaAtualizada
     );
 
-    setApartamentos(lista);
+    localStorage.setItem(
+      "apartamentos",
+      JSON.stringify(
+        listaAtualizada
+      )
+    );
 
   }
 
-
+  // =========================
   // STATUS
+  // =========================
 
   function corStatus(status) {
 
     switch (status) {
 
       case "Ocupado":
+
         return {
           background: "#dbeafe",
           color: "#1d4ed8"
         };
 
       case "Disponível":
+
         return {
           background: "#dcfce7",
           color: "#166534"
         };
 
       case "Manutenção":
+
         return {
           background: "#fee2e2",
           color: "#dc2626"
         };
 
       default:
+
         return {
           background: "#f3f4f6",
           color: "#374151"
@@ -213,17 +276,13 @@ function Apartamentos() {
 
   }
 
-
   return (
 
     <div style={styles.container}>
 
-
       {/* HEADER */}
 
-
       <div style={styles.header}>
-
 
         <div>
 
@@ -237,19 +296,18 @@ function Apartamentos() {
 
         </div>
 
-
         <div style={styles.headerActions}>
-
 
           <input
             placeholder="Buscar apartamento..."
             value={busca}
             onChange={(e) =>
-              setBusca(e.target.value)
+              setBusca(
+                e.target.value
+              )
             }
             style={styles.search}
           />
-
 
           <button
             style={styles.button}
@@ -274,18 +332,13 @@ function Apartamentos() {
 
           </button>
 
-
         </div>
 
       </div>
 
-
-
       {/* RESUMO */}
 
-
       <div style={styles.resumeGrid}>
-
 
         <div style={styles.resumeCard}>
 
@@ -307,7 +360,6 @@ function Apartamentos() {
 
         </div>
 
-
         <div style={styles.resumeCard}>
 
           <div style={styles.resumeIcon}>
@@ -323,7 +375,9 @@ function Apartamentos() {
             <h2 style={styles.resumeNumber}>
               {
                 apartamentos.filter(
-                  (a) => a.status === "Disponível"
+                  (a) =>
+                    a.status ===
+                    "Disponível"
                 ).length
               }
             </h2>
@@ -331,7 +385,6 @@ function Apartamentos() {
           </div>
 
         </div>
-
 
         <div style={styles.resumeCard}>
 
@@ -348,7 +401,9 @@ function Apartamentos() {
             <h2 style={styles.resumeNumber}>
               {
                 apartamentos.filter(
-                  (a) => a.status === "Ocupado"
+                  (a) =>
+                    a.status ===
+                    "Ocupado"
                 ).length
               }
             </h2>
@@ -357,19 +412,13 @@ function Apartamentos() {
 
         </div>
 
-
       </div>
-
-
 
       {/* TABELA */}
 
-
       <div style={styles.card}>
 
-
         <table style={styles.table}>
-
 
           <thead>
 
@@ -399,9 +448,7 @@ function Apartamentos() {
 
           </thead>
 
-
           <tbody>
-
 
             {apartamentosFiltrados.length === 0 ? (
 
@@ -420,10 +467,10 @@ function Apartamentos() {
 
             ) : (
 
-              apartamentosFiltrados.map((ap) => (
+              apartamentosFiltrados.map(
+                (ap) => (
 
                 <tr key={ap.id}>
-
 
                   <td style={styles.td}>
 
@@ -436,7 +483,9 @@ function Apartamentos() {
                       <div>
 
                         <strong>
-                          Bloco {ap.bloco} - {ap.numero}
+                          Bloco {ap.bloco}
+                          {" - "}
+                          {ap.numero}
                         </strong>
 
                       </div>
@@ -445,25 +494,25 @@ function Apartamentos() {
 
                   </td>
 
-
                   <td style={styles.td}>
                     {ap.andar}
                   </td>
 
-
                   <td style={styles.td}>
 
-                    {ap.morador || "Sem morador"}
+                    {ap.morador ||
+                      "Sem morador"}
 
                   </td>
-
 
                   <td style={styles.td}>
 
                     <span
                       style={{
                         ...styles.statusBadge,
-                        ...corStatus(ap.status)
+                        ...corStatus(
+                          ap.status
+                        )
                       }}
                     >
 
@@ -473,14 +522,16 @@ function Apartamentos() {
 
                   </td>
 
-
                   <td style={styles.tdCenter}>
 
-
                     <button
-                      style={styles.editButton}
+                      style={
+                        styles.editButton
+                      }
                       onClick={() =>
-                        editarApartamento(ap)
+                        editarApartamento(
+                          ap
+                        )
                       }
                     >
 
@@ -488,18 +539,20 @@ function Apartamentos() {
 
                     </button>
 
-
                     <button
-                      style={styles.deleteButton}
+                      style={
+                        styles.deleteButton
+                      }
                       onClick={() =>
-                        excluirApartamento(ap.id)
+                        excluirApartamento(
+                          ap.id
+                        )
                       }
                     >
 
                       Excluir
 
                     </button>
-
 
                   </td>
 
@@ -509,25 +562,19 @@ function Apartamentos() {
 
             )}
 
-
           </tbody>
 
         </table>
 
       </div>
 
-
-
       {/* MODAL */}
-
 
       {mostrarModal && (
 
         <div style={styles.modalBackground}>
 
-
           <div style={styles.modal}>
-
 
             <h2 style={styles.modalTitle}>
 
@@ -536,7 +583,6 @@ function Apartamentos() {
                 : "Novo apartamento"}
 
             </h2>
-
 
             <input
               placeholder="Bloco"
@@ -552,7 +598,6 @@ function Apartamentos() {
               style={styles.input}
             />
 
-
             <input
               placeholder="Número"
               value={novoAp.numero}
@@ -566,7 +611,6 @@ function Apartamentos() {
               }
               style={styles.input}
             />
-
 
             <input
               placeholder="Andar"
@@ -582,9 +626,9 @@ function Apartamentos() {
               style={styles.input}
             />
 
+            {/* MORADOR */}
 
-            <input
-              placeholder="Morador"
+            <select
               value={novoAp.morador}
               onChange={(e) =>
 
@@ -595,8 +639,29 @@ function Apartamentos() {
 
               }
               style={styles.input}
-            />
+            >
 
+              <option value="">
+                Selecione um morador
+              </option>
+
+              {moradores.map(
+                (morador, index) => (
+
+                <option
+                  key={index}
+                  value={morador.nome}
+                >
+
+                  {morador.nome}
+
+                </option>
+
+              ))}
+
+            </select>
+
+            {/* STATUS */}
 
             <select
               value={novoAp.status}
@@ -625,19 +690,18 @@ function Apartamentos() {
 
             </select>
 
-
             <div style={styles.modalButtons}>
-
 
               <button
                 style={styles.saveButton}
-                onClick={salvarApartamento}
+                onClick={
+                  salvarApartamento
+                }
               >
 
                 Salvar
 
               </button>
-
 
               <button
                 style={styles.cancelButton}
@@ -649,7 +713,6 @@ function Apartamentos() {
                 Cancelar
 
               </button>
-
 
             </div>
 
@@ -664,7 +727,6 @@ function Apartamentos() {
   );
 
 }
-
 
 const styles = {
 

@@ -1,155 +1,77 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 function Porteiros() {
 
-  const [porteiros, setPorteiros] = useState([]);
+  const [porteiros, setPorteiros] =
+    useState(() => {
 
-  const [mostrarModal, setMostrarModal] = useState(false);
+      const dados =
+        localStorage.getItem("porteiros");
 
-  const [busca, setBusca] = useState("");
+      return dados
+        ? JSON.parse(dados)
+        : [];
 
-  const [novoPorteiro, setNovoPorteiro] = useState({
-    nome: "",
-    turno: "",
-    telefone: "",
-    usuario: "",
-    senha: "",
-    status: "Ativo",
-    ultimoLogin: null
-  });
+    });
 
-  const [editId, setEditId] = useState(null);
+  const [mostrarModal, setMostrarModal] =
+    useState(false);
 
-  // CARREGAR DADOS
+  const [busca, setBusca] =
+    useState("");
 
-  useEffect(() => {
+  const [novoPorteiro, setNovoPorteiro] =
+    useState({
+      nome: "",
+      turno: "",
+      telefone: "",
+      usuario: "",
+      senha: "",
+      status: "Ativo",
+      ultimoLogin: null
+    });
 
-    const dados = localStorage.getItem("porteiros");
+  const [editId, setEditId] =
+    useState(null);
 
-    if (dados) {
+  /* =========================
+     FILTRO
+  ========================= */
 
-      setPorteiros(JSON.parse(dados));
+  const porteirosFiltrados =
+    porteiros.filter((p) =>
 
-    } else {
+      p.nome
+        .toLowerCase()
+        .includes(
+          busca.toLowerCase()
+        ) ||
 
-      const iniciais = [
-        {
-          id: 1,
-          nome: "José Carlos",
-          turno: "Manhã",
-          telefone: "99999-1111",
-          usuario: "jose",
-          senha: "123",
-          status: "Ativo",
-          ultimoLogin: null
-        },
-        {
-          id: 2,
-          nome: "Marcos Silva",
-          turno: "Noite",
-          telefone: "99999-2222",
-          usuario: "marcos",
-          senha: "123",
-          status: "Ativo",
-          ultimoLogin: null
-        }
-      ];
+      p.turno
+        .toLowerCase()
+        .includes(
+          busca.toLowerCase()
+        ) ||
 
-      setPorteiros(iniciais);
+      p.telefone
+        .toLowerCase()
+        .includes(
+          busca.toLowerCase()
+        ) ||
 
-      localStorage.setItem(
-        "porteiros",
-        JSON.stringify(iniciais)
-      );
+      p.usuario
+        .toLowerCase()
+        .includes(
+          busca.toLowerCase()
+        )
 
-    }
-
-  }, []);
-
-  // SALVAR AUTOMATICAMENTE
-
-  useEffect(() => {
-
-    localStorage.setItem(
-      "porteiros",
-      JSON.stringify(porteiros)
     );
 
-  }, [porteiros]);
+  /* =========================
+     LIMPAR FORMULÁRIO
+  ========================= */
 
-  // FILTRO
-
-  const porteirosFiltrados = porteiros.filter((p) =>
-
-    p.nome.toLowerCase().includes(busca.toLowerCase()) ||
-    p.turno.toLowerCase().includes(busca.toLowerCase()) ||
-    p.telefone.toLowerCase().includes(busca.toLowerCase()) ||
-    p.usuario.toLowerCase().includes(busca.toLowerCase())
-
-  );
-
-  // SALVAR
-
-  function salvarPorteiro() {
-
-    if (
-      !novoPorteiro.nome ||
-      !novoPorteiro.turno ||
-      !novoPorteiro.telefone ||
-      !novoPorteiro.usuario ||
-      !novoPorteiro.senha
-    ) {
-
-      alert("Preencha todos os campos");
-
-      return;
-
-    }
-
-    const usuarioExistente = porteiros.find(
-      (p) =>
-        p.usuario === novoPorteiro.usuario &&
-        p.id !== editId
-    );
-
-    if (usuarioExistente) {
-
-      alert("Esse usuário já existe");
-
-      return;
-
-    }
-
-    if (editId !== null) {
-
-      const lista = porteiros.map((p) =>
-
-        p.id === editId
-          ? {
-              ...novoPorteiro,
-              id: editId
-            }
-          : p
-
-      );
-
-      setPorteiros(lista);
-
-      setEditId(null);
-
-    } else {
-
-      const novo = {
-        id: Date.now(),
-        ...novoPorteiro
-      };
-
-      setPorteiros([
-        ...porteiros,
-        novo
-      ]);
-
-    }
+  function limparFormulario() {
 
     setNovoPorteiro({
       nome: "",
@@ -161,31 +83,173 @@ function Porteiros() {
       ultimoLogin: null
     });
 
+    setEditId(null);
+
+  }
+
+  /* =========================
+     SALVAR
+  ========================= */
+
+  function salvarPorteiro() {
+
+    if (
+      !novoPorteiro.nome ||
+      !novoPorteiro.turno ||
+      !novoPorteiro.telefone ||
+      !novoPorteiro.usuario ||
+      !novoPorteiro.senha
+    ) {
+
+      alert(
+        "Preencha todos os campos"
+      );
+
+      return;
+
+    }
+
+    const usuarioExistente =
+      porteiros.find(
+
+        (p) =>
+
+          p.usuario
+            .trim()
+            .toLowerCase() ===
+
+          novoPorteiro.usuario
+            .trim()
+            .toLowerCase() &&
+
+          p.id !== editId
+
+      );
+
+    if (usuarioExistente) {
+
+      alert(
+        "Esse usuário já existe"
+      );
+
+      return;
+
+    }
+
+    /* =========================
+       EDITAR
+    ========================= */
+
+    if (editId !== null) {
+
+      const listaAtualizada =
+        porteiros.map((p) =>
+
+          p.id === editId
+            ? {
+                ...p,
+                ...novoPorteiro,
+                id: editId
+              }
+            : p
+
+        );
+
+      setPorteiros(
+        listaAtualizada
+      );
+
+      localStorage.setItem(
+        "porteiros",
+        JSON.stringify(
+          listaAtualizada
+        )
+      );
+
+    }
+
+    /* =========================
+       NOVO
+    ========================= */
+
+    else {
+
+      const novo = {
+
+        id: Date.now(),
+
+        ...novoPorteiro
+
+      };
+
+      const listaAtualizada = [
+        ...porteiros,
+        novo
+      ];
+
+      setPorteiros(
+        listaAtualizada
+      );
+
+      localStorage.setItem(
+        "porteiros",
+        JSON.stringify(
+          listaAtualizada
+        )
+      );
+
+    }
+
+    limparFormulario();
+
     setMostrarModal(false);
 
   }
 
-  // EDITAR
+  /* =========================
+     EDITAR
+  ========================= */
 
-  function editarPorteiro(porteiro) {
+  function editarPorteiro(
+    porteiro
+  ) {
 
-    setNovoPorteiro(porteiro);
+    setNovoPorteiro({
+      ...porteiro
+    });
 
-    setEditId(porteiro.id);
+    setEditId(
+      porteiro.id
+    );
 
     setMostrarModal(true);
 
   }
 
-  // EXCLUIR
+  /* =========================
+     EXCLUIR
+  ========================= */
 
   function excluirPorteiro(id) {
 
-    const lista = porteiros.filter(
-      (p) => p.id !== id
-    );
+    const confirmar =
+      window.confirm(
+        "Deseja excluir este porteiro?"
+      );
+
+    if (!confirmar) return;
+
+    const lista =
+      porteiros.filter(
+        (p) => p.id !== id
+      );
 
     setPorteiros(lista);
+
+    localStorage.setItem(
+      "porteiros",
+      JSON.stringify(lista)
+    );
 
   }
 
@@ -215,7 +279,9 @@ function Porteiros() {
             placeholder="Buscar porteiro..."
             value={busca}
             onChange={(e) =>
-              setBusca(e.target.value)
+              setBusca(
+                e.target.value
+              )
             }
             style={styles.search}
           />
@@ -224,19 +290,11 @@ function Porteiros() {
             style={styles.button}
             onClick={() => {
 
-              setEditId(null);
+              limparFormulario();
 
-              setNovoPorteiro({
-                nome: "",
-                turno: "",
-                telefone: "",
-                usuario: "",
-                senha: "",
-                status: "Ativo",
-                ultimoLogin: null
-              });
-
-              setMostrarModal(true);
+              setMostrarModal(
+                true
+              );
 
             }}
           >
@@ -288,7 +346,9 @@ function Porteiros() {
             <h2 style={styles.resumeNumber}>
               {
                 porteiros.filter(
-                  (p) => p.turno === "Noite"
+                  (p) =>
+                    p.turno ===
+                    "Noite"
                 ).length
               }
             </h2>
@@ -389,12 +449,14 @@ function Porteiros() {
                         ...styles.turnoBadge,
 
                         background:
-                          p.turno === "Noite"
+                          p.turno ===
+                          "Noite"
                             ? "#dcfce7"
                             : "#ecfdf5",
 
                         color:
-                          p.turno === "Noite"
+                          p.turno ===
+                          "Noite"
                             ? "#14532d"
                             : "#166534"
                       }}
@@ -434,7 +496,9 @@ function Porteiros() {
                     <button
                       style={styles.deleteButton}
                       onClick={() =>
-                        excluirPorteiro(p.id)
+                        excluirPorteiro(
+                          p.id
+                        )
                       }
                     >
 
@@ -479,7 +543,8 @@ function Porteiros() {
 
                 setNovoPorteiro({
                   ...novoPorteiro,
-                  nome: e.target.value
+                  nome:
+                    e.target.value
                 })
 
               }
@@ -492,7 +557,8 @@ function Porteiros() {
 
                 setNovoPorteiro({
                   ...novoPorteiro,
-                  turno: e.target.value
+                  turno:
+                    e.target.value
                 })
 
               }
@@ -524,7 +590,8 @@ function Porteiros() {
 
                 setNovoPorteiro({
                   ...novoPorteiro,
-                  telefone: e.target.value
+                  telefone:
+                    e.target.value
                 })
 
               }
@@ -538,7 +605,8 @@ function Porteiros() {
 
                 setNovoPorteiro({
                   ...novoPorteiro,
-                  usuario: e.target.value
+                  usuario:
+                    e.target.value
                 })
 
               }
@@ -553,7 +621,8 @@ function Porteiros() {
 
                 setNovoPorteiro({
                   ...novoPorteiro,
-                  senha: e.target.value
+                  senha:
+                    e.target.value
                 })
 
               }
@@ -564,7 +633,9 @@ function Porteiros() {
 
               <button
                 style={styles.saveBtn}
-                onClick={salvarPorteiro}
+                onClick={
+                  salvarPorteiro
+                }
               >
 
                 Salvar
@@ -574,7 +645,9 @@ function Porteiros() {
               <button
                 style={styles.cancelBtn}
                 onClick={() =>
-                  setMostrarModal(false)
+                  setMostrarModal(
+                    false
+                  )
                 }
               >
 

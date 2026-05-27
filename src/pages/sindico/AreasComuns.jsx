@@ -4,33 +4,44 @@ function AreasComuns() {
 
   const [areas, setAreas] = useState([]);
 
-  const [mostrarModal, setMostrarModal] = useState(false);
+  const [mostrarModal, setMostrarModal] =
+    useState(false);
 
-  const [busca, setBusca] = useState("");
+  const [busca, setBusca] =
+    useState("");
 
-  const [novaArea, setNovaArea] = useState({
-    nome: "",
-    capacidade: "",
-    horario: "",
-    status: "Disponível"
-  });
+  const [novaArea, setNovaArea] =
+    useState({
+      nome: "",
+      capacidade: "",
+      horario: "",
+      status: "Disponível"
+    });
 
-  const [editId, setEditId] = useState(null);
+  const [editId, setEditId] =
+    useState(null);
 
 
+  // =========================
   // CARREGAR DADOS
+  // =========================
 
   useEffect(() => {
 
-    const dados = localStorage.getItem("areasComuns");
+    const dados =
+      localStorage.getItem(
+        "areasComuns"
+      );
 
     if (dados) {
 
-      setAreas(JSON.parse(dados));
+      setAreas(
+        JSON.parse(dados)
+      );
 
     } else {
 
-      setAreas([
+      const iniciais = [
         {
           id: 1,
           nome: "Salão de festas",
@@ -52,14 +63,23 @@ function AreasComuns() {
           horario: "07:00 - 20:00",
           status: "Manutenção"
         }
-      ]);
+      ];
+
+      setAreas(iniciais);
+
+      localStorage.setItem(
+        "areasComuns",
+        JSON.stringify(iniciais)
+      );
 
     }
 
   }, []);
 
 
-  // SALVAR
+  // =========================
+  // SALVAR AUTOMATICAMENTE
+  // =========================
 
   useEffect(() => {
 
@@ -71,18 +91,37 @@ function AreasComuns() {
   }, [areas]);
 
 
+  // =========================
   // FILTRO
+  // =========================
 
-  const areasFiltradas = areas.filter((area) =>
+  const areasFiltradas =
+    areas.filter((area) =>
 
-    area.nome.toLowerCase().includes(busca.toLowerCase()) ||
-    area.capacidade.toLowerCase().includes(busca.toLowerCase()) ||
-    area.status.toLowerCase().includes(busca.toLowerCase())
+      area.nome
+        .toLowerCase()
+        .includes(
+          busca.toLowerCase()
+        ) ||
 
-  );
+      area.capacidade
+        .toLowerCase()
+        .includes(
+          busca.toLowerCase()
+        ) ||
+
+      area.status
+        .toLowerCase()
+        .includes(
+          busca.toLowerCase()
+        )
+
+    );
 
 
+  // =========================
   // SALVAR ÁREA
+  // =========================
 
   function salvarArea() {
 
@@ -92,7 +131,29 @@ function AreasComuns() {
       !novaArea.horario
     ) {
 
-      alert("Preencha todos os campos");
+      alert(
+        "Preencha todos os campos"
+      );
+
+      return;
+
+    }
+
+    const areaExiste =
+      areas.find(
+        (area) =>
+
+          area.nome ===
+            novaArea.nome &&
+          area.id !== editId
+
+      );
+
+    if (areaExiste) {
+
+      alert(
+        "Essa área já existe"
+      );
 
       return;
 
@@ -100,13 +161,17 @@ function AreasComuns() {
 
     if (editId !== null) {
 
-      const lista = areas.map((area) =>
+      const lista =
+        areas.map((area) =>
 
-        area.id === editId
-          ? { ...novaArea, id: editId }
-          : area
+          area.id === editId
+            ? {
+                ...novaArea,
+                id: editId
+              }
+            : area
 
-      );
+        );
 
       setAreas(lista);
 
@@ -138,7 +203,9 @@ function AreasComuns() {
   }
 
 
+  // =========================
   // EDITAR
+  // =========================
 
   function editarArea(area) {
 
@@ -151,44 +218,61 @@ function AreasComuns() {
   }
 
 
+  // =========================
   // EXCLUIR
+  // =========================
 
   function excluirArea(id) {
 
-    const lista = areas.filter(
-      (area) => area.id !== id
-    );
+    const confirmar =
+      window.confirm(
+        "Deseja excluir essa área?"
+      );
+
+    if (!confirmar) return;
+
+    const lista =
+      areas.filter(
+        (area) =>
+          area.id !== id
+      );
 
     setAreas(lista);
 
   }
 
 
+  // =========================
   // STATUS
+  // =========================
 
   function corStatus(status) {
 
     switch (status) {
 
       case "Disponível":
+
         return {
           background: "#dcfce7",
           color: "#166534"
         };
 
       case "Ocupado":
+
         return {
           background: "#fef3c7",
           color: "#92400e"
         };
 
       case "Manutenção":
+
         return {
           background: "#fee2e2",
           color: "#dc2626"
         };
 
       default:
+
         return {
           background: "#e5e7eb",
           color: "#374151"
@@ -230,7 +314,9 @@ function AreasComuns() {
             placeholder="Buscar área..."
             value={busca}
             onChange={(e) =>
-              setBusca(e.target.value)
+              setBusca(
+                e.target.value
+              )
             }
             style={styles.search}
           />
@@ -258,11 +344,9 @@ function AreasComuns() {
 
           </button>
 
-
         </div>
 
       </div>
-
 
 
       {/* RESUMO */}
@@ -307,7 +391,9 @@ function AreasComuns() {
             <h2 style={styles.resumeNumber}>
               {
                 areas.filter(
-                  (a) => a.status === "Disponível"
+                  (a) =>
+                    a.status ===
+                    "Disponível"
                 ).length
               }
             </h2>
@@ -316,9 +402,7 @@ function AreasComuns() {
 
         </div>
 
-
       </div>
-
 
 
       {/* TABELA */}
@@ -379,7 +463,8 @@ function AreasComuns() {
 
             ) : (
 
-              areasFiltradas.map((area) => (
+              areasFiltradas.map(
+                (area) => (
 
                 <tr key={area.id}>
 
@@ -416,7 +501,9 @@ function AreasComuns() {
                     <span
                       style={{
                         ...styles.statusBadge,
-                        ...corStatus(area.status)
+                        ...corStatus(
+                          area.status
+                        )
                       }}
                     >
 
@@ -431,7 +518,9 @@ function AreasComuns() {
 
 
                     <button
-                      style={styles.editButton}
+                      style={
+                        styles.editButton
+                      }
                       onClick={() =>
                         editarArea(area)
                       }
@@ -443,16 +532,19 @@ function AreasComuns() {
 
 
                     <button
-                      style={styles.deleteButton}
+                      style={
+                        styles.deleteButton
+                      }
                       onClick={() =>
-                        excluirArea(area.id)
+                        excluirArea(
+                          area.id
+                        )
                       }
                     >
 
                       Excluir
 
                     </button>
-
 
                   </td>
 
@@ -462,13 +554,11 @@ function AreasComuns() {
 
             )}
 
-
           </tbody>
 
         </table>
 
       </div>
-
 
 
       {/* MODAL */}
@@ -513,7 +603,8 @@ function AreasComuns() {
 
                 setNovaArea({
                   ...novaArea,
-                  capacidade: e.target.value
+                  capacidade:
+                    e.target.value
                 })
 
               }
@@ -528,7 +619,8 @@ function AreasComuns() {
 
                 setNovaArea({
                   ...novaArea,
-                  horario: e.target.value
+                  horario:
+                    e.target.value
                 })
 
               }
@@ -542,7 +634,8 @@ function AreasComuns() {
 
                 setNovaArea({
                   ...novaArea,
-                  status: e.target.value
+                  status:
+                    e.target.value
                 })
 
               }
@@ -587,7 +680,6 @@ function AreasComuns() {
                 Cancelar
 
               </button>
-
 
             </div>
 

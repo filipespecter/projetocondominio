@@ -21,6 +21,10 @@ function Login() {
 
   const [erro, setErro] = useState("");
 
+  /* =========================
+     PERFIS
+  ========================= */
+
   const perfis = {
 
     sindico: {
@@ -57,37 +61,61 @@ function Login() {
 
   const perfil = perfis[tipo];
 
+  /* =========================
+     VALIDA PERFIL
+  ========================= */
+
+  if (!perfil) {
+
+    navigate("/");
+
+    return null;
+
+  }
+
+  /* =========================
+     CHAVE DA SESSÃO
+  ========================= */
+
   function obterChaveSessao() {
 
     switch (tipo) {
 
       case "sindico":
-        return "usuarioSindico";
+        return "sessaoSindico";
 
       case "porteiro":
-        return "usuarioPorteiro";
+        return "sessaoPorteiro";
 
       case "morador":
-        return "usuarioMorador";
+        return "sessaoMorador";
 
       default:
-        return "usuarioLogado";
+        return "sessao";
 
     }
 
   }
 
+  /* =========================
+     LIMPA SESSÕES
+  ========================= */
+
   function limparSessoes() {
 
-    localStorage.removeItem("usuarioSindico");
-    localStorage.removeItem("usuarioPorteiro");
-    localStorage.removeItem("usuarioMorador");
+    localStorage.removeItem("sessaoSindico");
+    localStorage.removeItem("sessaoPorteiro");
+    localStorage.removeItem("sessaoMorador");
 
-    sessionStorage.removeItem("usuarioSindico");
-    sessionStorage.removeItem("usuarioPorteiro");
-    sessionStorage.removeItem("usuarioMorador");
+    sessionStorage.removeItem("sessaoSindico");
+    sessionStorage.removeItem("sessaoPorteiro");
+    sessionStorage.removeItem("sessaoMorador");
 
   }
+
+  /* =========================
+     SALVAR SESSÃO
+  ========================= */
 
   function salvarSessao(dadosUsuario) {
 
@@ -109,6 +137,10 @@ function Login() {
     );
 
   }
+
+  /* =========================
+     LOGIN
+  ========================= */
 
   function fazerLogin() {
 
@@ -138,9 +170,12 @@ function Login() {
           loginEm: new Date().toISOString()
         });
 
-        navigate("/dashboard/sindico", {
-          replace: true
-        });
+        navigate(
+          "/dashboard/sindico",
+          {
+            replace: true
+          }
+        );
 
         return;
 
@@ -165,9 +200,8 @@ function Login() {
           localStorage.getItem("porteiros")
         ) || [];
 
-      const encontrado = porteiros.find(
-
-        (p) =>
+      const encontrado =
+        porteiros.find((p) =>
 
           p.usuario
             ?.trim()
@@ -177,23 +211,38 @@ function Login() {
           p.senha?.trim() ===
             senhaDigitada
 
-      );
+        );
 
       if (encontrado) {
 
         salvarSessao({
+
           tipo: "porteiro",
+
           id: encontrado.id,
+
           nome: encontrado.nome,
-          usuario: encontrado.usuario,
-          turno: encontrado.turno,
-          telefone: encontrado.telefone,
-          loginEm: new Date().toISOString()
+
+          usuario:
+            encontrado.usuario,
+
+          telefone:
+            encontrado.telefone,
+
+          turno:
+            encontrado.turno,
+
+          loginEm:
+            new Date().toISOString()
+
         });
 
-        navigate("/dashboard/porteiro", {
-          replace: true
-        });
+        navigate(
+          "/dashboard/porteiro",
+          {
+            replace: true
+          }
+        );
 
       } else {
 
@@ -218,9 +267,8 @@ function Login() {
           localStorage.getItem("moradores")
         ) || [];
 
-      const encontrado = moradores.find(
-
-        (m) =>
+      const encontrado =
+        moradores.find((m) =>
 
           m.usuario
             ?.trim()
@@ -230,23 +278,35 @@ function Login() {
           m.senha?.trim() ===
             senhaDigitada
 
-      );
+        );
 
       if (encontrado) {
 
         salvarSessao({
+
           tipo: "morador",
+
           id: encontrado.id,
+
           nome: encontrado.nome,
+
+          usuario:
+            encontrado.usuario,
+
           apartamento:
             encontrado.apartamento,
-          usuario: encontrado.usuario,
-          loginEm: new Date().toISOString()
+
+          loginEm:
+            new Date().toISOString()
+
         });
 
-        navigate("/dashboard/morador", {
-          replace: true
-        });
+        navigate(
+          "/dashboard/morador",
+          {
+            replace: true
+          }
+        );
 
       } else {
 
@@ -259,6 +319,10 @@ function Login() {
     }
 
   }
+
+  /* =========================
+     ENTER
+  ========================= */
 
   function handleKeyPress(e) {
 
@@ -282,6 +346,7 @@ function Login() {
         >
 
           <FaArrowLeft />
+
           Voltar
 
         </button>

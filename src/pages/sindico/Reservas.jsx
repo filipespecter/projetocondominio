@@ -7,6 +7,9 @@ function Reservas() {
   const [mostrarModal, setMostrarModal] =
     useState(false);
 
+  const [busca, setBusca] =
+    useState("");
+
   const [novaReserva, setNovaReserva] =
     useState({
       area: "",
@@ -44,7 +47,29 @@ function Reservas() {
       !novaReserva.horario
     ) {
 
-      alert("Preencha os campos obrigatórios");
+      alert(
+        "Preencha os campos obrigatórios"
+      );
+
+      return;
+
+    }
+
+    // IMPEDIR DUPLICIDADE
+
+    const conflito = reservas.find(
+      (r) =>
+        r.area === novaReserva.area &&
+        r.data === novaReserva.data &&
+        r.horario === novaReserva.horario &&
+        r.id !== editId
+    );
+
+    if (conflito) {
+
+      alert(
+        "Já existe uma reserva para este horário."
+      );
 
       return;
 
@@ -113,6 +138,12 @@ function Reservas() {
 
   function excluirReserva(id) {
 
+    const confirmar = window.confirm(
+      "Deseja realmente excluir esta reserva?"
+    );
+
+    if (!confirmar) return;
+
     const lista = reservas.filter(
       (r) => r.id !== id
     );
@@ -180,6 +211,41 @@ function Reservas() {
 
   }
 
+  // FILTRO
+
+  const reservasFiltradas = reservas.filter(
+    (r) =>
+
+      r.area.toLowerCase().includes(
+        busca.toLowerCase()
+      ) ||
+
+      r.data.toLowerCase().includes(
+        busca.toLowerCase()
+      ) ||
+
+      r.horario.toLowerCase().includes(
+        busca.toLowerCase()
+      ) ||
+
+      r.status.toLowerCase().includes(
+        busca.toLowerCase()
+      )
+
+  );
+
+  // ORDENAÇÃO
+
+  const reservasOrdenadas = [
+    ...reservasFiltradas
+  ].sort(
+
+    (a, b) =>
+      new Date(a.data) -
+      new Date(b.data)
+
+  );
+
   const pendentes = reservas.filter(
     (r) => r.status === "pendente"
   );
@@ -212,28 +278,41 @@ function Reservas() {
 
         </div>
 
-        <button
-          style={styles.button}
-          onClick={() => {
+        <div style={styles.headerActions}>
 
-            setEditId(null);
+          <input
+            placeholder="Buscar reserva..."
+            value={busca}
+            onChange={(e) =>
+              setBusca(e.target.value)
+            }
+            style={styles.search}
+          />
 
-            setNovaReserva({
-              area: "",
-              data: "",
-              horario: "",
-              obs: "",
-              status: "pendente"
-            });
+          <button
+            style={styles.button}
+            onClick={() => {
 
-            setMostrarModal(true);
+              setEditId(null);
 
-          }}
-        >
+              setNovaReserva({
+                area: "",
+                data: "",
+                horario: "",
+                obs: "",
+                status: "pendente"
+              });
 
-          + Nova Reserva
+              setMostrarModal(true);
 
-        </button>
+            }}
+          >
+
+            + Nova Reserva
+
+          </button>
+
+        </div>
 
       </div>
 
@@ -363,7 +442,7 @@ function Reservas() {
 
           <tbody>
 
-            {reservas.length === 0 && (
+            {reservasOrdenadas.length === 0 && (
 
               <tr>
 
@@ -380,7 +459,7 @@ function Reservas() {
 
             )}
 
-            {reservas.map((r) => (
+            {reservasOrdenadas.map((r) => (
 
               <tr key={r.id}>
 
@@ -422,7 +501,13 @@ function Reservas() {
                     }}
                   >
 
-                    {r.status}
+                    {
+                      r.status === "pendente"
+                        ? "Pendente"
+                        : r.status === "aprovada"
+                        ? "Aprovada"
+                        : "Recusada"
+                    }
 
                   </span>
 
@@ -502,9 +587,19 @@ function Reservas() {
 
       {mostrarModal && (
 
-        <div style={styles.modalBackground}>
+        <div
+          style={styles.modalBackground}
+          onClick={() =>
+            setMostrarModal(false)
+          }
+        >
 
-          <div style={styles.modal}>
+          <div
+            style={styles.modal}
+            onClick={(e) =>
+              e.stopPropagation()
+            }
+          >
 
             <h2 style={styles.modalTitle}>
 
@@ -542,7 +637,15 @@ function Reservas() {
               </option>
 
               <option>
-                Quadra
+                Academia
+              </option>
+
+              <option>
+                Espaço gourmet
+              </option>
+
+              <option>
+                Coworking
               </option>
 
             </select>
@@ -629,7 +732,15 @@ const styles = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: "30px"
+    marginBottom: "30px",
+    flexWrap: "wrap",
+    gap: "20px"
+  },
+
+  headerActions: {
+    display: "flex",
+    gap: "12px",
+    alignItems: "center"
   },
 
   title: {
@@ -643,6 +754,14 @@ const styles = {
     color: "#6b7280"
   },
 
+  search: {
+    padding: "14px",
+    borderRadius: "12px",
+    border: "1px solid #d1d5db",
+    outline: "none",
+    minWidth: "240px"
+  },
+
   button: {
     background:
       "linear-gradient(135deg,#14532d,#16a34a)",
@@ -652,7 +771,8 @@ const styles = {
     borderRadius: "12px",
     cursor: "pointer",
     fontWeight: "700",
-    fontSize: "14px"
+    fontSize: "14px",
+    transition: "0.2s"
   },
 
   cardsGrid: {
@@ -701,6 +821,7 @@ const styles = {
 
   table: {
     width: "100%",
+    minWidth: "900px",
     borderCollapse: "collapse"
   },
 
@@ -742,7 +863,8 @@ const styles = {
     padding: "8px 12px",
     borderRadius: "8px",
     cursor: "pointer",
-    fontWeight: "600"
+    fontWeight: "600",
+    transition: "0.2s"
   },
 
   reject: {
@@ -752,7 +874,8 @@ const styles = {
     padding: "8px 12px",
     borderRadius: "8px",
     cursor: "pointer",
-    fontWeight: "600"
+    fontWeight: "600",
+    transition: "0.2s"
   },
 
   edit: {
@@ -762,7 +885,8 @@ const styles = {
     padding: "8px 12px",
     borderRadius: "8px",
     cursor: "pointer",
-    fontWeight: "600"
+    fontWeight: "600",
+    transition: "0.2s"
   },
 
   delete: {
@@ -772,7 +896,8 @@ const styles = {
     padding: "8px 12px",
     borderRadius: "8px",
     cursor: "pointer",
-    fontWeight: "600"
+    fontWeight: "600",
+    transition: "0.2s"
   },
 
   modalBackground: {
@@ -786,7 +911,8 @@ const styles = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 999
+    zIndex: 999,
+    backdropFilter: "blur(4px)"
   },
 
   modal: {
@@ -838,7 +964,8 @@ const styles = {
     padding: "14px",
     borderRadius: "10px",
     cursor: "pointer",
-    fontWeight: "700"
+    fontWeight: "700",
+    transition: "0.2s"
   },
 
   cancelButton: {
@@ -849,7 +976,8 @@ const styles = {
     padding: "14px",
     borderRadius: "10px",
     cursor: "pointer",
-    fontWeight: "700"
+    fontWeight: "700",
+    transition: "0.2s"
   }
 
 };

@@ -1,64 +1,63 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 function Avisos() {
 
-  const [avisos, setAvisos] = useState([]);
+  // CARREGA DIRETO DO LOCALSTORAGE
+  const [avisos, setAvisos] = useState(() => {
+
+    const dados =
+      localStorage.getItem("avisos");
+
+    return dados
+      ? JSON.parse(dados)
+      : [];
+
+  });
 
   const [mostrarModal, setMostrarModal] =
     useState(false);
+
+  const [busca, setBusca] =
+    useState("");
 
   const [novoAviso, setNovoAviso] =
     useState({
       titulo: "",
       descricao: "",
-      prioridade: "Média"
+      prioridade: "Média",
+      data: new Date()
+        .toLocaleDateString("pt-BR")
     });
 
   const [editId, setEditId] =
     useState(null);
 
-  useEffect(() => {
+  // FILTRO
 
-    const dados =
-      localStorage.getItem("avisos");
+  const avisosFiltrados =
+    avisos.filter((a) =>
 
-    if (dados) {
+      a.titulo
+        .toLowerCase()
+        .includes(
+          busca.toLowerCase()
+        ) ||
 
-      setAvisos(JSON.parse(dados));
+      a.descricao
+        .toLowerCase()
+        .includes(
+          busca.toLowerCase()
+        ) ||
 
-    } else {
+      a.prioridade
+        .toLowerCase()
+        .includes(
+          busca.toLowerCase()
+        )
 
-      setAvisos([
-        {
-          id: 1,
-          titulo:
-            "Manutenção do elevador",
-          descricao:
-            "Será realizada amanhã às 08:00.",
-          prioridade: "Alta"
-        },
-        {
-          id: 2,
-          titulo:
-            "Interrupção de água",
-          descricao:
-            "Bloco B ficará sem água das 14h às 16h.",
-          prioridade: "Média"
-        }
-      ]);
-
-    }
-
-  }, []);
-
-  useEffect(() => {
-
-    localStorage.setItem(
-      "avisos",
-      JSON.stringify(avisos)
     );
 
-  }, [avisos]);
+  // SALVAR AVISO
 
   function salvarAviso() {
 
@@ -75,20 +74,21 @@ function Avisos() {
 
     }
 
+    let listaAtualizada = [];
+
     if (editId !== null) {
 
-      const lista = avisos.map((a) =>
+      listaAtualizada =
+        avisos.map((a) =>
 
-        a.id === editId
-          ? {
-              ...novoAviso,
-              id: editId
-            }
-          : a
+          a.id === editId
+            ? {
+                ...novoAviso,
+                id: editId
+              }
+            : a
 
-      );
-
-      setAvisos(lista);
+        );
 
       setEditId(null);
 
@@ -98,26 +98,43 @@ function Avisos() {
 
         id: Date.now(),
 
-        ...novoAviso
+        ...novoAviso,
+
+        data:
+          new Date()
+            .toLocaleDateString(
+              "pt-BR"
+            )
 
       };
 
-      setAvisos([
+      listaAtualizada = [
         ...avisos,
         novo
-      ]);
+      ];
 
     }
+
+    setAvisos(listaAtualizada);
+
+    localStorage.setItem(
+      "avisos",
+      JSON.stringify(listaAtualizada)
+    );
 
     setNovoAviso({
       titulo: "",
       descricao: "",
-      prioridade: "Média"
+      prioridade: "Média",
+      data: new Date()
+        .toLocaleDateString("pt-BR")
     });
 
     setMostrarModal(false);
 
   }
+
+  // EDITAR
 
   function editarAviso(aviso) {
 
@@ -129,7 +146,16 @@ function Avisos() {
 
   }
 
+  // EXCLUIR
+
   function excluirAviso(id) {
+
+    const confirmar =
+      window.confirm(
+        "Deseja realmente excluir este aviso?"
+      );
+
+    if (!confirmar) return;
 
     const lista =
       avisos.filter(
@@ -138,23 +164,52 @@ function Avisos() {
 
     setAvisos(lista);
 
+    localStorage.setItem(
+      "avisos",
+      JSON.stringify(lista)
+    );
+
   }
 
-  function corPrioridade(prioridade) {
+  // COR PRIORIDADE
+
+  function corPrioridade(
+    prioridade
+  ) {
 
     switch (prioridade) {
 
       case "Alta":
-        return "#dc2626";
+        return {
+          background:
+            "#fee2e2",
+          color:
+            "#dc2626"
+        };
 
       case "Média":
-        return "#d97706";
+        return {
+          background:
+            "#fef3c7",
+          color:
+            "#d97706"
+        };
 
       case "Baixa":
-        return "#16a34a";
+        return {
+          background:
+            "#dcfce7",
+          color:
+            "#166534"
+        };
 
       default:
-        return "#6b7280";
+        return {
+          background:
+            "#f3f4f6",
+          color:
+            "#374151"
+        };
 
     }
 
@@ -170,6 +225,12 @@ function Avisos() {
     avisos.filter(
       (a) =>
         a.prioridade === "Média"
+    ).length;
+
+  const baixa =
+    avisos.filter(
+      (a) =>
+        a.prioridade === "Baixa"
     ).length;
 
   return (
@@ -192,26 +253,49 @@ function Avisos() {
 
         </div>
 
-        <button
-          style={styles.button}
-          onClick={() => {
+        <div style={styles.headerActions}>
 
-            setEditId(null);
+          <input
+            placeholder="Buscar aviso..."
+            value={busca}
+            onChange={(e) =>
+              setBusca(
+                e.target.value
+              )
+            }
+            style={styles.search}
+          />
 
-            setNovoAviso({
-              titulo: "",
-              descricao: "",
-              prioridade: "Média"
-            });
+          <button
+            style={styles.button}
+            onClick={() => {
 
-            setMostrarModal(true);
+              setEditId(null);
 
-          }}
-        >
+              setNovoAviso({
+                titulo: "",
+                descricao: "",
+                prioridade:
+                  "Média",
+                data:
+                  new Date()
+                    .toLocaleDateString(
+                      "pt-BR"
+                    )
+              });
 
-          + Novo aviso
+              setMostrarModal(
+                true
+              );
 
-        </button>
+            }}
+          >
+
+            + Novo aviso
+
+          </button>
+
+        </div>
 
       </div>
 
@@ -279,6 +363,26 @@ function Avisos() {
 
         </div>
 
+        <div style={styles.resumeCard}>
+
+          <div style={styles.resumeIcon}>
+            ✅
+          </div>
+
+          <div>
+
+            <p style={styles.resumeLabel}>
+              Baixa prioridade
+            </p>
+
+            <h2 style={styles.resumeNumber}>
+              {baixa}
+            </h2>
+
+          </div>
+
+        </div>
+
       </div>
 
       {/* TABELA */}
@@ -304,6 +408,10 @@ function Avisos() {
               </th>
 
               <th style={styles.th}>
+                Data
+              </th>
+
+              <th style={styles.thCenter}>
                 Ações
               </th>
 
@@ -313,12 +421,12 @@ function Avisos() {
 
           <tbody>
 
-            {avisos.length === 0 ? (
+            {avisosFiltrados.length === 0 ? (
 
               <tr>
 
                 <td
-                  colSpan="4"
+                  colSpan="5"
                   style={styles.empty}
                 >
 
@@ -330,12 +438,15 @@ function Avisos() {
 
             ) : (
 
-              avisos.map((aviso) => (
+              avisosFiltrados.map(
+                (aviso) => (
 
                 <tr key={aviso.id}>
 
                   <td style={styles.td}>
-                    {aviso.titulo}
+                    <strong>
+                      {aviso.titulo}
+                    </strong>
                   </td>
 
                   <td style={styles.td}>
@@ -347,10 +458,9 @@ function Avisos() {
                     <span
                       style={{
                         ...styles.badge,
-                        background:
-                          corPrioridade(
-                            aviso.prioridade
-                          )
+                        ...corPrioridade(
+                          aviso.prioridade
+                        )
                       }}
                     >
 
@@ -361,13 +471,19 @@ function Avisos() {
                   </td>
 
                   <td style={styles.td}>
+                    {aviso.data}
+                  </td>
+
+                  <td style={styles.tdCenter}>
 
                     <button
                       style={
                         styles.editButton
                       }
                       onClick={() =>
-                        editarAviso(aviso)
+                        editarAviso(
+                          aviso
+                        )
                       }
                     >
 
@@ -480,7 +596,9 @@ function Avisos() {
 
               <button
                 style={styles.saveBtn}
-                onClick={salvarAviso}
+                onClick={
+                  salvarAviso
+                }
               >
 
                 Salvar
@@ -489,9 +607,21 @@ function Avisos() {
 
               <button
                 style={styles.cancelBtn}
-                onClick={() =>
-                  setMostrarModal(false)
-                }
+                onClick={() => {
+
+                  setMostrarModal(false);
+
+                  setEditId(null);
+
+                  setNovoAviso({
+                    titulo: "",
+                    descricao: "",
+                    prioridade: "Média",
+                    data: new Date()
+                      .toLocaleDateString("pt-BR")
+                  });
+
+                }}
               >
 
                 Cancelar
@@ -535,6 +665,20 @@ const styles = {
   subtitle: {
     marginTop: "8px",
     color: "#6b7280"
+  },
+
+  headerActions: {
+    display: "flex",
+    gap: "12px"
+  },
+
+  search: {
+    padding: "14px",
+    borderRadius: "12px",
+    border:
+      "1px solid #d1d5db",
+    outline: "none",
+    minWidth: "240px"
   },
 
   button: {
@@ -593,11 +737,20 @@ const styles = {
 
   table: {
     width: "100%",
-    borderCollapse: "collapse"
+    borderCollapse:
+      "collapse"
   },
 
   th: {
     textAlign: "left",
+    padding: "16px",
+    borderBottom:
+      "2px solid #e5e7eb",
+    color: "#14532d"
+  },
+
+  thCenter: {
+    textAlign: "center",
     padding: "16px",
     borderBottom:
       "2px solid #e5e7eb",
@@ -610,9 +763,15 @@ const styles = {
       "1px solid #f3f4f6"
   },
 
+  tdCenter: {
+    padding: "16px",
+    textAlign: "center",
+    borderBottom:
+      "1px solid #f3f4f6"
+  },
+
   badge: {
-    color: "white",
-    padding: "7px 12px",
+    padding: "8px 14px",
     borderRadius: "999px",
     fontSize: "12px",
     fontWeight: "700"
@@ -652,8 +811,11 @@ const styles = {
     background:
       "rgba(0,0,0,0.4)",
     display: "flex",
-    justifyContent: "center",
-    alignItems: "center"
+    justifyContent:
+      "center",
+    alignItems: "center",
+    backdropFilter:
+      "blur(4px)"
   },
 
   modal: {
@@ -662,7 +824,8 @@ const styles = {
     borderRadius: "18px",
     padding: "28px",
     display: "flex",
-    flexDirection: "column",
+    flexDirection:
+      "column",
     gap: "14px"
   },
 
@@ -693,10 +856,12 @@ const styles = {
     display: "flex",
     justifyContent:
       "space-between",
-    marginTop: "10px"
+    marginTop: "10px",
+    gap: "12px"
   },
 
   saveBtn: {
+    flex: 1,
     background: "#166534",
     color: "white",
     border: "none",
@@ -707,6 +872,7 @@ const styles = {
   },
 
   cancelBtn: {
+    flex: 1,
     background: "#d1d5db",
     border: "none",
     padding: "12px 18px",

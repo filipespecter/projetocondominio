@@ -19,112 +19,102 @@ function Visitantes() {
       morador: "",
       observacao: "",
       entrada: "",
-      status: "Autorizado",
+      autorizado: false,
+      bloqueado: false,
+      status: "Pendente",
       tipo: "Visita"
     });
 
   const [editId, setEditId] =
     useState(null);
 
+  /* =========================
+     CARREGAR DADOS
+  ========================= */
+
   useEffect(() => {
 
-    const data =
-      JSON.parse(
-        localStorage.getItem("visitantes")
-      ) || [];
+    const dados =
+      localStorage.getItem(
+        "visitantes"
+      );
 
-    if (data.length > 0) {
+    if (dados) {
 
-      setVisitantes(data);
+      try {
+
+        setVisitantes(
+          JSON.parse(dados)
+        );
+
+      } catch {
+
+        setVisitantes([]);
+
+      }
 
     } else {
 
-      const mock = [
-
-        {
-          id: 1,
-          nome: "Pedro Alves",
-          documento: "123.456.789-00",
-          apartamento: "101",
-          morador: "João Silva",
-          observacao: "Entrega de documentos",
-          entrada: "10:30",
-          status: "Em visita",
-          tipo: "Entrega",
-          data: new Date().toLocaleDateString(),
-          hora: "10:30",
-          timestamp: Date.now(),
-          porteiro: "Sistema"
-        },
-
-        {
-          id: 2,
-          nome: "Ana Costa",
-          documento: "987.654.321-00",
-          apartamento: "202",
-          morador: "Maria Souza",
-          observacao: "Visita familiar",
-          entrada: "11:00",
-          status: "Autorizado",
-          tipo: "Visita",
-          data: new Date().toLocaleDateString(),
-          hora: "11:00",
-          timestamp: Date.now(),
-          porteiro: "Sistema"
-        }
-
-      ];
-
-      setVisitantes(mock);
-
-      localStorage.setItem(
-        "visitantes",
-        JSON.stringify(mock)
-      );
+      setVisitantes([]);
 
     }
 
   }, []);
 
-  useEffect(() => {
-
-    localStorage.setItem(
-      "visitantes",
-      JSON.stringify(visitantes)
-    );
-
-  }, [visitantes]);
+  /* =========================
+     FILTRO
+  ========================= */
 
   const visitantesFiltrados =
     visitantes.filter((v) =>
 
       v.nome
-        .toLowerCase()
-        .includes(busca.toLowerCase()) ||
+        ?.toLowerCase()
+        .includes(
+          busca.toLowerCase()
+        ) ||
 
       v.documento
-        .toLowerCase()
-        .includes(busca.toLowerCase()) ||
+        ?.toLowerCase()
+        .includes(
+          busca.toLowerCase()
+        ) ||
 
       v.apartamento
-        .toLowerCase()
-        .includes(busca.toLowerCase())
+        ?.toLowerCase()
+        .includes(
+          busca.toLowerCase()
+        )
 
     );
 
-  const emVisita = visitantes.filter(
-    (v) => v.status === "Em visita"
-  );
+  const emVisita =
+    visitantes.filter(
+      (v) =>
+        v.status ===
+        "Em visita"
+    );
 
-  const autorizados = visitantes.filter(
-    (v) => v.status === "Autorizado"
-  );
+  const autorizados =
+    visitantes.filter(
+      (v) =>
+        v.autorizado === true
+    );
 
-  const bloqueados = visitantes.filter(
-    (v) => v.status === "Bloqueado"
-  );
+  const bloqueados =
+    visitantes.filter(
+      (v) =>
+        v.bloqueado === true
+    );
 
-  function salvarHistorico(acao, visitante) {
+  /* =========================
+     HISTÓRICO
+  ========================= */
+
+  function salvarHistorico(
+    acao,
+    visitante
+  ) {
 
     const historico =
       JSON.parse(
@@ -152,16 +142,23 @@ function Visitantes() {
       hora:
         new Date().toLocaleTimeString(),
 
-      timestamp: Date.now()
+      timestamp:
+        Date.now()
 
     });
 
     localStorage.setItem(
       "movimentacoes",
-      JSON.stringify(historico)
+      JSON.stringify(
+        historico
+      )
     );
 
   }
+
+  /* =========================
+     SALVAR VISITANTE
+  ========================= */
 
   function salvarVisitante() {
 
@@ -170,14 +167,43 @@ function Visitantes() {
       !novoVisitante.documento ||
       !novoVisitante.apartamento
     ) {
+
+      alert(
+        "Preencha os campos obrigatórios"
+      );
+
       return;
+
     }
 
-    const agora = new Date();
+    const agora =
+      new Date();
+
+    let statusFinal =
+      "Pendente";
+
+    if (
+      novoVisitante.bloqueado
+    ) {
+
+      statusFinal =
+        "Bloqueado";
+
+    } else if (
+      novoVisitante.autorizado
+    ) {
+
+      statusFinal =
+        "Autorizado";
+
+    }
 
     const visitanteCompleto = {
 
       ...novoVisitante,
+
+      status:
+        statusFinal,
 
       data:
         agora.toLocaleDateString(),
@@ -203,20 +229,40 @@ function Visitantes() {
 
     };
 
-    if (editId !== null) {
+    /* =========================
+       EDITAR
+    ========================= */
 
-      const lista = visitantes.map((v) =>
+    if (
+      editId !== null
+    ) {
 
-        v.id === editId
-          ? {
-              ...visitanteCompleto,
-              id: editId
-            }
-          : v
+      setVisitantes(
+        (prev) => {
 
+          const listaAtualizada =
+            prev.map((v) =>
+
+              v.id === editId
+                ? {
+                    ...visitanteCompleto,
+                    id: editId
+                  }
+                : v
+
+            );
+
+          localStorage.setItem(
+            "visitantes",
+            JSON.stringify(
+              listaAtualizada
+            )
+          );
+
+          return listaAtualizada;
+
+        }
       );
-
-      setVisitantes(lista);
 
       salvarHistorico(
         "edição",
@@ -225,7 +271,13 @@ function Visitantes() {
 
       setEditId(null);
 
-    } else {
+    }
+
+    /* =========================
+       NOVO VISITANTE
+    ========================= */
+
+    else {
 
       const novo = {
 
@@ -235,10 +287,25 @@ function Visitantes() {
 
       };
 
-      setVisitantes([
-        ...visitantes,
-        novo
-      ]);
+      setVisitantes(
+        (prev) => {
+
+          const novaLista = [
+            ...prev,
+            novo
+          ];
+
+          localStorage.setItem(
+            "visitantes",
+            JSON.stringify(
+              novaLista
+            )
+          );
+
+          return novaLista;
+
+        }
+      );
 
       salvarHistorico(
         "cadastro",
@@ -248,43 +315,73 @@ function Visitantes() {
     }
 
     setNovoVisitante({
+
       nome: "",
       documento: "",
       apartamento: "",
       morador: "",
       observacao: "",
       entrada: "",
-      status: "Autorizado",
+      autorizado: false,
+      bloqueado: false,
+      status: "Pendente",
       tipo: "Visita"
+
     });
 
     setMostrarModal(false);
 
   }
 
-  function excluirVisitante(id) {
+  /* =========================
+     EXCLUIR
+  ========================= */
+
+  function excluirVisitante(
+    id
+  ) {
 
     const visitante =
       visitantes.find(
-        (v) => v.id === id
+        (v) =>
+          v.id === id
       );
 
-    salvarHistorico(
-      "exclusão",
-      visitante
-    );
+    if (visitante) {
+
+      salvarHistorico(
+        "exclusão",
+        visitante
+      );
+
+    }
+
+    const novaLista =
+      visitantes.filter(
+        (v) =>
+          v.id !== id
+      );
 
     setVisitantes(
+      novaLista
+    );
 
-      visitantes.filter(
-        (v) => v.id !== id
+    localStorage.setItem(
+      "visitantes",
+      JSON.stringify(
+        novaLista
       )
-
     );
 
   }
 
-  function editarVisitante(v) {
+  /* =========================
+     EDITAR
+  ========================= */
+
+  function editarVisitante(
+    v
+  ) {
 
     setNovoVisitante(v);
 
@@ -294,62 +391,101 @@ function Visitantes() {
 
   }
 
-  function mudarStatus(id, status) {
+  /* =========================
+     MUDAR STATUS
+  ========================= */
 
-    const lista = visitantes.map((v) =>
+  function mudarStatus(
+    id,
+    status
+  ) {
 
-      v.id === id
-        ? { ...v, status }
-        : v
+    const lista =
+      visitantes.map((v) =>
 
-    );
+        v.id === id
+          ? {
+              ...v,
+              status
+            }
+          : v
+
+      );
 
     const visitante =
       lista.find(
-        (v) => v.id === id
+        (v) =>
+          v.id === id
       );
 
-    salvarHistorico(
-      `status: ${status}`,
-      visitante
-    );
+    if (visitante) {
+
+      salvarHistorico(
+        `status: ${status}`,
+        visitante
+      );
+
+    }
 
     setVisitantes(lista);
 
+    localStorage.setItem(
+      "visitantes",
+      JSON.stringify(
+        lista
+      )
+    );
+
   }
 
-  function corStatus(status) {
+  /* =========================
+     COR STATUS
+  ========================= */
+
+  function corStatus(
+    status
+  ) {
 
     switch (status) {
 
       case "Em visita":
+
         return {
           bg: "#dcfce7",
-          color: "#166534"
+          color:
+            "#166534"
         };
 
       case "Autorizado":
+
         return {
           bg: "#dbeafe",
-          color: "#1d4ed8"
+          color:
+            "#1d4ed8"
         };
 
       case "Bloqueado":
+
         return {
           bg: "#fee2e2",
-          color: "#dc2626"
+          color:
+            "#dc2626"
         };
 
       case "Saiu":
+
         return {
           bg: "#e5e7eb",
-          color: "#374151"
+          color:
+            "#374151"
         };
 
       default:
+
         return {
-          bg: "#e5e7eb",
-          color: "#374151"
+          bg: "#fef9c3",
+          color:
+            "#854d0e"
         };
 
     }
@@ -371,7 +507,8 @@ function Visitantes() {
           </h1>
 
           <p style={styles.subtitle}>
-            Controle e monitoramento de visitantes
+            Controle e monitoramento
+            de visitantes
           </p>
 
         </div>
@@ -382,7 +519,9 @@ function Visitantes() {
             placeholder="Buscar visitante..."
             value={busca}
             onChange={(e) =>
-              setBusca(e.target.value)
+              setBusca(
+                e.target.value
+              )
             }
             style={styles.search}
           />
@@ -394,17 +533,23 @@ function Visitantes() {
               setEditId(null);
 
               setNovoVisitante({
+
                 nome: "",
                 documento: "",
                 apartamento: "",
                 morador: "",
                 observacao: "",
                 entrada: "",
-                status: "Autorizado",
+                autorizado: false,
+                bloqueado: false,
+                status: "Pendente",
                 tipo: "Visita"
+
               });
 
-              setMostrarModal(true);
+              setMostrarModal(
+                true
+              );
 
             }}
           >
@@ -539,139 +684,150 @@ function Visitantes() {
 
           <tbody>
 
-            {visitantesFiltrados.map((v) => (
+            {visitantesFiltrados.map(
+              (v) => (
 
-              <tr key={v.id}>
+                <tr key={v.id}>
 
-                <td style={styles.td}>
+                  <td style={styles.td}>
 
-                  <div style={styles.userArea}>
+                    <div style={styles.userArea}>
 
-                    <div style={styles.avatar}>
+                      <div style={styles.avatar}>
 
-                      {v.nome
-                        .charAt(0)
-                        .toUpperCase()}
+                        {v.nome
+                          ?.charAt(0)
+                          .toUpperCase()}
+
+                      </div>
+
+                      <div>
+
+                        <strong>
+                          {v.nome}
+                        </strong>
+
+                        <p style={styles.info}>
+                          {v.documento}
+                        </p>
+
+                        <p style={styles.info}>
+                          Morador:
+                          {" "}
+                          {v.morador ||
+                            "N/A"}
+                        </p>
+
+                        <p style={styles.info}>
+                          Tipo:
+                          {" "}
+                          {v.tipo}
+                        </p>
+
+                      </div>
 
                     </div>
 
-                    <div>
+                  </td>
 
-                      <strong>
-                        {v.nome}
-                      </strong>
+                  <td style={styles.td}>
 
-                      <p style={styles.info}>
-                        {v.documento}
-                      </p>
+                    <span style={styles.apto}>
+                      {v.apartamento}
+                    </span>
 
-                      <p style={styles.info}>
-                        Morador:
-                        {" "}
-                        {v.morador || "N/A"}
-                      </p>
+                  </td>
 
-                      <p style={styles.info}>
-                        Tipo:
-                        {" "}
-                        {v.tipo}
-                      </p>
+                  <td style={styles.td}>
+                    {v.entrada}
+                  </td>
 
-                    </div>
+                  <td style={styles.td}>
 
-                  </div>
+                    <span
+                      style={{
 
-                </td>
+                        ...styles.status,
 
-                <td style={styles.td}>
+                        background:
+                          corStatus(
+                            v.status
+                          ).bg,
 
-                  <span style={styles.apto}>
-                    {v.apartamento}
-                  </span>
+                        color:
+                          corStatus(
+                            v.status
+                          ).color
 
-                </td>
+                      }}
+                    >
 
-                <td style={styles.td}>
-                  {v.entrada}
-                </td>
+                      {v.status}
 
-                <td style={styles.td}>
+                    </span>
 
-                  <span
-                    style={{
-                      ...styles.status,
+                  </td>
 
-                      background:
-                        corStatus(v.status).bg,
+                  <td style={styles.tdCenter}>
 
-                      color:
-                        corStatus(v.status).color
-                    }}
-                  >
+                    <button
+                      style={styles.enterBtn}
+                      onClick={() =>
+                        mudarStatus(
+                          v.id,
+                          "Em visita"
+                        )
+                      }
+                    >
 
-                    {v.status}
+                      Entrou
 
-                  </span>
+                    </button>
 
-                </td>
+                    <button
+                      style={styles.exitBtn}
+                      onClick={() =>
+                        mudarStatus(
+                          v.id,
+                          "Saiu"
+                        )
+                      }
+                    >
 
-                <td style={styles.tdCenter}>
+                      Saiu
 
-                  <button
-                    style={styles.enterBtn}
-                    onClick={() =>
-                      mudarStatus(
-                        v.id,
-                        "Em visita"
-                      )
-                    }
-                  >
+                    </button>
 
-                    Entrou
+                    <button
+                      style={styles.editBtn}
+                      onClick={() =>
+                        editarVisitante(v)
+                      }
+                    >
 
-                  </button>
+                      Editar
 
-                  <button
-                    style={styles.exitBtn}
-                    onClick={() =>
-                      mudarStatus(
-                        v.id,
-                        "Saiu"
-                      )
-                    }
-                  >
+                    </button>
 
-                    Saiu
+                    <button
+                      style={styles.deleteBtn}
+                      onClick={() =>
+                        excluirVisitante(
+                          v.id
+                        )
+                      }
+                    >
 
-                  </button>
+                      Excluir
 
-                  <button
-                    style={styles.editBtn}
-                    onClick={() =>
-                      editarVisitante(v)
-                    }
-                  >
+                    </button>
 
-                    Editar
+                  </td>
 
-                  </button>
+                </tr>
 
-                  <button
-                    style={styles.deleteBtn}
-                    onClick={() =>
-                      excluirVisitante(v.id)
-                    }
-                  >
-
-                    Excluir
-
-                  </button>
-
-                </td>
-
-              </tr>
-
-            ))}
+              )
+            )}
 
           </tbody>
 
@@ -700,7 +856,9 @@ function Visitantes() {
               <button
                 style={styles.close}
                 onClick={() =>
-                  setMostrarModal(false)
+                  setMostrarModal(
+                    false
+                  )
                 }
               >
                 ✕
@@ -716,8 +874,12 @@ function Visitantes() {
                 onChange={(e) =>
 
                   setNovoVisitante({
+
                     ...novoVisitante,
-                    nome: e.target.value
+
+                    nome:
+                      e.target.value
+
                   })
 
                 }
@@ -730,8 +892,12 @@ function Visitantes() {
                 onChange={(e) =>
 
                   setNovoVisitante({
+
                     ...novoVisitante,
-                    documento: e.target.value
+
+                    documento:
+                      e.target.value
+
                   })
 
                 }
@@ -744,8 +910,12 @@ function Visitantes() {
                 onChange={(e) =>
 
                   setNovoVisitante({
+
                     ...novoVisitante,
-                    apartamento: e.target.value
+
+                    apartamento:
+                      e.target.value
+
                   })
 
                 }
@@ -758,8 +928,12 @@ function Visitantes() {
                 onChange={(e) =>
 
                   setNovoVisitante({
+
                     ...novoVisitante,
-                    morador: e.target.value
+
+                    morador:
+                      e.target.value
+
                   })
 
                 }
@@ -771,8 +945,12 @@ function Visitantes() {
                 onChange={(e) =>
 
                   setNovoVisitante({
+
                     ...novoVisitante,
-                    tipo: e.target.value
+
+                    tipo:
+                      e.target.value
+
                   })
 
                 }
@@ -803,13 +981,81 @@ function Visitantes() {
                 onChange={(e) =>
 
                   setNovoVisitante({
+
                     ...novoVisitante,
-                    entrada: e.target.value
+
+                    entrada:
+                      e.target.value
+
                   })
 
                 }
                 style={styles.input}
               />
+
+              {/* AUTORIZADO */}
+
+              <label style={styles.checkboxLabel}>
+
+                <input
+                  type="checkbox"
+                  checked={
+                    novoVisitante.autorizado
+                  }
+                  onChange={(e) =>
+
+                    setNovoVisitante({
+
+                      ...novoVisitante,
+
+                      autorizado:
+                        e.target.checked,
+
+                      bloqueado:
+                        e.target.checked
+                          ? false
+                          : novoVisitante.bloqueado
+
+                    })
+
+                  }
+                />
+
+                Autorizado
+
+              </label>
+
+              {/* BLOQUEADO */}
+
+              <label style={styles.checkboxLabel}>
+
+                <input
+                  type="checkbox"
+                  checked={
+                    novoVisitante.bloqueado
+                  }
+                  onChange={(e) =>
+
+                    setNovoVisitante({
+
+                      ...novoVisitante,
+
+                      bloqueado:
+                        e.target.checked,
+
+                      autorizado:
+                        e.target.checked
+                          ? false
+                          : novoVisitante.autorizado
+
+                    })
+
+                  }
+                />
+
+                Bloqueado
+
+              </label>
 
               <textarea
                 placeholder="Observações"
@@ -817,40 +1063,17 @@ function Visitantes() {
                 onChange={(e) =>
 
                   setNovoVisitante({
+
                     ...novoVisitante,
-                    observacao: e.target.value
+
+                    observacao:
+                      e.target.value
+
                   })
 
                 }
                 style={styles.textarea}
               />
-
-              <select
-                value={novoVisitante.status}
-                onChange={(e) =>
-
-                  setNovoVisitante({
-                    ...novoVisitante,
-                    status: e.target.value
-                  })
-
-                }
-                style={styles.input}
-              >
-
-                <option>
-                  Autorizado
-                </option>
-
-                <option>
-                  Em visita
-                </option>
-
-                <option>
-                  Bloqueado
-                </option>
-
-              </select>
 
             </div>
 
@@ -858,7 +1081,9 @@ function Visitantes() {
 
               <button
                 style={styles.saveBtn}
-                onClick={salvarVisitante}
+                onClick={
+                  salvarVisitante
+                }
               >
 
                 Salvar Visitante
@@ -868,7 +1093,9 @@ function Visitantes() {
               <button
                 style={styles.cancelBtn}
                 onClick={() =>
-                  setMostrarModal(false)
+                  setMostrarModal(
+                    false
+                  )
                 }
               >
 
@@ -898,7 +1125,8 @@ const styles = {
 
   header: {
     display: "flex",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     alignItems: "center",
     marginBottom: "30px"
   },
@@ -922,7 +1150,8 @@ const styles = {
   search: {
     padding: "12px 16px",
     borderRadius: "12px",
-    border: "1px solid #d1d5db",
+    border:
+      "1px solid #d1d5db",
     width: "240px",
     outline: "none"
   },
@@ -982,7 +1211,8 @@ const styles = {
 
   table: {
     width: "100%",
-    borderCollapse: "collapse"
+    borderCollapse:
+      "collapse"
   },
 
   th: {
@@ -990,7 +1220,8 @@ const styles = {
     textAlign: "left",
     background: "#f0fdf4",
     color: "#14532d",
-    borderBottom: "1px solid #dcfce7"
+    borderBottom:
+      "1px solid #dcfce7"
   },
 
   thCenter: {
@@ -998,18 +1229,21 @@ const styles = {
     textAlign: "center",
     background: "#f0fdf4",
     color: "#14532d",
-    borderBottom: "1px solid #dcfce7"
+    borderBottom:
+      "1px solid #dcfce7"
   },
 
   td: {
     padding: "18px",
-    borderBottom: "1px solid #f3f4f6"
+    borderBottom:
+      "1px solid #f3f4f6"
   },
 
   tdCenter: {
     padding: "18px",
     textAlign: "center",
-    borderBottom: "1px solid #f3f4f6"
+    borderBottom:
+      "1px solid #f3f4f6"
   },
 
   userArea: {
@@ -1026,7 +1260,8 @@ const styles = {
       "linear-gradient(135deg,#166534,#22c55e)",
     color: "white",
     display: "flex",
-    justifyContent: "center",
+    justifyContent:
+      "center",
     alignItems: "center",
     fontWeight: "700"
   },
@@ -1102,9 +1337,11 @@ const styles = {
     left: 0,
     width: "100%",
     height: "100%",
-    background: "rgba(0,0,0,0.45)",
+    background:
+      "rgba(0,0,0,0.45)",
     display: "flex",
-    justifyContent: "center",
+    justifyContent:
+      "center",
     alignItems: "center",
     zIndex: 999
   },
@@ -1120,7 +1357,8 @@ const styles = {
 
   modalHeader: {
     display: "flex",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     alignItems: "center",
     marginBottom: "25px"
   },
@@ -1147,17 +1385,27 @@ const styles = {
   input: {
     padding: "14px",
     borderRadius: "12px",
-    border: "1px solid #d1d5db",
+    border:
+      "1px solid #d1d5db",
     outline: "none"
   },
 
   textarea: {
     padding: "14px",
     borderRadius: "12px",
-    border: "1px solid #d1d5db",
+    border:
+      "1px solid #d1d5db",
     resize: "none",
     minHeight: "90px",
     outline: "none"
+  },
+
+  checkboxLabel: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    fontWeight: "600",
+    color: "#374151"
   },
 
   modalButtons: {

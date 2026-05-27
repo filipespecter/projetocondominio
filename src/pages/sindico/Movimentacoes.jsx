@@ -12,7 +12,8 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  CartesianGrid
+  CartesianGrid,
+  Legend
 } from "recharts";
 
 import { jsPDF } from "jspdf";
@@ -22,9 +23,14 @@ import { useEffect, useState } from "react";
 
 function Movimentacoes() {
 
-  const [dadosLine, setDadosLine] = useState([]);
-  const [dadosBar, setDadosBar] = useState([]);
-  const [dadosPie, setDadosPie] = useState([]);
+  const [dadosLine, setDadosLine] =
+    useState([]);
+
+  const [dadosBar, setDadosBar] =
+    useState([]);
+
+  const [dadosPie, setDadosPie] =
+    useState([]);
 
   const [tipoGrafico, setTipoGrafico] =
     useState("linha");
@@ -32,12 +38,13 @@ function Movimentacoes() {
   const [mesSelecionado, setMesSelecionado] =
     useState("Maio");
 
-  const [totais, setTotais] = useState({
-    visitantes: 0,
-    encomendas: 0,
-    reservas: 0,
-    avisos: 0
-  });
+  const [totais, setTotais] =
+    useState({
+      visitantes: 0,
+      encomendas: 0,
+      reservas: 0,
+      avisos: 0
+    });
 
   useEffect(() => {
 
@@ -48,16 +55,24 @@ function Movimentacoes() {
   function carregarDados() {
 
     const visitantes =
-      JSON.parse(localStorage.getItem("visitantes")) || [];
+      JSON.parse(
+        localStorage.getItem("visitantes")
+      ) || [];
 
     const encomendas =
-      JSON.parse(localStorage.getItem("encomendas")) || [];
+      JSON.parse(
+        localStorage.getItem("encomendas")
+      ) || [];
 
     const reservas =
-      JSON.parse(localStorage.getItem("reservas")) || [];
+      JSON.parse(
+        localStorage.getItem("reservas")
+      ) || [];
 
     const avisos =
-      JSON.parse(localStorage.getItem("avisos")) || [];
+      JSON.parse(
+        localStorage.getItem("avisos")
+      ) || [];
 
     setTotais({
       visitantes: visitantes.length,
@@ -111,10 +126,10 @@ function Movimentacoes() {
 
     const doc = new jsPDF();
 
-    doc.setFontSize(20);
+    doc.setFontSize(22);
 
     doc.text(
-      "Relatório Mensal Condomínio",
+      "Relatório de Movimentações",
       14,
       20
     );
@@ -122,7 +137,7 @@ function Movimentacoes() {
     doc.setFontSize(12);
 
     doc.text(
-      `Mês: ${mesSelecionado}`,
+      `Mês selecionado: ${mesSelecionado}`,
       14,
       32
     );
@@ -139,7 +154,7 @@ function Movimentacoes() {
     });
 
     doc.save(
-      `relatorio-${mesSelecionado}.pdf`
+      `movimentacoes-${mesSelecionado}.pdf`
     );
 
   }
@@ -165,7 +180,7 @@ function Movimentacoes() {
 
         <ResponsiveContainer
           width="100%"
-          height={320}
+          height={350}
         >
 
           <LineChart data={dadosLine}>
@@ -178,11 +193,13 @@ function Movimentacoes() {
 
             <Tooltip />
 
+            <Legend />
+
             <Line
               type="monotone"
               dataKey="valor"
               stroke="#14532d"
-              strokeWidth={3}
+              strokeWidth={4}
             />
 
           </LineChart>
@@ -199,7 +216,7 @@ function Movimentacoes() {
 
         <ResponsiveContainer
           width="100%"
-          height={320}
+          height={350}
         >
 
           <BarChart data={dadosBar}>
@@ -212,9 +229,12 @@ function Movimentacoes() {
 
             <Tooltip />
 
+            <Legend />
+
             <Bar
               dataKey="value"
               fill="#166534"
+              radius={[8, 8, 0, 0]}
             />
 
           </BarChart>
@@ -231,7 +251,7 @@ function Movimentacoes() {
 
         <ResponsiveContainer
           width="100%"
-          height={320}
+          height={350}
         >
 
           <PieChart>
@@ -259,6 +279,8 @@ function Movimentacoes() {
 
             <Tooltip />
 
+            <Legend />
+
           </PieChart>
 
         </ResponsiveContainer>
@@ -273,7 +295,7 @@ function Movimentacoes() {
 
         <ResponsiveContainer
           width="100%"
-          height={320}
+          height={350}
         >
 
           <AreaChart data={dadosLine}>
@@ -286,11 +308,14 @@ function Movimentacoes() {
 
             <Tooltip />
 
+            <Legend />
+
             <Area
               type="monotone"
               dataKey="valor"
               stroke="#166534"
               fill="#bbf7d0"
+              strokeWidth={3}
             />
 
           </AreaChart>
@@ -385,25 +410,68 @@ function Movimentacoes() {
 
       </div>
 
-      {/* CARDS */}
+      {/* RESUMO */}
 
       <div style={styles.cards}>
 
         <div style={styles.card}>
-          <h3>Total geral</h3>
-          <h1>{totalGeral}</h1>
+
+          <div style={styles.cardIcon}>
+            📊
+          </div>
+
+          <div>
+
+            <p style={styles.cardLabel}>
+              Total geral
+            </p>
+
+            <h1 style={styles.cardNumber}>
+              {totalGeral}
+            </h1>
+
+          </div>
+
         </div>
 
         <div style={styles.card}>
-          <h3>Tipos ativos</h3>
-          <h1>4</h1>
+
+          <div style={styles.cardIcon}>
+            📦
+          </div>
+
+          <div>
+
+            <p style={styles.cardLabel}>
+              Tipos ativos
+            </p>
+
+            <h1 style={styles.cardNumber}>
+              4
+            </h1>
+
+          </div>
+
         </div>
 
         <div style={styles.card}>
-          <h3>Média semanal</h3>
-          <h1>
-            {Math.round(totalGeral / 7)}
-          </h1>
+
+          <div style={styles.cardIcon}>
+            📈
+          </div>
+
+          <div>
+
+            <p style={styles.cardLabel}>
+              Média semanal
+            </p>
+
+            <h1 style={styles.cardNumber}>
+              {Math.round(totalGeral / 7)}
+            </h1>
+
+          </div>
+
         </div>
 
       </div>
@@ -412,9 +480,21 @@ function Movimentacoes() {
 
       <div style={styles.chartCard}>
 
-        <h2 style={styles.chartTitle}>
-          Visualização Analytics
-        </h2>
+        <div style={styles.chartHeader}>
+
+          <div>
+
+            <h2 style={styles.chartTitle}>
+              Visualização Analytics
+            </h2>
+
+            <p style={styles.chartSubtitle}>
+              Dados completos do condomínio
+            </p>
+
+          </div>
+
+        </div>
 
         {renderizarGrafico()}
 
@@ -433,7 +513,7 @@ const styles = {
   },
 
   header: {
-    marginBottom: "20px",
+    marginBottom: "30px",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
@@ -448,59 +528,93 @@ const styles = {
   },
 
   subtitle: {
-    color: "#6b7280"
+    color: "#6b7280",
+    marginTop: "8px"
   },
 
   actions: {
     display: "flex",
     gap: "12px",
-    alignItems: "center"
+    alignItems: "center",
+    flexWrap: "wrap"
   },
 
   select: {
-    padding: "10px 14px",
-    borderRadius: "10px",
+    padding: "12px 14px",
+    borderRadius: "12px",
     border: "1px solid #d1d5db",
-    outline: "none"
+    outline: "none",
+    background: "white"
   },
 
   pdfButton: {
-    background: "#14532d",
+    background:
+      "linear-gradient(135deg,#14532d,#166534)",
     color: "white",
     border: "none",
-    padding: "10px 18px",
-    borderRadius: "10px",
+    padding: "12px 18px",
+    borderRadius: "12px",
     cursor: "pointer",
-    fontWeight: "600"
+    fontWeight: "700",
+    boxShadow:
+      "0 4px 12px rgba(20,83,45,0.2)"
   },
 
   cards: {
     display: "grid",
     gridTemplateColumns:
-      "repeat(auto-fit,minmax(220px,1fr))",
-    gap: "15px",
-    marginBottom: "20px"
+      "repeat(auto-fit,minmax(240px,1fr))",
+    gap: "20px",
+    marginBottom: "30px"
   },
 
   card: {
-    background: "white",
+    background:
+      "linear-gradient(135deg,#14532d,#166534)",
+    color: "white",
     padding: "24px",
-    borderRadius: "14px",
+    borderRadius: "22px",
+    display: "flex",
+    alignItems: "center",
+    gap: "18px",
     boxShadow:
-      "0 2px 10px rgba(0,0,0,0.05)"
+      "0 8px 24px rgba(20,83,45,0.18)"
+  },
+
+  cardIcon: {
+    fontSize: "42px"
+  },
+
+  cardLabel: {
+    marginBottom: "6px",
+    opacity: 0.9
+  },
+
+  cardNumber: {
+    margin: 0,
+    fontSize: "36px"
   },
 
   chartCard: {
     background: "white",
-    padding: "24px",
-    borderRadius: "14px",
+    padding: "28px",
+    borderRadius: "24px",
     boxShadow:
-      "0 2px 10px rgba(0,0,0,0.05)"
+      "0 4px 20px rgba(0,0,0,0.06)"
+  },
+
+  chartHeader: {
+    marginBottom: "24px"
   },
 
   chartTitle: {
-    marginBottom: "20px",
+    margin: 0,
     color: "#14532d"
+  },
+
+  chartSubtitle: {
+    marginTop: "8px",
+    color: "#6b7280"
   }
 
 };

@@ -20,25 +20,46 @@ function Relatorios() {
   const [mesAtual, setMesAtual] =
     useState("");
 
+  const [ultimaAtualizacao, setUltimaAtualizacao] =
+    useState("");
+
   useEffect(() => {
 
+    carregarDados();
+
+  }, []);
+
+  function carregarDados() {
+
     const moradores =
-      JSON.parse(localStorage.getItem("moradores")) || [];
+      JSON.parse(
+        localStorage.getItem("moradores")
+      ) || [];
 
     const apartamentos =
-      JSON.parse(localStorage.getItem("apartamentos")) || [];
+      JSON.parse(
+        localStorage.getItem("apartamentos")
+      ) || [];
 
     const visitantes =
-      JSON.parse(localStorage.getItem("visitantes")) || [];
+      JSON.parse(
+        localStorage.getItem("visitantes")
+      ) || [];
 
     const encomendas =
-      JSON.parse(localStorage.getItem("encomendas")) || [];
+      JSON.parse(
+        localStorage.getItem("encomendas")
+      ) || [];
 
     const reservas =
-      JSON.parse(localStorage.getItem("reservas")) || [];
+      JSON.parse(
+        localStorage.getItem("reservas")
+      ) || [];
 
     const avisos =
-      JSON.parse(localStorage.getItem("avisos")) || [];
+      JSON.parse(
+        localStorage.getItem("avisos")
+      ) || [];
 
     setDados({
       moradores: moradores.length,
@@ -75,15 +96,22 @@ function Relatorios() {
         month: "long"
       });
 
-    setMesAtual(mes);
+    setMesAtual(
+      mes.charAt(0).toUpperCase() +
+      mes.slice(1)
+    );
 
-  }, []);
+    setUltimaAtualizacao(
+      data.toLocaleString("pt-BR")
+    );
+
+  }
 
   function exportarPDF() {
 
     const doc = new jsPDF();
 
-    doc.setFontSize(20);
+    doc.setFontSize(22);
 
     doc.text(
       "Relatório Executivo do Condomínio",
@@ -96,12 +124,18 @@ function Relatorios() {
     doc.text(
       `Mês de referência: ${mesAtual}`,
       14,
-      30
+      32
+    );
+
+    doc.text(
+      `Atualizado em: ${ultimaAtualizacao}`,
+      14,
+      40
     );
 
     autoTable(doc, {
 
-      startY: 40,
+      startY: 50,
 
       head: [["Indicador", "Quantidade"]],
 
@@ -119,20 +153,29 @@ function Relatorios() {
 
         ["Avisos", dados.avisos]
 
-      ]
+      ],
+
+      styles: {
+        fontSize: 11,
+        cellPadding: 4
+      },
+
+      headStyles: {
+        fillColor: [20, 83, 45]
+      }
 
     });
 
     doc.text(
       `Crescimento operacional: ${crescimento}%`,
       14,
-      120
+      140
     );
 
     doc.text(
-      "Sistema operacional e sincronizado.",
+      "Sistema operacional ativo e sincronizado.",
       14,
-      130
+      150
     );
 
     doc.save(
@@ -444,6 +487,16 @@ function Relatorios() {
 
       </div>
 
+      {/* RODAPÉ */}
+
+      <div style={styles.footer}>
+
+        Última atualização:
+        {" "}
+        {ultimaAtualizacao}
+
+      </div>
+
     </div>
 
   );
@@ -460,14 +513,16 @@ const styles = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: "30px"
+    marginBottom: "30px",
+    flexWrap: "wrap",
+    gap: "20px"
   },
 
   title: {
     margin: 0,
-    fontSize: "32px",
+    fontSize: "34px",
     fontWeight: "700",
-    color: "#111827"
+    color: "#14532d"
   },
 
   subtitle: {
@@ -481,7 +536,7 @@ const styles = {
       "linear-gradient(135deg,#14532d,#22c55e)",
     color: "white",
     border: "none",
-    padding: "12px 18px",
+    padding: "14px 20px",
     borderRadius: "14px",
     cursor: "pointer",
     fontWeight: "700",
@@ -518,9 +573,7 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     fontSize: "32px",
-    color: "white",
-    boxShadow:
-      "0 10px 25px rgba(34,197,94,0.25)"
+    color: "white"
   },
 
   cardLabel: {
@@ -548,9 +601,7 @@ const styles = {
       "linear-gradient(135deg,#14532d,#22c55e)",
     borderRadius: "24px",
     padding: "28px",
-    color: "white",
-    boxShadow:
-      "0 10px 30px rgba(34,197,94,0.25)"
+    color: "white"
   },
 
   executiveTitle: {
@@ -649,6 +700,13 @@ const styles = {
     height: "10px",
     borderRadius: "50%",
     background: "#8b5cf6"
+  },
+
+  footer: {
+    marginTop: "30px",
+    textAlign: "center",
+    color: "#6b7280",
+    fontSize: "14px"
   }
 
 };

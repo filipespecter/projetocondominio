@@ -2,7 +2,8 @@ import {
   Link,
   Outlet,
   useNavigate,
-  Navigate
+  Navigate,
+  useLocation
 } from "react-router-dom";
 
 import {
@@ -20,21 +21,25 @@ import {
   FaSignOutAlt
 } from "react-icons/fa";
 
-import { useState } from "react";
-
 function DashboardLayout() {
 
   const navigate = useNavigate();
 
+  const location = useLocation();
+
   /* =========================
-     CARREGA USUÁRIO
+     CARREGA SESSÃO
   ========================= */
 
-  const usuarioSalvo =
-    localStorage.getItem("usuarioSindico") ||
-    sessionStorage.getItem("usuarioSindico");
+  const sessaoSalva =
+    localStorage.getItem("sessaoSindico") ||
+    sessionStorage.getItem("sessaoSindico");
 
-  if (!usuarioSalvo) {
+  /* =========================
+     PROTEÇÃO DE ROTA
+  ========================= */
+
+  if (!sessaoSalva) {
 
     return (
       <Navigate
@@ -50,16 +55,16 @@ function DashboardLayout() {
   try {
 
     usuarioLogado =
-      JSON.parse(usuarioSalvo);
+      JSON.parse(sessaoSalva);
 
   } catch {
 
     localStorage.removeItem(
-      "usuarioSindico"
+      "sessaoSindico"
     );
 
     sessionStorage.removeItem(
-      "usuarioSindico"
+      "sessaoSindico"
     );
 
     return (
@@ -78,14 +83,26 @@ function DashboardLayout() {
   function sair() {
 
     localStorage.removeItem(
-      "usuarioSindico"
+      "sessaoSindico"
     );
 
     sessionStorage.removeItem(
-      "usuarioSindico"
+      "sessaoSindico"
     );
 
-    navigate("/");
+    navigate("/", {
+      replace: true
+    });
+
+  }
+
+  /* =========================
+     MENU ATIVO
+  ========================= */
+
+  function itemAtivo(path) {
+
+    return location.pathname === path;
 
   }
 
@@ -133,7 +150,7 @@ function DashboardLayout() {
 
               <div style={styles.userName}>
 
-                {usuarioLogado?.usuario ||
+                {usuarioLogado?.nome ||
                   "Administrador"}
 
               </div>
@@ -151,7 +168,12 @@ function DashboardLayout() {
           <div style={styles.menu}>
 
             <Link
-              style={styles.menuItem}
+              style={{
+                ...styles.menuItem,
+                ...(itemAtivo("/dashboard/sindico")
+                  ? styles.active
+                  : {})
+              }}
               to="/dashboard/sindico"
             >
               <FaChartPie />
@@ -159,7 +181,12 @@ function DashboardLayout() {
             </Link>
 
             <Link
-              style={styles.menuItem}
+              style={{
+                ...styles.menuItem,
+                ...(itemAtivo("/dashboard/apartamentos")
+                  ? styles.active
+                  : {})
+              }}
               to="/dashboard/apartamentos"
             >
               <FaBuilding />
@@ -167,7 +194,12 @@ function DashboardLayout() {
             </Link>
 
             <Link
-              style={styles.menuItem}
+              style={{
+                ...styles.menuItem,
+                ...(itemAtivo("/dashboard/moradores")
+                  ? styles.active
+                  : {})
+              }}
               to="/dashboard/moradores"
             >
               <FaUsers />
@@ -175,7 +207,12 @@ function DashboardLayout() {
             </Link>
 
             <Link
-              style={styles.menuItem}
+              style={{
+                ...styles.menuItem,
+                ...(itemAtivo("/dashboard/porteiros")
+                  ? styles.active
+                  : {})
+              }}
               to="/dashboard/porteiros"
             >
               <FaUserShield />
@@ -183,7 +220,12 @@ function DashboardLayout() {
             </Link>
 
             <Link
-              style={styles.menuItem}
+              style={{
+                ...styles.menuItem,
+                ...(itemAtivo("/dashboard/encomendas")
+                  ? styles.active
+                  : {})
+              }}
               to="/dashboard/encomendas"
             >
               <FaBox />
@@ -191,7 +233,12 @@ function DashboardLayout() {
             </Link>
 
             <Link
-              style={styles.menuItem}
+              style={{
+                ...styles.menuItem,
+                ...(itemAtivo("/dashboard/visitantes")
+                  ? styles.active
+                  : {})
+              }}
               to="/dashboard/visitantes"
             >
               <FaClipboardList />
@@ -199,7 +246,12 @@ function DashboardLayout() {
             </Link>
 
             <Link
-              style={styles.menuItem}
+              style={{
+                ...styles.menuItem,
+                ...(itemAtivo("/dashboard/movimentacoes")
+                  ? styles.active
+                  : {})
+              }}
               to="/dashboard/movimentacoes"
             >
               <FaExchangeAlt />
@@ -207,7 +259,12 @@ function DashboardLayout() {
             </Link>
 
             <Link
-              style={styles.menuItem}
+              style={{
+                ...styles.menuItem,
+                ...(itemAtivo("/dashboard/reservas")
+                  ? styles.active
+                  : {})
+              }}
               to="/dashboard/reservas"
             >
               <FaCalendarAlt />
@@ -215,7 +272,12 @@ function DashboardLayout() {
             </Link>
 
             <Link
-              style={styles.menuItem}
+              style={{
+                ...styles.menuItem,
+                ...(itemAtivo("/dashboard/areas-comuns")
+                  ? styles.active
+                  : {})
+              }}
               to="/dashboard/areas-comuns"
             >
               <FaDoorOpen />
@@ -223,7 +285,12 @@ function DashboardLayout() {
             </Link>
 
             <Link
-              style={styles.menuItem}
+              style={{
+                ...styles.menuItem,
+                ...(itemAtivo("/dashboard/avisos")
+                  ? styles.active
+                  : {})
+              }}
               to="/dashboard/avisos"
             >
               <FaBell />
@@ -231,7 +298,12 @@ function DashboardLayout() {
             </Link>
 
             <Link
-              style={styles.menuItem}
+              style={{
+                ...styles.menuItem,
+                ...(itemAtivo("/dashboard/relatorios")
+                  ? styles.active
+                  : {})
+              }}
               to="/dashboard/relatorios"
             >
               <FaChartPie />
@@ -239,7 +311,12 @@ function DashboardLayout() {
             </Link>
 
             <Link
-              style={styles.menuItem}
+              style={{
+                ...styles.menuItem,
+                ...(itemAtivo("/dashboard/configuracoes")
+                  ? styles.active
+                  : {})
+              }}
               to="/dashboard/configuracoes"
             >
               <FaCog />
@@ -389,6 +466,12 @@ const styles = {
     fontWeight: "600",
     transition: "0.2s",
     background: "transparent"
+  },
+
+  active: {
+    background: "rgba(255,255,255,0.16)",
+    backdropFilter: "blur(8px)",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.12)"
   },
 
   footer: {
