@@ -26,6 +26,7 @@ import DashboardMoradorLayout from "./layout/DashboardMoradorLayout";
 ========================= */
 
 import DashboardSindico from "./pages/Sindico/DashboardSindico";
+import Prestadores from "./pages/Sindico/Prestadores";
 import Apartamentos from "./pages/Sindico/Apartamentos";
 import Moradores from "./pages/Sindico/Moradores";
 import Porteiros from "./pages/Sindico/Porteiros";
@@ -43,6 +44,7 @@ import Configuracoes from "./pages/Sindico/Configuracoes";
 ========================= */
 
 import DashboardPorteiro from "./pages/Porteiro/DashboardPorteiro";
+import PrestadoresPorteiro from "./pages/Porteiro/PrestadoresPorteiro";
 import EncomendasPorteiro from "./pages/Porteiro/EncomendasPorteiro";
 import VisitantesPorteiro from "./pages/Porteiro/VisitantesPorteiro";
 import MoradoresPorteiro from "./pages/Porteiro/MoradoresPorteiro";
@@ -220,6 +222,15 @@ function App() {
             element={<Configuracoes />}
           />
 
+          {/* =========================
+              PRESTADORES
+          ========================= */}
+
+          <Route
+            path="prestadores"
+            element={<Prestadores />}
+          />
+
         </Route>
 
         {/* =========================
@@ -253,6 +264,15 @@ function App() {
           <Route
             path="moradores"
             element={<MoradoresPorteiro />}
+          />
+
+          {/* =========================
+              PRESTADORES
+          ========================= */}
+
+          <Route
+            path="prestadores"
+            element={<PrestadoresPorteiro />}
           />
 
         </Route>
@@ -299,6 +319,7 @@ function App() {
   );
 
 }
+
 
 const styles = {
 

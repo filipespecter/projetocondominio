@@ -18,7 +18,8 @@ import {
   FaBuilding,
   FaCog,
   FaExchangeAlt,
-  FaSignOutAlt
+  FaSignOutAlt,
+  FaHardHat
 } from "react-icons/fa";
 
 function DashboardLayout() {
@@ -243,6 +244,21 @@ function DashboardLayout() {
             >
               <FaClipboardList />
               Visitantes
+            </Link>
+
+            {/* NOVO MENU PRESTADORES */}
+
+            <Link
+              style={{
+                ...styles.menuItem,
+                ...(itemAtivo("/dashboard/prestadores")
+                  ? styles.active
+                  : {})
+              }}
+              to="/dashboard/prestadores"
+            >
+              <FaHardHat />
+              Prestadores
             </Link>
 
             <Link

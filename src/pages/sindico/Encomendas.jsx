@@ -8,6 +8,8 @@ function Encomendas() {
 
   const [busca, setBusca] = useState("");
 
+  const [carregado, setCarregado] = useState(false);
+
   const [novaEncomenda, setNovaEncomenda] = useState({
     morador: "",
     descricao: "",
@@ -21,55 +23,78 @@ function Encomendas() {
 
   useEffect(() => {
 
-    const dados = localStorage.getItem("encomendas");
+    try {
 
-    if (dados) {
+      const dados =
+        localStorage.getItem("encomendas");
 
-      setEncomendas(JSON.parse(dados));
+      if (dados) {
 
-    } else {
+        setEncomendas(
+          JSON.parse(dados)
+        );
 
-      setEncomendas([
-        {
-          id: 1,
-          morador: "João Silva",
-          descricao: "Amazon - Caixa média",
-          data: "20/07/2025 14:22",
-          status: "Recebido"
-        },
-        {
-          id: 2,
-          morador: "Maria Oliveira",
-          descricao: "Mercado Livre - Envelope",
-          data: "20/07/2025 16:10",
-          status: "Entregue"
-        }
-      ]);
+      } else {
+
+        setEncomendas([
+          {
+            id: 1,
+            morador: "João Silva",
+            descricao: "Amazon - Caixa média",
+            data: "20/07/2025 14:22",
+            status: "Recebido"
+          },
+          {
+            id: 2,
+            morador: "Maria Oliveira",
+            descricao: "Mercado Livre - Envelope",
+            data: "20/07/2025 16:10",
+            status: "Entregue"
+          }
+        ]);
+
+      }
+
+    } catch {
+
+      setEncomendas([]);
 
     }
+
+    setCarregado(true);
 
   }, []);
 
 
-  // SALVAR
+  // SALVAR AUTOMATICAMENTE
 
   useEffect(() => {
+
+    if (!carregado) return;
 
     localStorage.setItem(
       "encomendas",
       JSON.stringify(encomendas)
     );
 
-  }, [encomendas]);
+  }, [encomendas, carregado]);
 
 
   // FILTRO
 
   const encomendasFiltradas = encomendas.filter((e) =>
 
-    e.morador.toLowerCase().includes(busca.toLowerCase()) ||
-    e.descricao.toLowerCase().includes(busca.toLowerCase()) ||
-    e.status.toLowerCase().includes(busca.toLowerCase())
+    e.morador
+      ?.toLowerCase()
+      .includes(busca.toLowerCase()) ||
+
+    e.descricao
+      ?.toLowerCase()
+      .includes(busca.toLowerCase()) ||
+
+    e.status
+      ?.toLowerCase()
+      .includes(busca.toLowerCase())
 
   );
 
@@ -99,7 +124,7 @@ function Encomendas() {
               id: editId,
               data: encomendas.find(
                 (item) => item.id === editId
-              ).data
+              )?.data || new Date().toLocaleString()
             }
           : e
 
@@ -112,9 +137,14 @@ function Encomendas() {
     } else {
 
       const nova = {
+
         id: Date.now(),
+
         ...novaEncomenda,
-        data: new Date().toLocaleString()
+
+        data:
+          new Date().toLocaleString()
+
       };
 
       setEncomendas([
