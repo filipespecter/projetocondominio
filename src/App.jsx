@@ -15,15 +15,9 @@ import {
 
 import Login from "./pages/Login";
 
-/* LAYOUTS */
-
 import DashboardLayout from "./layout/DashboardLayout";
 import DashboardPorteiroLayout from "./layout/DashboardPorteiroLayout";
 import DashboardMoradorLayout from "./layout/DashboardMoradorLayout";
-
-/* =========================
-   SÍNDICO
-========================= */
 
 import DashboardSindico from "./pages/Sindico/DashboardSindico";
 import Prestadores from "./pages/Sindico/Prestadores";
@@ -39,19 +33,11 @@ import Avisos from "./pages/Sindico/Avisos";
 import Relatorios from "./pages/Sindico/Relatorios";
 import Configuracoes from "./pages/Sindico/Configuracoes";
 
-/* =========================
-   PORTEIRO
-========================= */
-
 import DashboardPorteiro from "./pages/Porteiro/DashboardPorteiro";
 import PrestadoresPorteiro from "./pages/Porteiro/PrestadoresPorteiro";
 import EncomendasPorteiro from "./pages/Porteiro/EncomendasPorteiro";
 import VisitantesPorteiro from "./pages/Porteiro/VisitantesPorteiro";
 import MoradoresPorteiro from "./pages/Porteiro/MoradoresPorteiro";
-
-/* =========================
-   MORADOR
-========================= */
 
 import DashboardMorador from "./pages/Morador/DashboardMorador";
 import AvisosMorador from "./pages/Morador/AvisosMorador";
@@ -59,27 +45,20 @@ import EncomendasMorador from "./pages/Morador/EncomendasMorador";
 import ReservasMorador from "./pages/Morador/ReservasMorador";
 
 function Home() {
-
   const navigate = useNavigate();
 
   return (
-
     <div style={styles.container}>
-
       <div style={styles.logo}>🏢</div>
 
-      <h1 style={styles.title}>
-        PORTARIA
-      </h1>
+      <h1 style={styles.title}>PORTARIA</h1>
 
       <p style={styles.subtitle}>
         Selecione o tipo de acesso ao sistema
       </p>
 
       <div style={styles.cards}>
-
         <div onClick={() => navigate("/login/sindico")}>
-
           <AccessCard
             icon={<FaUserShield />}
             title="Síndico / Adm"
@@ -87,11 +66,9 @@ function Home() {
             color="#7b2cbf"
             buttonColor="#7b2cbf"
           />
-
         </div>
 
         <div onClick={() => navigate("/login/porteiro")}>
-
           <AccessCard
             icon={<FaBuilding />}
             title="Porteiro"
@@ -99,11 +76,9 @@ function Home() {
             color="#1c7c3c"
             buttonColor="#1c7c3c"
           />
-
         </div>
 
         <div onClick={() => navigate("/login/morador")}>
-
           <AccessCard
             icon={<FaUser />}
             title="Morador"
@@ -111,42 +86,19 @@ function Home() {
             color="#4cc9f0"
             buttonColor="#4cc9f0"
           />
-
         </div>
-
       </div>
-
     </div>
-
   );
-
 }
 
 function App() {
-
   return (
-
     <BrowserRouter>
-
       <Routes>
+        <Route path="/" element={<Home />} />
 
-        {/* HOME */}
-
-        <Route
-          path="/"
-          element={<Home />}
-        />
-
-        {/* LOGIN */}
-
-        <Route
-          path="/login/:tipo"
-          element={<Login />}
-        />
-
-        {/* =========================
-            SÍNDICO
-        ========================= */}
+        <Route path="/login/:tipo" element={<Login />} />
 
         <Route
           path="/dashboard"
@@ -156,86 +108,25 @@ function App() {
             </ProtectedRoute>
           }
         >
-
           <Route
             index
-            element={<Navigate to="/dashboard/sindico" />}
+            element={<Navigate to="/dashboard/sindico" replace />}
           />
 
-          <Route
-            path="sindico"
-            element={<DashboardSindico />}
-          />
-
-          <Route
-            path="apartamentos"
-            element={<Apartamentos />}
-          />
-
-          <Route
-            path="moradores"
-            element={<Moradores />}
-          />
-
-          <Route
-            path="porteiros"
-            element={<Porteiros />}
-          />
-
-          <Route
-            path="visitantes"
-            element={<Visitantes />}
-          />
-
-          <Route
-            path="movimentacoes"
-            element={<Movimentacoes />}
-          />
-
-          <Route
-            path="encomendas"
-            element={<Encomendas />}
-          />
-
-          <Route
-            path="reservas"
-            element={<Reservas />}
-          />
-
-          <Route
-            path="areas-comuns"
-            element={<AreasComuns />}
-          />
-
-          <Route
-            path="avisos"
-            element={<Avisos />}
-          />
-
-          <Route
-            path="relatorios"
-            element={<Relatorios />}
-          />
-
-          <Route
-            path="configuracoes"
-            element={<Configuracoes />}
-          />
-
-          {/* =========================
-              PRESTADORES
-          ========================= */}
-
-          <Route
-            path="prestadores"
-            element={<Prestadores />}
-          />
-
+          <Route path="sindico" element={<DashboardSindico />} />
+          <Route path="apartamentos" element={<Apartamentos />} />
+          <Route path="moradores" element={<Moradores />} />
+          <Route path="porteiros" element={<Porteiros />} />
+          <Route path="visitantes" element={<Visitantes />} />
+          <Route path="movimentacoes" element={<Movimentacoes />} />
+          <Route path="encomendas" element={<Encomendas />} />
+          <Route path="reservas" element={<Reservas />} />
+          <Route path="areas-comuns" element={<AreasComuns />} />
+          <Route path="avisos" element={<Avisos />} />
+          <Route path="relatorios" element={<Relatorios />} />
+          <Route path="configuracoes" element={<Configuracoes />} />
+          <Route path="prestadores" element={<Prestadores />} />
         </Route>
-
-        {/* =========================
-            PORTEIRO
-        ========================= */}
 
         <Route
           path="/dashboard/porteiro"
@@ -245,41 +136,12 @@ function App() {
             </ProtectedRoute>
           }
         >
-
-          <Route
-            index
-            element={<DashboardPorteiro />}
-          />
-
-          <Route
-            path="encomendas"
-            element={<EncomendasPorteiro />}
-          />
-
-          <Route
-            path="visitantes"
-            element={<VisitantesPorteiro />}
-          />
-
-          <Route
-            path="moradores"
-            element={<MoradoresPorteiro />}
-          />
-
-          {/* =========================
-              PRESTADORES
-          ========================= */}
-
-          <Route
-            path="prestadores"
-            element={<PrestadoresPorteiro />}
-          />
-
+          <Route index element={<DashboardPorteiro />} />
+          <Route path="encomendas" element={<EncomendasPorteiro />} />
+          <Route path="visitantes" element={<VisitantesPorteiro />} />
+          <Route path="moradores" element={<MoradoresPorteiro />} />
+          <Route path="prestadores" element={<PrestadoresPorteiro />} />
         </Route>
-
-        {/* =========================
-            MORADOR
-        ========================= */}
 
         <Route
           path="/dashboard/morador"
@@ -289,40 +151,19 @@ function App() {
             </ProtectedRoute>
           }
         >
-
-          <Route
-            index
-            element={<DashboardMorador />}
-          />
-
-          <Route
-            path="avisos"
-            element={<AvisosMorador />}
-          />
-
-          <Route
-            path="encomendas"
-            element={<EncomendasMorador />}
-          />
-
-          <Route
-            path="reservas"
-            element={<ReservasMorador />}
-          />
-
+          <Route index element={<DashboardMorador />} />
+          <Route path="avisos" element={<AvisosMorador />} />
+          <Route path="encomendas" element={<EncomendasMorador />} />
+          <Route path="reservas" element={<ReservasMorador />} />
         </Route>
 
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-
     </BrowserRouter>
-
   );
-
 }
 
-
 const styles = {
-
   container: {
     height: "100vh",
     backgroundColor: "#0b4f82",
@@ -353,7 +194,6 @@ const styles = {
     display: "flex",
     gap: "40px"
   }
-
 };
 
 export default App;

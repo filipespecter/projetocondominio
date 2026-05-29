@@ -10,99 +10,63 @@ import {
 import { useState } from "react";
 
 function Login() {
-
   const { tipo } = useParams();
-
   const navigate = useNavigate();
 
   const [usuario, setUsuario] = useState("");
-
   const [senha, setSenha] = useState("");
-
   const [erro, setErro] = useState("");
 
-  /* =========================
-     PERFIS
-  ========================= */
-
   const perfis = {
-
     sindico: {
       titulo: "Síndico / Administrador",
-      subtitulo:
-        "Acesso total ao gerenciamento do condomínio",
+      subtitulo: "Acesso total ao gerenciamento do condomínio",
       cor: "#7b2cbf",
-      gradient:
-        "linear-gradient(135deg,#7b2cbf,#9d4edd)",
+      gradient: "linear-gradient(135deg,#7b2cbf,#9d4edd)",
       icon: <FaShieldAlt size={38} color="white" />
     },
 
     porteiro: {
       titulo: "Porteiro",
-      subtitulo:
-        "Controle de visitantes e encomendas",
+      subtitulo: "Controle de visitantes e encomendas",
       cor: "#166534",
-      gradient:
-        "linear-gradient(135deg,#14532d,#166534)",
+      gradient: "linear-gradient(135deg,#14532d,#166534)",
       icon: <FaIdBadge size={38} color="white" />
     },
 
     morador: {
       titulo: "Morador",
-      subtitulo:
-        "Acompanhe avisos, reservas e encomendas",
+      subtitulo: "Acompanhe avisos, reservas e encomendas",
       cor: "#2563eb",
-      gradient:
-        "linear-gradient(135deg,#2563eb,#3b82f6)",
+      gradient: "linear-gradient(135deg,#2563eb,#3b82f6)",
       icon: <FaUserCircle size={38} color="white" />
     }
-
   };
 
   const perfil = perfis[tipo];
 
-  /* =========================
-     VALIDA PERFIL
-  ========================= */
-
   if (!perfil) {
-
     navigate("/");
-
     return null;
-
   }
-
-  /* =========================
-     CHAVE DA SESSÃO
-  ========================= */
 
   function obterChaveSessao() {
+    if (tipo === "sindico") return "sessaoSindico";
+    if (tipo === "porteiro") return "sessaoPorteiro";
+    if (tipo === "morador") return "sessaoMorador";
 
-    switch (tipo) {
-
-      case "sindico":
-        return "sessaoSindico";
-
-      case "porteiro":
-        return "sessaoPorteiro";
-
-      case "morador":
-        return "sessaoMorador";
-
-      default:
-        return "sessao";
-
-    }
-
+    return "sessao";
   }
 
-  /* =========================
-     LIMPA SESSÕES
-  ========================= */
+  function obterRotaDestino() {
+    if (tipo === "sindico") return "/dashboard/sindico";
+    if (tipo === "porteiro") return "/dashboard/porteiro";
+    if (tipo === "morador") return "/dashboard/morador";
+
+    return "/";
+  }
 
   function limparSessoes() {
-
     localStorage.removeItem("sessaoSindico");
     localStorage.removeItem("sessaoPorteiro");
     localStorage.removeItem("sessaoMorador");
@@ -110,59 +74,29 @@ function Login() {
     sessionStorage.removeItem("sessaoSindico");
     sessionStorage.removeItem("sessaoPorteiro");
     sessionStorage.removeItem("sessaoMorador");
-
   }
 
-  /* =========================
-     SALVAR SESSÃO
-  ========================= */
-
   function salvarSessao(dadosUsuario) {
-
     limparSessoes();
 
     const chave = obterChaveSessao();
+    const dados = JSON.stringify(dadosUsuario);
 
-    const dados =
-      JSON.stringify(dadosUsuario);
-
-    localStorage.setItem(
-      chave,
-      dados
-    );
-
-    sessionStorage.setItem(
-      chave,
-      dados
-    );
-
+    localStorage.setItem(chave, dados);
+    sessionStorage.setItem(chave, dados);
   }
 
-  /* =========================
-     LOGIN
-  ========================= */
-
   function fazerLogin() {
-
     setErro("");
 
-    const usuarioDigitado =
-      usuario.trim().toLowerCase();
-
-    const senhaDigitada =
-      senha.trim();
-
-    /* =========================
-       LOGIN SÍNDICO
-    ========================= */
+    const usuarioDigitado = usuario.trim().toLowerCase();
+    const senhaDigitada = senha.trim();
 
     if (tipo === "sindico") {
-
       if (
         usuarioDigitado === "admin" &&
         senhaDigitada === "1234"
       ) {
-
         salvarSessao({
           tipo: "sindico",
           usuario: "admin",
@@ -170,185 +104,86 @@ function Login() {
           loginEm: new Date().toISOString()
         });
 
-        navigate(
-          "/dashboard/sindico",
-          {
-            replace: true
-          }
-        );
-
+        navigate(obterRotaDestino(), { replace: true });
         return;
-
       }
 
-      setErro(
-        "Usuário ou senha inválidos"
-      );
-
+      setErro("Usuário ou senha inválidos");
       return;
-
     }
-
-    /* =========================
-       LOGIN PORTEIRO
-    ========================= */
 
     if (tipo === "porteiro") {
-
       const porteiros =
-        JSON.parse(
-          localStorage.getItem("porteiros")
-        ) || [];
+        JSON.parse(localStorage.getItem("porteiros")) || [];
 
-      const encontrado =
-        porteiros.find((p) =>
-
-          p.usuario
-            ?.trim()
-            .toLowerCase() ===
-            usuarioDigitado &&
-
-          p.senha?.trim() ===
-            senhaDigitada
-
-        );
+      const encontrado = porteiros.find(
+        (p) =>
+          p.usuario?.trim().toLowerCase() === usuarioDigitado &&
+          p.senha?.trim() === senhaDigitada
+      );
 
       if (encontrado) {
-
         salvarSessao({
-
           tipo: "porteiro",
-
           id: encontrado.id,
-
           nome: encontrado.nome,
-
-          usuario:
-            encontrado.usuario,
-
-          telefone:
-            encontrado.telefone,
-
-          turno:
-            encontrado.turno,
-
-          loginEm:
-            new Date().toISOString()
-
+          usuario: encontrado.usuario,
+          telefone: encontrado.telefone,
+          turno: encontrado.turno,
+          loginEm: new Date().toISOString()
         });
 
-        navigate(
-          "/dashboard/porteiro",
-          {
-            replace: true
-          }
-        );
-
-      } else {
-
-        setErro(
-          "Usuário ou senha inválidos"
-        );
-
+        navigate(obterRotaDestino(), { replace: true });
+        return;
       }
 
+      setErro("Usuário ou senha inválidos");
       return;
-
     }
-
-    /* =========================
-       LOGIN MORADOR
-    ========================= */
 
     if (tipo === "morador") {
-
       const moradores =
-        JSON.parse(
-          localStorage.getItem("moradores")
-        ) || [];
+        JSON.parse(localStorage.getItem("moradores")) || [];
 
-      const encontrado =
-        moradores.find((m) =>
-
-          m.usuario
-            ?.trim()
-            .toLowerCase() ===
-            usuarioDigitado &&
-
-          m.senha?.trim() ===
-            senhaDigitada
-
-        );
+      const encontrado = moradores.find(
+        (m) =>
+          m.usuario?.trim().toLowerCase() === usuarioDigitado &&
+          m.senha?.trim() === senhaDigitada
+      );
 
       if (encontrado) {
-
         salvarSessao({
-
           tipo: "morador",
-
           id: encontrado.id,
-
           nome: encontrado.nome,
-
-          usuario:
-            encontrado.usuario,
-
-          apartamento:
-            encontrado.apartamento,
-
-          loginEm:
-            new Date().toISOString()
-
+          usuario: encontrado.usuario,
+          apartamento: encontrado.apartamento,
+          loginEm: new Date().toISOString()
         });
 
-        navigate(
-          "/dashboard/morador",
-          {
-            replace: true
-          }
-        );
-
-      } else {
-
-        setErro(
-          "Usuário ou senha inválidos"
-        );
-
+        navigate(obterRotaDestino(), { replace: true });
+        return;
       }
 
+      setErro("Usuário ou senha inválidos");
     }
-
   }
 
-  /* =========================
-     ENTER
-  ========================= */
-
   function handleKeyPress(e) {
-
     if (e.key === "Enter") {
-
       fazerLogin();
-
     }
-
   }
 
   return (
-
     <div style={styles.container}>
-
       <div style={styles.card}>
-
         <button
           style={styles.backButton}
           onClick={() => navigate("/")}
         >
-
           <FaArrowLeft />
-
           Voltar
-
         </button>
 
         <div
@@ -357,26 +192,18 @@ function Login() {
             background: perfil.gradient
           }}
         >
-
           {perfil.icon}
-
         </div>
 
-        <h1 style={styles.title}>
-          {perfil.titulo}
-        </h1>
+        <h1 style={styles.title}>{perfil.titulo}</h1>
 
-        <p style={styles.subtitle}>
-          {perfil.subtitulo}
-        </p>
+        <p style={styles.subtitle}>{perfil.subtitulo}</p>
 
         <input
           style={styles.input}
           placeholder="Usuário"
           value={usuario}
-          onChange={(e) =>
-            setUsuario(e.target.value)
-          }
+          onChange={(e) => setUsuario(e.target.value)}
           onKeyDown={handleKeyPress}
         />
 
@@ -385,19 +212,11 @@ function Login() {
           type="password"
           placeholder="Senha"
           value={senha}
-          onChange={(e) =>
-            setSenha(e.target.value)
-          }
+          onChange={(e) => setSenha(e.target.value)}
           onKeyDown={handleKeyPress}
         />
 
-        {erro && (
-
-          <div style={styles.errorBox}>
-            {erro}
-          </div>
-
-        )}
+        {erro && <div style={styles.errorBox}>{erro}</div>}
 
         <button
           style={{
@@ -406,28 +225,20 @@ function Login() {
           }}
           onClick={fazerLogin}
         >
-
           Entrar no sistema
-
         </button>
-
       </div>
-
     </div>
-
   );
-
 }
 
 const styles = {
-
   container: {
     minHeight: "100vh",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    background:
-      "linear-gradient(135deg,#ecfdf5,#dbeafe,#ede9fe)",
+    background: "linear-gradient(135deg,#ecfdf5,#dbeafe,#ede9fe)",
     padding: "20px",
     fontFamily: "Arial"
   },
@@ -440,8 +251,7 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    boxShadow:
-      "0 20px 50px rgba(0,0,0,0.12)",
+    boxShadow: "0 20px 50px rgba(0,0,0,0.12)",
     position: "relative"
   },
 
@@ -516,7 +326,6 @@ const styles = {
     cursor: "pointer",
     marginTop: "8px"
   }
-
 };
 
 export default Login;

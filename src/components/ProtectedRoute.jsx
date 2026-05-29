@@ -1,41 +1,31 @@
 import { Navigate, useLocation } from "react-router-dom";
 
-function ProtectedRoute({
-  children,
-  tipoPermitido
-}) {
-
+function ProtectedRoute({ children, tipoPermitido }) {
   const location = useLocation();
 
   function obterChaveSessao() {
-
     switch (tipoPermitido) {
-
       case "sindico":
-        return "usuarioSindico";
+        return "sessaoSindico";
 
       case "porteiro":
-        return "usuarioPorteiro";
+        return "sessaoPorteiro";
 
       case "morador":
-        return "usuarioMorador";
+        return "sessaoMorador";
 
       default:
-        return "usuarioLogado";
-
+        return "sessao";
     }
-
   }
 
-  const chaveSessao =
-    obterChaveSessao();
+  const chaveSessao = obterChaveSessao();
 
   const usuarioSalvo =
     localStorage.getItem(chaveSessao) ||
     sessionStorage.getItem(chaveSessao);
 
   if (!usuarioSalvo) {
-
     return (
       <Navigate
         to={`/login/${tipoPermitido}`}
@@ -43,25 +33,15 @@ function ProtectedRoute({
         replace
       />
     );
-
   }
 
   let usuarioLogado = null;
 
   try {
-
-    usuarioLogado =
-      JSON.parse(usuarioSalvo);
-
+    usuarioLogado = JSON.parse(usuarioSalvo);
   } catch {
-
-    localStorage.removeItem(
-      chaveSessao
-    );
-
-    sessionStorage.removeItem(
-      chaveSessao
-    );
+    localStorage.removeItem(chaveSessao);
+    sessionStorage.removeItem(chaveSessao);
 
     return (
       <Navigate
@@ -69,24 +49,18 @@ function ProtectedRoute({
         replace
       />
     );
-
   }
 
-  if (
-    usuarioLogado.tipo !== tipoPermitido
-  ) {
-
+  if (usuarioLogado.tipo !== tipoPermitido) {
     return (
       <Navigate
         to={`/login/${tipoPermitido}`}
         replace
       />
     );
-
   }
 
   return children;
-
 }
 
 export default ProtectedRoute;
