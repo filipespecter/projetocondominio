@@ -1,8 +1,48 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 function Reservas() {
 
-  const [reservas, setReservas] = useState([]);
+  const STORAGE_KEY = "reservas";
+
+  const estadoInicialReserva = {
+    area: "",
+    morador: "",
+    apartamento: "",
+    data: "",
+    horario: "",
+    obs: "",
+    status: "pendente"
+  };
+
+  const [reservas, setReservas] =
+    useState(() => {
+      const dados =
+        localStorage.getItem(STORAGE_KEY);
+
+      return dados
+        ? JSON.parse(dados)
+        : [];
+    });
+
+  const [moradores] =
+    useState(() => {
+      const dados =
+        localStorage.getItem("moradores");
+
+      return dados
+        ? JSON.parse(dados)
+        : [];
+    });
+
+  const [areasComuns] =
+    useState(() => {
+      const dados =
+        localStorage.getItem("areasComuns");
+
+      return dados
+        ? JSON.parse(dados)
+        : [];
+    });
 
   const [mostrarModal, setMostrarModal] =
     useState(false);
@@ -11,31 +51,36 @@ function Reservas() {
     useState("");
 
   const [novaReserva, setNovaReserva] =
-    useState({
-      area: "",
-      data: "",
-      horario: "",
-      obs: "",
-      status: "pendente"
-    });
+    useState(estadoInicialReserva);
 
   const [editId, setEditId] =
     useState(null);
 
-  useEffect(() => {
+  function selecionarMorador(moradorId) {
 
-    carregarReservas();
+    const moradorSelecionado =
+      moradores.find(
+        (m) =>
+          String(m.id) === String(moradorId)
+      );
 
-  }, []);
+    if (!moradorSelecionado) {
 
-  function carregarReservas() {
+      setNovaReserva({
+        ...novaReserva,
+        morador: "",
+        apartamento: ""
+      });
 
-    const dados =
-      JSON.parse(
-        localStorage.getItem("reservas")
-      ) || [];
+      return;
 
-    setReservas(dados);
+    }
+
+    setNovaReserva({
+      ...novaReserva,
+      morador: moradorSelecionado.nome,
+      apartamento: moradorSelecionado.apto
+    });
 
   }
 
@@ -43,6 +88,7 @@ function Reservas() {
 
     if (
       !novaReserva.area ||
+      !novaReserva.morador ||
       !novaReserva.data ||
       !novaReserva.horario
     ) {
@@ -54,8 +100,6 @@ function Reservas() {
       return;
 
     }
-
-    // IMPEDIR DUPLICIDADE
 
     const conflito = reservas.find(
       (r) =>
@@ -75,9 +119,11 @@ function Reservas() {
 
     }
 
+    let listaAtualizada = [];
+
     if (editId !== null) {
 
-      const lista = reservas.map((r) =>
+      listaAtualizada = reservas.map((r) =>
 
         r.id === editId
           ? {
@@ -88,49 +134,31 @@ function Reservas() {
 
       );
 
-      localStorage.setItem(
-        "reservas",
-        JSON.stringify(lista)
-      );
-
-      setReservas(lista);
-
       setEditId(null);
 
     } else {
 
       const nova = {
-
         id: Date.now(),
-
         ...novaReserva,
-
-        criadoEm:
-          new Date().toLocaleString()
-
+        criadoEm: new Date().toLocaleString()
       };
 
-      const atualizadas = [
+      listaAtualizada = [
         ...reservas,
         nova
       ];
 
-      localStorage.setItem(
-        "reservas",
-        JSON.stringify(atualizadas)
-      );
-
-      setReservas(atualizadas);
-
     }
 
-    setNovaReserva({
-      area: "",
-      data: "",
-      horario: "",
-      obs: "",
-      status: "pendente"
-    });
+    setReservas(listaAtualizada);
+
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(listaAtualizada)
+    );
+
+    setNovaReserva(estadoInicialReserva);
 
     setMostrarModal(false);
 
@@ -148,18 +176,21 @@ function Reservas() {
       (r) => r.id !== id
     );
 
+    setReservas(lista);
+
     localStorage.setItem(
-      "reservas",
+      STORAGE_KEY,
       JSON.stringify(lista)
     );
-
-    setReservas(lista);
 
   }
 
   function editarReserva(reserva) {
 
-    setNovaReserva(reserva);
+    setNovaReserva({
+      ...estadoInicialReserva,
+      ...reserva
+    });
 
     setEditId(reserva.id);
 
@@ -180,12 +211,12 @@ function Reservas() {
 
     );
 
+    setReservas(lista);
+
     localStorage.setItem(
-      "reservas",
+      STORAGE_KEY,
       JSON.stringify(lista)
     );
-
-    setReservas(lista);
 
   }
 
@@ -202,39 +233,53 @@ function Reservas() {
 
     );
 
+    setReservas(lista);
+
     localStorage.setItem(
-      "reservas",
+      STORAGE_KEY,
       JSON.stringify(lista)
     );
 
-    setReservas(lista);
-
   }
 
-  // FILTRO
+  function fecharModal() {
+
+    setMostrarModal(false);
+
+    setEditId(null);
+
+    setNovaReserva(estadoInicialReserva);
+
+  }
 
   const reservasFiltradas = reservas.filter(
     (r) =>
 
-      r.area.toLowerCase().includes(
-        busca.toLowerCase()
-      ) ||
+      r.area
+        ?.toLowerCase()
+        .includes(busca.toLowerCase()) ||
 
-      r.data.toLowerCase().includes(
-        busca.toLowerCase()
-      ) ||
+      r.morador
+        ?.toLowerCase()
+        .includes(busca.toLowerCase()) ||
 
-      r.horario.toLowerCase().includes(
-        busca.toLowerCase()
-      ) ||
+      r.apartamento
+        ?.toLowerCase()
+        .includes(busca.toLowerCase()) ||
 
-      r.status.toLowerCase().includes(
-        busca.toLowerCase()
-      )
+      r.data
+        ?.toLowerCase()
+        .includes(busca.toLowerCase()) ||
+
+      r.horario
+        ?.toLowerCase()
+        .includes(busca.toLowerCase()) ||
+
+      r.status
+        ?.toLowerCase()
+        .includes(busca.toLowerCase())
 
   );
-
-  // ORDENAÇÃO
 
   const reservasOrdenadas = [
     ...reservasFiltradas
@@ -295,13 +340,9 @@ function Reservas() {
 
               setEditId(null);
 
-              setNovaReserva({
-                area: "",
-                data: "",
-                horario: "",
-                obs: "",
-                status: "pendente"
-              });
+              setNovaReserva(
+                estadoInicialReserva
+              );
 
               setMostrarModal(true);
 
@@ -417,6 +458,14 @@ function Reservas() {
               </th>
 
               <th style={styles.th}>
+                Morador
+              </th>
+
+              <th style={styles.th}>
+                Apartamento
+              </th>
+
+              <th style={styles.th}>
                 Data
               </th>
 
@@ -447,7 +496,7 @@ function Reservas() {
               <tr>
 
                 <td
-                  colSpan="6"
+                  colSpan="8"
                   style={styles.empty}
                 >
 
@@ -465,6 +514,14 @@ function Reservas() {
 
                 <td style={styles.td}>
                   {r.area}
+                </td>
+
+                <td style={styles.td}>
+                  {r.morador || "-"}
+                </td>
+
+                <td style={styles.td}>
+                  {r.apartamento || "-"}
                 </td>
 
                 <td style={styles.td}>
@@ -589,9 +646,7 @@ function Reservas() {
 
         <div
           style={styles.modalBackground}
-          onClick={() =>
-            setMostrarModal(false)
-          }
+          onClick={fecharModal}
         >
 
           <div
@@ -624,31 +679,64 @@ function Reservas() {
                 Selecione uma área
               </option>
 
-              <option>
-                Salão de festas
-              </option>
+              {areasComuns.map((area) => (
 
-              <option>
-                Churrasqueira
-              </option>
+                <option
+                  key={area.id}
+                  value={area.nome}
+                >
 
-              <option>
-                Piscina
-              </option>
+                  {area.nome}
 
-              <option>
-                Academia
-              </option>
+                </option>
 
-              <option>
-                Espaço gourmet
-              </option>
-
-              <option>
-                Coworking
-              </option>
+              ))}
 
             </select>
+
+            <select
+              value={
+                moradores.find(
+                  (m) =>
+                    m.nome ===
+                    novaReserva.morador &&
+                    m.apto ===
+                    novaReserva.apartamento
+                )?.id || ""
+              }
+              onChange={(e) =>
+                selecionarMorador(
+                  e.target.value
+                )
+              }
+              style={styles.input}
+            >
+
+              <option value="">
+                Selecione o morador
+              </option>
+
+              {moradores.map((morador) => (
+
+                <option
+                  key={morador.id}
+                  value={morador.id}
+                >
+
+                  {morador.nome} - Apto {morador.apto}
+
+                </option>
+
+              ))}
+
+            </select>
+
+            <input
+              placeholder="Apartamento"
+              value={novaReserva.apartamento}
+              readOnly
+              style={styles.input}
+            />
 
             <input
               type="date"
@@ -699,9 +787,7 @@ function Reservas() {
 
               <button
                 style={styles.cancelButton}
-                onClick={() =>
-                  setMostrarModal(false)
-                }
+                onClick={fecharModal}
               >
 
                 Cancelar

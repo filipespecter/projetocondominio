@@ -1,36 +1,51 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 function Prestadores() {
 
-  /* =========================
-     CHAVE FIXA STORAGE
-  ========================= */
-
   const STORAGE_KEYS = {
-    prestadores: "prestadores_condominio_v2",
+    prestadores: "condominio_prestadores",
     particulares: "prestadores_particulares_v2",
     operacional: "operacional_condominio_v2"
   };
 
-  /* =========================
-     ABAS
-  ========================= */
-
   const [abaAtiva, setAbaAtiva] =
     useState("condominio");
 
-  /* =========================
-     STATES
-  ========================= */
-
   const [prestadores, setPrestadores] =
-    useState([]);
+    useState(() => {
+      const dados =
+        localStorage.getItem(
+          STORAGE_KEYS.prestadores
+        );
+
+      return dados
+        ? JSON.parse(dados)
+        : [];
+    });
 
   const [particulares, setParticulares] =
-    useState([]);
+    useState(() => {
+      const dados =
+        localStorage.getItem(
+          STORAGE_KEYS.particulares
+        );
+
+      return dados
+        ? JSON.parse(dados)
+        : [];
+    });
 
   const [operacional, setOperacional] =
-    useState([]);
+    useState(() => {
+      const dados =
+        localStorage.getItem(
+          STORAGE_KEYS.operacional
+        );
+
+      return dados
+        ? JSON.parse(dados)
+        : [];
+    });
 
   const [mostrarModal, setMostrarModal] =
     useState(false);
@@ -41,16 +56,14 @@ function Prestadores() {
   const [editId, setEditId] =
     useState(null);
 
-  /* =========================
-     FORM PRESTADOR
-  ========================= */
-
   const estadoInicialPrestador = {
     nome: "",
     empresa: "",
     telefone: "",
     cpf: "",
     servico: "",
+    tipoServico: "Condomínio",
+    areaRelacionada: "",
     apartamento: "",
     responsavel: "",
     dataEntrada: "",
@@ -58,15 +71,11 @@ function Prestadores() {
     dataSaida: "",
     horaSaida: "",
     observacao: "",
-    status: "Autorizado"
+    status: "Pendente"
   };
 
   const [novoPrestador, setNovoPrestador] =
     useState(estadoInicialPrestador);
-
-  /* =========================
-     FORM OPERACIONAL
-  ========================= */
 
   const estadoInicialOperacional = {
     data: "",
@@ -82,151 +91,25 @@ function Prestadores() {
   const [novoOperacional, setNovoOperacional] =
     useState(estadoInicialOperacional);
 
-  /* =========================
-     LOCAL STORAGE
-  ========================= */
-
-  useEffect(() => {
-
-    try {
-
-      const dadosPrestadores =
-        localStorage.getItem(
-          STORAGE_KEYS.prestadores
-        );
-
-      const dadosParticulares =
-        localStorage.getItem(
-          STORAGE_KEYS.particulares
-        );
-
-      const dadosOperacional =
-        localStorage.getItem(
-          STORAGE_KEYS.operacional
-        );
-
-      if (dadosPrestadores) {
-
-        setPrestadores(
-          JSON.parse(dadosPrestadores)
-        );
-
-      }
-
-      if (dadosParticulares) {
-
-        setParticulares(
-          JSON.parse(dadosParticulares)
-        );
-
-      }
-
-      if (dadosOperacional) {
-
-        setOperacional(
-          JSON.parse(dadosOperacional)
-        );
-
-      }
-
-    } catch (erro) {
-
-      console.log(
-        "Erro ao carregar localStorage",
-        erro
-      );
-
-    }
-
-  }, []);
-
-  /* =========================
-     SALVAR STORAGE
-  ========================= */
-
-  useEffect(() => {
-
-    try {
-
-      localStorage.setItem(
-        STORAGE_KEYS.prestadores,
-        JSON.stringify(prestadores)
-      );
-
-    } catch (erro) {
-
-      console.log(erro);
-
-    }
-
-  }, [prestadores]);
-
-  useEffect(() => {
-
-    try {
-
-      localStorage.setItem(
-        STORAGE_KEYS.particulares,
-        JSON.stringify(particulares)
-      );
-
-    } catch (erro) {
-
-      console.log(erro);
-
-    }
-
-  }, [particulares]);
-
-  useEffect(() => {
-
-    try {
-
-      localStorage.setItem(
-        STORAGE_KEYS.operacional,
-        JSON.stringify(operacional)
-      );
-
-    } catch (erro) {
-
-      console.log(erro);
-
-    }
-
-  }, [operacional]);
-
-  /* =========================
-     FORMATAR TELEFONE
-  ========================= */
-
   function formatarTelefone(valor) {
-
     valor = valor
       .replace(/\D/g, "")
       .slice(0, 11);
 
     if (valor.length <= 10) {
-
       return valor.replace(
         /(\d{2})(\d{4})(\d{0,4})/,
         "($1) $2-$3"
       );
-
     }
 
     return valor.replace(
       /(\d{2})(\d{5})(\d{0,4})/,
       "($1) $2-$3"
     );
-
   }
 
-  /* =========================
-     FORMATAR CPF
-  ========================= */
-
   function formatarCPF(valor) {
-
     valor = valor
       .replace(/\D/g, "")
       .slice(0, 11);
@@ -235,12 +118,7 @@ function Prestadores() {
       /(\d{3})(\d{3})(\d{3})(\d{0,2})/,
       "$1.$2.$3-$4"
     );
-
   }
-
-  /* =========================
-     LISTA FILTRADA
-  ========================= */
 
   const listaAtual =
     abaAtiva === "condominio"
@@ -249,12 +127,10 @@ function Prestadores() {
 
   const listaFiltrada =
     listaAtual.filter((item) => {
-
       const texto =
         busca.toLowerCase();
 
       return (
-
         item.nome
           ?.toLowerCase()
           .includes(texto) ||
@@ -263,50 +139,46 @@ function Prestadores() {
           ?.toLowerCase()
           .includes(texto) ||
 
+        item.tipoServico
+          ?.toLowerCase()
+          .includes(texto) ||
+
+        item.areaRelacionada
+          ?.toLowerCase()
+          .includes(texto) ||
+
         item.empresa
           ?.toLowerCase()
           .includes(texto)
-
       );
-
     });
 
-  /* =========================
-     NOVO CADASTRO
-  ========================= */
-
   function abrirNovoCadastro() {
-
     setEditId(null);
 
-    setNovoPrestador(
-      estadoInicialPrestador
-    );
+    setNovoPrestador({
+      ...estadoInicialPrestador,
+      tipoServico:
+        abaAtiva === "condominio"
+          ? "Condomínio"
+          : "Apartamento"
+    });
 
     setMostrarModal(true);
-
   }
-
-  /* =========================
-     EDITAR
-  ========================= */
 
   function editarPrestador(item) {
-
     setEditId(item.id);
 
-    setNovoPrestador(item);
+    setNovoPrestador({
+      ...estadoInicialPrestador,
+      ...item
+    });
 
     setMostrarModal(true);
-
   }
 
-  /* =========================
-     EXCLUIR
-  ========================= */
-
   function excluirPrestador(id) {
-
     const confirmar =
       window.confirm(
         "Deseja excluir este cadastro?"
@@ -315,109 +187,111 @@ function Prestadores() {
     if (!confirmar) return;
 
     if (abaAtiva === "condominio") {
-
-      setPrestadores((prev) =>
-        prev.filter(
+      const listaAtualizada =
+        prestadores.filter(
           (item) => item.id !== id
-        )
-      );
+        );
 
+      setPrestadores(listaAtualizada);
+
+      localStorage.setItem(
+        STORAGE_KEYS.prestadores,
+        JSON.stringify(listaAtualizada)
+      );
     } else {
-
-      setParticulares((prev) =>
-        prev.filter(
+      const listaAtualizada =
+        particulares.filter(
           (item) => item.id !== id
-        )
+        );
+
+      setParticulares(listaAtualizada);
+
+      localStorage.setItem(
+        STORAGE_KEYS.particulares,
+        JSON.stringify(listaAtualizada)
       );
-
     }
-
   }
 
-  /* =========================
-     SALVAR PRESTADOR
-  ========================= */
-
   function salvarPrestador() {
-
     if (
       !novoPrestador.nome ||
       !novoPrestador.telefone ||
       !novoPrestador.servico
     ) {
-
       alert(
         "Preencha os campos obrigatórios."
       );
 
       return;
-
     }
+
+    let listaAtualizada = [];
 
     const dados = {
       ...novoPrestador
     };
 
-    /* EDITAR */
-
     if (editId !== null) {
-
       dados.id = editId;
 
       if (abaAtiva === "condominio") {
-
-        setPrestadores((prev) =>
-
-          prev.map((item) =>
-
+        listaAtualizada =
+          prestadores.map((item) =>
             item.id === editId
               ? dados
               : item
+          );
 
-          )
+        setPrestadores(listaAtualizada);
 
+        localStorage.setItem(
+          STORAGE_KEYS.prestadores,
+          JSON.stringify(listaAtualizada)
         );
-
       } else {
-
-        setParticulares((prev) =>
-
-          prev.map((item) =>
-
+        listaAtualizada =
+          particulares.map((item) =>
             item.id === editId
               ? dados
               : item
+          );
 
-          )
+        setParticulares(listaAtualizada);
 
+        localStorage.setItem(
+          STORAGE_KEYS.particulares,
+          JSON.stringify(listaAtualizada)
         );
-
       }
-
-    }
-
-    /* NOVO */
-
-    else {
-
+    } else {
       dados.id = Date.now();
 
       if (abaAtiva === "condominio") {
-
-        setPrestadores((prev) => [
-          ...prev,
+        listaAtualizada = [
+          ...prestadores,
           dados
-        ]);
+        ];
 
+        setPrestadores(listaAtualizada);
+
+        localStorage.setItem(
+          STORAGE_KEYS.prestadores,
+          JSON.stringify(listaAtualizada)
+        );
       } else {
-
-        setParticulares((prev) => [
-          ...prev,
+        listaAtualizada = [
+          ...particulares,
           dados
-        ]);
+        ];
 
+        setParticulares(listaAtualizada);
+
+        localStorage.setItem(
+          STORAGE_KEYS.particulares,
+          JSON.stringify(listaAtualizada)
+        );
       }
-
     }
 
     setNovoPrestador(
@@ -427,81 +301,76 @@ function Prestadores() {
     setEditId(null);
 
     setMostrarModal(false);
-
   }
 
-  /* =========================
-     SALVAR OPERACIONAL
-  ========================= */
-
   function salvarOperacional() {
-
     const novo = {
       id: Date.now(),
       ...novoOperacional
     };
 
-    setOperacional((prev) => [
-      ...prev,
+    const listaAtualizada = [
+      ...operacional,
       novo
-    ]);
+    ];
+
+    setOperacional(listaAtualizada);
+
+    localStorage.setItem(
+      STORAGE_KEYS.operacional,
+      JSON.stringify(listaAtualizada)
+    );
 
     setNovoOperacional(
       estadoInicialOperacional
     );
-
   }
 
-  /* =========================
-     STATUS
-  ========================= */
-
   function corStatus(status) {
-
     switch (status) {
-
-      case "Autorizado":
-
+      case "Pendente":
         return {
-          background: "#dcfce7",
-          color: "#166534"
+          background: "#fef9c3",
+          color: "#854d0e"
         };
 
-      case "Em serviço":
-
+      case "Aguardando liberação":
         return {
           background: "#fef3c7",
           color: "#92400e"
         };
 
-      case "Finalizado":
-
+      case "Em execução":
         return {
           background: "#dbeafe",
           color: "#1d4ed8"
         };
 
-      default:
+      case "Finalizado":
+        return {
+          background: "#dcfce7",
+          color: "#166534"
+        };
 
+      case "Cancelado":
         return {
           background: "#fee2e2",
           color: "#dc2626"
         };
 
+      default:
+        return {
+          background: "#e5e7eb",
+          color: "#374151"
+        };
     }
-
   }
 
   return (
-
     <div style={styles.container}>
 
-      {/* HEADER */}
-
       <div style={styles.header}>
-
         <div>
-
           <h1 style={styles.title}>
             Central Operacional
           </h1>
@@ -509,15 +378,10 @@ function Prestadores() {
           <p style={styles.subtitle}>
             Gestão de prestadores, controle técnico e operações do condomínio
           </p>
-
         </div>
-
       </div>
 
-      {/* ABAS */}
-
       <div style={styles.tabs}>
-
         <button
           style={{
             ...styles.tab,
@@ -529,9 +393,7 @@ function Prestadores() {
             setAbaAtiva("condominio")
           }
         >
-
           Serviços Condomínio
-
         </button>
 
         <button
@@ -545,9 +407,7 @@ function Prestadores() {
             setAbaAtiva("particular")
           }
         >
-
           Serviços Particulares
-
         </button>
 
         <button
@@ -561,19 +421,12 @@ function Prestadores() {
             setAbaAtiva("operacional")
           }
         >
-
           Operacional / COMPESA
-
         </button>
-
       </div>
 
-      {/* CARDS */}
-
       <div style={styles.resumeGrid}>
-
         <div style={styles.resumeCard}>
-
           <span style={styles.cardTitle}>
             Prestadores Condomínio
           </span>
@@ -581,11 +434,9 @@ function Prestadores() {
           <h1 style={styles.cardNumber}>
             {prestadores.length}
           </h1>
-
         </div>
 
         <div style={styles.resumeCard}>
-
           <span style={styles.cardTitle}>
             Serviços Particulares
           </span>
@@ -593,11 +444,9 @@ function Prestadores() {
           <h1 style={styles.cardNumber}>
             {particulares.length}
           </h1>
-
         </div>
 
         <div style={styles.resumeCard}>
-
           <span style={styles.cardTitle}>
             Controle Operacional
           </span>
@@ -605,35 +454,25 @@ function Prestadores() {
           <h1 style={styles.cardNumber}>
             {operacional.length}
           </h1>
-
         </div>
-
       </div>
 
-      {/* OPERACIONAL */}
-
       {abaAtiva === "operacional" ? (
-
         <>
-
           <div style={styles.operacionalCard}>
-
             <h2 style={styles.sectionTitle}>
               Controle COMPESA / Poço
             </h2>
 
             <div style={styles.grid}>
-
               <input
                 type="date"
                 value={novoOperacional.data}
                 onChange={(e) =>
-
                   setNovoOperacional({
                     ...novoOperacional,
                     data: e.target.value
                   })
-
                 }
                 style={styles.input}
               />
@@ -642,30 +481,22 @@ function Prestadores() {
                 type="time"
                 value={novoOperacional.horario}
                 onChange={(e) =>
-
                   setNovoOperacional({
                     ...novoOperacional,
-                    horario:
-                      e.target.value
+                    horario: e.target.value
                   })
-
                 }
                 style={styles.input}
               />
 
               <input
                 placeholder="Porteiro responsável"
-                value={
-                  novoOperacional.porteiro
-                }
+                value={novoOperacional.porteiro}
                 onChange={(e) =>
-
                   setNovoOperacional({
                     ...novoOperacional,
-                    porteiro:
-                      e.target.value
+                    porteiro: e.target.value
                   })
-
                 }
                 style={styles.input}
               />
@@ -673,17 +504,12 @@ function Prestadores() {
               <input
                 type="number"
                 placeholder="Leitura anterior"
-                value={
-                  novoOperacional.leituraAnterior
-                }
+                value={novoOperacional.leituraAnterior}
                 onChange={(e) =>
-
                   setNovoOperacional({
                     ...novoOperacional,
-                    leituraAnterior:
-                      e.target.value
+                    leituraAnterior: e.target.value
                   })
-
                 }
                 style={styles.input}
               />
@@ -691,17 +517,12 @@ function Prestadores() {
               <input
                 type="number"
                 placeholder="Leitura atual"
-                value={
-                  novoOperacional.leituraAtual
-                }
+                value={novoOperacional.leituraAtual}
                 onChange={(e) =>
-
                   setNovoOperacional({
                     ...novoOperacional,
-                    leituraAtual:
-                      e.target.value
+                    leituraAtual: e.target.value
                   })
-
                 }
                 style={styles.input}
               />
@@ -709,37 +530,26 @@ function Prestadores() {
               <input
                 type="number"
                 placeholder="Consumo m³"
-                value={
-                  novoOperacional.consumo
-                }
+                value={novoOperacional.consumo}
                 onChange={(e) =>
-
                   setNovoOperacional({
                     ...novoOperacional,
-                    consumo:
-                      e.target.value
+                    consumo: e.target.value
                   })
-
                 }
                 style={styles.input}
               />
 
               <select
-                value={
-                  novoOperacional.poco
-                }
+                value={novoOperacional.poco}
                 onChange={(e) =>
-
                   setNovoOperacional({
                     ...novoOperacional,
-                    poco:
-                      e.target.value
+                    poco: e.target.value
                   })
-
                 }
                 style={styles.input}
               >
-
                 <option>
                   Ligado
                 </option>
@@ -747,24 +557,17 @@ function Prestadores() {
                 <option>
                   Desligado
                 </option>
-
               </select>
-
             </div>
 
             <textarea
               placeholder="Observações"
-              value={
-                novoOperacional.observacao
-              }
+              value={novoOperacional.observacao}
               onChange={(e) =>
-
                 setNovoOperacional({
                   ...novoOperacional,
-                  observacao:
-                    e.target.value
+                  observacao: e.target.value
                 })
-
               }
               style={styles.textarea}
             />
@@ -773,23 +576,14 @@ function Prestadores() {
               style={styles.button}
               onClick={salvarOperacional}
             >
-
               Salvar Controle
-
             </button>
-
           </div>
 
-          {/* TABELA OPERACIONAL */}
-
           <div style={styles.card}>
-
             <table style={styles.table}>
-
               <thead>
-
                 <tr>
-
                   <th style={styles.th}>
                     Data
                   </th>
@@ -805,17 +599,12 @@ function Prestadores() {
                   <th style={styles.th}>
                     Poço
                   </th>
-
                 </tr>
-
               </thead>
 
               <tbody>
-
                 {operacional.map((o) => (
-
                   <tr key={o.id}>
-
                     <td style={styles.td}>
                       {o.data}
                     </td>
@@ -831,27 +620,15 @@ function Prestadores() {
                     <td style={styles.td}>
                       {o.poco}
                     </td>
-
                   </tr>
-
                 ))}
-
               </tbody>
-
             </table>
-
           </div>
-
         </>
-
       ) : (
-
         <>
-
-          {/* AÇÕES */}
-
           <div style={styles.actions}>
-
             <input
               placeholder="Buscar..."
               value={busca}
@@ -865,29 +642,28 @@ function Prestadores() {
               style={styles.button}
               onClick={abrirNovoCadastro}
             >
-
               + Novo Cadastro
-
             </button>
-
           </div>
 
-          {/* TABELA */}
-
           <div style={styles.card}>
-
             <table style={styles.table}>
-
               <thead>
-
                 <tr>
-
                   <th style={styles.th}>
                     Prestador
                   </th>
 
                   <th style={styles.th}>
                     Serviço
+                  </th>
+
+                  <th style={styles.th}>
+                    Tipo
+                  </th>
+
+                  <th style={styles.th}>
+                    Área
                   </th>
 
                   <th style={styles.th}>
@@ -901,21 +677,14 @@ function Prestadores() {
                   <th style={styles.thCenter}>
                     Ações
                   </th>
-
                 </tr>
-
               </thead>
 
               <tbody>
-
                 {listaFiltrada.map((p) => (
-
                   <tr key={p.id}>
-
                     <td style={styles.td}>
-
                       <div>
-
                         <strong>
                           {p.nome}
                         </strong>
@@ -927,9 +696,7 @@ function Prestadores() {
                         <p style={styles.info}>
                           {p.telefone}
                         </p>
-
                       </div>
-
                     </td>
 
                     <td style={styles.td}>
@@ -937,43 +704,38 @@ function Prestadores() {
                     </td>
 
                     <td style={styles.td}>
-
-                      {p.dataEntrada}
-                      {" "}
-                      {p.horaEntrada}
-
+                      {p.tipoServico || "-"}
                     </td>
 
                     <td style={styles.td}>
+                      {p.areaRelacionada || "-"}
+                    </td>
 
+                    <td style={styles.td}>
+                      {p.dataEntrada}{" "}
+                      {p.horaEntrada}
+                    </td>
+
+                    <td style={styles.td}>
                       <span
                         style={{
                           ...styles.status,
-                          ...corStatus(
-                            p.status
-                          )
+                          ...corStatus(p.status)
                         }}
                       >
-
                         {p.status}
-
                       </span>
-
                     </td>
 
                     <td style={styles.tdCenter}>
-
                       <div style={styles.actionsButtons}>
-
                         <button
                           style={styles.editBtn}
                           onClick={() =>
                             editarPrestador(p)
                           }
                         >
-
                           Editar
-
                         </button>
 
                         <button
@@ -982,63 +744,52 @@ function Prestadores() {
                             excluirPrestador(p.id)
                           }
                         >
-
                           Excluir
-
                         </button>
-
                       </div>
-
                     </td>
-
                   </tr>
-
                 ))}
 
+                {listaFiltrada.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan="7"
+                      style={styles.tdCenter}
+                    >
+                      Nenhum cadastro encontrado.
+                    </td>
+                  </tr>
+                )}
               </tbody>
-
             </table>
-
           </div>
-
         </>
-
       )}
 
-      {/* MODAL */}
-
       {mostrarModal && (
-
         <div style={styles.modalBg}>
-
           <div style={styles.modal}>
-
             <h2 style={styles.modalTitle}>
-
               {editId !== null
                 ? "Editar Cadastro"
                 : "Novo Cadastro"}
-
             </h2>
 
             <div style={styles.formSection}>
-
               <h3 style={styles.formTitle}>
                 Dados do Prestador
               </h3>
 
               <div style={styles.formGrid}>
-
                 <input
                   placeholder="Nome completo"
                   value={novoPrestador.nome}
                   onChange={(e) =>
-
                     setNovoPrestador({
                       ...novoPrestador,
                       nome: e.target.value
                     })
-
                   }
                   style={styles.input}
                 />
@@ -1047,13 +798,10 @@ function Prestadores() {
                   placeholder="Empresa"
                   value={novoPrestador.empresa}
                   onChange={(e) =>
-
                     setNovoPrestador({
                       ...novoPrestador,
-                      empresa:
-                        e.target.value
+                      empresa: e.target.value
                     })
-
                   }
                   style={styles.input}
                 />
@@ -1062,7 +810,6 @@ function Prestadores() {
                   placeholder="Telefone"
                   value={novoPrestador.telefone}
                   onChange={(e) =>
-
                     setNovoPrestador({
                       ...novoPrestador,
                       telefone:
@@ -1070,7 +817,6 @@ function Prestadores() {
                           e.target.value
                         )
                     })
-
                   }
                   style={styles.input}
                 />
@@ -1079,7 +825,6 @@ function Prestadores() {
                   placeholder="CPF"
                   value={novoPrestador.cpf}
                   onChange={(e) =>
-
                     setNovoPrestador({
                       ...novoPrestador,
                       cpf:
@@ -1087,253 +832,229 @@ function Prestadores() {
                           e.target.value
                         )
                     })
-
                   }
                   style={styles.input}
                 />
 
                 <input
-                  placeholder="Tipo de serviço"
+                  placeholder="Serviço executado"
                   value={novoPrestador.servico}
                   onChange={(e) =>
-
                     setNovoPrestador({
                       ...novoPrestador,
-                      servico:
-                        e.target.value
+                      servico: e.target.value
                     })
-
                   }
                   style={styles.input}
                 />
 
                 <select
-                  value={
-                    novoPrestador.status
-                  }
+                  value={novoPrestador.tipoServico}
                   onChange={(e) =>
-
                     setNovoPrestador({
                       ...novoPrestador,
-                      status:
-                        e.target.value
+                      tipoServico: e.target.value
                     })
-
                   }
                   style={styles.input}
                 >
-
                   <option>
-                    Autorizado
+                    Condomínio
                   </option>
 
                   <option>
-                    Em serviço
+                    Apartamento
+                  </option>
+
+                  <option>
+                    Emergencial
+                  </option>
+
+                  <option>
+                    Preventiva
+                  </option>
+                </select>
+
+                <input
+                  placeholder="Área relacionada"
+                  value={novoPrestador.areaRelacionada}
+                  onChange={(e) =>
+                    setNovoPrestador({
+                      ...novoPrestador,
+                      areaRelacionada: e.target.value
+                    })
+                  }
+                  style={styles.input}
+                />
+
+                <select
+                  value={novoPrestador.status}
+                  onChange={(e) =>
+                    setNovoPrestador({
+                      ...novoPrestador,
+                      status: e.target.value
+                    })
+                  }
+                  style={styles.input}
+                >
+                  <option>
+                    Pendente
+                  </option>
+
+                  <option>
+                    Aguardando liberação
+                  </option>
+
+                  <option>
+                    Em execução
                   </option>
 
                   <option>
                     Finalizado
                   </option>
 
+                  <option>
+                    Cancelado
+                  </option>
                 </select>
-
               </div>
-
             </div>
 
             {abaAtiva === "particular" && (
-
               <div style={styles.formSection}>
-
                 <h3 style={styles.formTitle}>
                   Responsável pela Solicitação
                 </h3>
 
                 <div style={styles.formGrid}>
-
                   <input
                     placeholder="Apartamento"
-                    value={
-                      novoPrestador.apartamento
-                    }
+                    value={novoPrestador.apartamento}
                     onChange={(e) =>
-
                       setNovoPrestador({
                         ...novoPrestador,
-                        apartamento:
-                          e.target.value
+                        apartamento: e.target.value
                       })
-
                     }
                     style={styles.input}
                   />
 
                   <input
                     placeholder="Morador responsável"
-                    value={
-                      novoPrestador.responsavel
-                    }
+                    value={novoPrestador.responsavel}
                     onChange={(e) =>
-
                       setNovoPrestador({
                         ...novoPrestador,
-                        responsavel:
-                          e.target.value
+                        responsavel: e.target.value
                       })
-
                     }
                     style={styles.input}
                   />
-
                 </div>
-
               </div>
-
             )}
 
             <div style={styles.formSection}>
-
               <h3 style={styles.formTitle}>
                 Controle de Entrada e Saída
               </h3>
 
               <div style={styles.formGrid}>
-
                 <input
                   type="date"
-                  value={
-                    novoPrestador.dataEntrada
-                  }
+                  value={novoPrestador.dataEntrada}
                   onChange={(e) =>
-
                     setNovoPrestador({
                       ...novoPrestador,
-                      dataEntrada:
-                        e.target.value
+                      dataEntrada: e.target.value
                     })
-
                   }
                   style={styles.input}
                 />
 
                 <input
                   type="time"
-                  value={
-                    novoPrestador.horaEntrada
-                  }
+                  value={novoPrestador.horaEntrada}
                   onChange={(e) =>
-
                     setNovoPrestador({
                       ...novoPrestador,
-                      horaEntrada:
-                        e.target.value
+                      horaEntrada: e.target.value
                     })
-
                   }
                   style={styles.input}
                 />
 
                 <input
                   type="date"
-                  value={
-                    novoPrestador.dataSaida
-                  }
+                  value={novoPrestador.dataSaida}
                   onChange={(e) =>
-
                     setNovoPrestador({
                       ...novoPrestador,
-                      dataSaida:
-                        e.target.value
+                      dataSaida: e.target.value
                     })
-
                   }
                   style={styles.input}
                 />
 
                 <input
                   type="time"
-                  value={
-                    novoPrestador.horaSaida
-                  }
+                  value={novoPrestador.horaSaida}
                   onChange={(e) =>
-
                     setNovoPrestador({
                       ...novoPrestador,
-                      horaSaida:
-                        e.target.value
+                      horaSaida: e.target.value
                     })
-
                   }
                   style={styles.input}
                 />
-
               </div>
-
             </div>
 
             <div style={styles.formSection}>
-
               <h3 style={styles.formTitle}>
                 Observações
               </h3>
 
               <textarea
                 placeholder="Digite observações adicionais"
-                value={
-                  novoPrestador.observacao
-                }
+                value={novoPrestador.observacao}
                 onChange={(e) =>
-
                   setNovoPrestador({
                     ...novoPrestador,
-                    observacao:
-                      e.target.value
+                    observacao: e.target.value
                   })
-
                 }
                 style={styles.textarea}
               />
-
             </div>
 
             <div style={styles.modalButtons}>
-
               <button
                 style={styles.saveBtn}
                 onClick={salvarPrestador}
               >
-
                 Salvar
-
               </button>
 
               <button
                 style={styles.cancelBtn}
                 onClick={() => {
-
                   setMostrarModal(false);
-
                   setEditId(null);
-
+                  setNovoPrestador(
+                    estadoInicialPrestador
+                  );
                 }}
               >
-
                 Cancelar
-
               </button>
-
             </div>
-
           </div>
-
         </div>
-
       )}
 
     </div>
-
   );
-
 }
 
 const styles = {

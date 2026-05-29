@@ -2,10 +2,23 @@ import { useState } from "react";
 
 function Moradores() {
 
+  const STORAGE_KEY = "moradores";
+
+  const estadoInicialMorador = {
+    id: null,
+    nome: "",
+    apto: "",
+    telefone: "",
+    email: "",
+    usuario: "",
+    senha: "",
+    status: "Ativo"
+  };
+
   const [moradores, setMoradores] = useState(() => {
 
     const dados =
-      localStorage.getItem("moradores");
+      localStorage.getItem(STORAGE_KEY);
 
     return dados
       ? JSON.parse(dados)
@@ -19,23 +32,10 @@ function Moradores() {
   const [busca, setBusca] = useState("");
 
   const [novoMorador, setNovoMorador] =
-    useState({
-      id: null,
-      nome: "",
-      apto: "",
-      telefone: "",
-      email: "",
-      usuario: "",
-      senha: "",
-      status: "Ativo"
-    });
+    useState(estadoInicialMorador);
 
   const [editId, setEditId] =
     useState(null);
-
-  /* =========================
-     FILTRO
-  ========================= */
 
   const moradoresFiltrados =
     moradores.filter((morador) =>
@@ -58,10 +58,6 @@ function Moradores() {
 
     );
 
-  /* =========================
-     SALVAR
-  ========================= */
-
   function salvarMorador() {
 
     if (
@@ -81,11 +77,9 @@ function Moradores() {
     const usuarioExistente =
       moradores.find(
         (m) =>
-
           m.usuario
             ?.toLowerCase() ===
             novoMorador.usuario.toLowerCase() &&
-
           m.id !== editId
       );
 
@@ -97,9 +91,11 @@ function Moradores() {
 
     }
 
+    let listaAtualizada = [];
+
     if (editId !== null) {
 
-      const listaAtualizada =
+      listaAtualizada =
         moradores.map((morador) =>
 
           morador.id === editId
@@ -111,13 +107,6 @@ function Moradores() {
 
         );
 
-      setMoradores(listaAtualizada);
-
-      localStorage.setItem(
-        "moradores",
-        JSON.stringify(listaAtualizada)
-      );
-
       setEditId(null);
 
     } else {
@@ -127,63 +116,56 @@ function Moradores() {
         id: Date.now()
       };
 
-      const listaAtualizada = [
+      listaAtualizada = [
         ...moradores,
         novo
       ];
 
-      setMoradores(listaAtualizada);
-
-      localStorage.setItem(
-        "moradores",
-        JSON.stringify(listaAtualizada)
-      );
-
     }
 
-    setNovoMorador({
-      id: null,
-      nome: "",
-      apto: "",
-      telefone: "",
-      email: "",
-      usuario: "",
-      senha: "",
-      status: "Ativo"
-    });
+    setMoradores(listaAtualizada);
+
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(listaAtualizada)
+    );
+
+    setNovoMorador(estadoInicialMorador);
 
     setMostrarModal(false);
 
   }
 
-  /* =========================
-     EXCLUIR
-  ========================= */
-
   function excluirMorador(id) {
 
-    const lista =
+    const confirmar =
+      window.confirm(
+        "Deseja realmente excluir este morador?"
+      );
+
+    if (!confirmar) return;
+
+    const listaAtualizada =
       moradores.filter(
         (morador) =>
           morador.id !== id
       );
 
-    setMoradores(lista);
+    setMoradores(listaAtualizada);
 
     localStorage.setItem(
-      "moradores",
-      JSON.stringify(lista)
+      STORAGE_KEY,
+      JSON.stringify(listaAtualizada)
     );
 
   }
 
-  /* =========================
-     EDITAR
-  ========================= */
-
   function editarMorador(morador) {
 
-    setNovoMorador(morador);
+    setNovoMorador({
+      ...estadoInicialMorador,
+      ...morador
+    });
 
     setEditId(morador.id);
 
@@ -191,11 +173,19 @@ function Moradores() {
 
   }
 
+  function fecharModal() {
+
+    setMostrarModal(false);
+
+    setEditId(null);
+
+    setNovoMorador(estadoInicialMorador);
+
+  }
+
   return (
 
     <div style={styles.container}>
-
-      {/* HEADER */}
 
       <div style={styles.header}>
 
@@ -228,16 +218,7 @@ function Moradores() {
 
               setEditId(null);
 
-              setNovoMorador({
-                id: null,
-                nome: "",
-                apto: "",
-                telefone: "",
-                email: "",
-                usuario: "",
-                senha: "",
-                status: "Ativo"
-              });
+              setNovoMorador(estadoInicialMorador);
 
               setMostrarModal(true);
 
@@ -251,8 +232,6 @@ function Moradores() {
         </div>
 
       </div>
-
-      {/* CARDS RESUMO */}
 
       <div style={styles.resumeGrid}>
 
@@ -297,8 +276,6 @@ function Moradores() {
         </div>
 
       </div>
-
-      {/* TABELA */}
 
       <div style={styles.card}>
 
@@ -461,8 +438,6 @@ function Moradores() {
 
       </div>
 
-      {/* MODAL */}
-
       {mostrarModal && (
 
         <div style={styles.modalBackground}>
@@ -481,9 +456,7 @@ function Moradores() {
 
               <button
                 style={styles.close}
-                onClick={() =>
-                  setMostrarModal(false)
-                }
+                onClick={fecharModal}
               >
                 ✕
               </button>
@@ -601,9 +574,7 @@ function Moradores() {
 
               <button
                 style={styles.cancelButton}
-                onClick={() =>
-                  setMostrarModal(false)
-                }
+                onClick={fecharModal}
               >
 
                 Cancelar

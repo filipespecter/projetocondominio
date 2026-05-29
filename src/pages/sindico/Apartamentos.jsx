@@ -2,12 +2,22 @@ import { useState } from "react";
 
 function Apartamentos() {
 
+  const STORAGE_KEY = "apartamentos";
+
+  const estadoInicialApartamento = {
+    bloco: "",
+    numero: "",
+    andar: "",
+    morador: "",
+    status: "Ocupado"
+  };
+
   const [apartamentos, setApartamentos] =
     useState(() => {
 
       const dados =
         localStorage.getItem(
-          "apartamentos"
+          STORAGE_KEY
         );
 
       return dados
@@ -37,59 +47,76 @@ function Apartamentos() {
     useState("");
 
   const [novoAp, setNovoAp] =
-    useState({
-      bloco: "",
-      numero: "",
-      andar: "",
-      morador: "",
-      status: "Ocupado"
-    });
+    useState(estadoInicialApartamento);
 
   const [editId, setEditId] =
     useState(null);
-
-  // =========================
-  // FILTRO
-  // =========================
 
   const apartamentosFiltrados =
     apartamentos.filter((ap) =>
 
       ap.bloco
-        .toLowerCase()
+        ?.toLowerCase()
         .includes(
           busca.toLowerCase()
         ) ||
 
       ap.numero
-        .toLowerCase()
+        ?.toLowerCase()
         .includes(
           busca.toLowerCase()
         ) ||
 
       ap.andar
-        .toLowerCase()
+        ?.toLowerCase()
         .includes(
           busca.toLowerCase()
         ) ||
 
       ap.morador
-        .toLowerCase()
+        ?.toLowerCase()
         .includes(
           busca.toLowerCase()
         ) ||
 
       ap.status
-        .toLowerCase()
+        ?.toLowerCase()
         .includes(
           busca.toLowerCase()
         )
 
     );
 
-  // =========================
-  // SALVAR AP
-  // =========================
+  function selecionarMorador(moradorId) {
+
+    const moradorSelecionado =
+      moradores.find(
+        (m) =>
+          String(m.id) ===
+          String(moradorId)
+      );
+
+    if (!moradorSelecionado) {
+
+      setNovoAp({
+        ...novoAp,
+        morador: ""
+      });
+
+      return;
+
+    }
+
+    setNovoAp({
+      ...novoAp,
+      morador:
+        moradorSelecionado.nome,
+      numero:
+        novoAp.numero ||
+        moradorSelecionado.apto
+    });
+
+  }
 
   function salvarApartamento() {
 
@@ -111,8 +138,14 @@ function Apartamentos() {
       apartamentos.find(
         (ap) =>
 
-          ap.bloco === novoAp.bloco &&
-          ap.numero === novoAp.numero &&
+          ap.bloco
+            ?.toLowerCase() ===
+            novoAp.bloco
+              .toLowerCase() &&
+
+          ap.numero ===
+            novoAp.numero &&
+
           ap.id !== editId
 
       );
@@ -127,9 +160,11 @@ function Apartamentos() {
 
     }
 
+    let listaAtualizada = [];
+
     if (editId !== null) {
 
-      const listaAtualizada =
+      listaAtualizada =
         apartamentos.map((ap) =>
 
           ap.id === editId
@@ -141,17 +176,6 @@ function Apartamentos() {
 
         );
 
-      setApartamentos(
-        listaAtualizada
-      );
-
-      localStorage.setItem(
-        "apartamentos",
-        JSON.stringify(
-          listaAtualizada
-        )
-      );
-
       setEditId(null);
 
     } else {
@@ -161,53 +185,44 @@ function Apartamentos() {
         ...novoAp
       };
 
-      const listaAtualizada = [
+      listaAtualizada = [
         ...apartamentos,
         novo
       ];
 
-      setApartamentos(
-        listaAtualizada
-      );
-
-      localStorage.setItem(
-        "apartamentos",
-        JSON.stringify(
-          listaAtualizada
-        )
-      );
-
     }
 
-    setNovoAp({
-      bloco: "",
-      numero: "",
-      andar: "",
-      morador: "",
-      status: "Ocupado"
-    });
+    setApartamentos(
+      listaAtualizada
+    );
+
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(
+        listaAtualizada
+      )
+    );
+
+    setNovoAp(
+      estadoInicialApartamento
+    );
 
     setMostrarModal(false);
 
   }
 
-  // =========================
-  // EDITAR
-  // =========================
-
   function editarApartamento(ap) {
 
-    setNovoAp(ap);
+    setNovoAp({
+      ...estadoInicialApartamento,
+      ...ap
+    });
 
     setEditId(ap.id);
 
     setMostrarModal(true);
 
   }
-
-  // =========================
-  // EXCLUIR
-  // =========================
 
   function excluirApartamento(id) {
 
@@ -228,7 +243,7 @@ function Apartamentos() {
     );
 
     localStorage.setItem(
-      "apartamentos",
+      STORAGE_KEY,
       JSON.stringify(
         listaAtualizada
       )
@@ -236,9 +251,17 @@ function Apartamentos() {
 
   }
 
-  // =========================
-  // STATUS
-  // =========================
+  function fecharModal() {
+
+    setMostrarModal(false);
+
+    setEditId(null);
+
+    setNovoAp(
+      estadoInicialApartamento
+    );
+
+  }
 
   function corStatus(status) {
 
@@ -315,13 +338,9 @@ function Apartamentos() {
 
               setEditId(null);
 
-              setNovoAp({
-                bloco: "",
-                numero: "",
-                andar: "",
-                morador: "",
-                status: "Ocupado"
-              });
+              setNovoAp(
+                estadoInicialApartamento
+              );
 
               setMostrarModal(true);
 
@@ -629,14 +648,17 @@ function Apartamentos() {
             {/* MORADOR */}
 
             <select
-              value={novoAp.morador}
+              value={
+                moradores.find(
+                  (m) =>
+                    m.nome ===
+                    novoAp.morador
+                )?.id || ""
+              }
               onChange={(e) =>
-
-                setNovoAp({
-                  ...novoAp,
-                  morador: e.target.value
-                })
-
+                selecionarMorador(
+                  e.target.value
+                )
               }
               style={styles.input}
             >
@@ -646,14 +668,16 @@ function Apartamentos() {
               </option>
 
               {moradores.map(
-                (morador, index) => (
+                (morador) => (
 
                 <option
-                  key={index}
-                  value={morador.nome}
+                  key={morador.id}
+                  value={morador.id}
                 >
 
                   {morador.nome}
+                  {" - Apto "}
+                  {morador.apto}
 
                 </option>
 
@@ -705,9 +729,7 @@ function Apartamentos() {
 
               <button
                 style={styles.cancelButton}
-                onClick={() =>
-                  setMostrarModal(false)
-                }
+                onClick={fecharModal}
               >
 
                 Cancelar

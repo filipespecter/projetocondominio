@@ -1,9 +1,49 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 function Visitantes() {
 
+  const STORAGE_KEY = "visitantes";
+
+  const estadoInicialVisitante = {
+    nome: "",
+    documento: "",
+    apartamento: "",
+    morador: "",
+    observacao: "",
+    entrada: "",
+    autorizado: false,
+    bloqueado: false,
+    status: "Pendente",
+    tipo: "Visita"
+  };
+
   const [visitantes, setVisitantes] =
-    useState([]);
+    useState(() => {
+
+      const dados =
+        localStorage.getItem(
+          STORAGE_KEY
+        );
+
+      return dados
+        ? JSON.parse(dados)
+        : [];
+
+    });
+
+  const [moradores] =
+    useState(() => {
+
+      const dados =
+        localStorage.getItem(
+          "moradores"
+        );
+
+      return dados
+        ? JSON.parse(dados)
+        : [];
+
+    });
 
   const [mostrarModal, setMostrarModal] =
     useState(false);
@@ -12,58 +52,10 @@ function Visitantes() {
     useState("");
 
   const [novoVisitante, setNovoVisitante] =
-    useState({
-      nome: "",
-      documento: "",
-      apartamento: "",
-      morador: "",
-      observacao: "",
-      entrada: "",
-      autorizado: false,
-      bloqueado: false,
-      status: "Pendente",
-      tipo: "Visita"
-    });
+    useState(estadoInicialVisitante);
 
   const [editId, setEditId] =
     useState(null);
-
-  /* =========================
-     CARREGAR DADOS
-  ========================= */
-
-  useEffect(() => {
-
-    const dados =
-      localStorage.getItem(
-        "visitantes"
-      );
-
-    if (dados) {
-
-      try {
-
-        setVisitantes(
-          JSON.parse(dados)
-        );
-
-      } catch {
-
-        setVisitantes([]);
-
-      }
-
-    } else {
-
-      setVisitantes([]);
-
-    }
-
-  }, []);
-
-  /* =========================
-     FILTRO
-  ========================= */
 
   const visitantesFiltrados =
     visitantes.filter((v) =>
@@ -81,6 +73,12 @@ function Visitantes() {
         ) ||
 
       v.apartamento
+        ?.toLowerCase()
+        .includes(
+          busca.toLowerCase()
+        ) ||
+
+      v.morador
         ?.toLowerCase()
         .includes(
           busca.toLowerCase()
@@ -106,10 +104,6 @@ function Visitantes() {
       (v) =>
         v.bloqueado === true
     );
-
-  /* =========================
-     HISTÓRICO
-  ========================= */
 
   function salvarHistorico(
     acao,
@@ -156,16 +150,13 @@ function Visitantes() {
 
   }
 
-  /* =========================
-     SALVAR VISITANTE
-  ========================= */
-
   function salvarVisitante() {
 
     if (
       !novoVisitante.nome ||
       !novoVisitante.documento ||
-      !novoVisitante.apartamento
+      !novoVisitante.apartamento ||
+      !novoVisitante.morador
     ) {
 
       alert(
@@ -229,40 +220,23 @@ function Visitantes() {
 
     };
 
-    /* =========================
-       EDITAR
-    ========================= */
+    let listaAtualizada = [];
 
     if (
       editId !== null
     ) {
 
-      setVisitantes(
-        (prev) => {
+      listaAtualizada =
+        visitantes.map((v) =>
 
-          const listaAtualizada =
-            prev.map((v) =>
+          v.id === editId
+            ? {
+                ...visitanteCompleto,
+                id: editId
+              }
+            : v
 
-              v.id === editId
-                ? {
-                    ...visitanteCompleto,
-                    id: editId
-                  }
-                : v
-
-            );
-
-          localStorage.setItem(
-            "visitantes",
-            JSON.stringify(
-              listaAtualizada
-            )
-          );
-
-          return listaAtualizada;
-
-        }
-      );
+        );
 
       salvarHistorico(
         "edição",
@@ -271,13 +245,7 @@ function Visitantes() {
 
       setEditId(null);
 
-    }
-
-    /* =========================
-       NOVO VISITANTE
-    ========================= */
-
-    else {
+    } else {
 
       const novo = {
 
@@ -287,25 +255,10 @@ function Visitantes() {
 
       };
 
-      setVisitantes(
-        (prev) => {
-
-          const novaLista = [
-            ...prev,
-            novo
-          ];
-
-          localStorage.setItem(
-            "visitantes",
-            JSON.stringify(
-              novaLista
-            )
-          );
-
-          return novaLista;
-
-        }
-      );
+      listaAtualizada = [
+        ...visitantes,
+        novo
+      ];
 
       salvarHistorico(
         "cadastro",
@@ -314,32 +267,35 @@ function Visitantes() {
 
     }
 
-    setNovoVisitante({
+    setVisitantes(
+      listaAtualizada
+    );
 
-      nome: "",
-      documento: "",
-      apartamento: "",
-      morador: "",
-      observacao: "",
-      entrada: "",
-      autorizado: false,
-      bloqueado: false,
-      status: "Pendente",
-      tipo: "Visita"
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(
+        listaAtualizada
+      )
+    );
 
-    });
+    setNovoVisitante(
+      estadoInicialVisitante
+    );
 
     setMostrarModal(false);
 
   }
 
-  /* =========================
-     EXCLUIR
-  ========================= */
-
   function excluirVisitante(
     id
   ) {
+
+    const confirmar =
+      window.confirm(
+        "Deseja realmente excluir este visitante?"
+      );
+
+    if (!confirmar) return;
 
     const visitante =
       visitantes.find(
@@ -367,7 +323,7 @@ function Visitantes() {
     );
 
     localStorage.setItem(
-      "visitantes",
+      STORAGE_KEY,
       JSON.stringify(
         novaLista
       )
@@ -375,25 +331,20 @@ function Visitantes() {
 
   }
 
-  /* =========================
-     EDITAR
-  ========================= */
-
   function editarVisitante(
     v
   ) {
 
-    setNovoVisitante(v);
+    setNovoVisitante({
+      ...estadoInicialVisitante,
+      ...v
+    });
 
     setEditId(v.id);
 
     setMostrarModal(true);
 
   }
-
-  /* =========================
-     MUDAR STATUS
-  ========================= */
 
   function mudarStatus(
     id,
@@ -430,7 +381,7 @@ function Visitantes() {
     setVisitantes(lista);
 
     localStorage.setItem(
-      "visitantes",
+      STORAGE_KEY,
       JSON.stringify(
         lista
       )
@@ -438,9 +389,38 @@ function Visitantes() {
 
   }
 
-  /* =========================
-     COR STATUS
-  ========================= */
+  function selecionarMorador(
+    moradorId
+  ) {
+
+    const moradorSelecionado =
+      moradores.find(
+        (m) =>
+          String(m.id) ===
+          String(moradorId)
+      );
+
+    if (!moradorSelecionado) {
+
+      setNovoVisitante({
+        ...novoVisitante,
+        morador: "",
+        apartamento: ""
+      });
+
+      return;
+
+    }
+
+    setNovoVisitante({
+      ...novoVisitante,
+      morador:
+        moradorSelecionado.nome,
+      apartamento:
+        moradorSelecionado.apto
+    });
+
+  }
 
   function corStatus(
     status
@@ -492,6 +472,18 @@ function Visitantes() {
 
   }
 
+  function fecharModal() {
+
+    setMostrarModal(false);
+
+    setEditId(null);
+
+    setNovoVisitante(
+      estadoInicialVisitante
+    );
+
+  }
+
   return (
 
     <div style={styles.container}>
@@ -532,20 +524,9 @@ function Visitantes() {
 
               setEditId(null);
 
-              setNovoVisitante({
-
-                nome: "",
-                documento: "",
-                apartamento: "",
-                morador: "",
-                observacao: "",
-                entrada: "",
-                autorizado: false,
-                bloqueado: false,
-                status: "Pendente",
-                tipo: "Visita"
-
-              });
+              setNovoVisitante(
+                estadoInicialVisitante
+              );
 
               setMostrarModal(
                 true
@@ -683,6 +664,23 @@ function Visitantes() {
           </thead>
 
           <tbody>
+
+            {visitantesFiltrados.length === 0 && (
+
+              <tr>
+
+                <td
+                  colSpan="5"
+                  style={styles.empty}
+                >
+
+                  Nenhum visitante encontrado
+
+                </td>
+
+              </tr>
+
+            )}
 
             {visitantesFiltrados.map(
               (v) => (
@@ -855,11 +853,7 @@ function Visitantes() {
 
               <button
                 style={styles.close}
-                onClick={() =>
-                  setMostrarModal(
-                    false
-                  )
-                }
+                onClick={fecharModal}
               >
                 ✕
               </button>
@@ -904,39 +898,51 @@ function Visitantes() {
                 style={styles.input}
               />
 
+              <select
+                value={
+                  moradores.find(
+                    (m) =>
+                      m.nome ===
+                      novoVisitante.morador &&
+                      m.apto ===
+                      novoVisitante.apartamento
+                  )?.id || ""
+                }
+                onChange={(e) =>
+                  selecionarMorador(
+                    e.target.value
+                  )
+                }
+                style={styles.input}
+              >
+
+                <option value="">
+                  Selecione o morador responsável
+                </option>
+
+                {moradores.map(
+                  (morador) => (
+
+                    <option
+                      key={morador.id}
+                      value={morador.id}
+                    >
+
+                      {morador.nome}
+                      {" - Apto "}
+                      {morador.apto}
+
+                    </option>
+
+                  )
+                )}
+
+              </select>
+
               <input
                 placeholder="Apartamento"
                 value={novoVisitante.apartamento}
-                onChange={(e) =>
-
-                  setNovoVisitante({
-
-                    ...novoVisitante,
-
-                    apartamento:
-                      e.target.value
-
-                  })
-
-                }
-                style={styles.input}
-              />
-
-              <input
-                placeholder="Morador responsável"
-                value={novoVisitante.morador}
-                onChange={(e) =>
-
-                  setNovoVisitante({
-
-                    ...novoVisitante,
-
-                    morador:
-                      e.target.value
-
-                  })
-
-                }
+                readOnly
                 style={styles.input}
               />
 
@@ -993,8 +999,6 @@ function Visitantes() {
                 style={styles.input}
               />
 
-              {/* AUTORIZADO */}
-
               <label style={styles.checkboxLabel}>
 
                 <input
@@ -1024,8 +1028,6 @@ function Visitantes() {
                 Autorizado
 
               </label>
-
-              {/* BLOQUEADO */}
 
               <label style={styles.checkboxLabel}>
 
@@ -1092,11 +1094,7 @@ function Visitantes() {
 
               <button
                 style={styles.cancelBtn}
-                onClick={() =>
-                  setMostrarModal(
-                    false
-                  )
-                }
+                onClick={fecharModal}
               >
 
                 Cancelar
@@ -1244,6 +1242,12 @@ const styles = {
     textAlign: "center",
     borderBottom:
       "1px solid #f3f4f6"
+  },
+
+  empty: {
+    padding: "35px",
+    textAlign: "center",
+    color: "#6b7280"
   },
 
   userArea: {

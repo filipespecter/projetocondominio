@@ -1,8 +1,29 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 function AreasComuns() {
 
-  const [areas, setAreas] = useState([]);
+  const STORAGE_KEY = "areasComuns";
+
+  const estadoInicialArea = {
+    nome: "",
+    capacidade: "",
+    horario: "",
+    status: "Disponível"
+  };
+
+  const [areas, setAreas] =
+    useState(() => {
+
+      const dados =
+        localStorage.getItem(
+          STORAGE_KEY
+        );
+
+      return dados
+        ? JSON.parse(dados)
+        : [];
+
+    });
 
   const [mostrarModal, setMostrarModal] =
     useState(false);
@@ -11,117 +32,33 @@ function AreasComuns() {
     useState("");
 
   const [novaArea, setNovaArea] =
-    useState({
-      nome: "",
-      capacidade: "",
-      horario: "",
-      status: "Disponível"
-    });
+    useState(estadoInicialArea);
 
   const [editId, setEditId] =
     useState(null);
-
-
-  // =========================
-  // CARREGAR DADOS
-  // =========================
-
-  useEffect(() => {
-
-    const dados =
-      localStorage.getItem(
-        "areasComuns"
-      );
-
-    if (dados) {
-
-      setAreas(
-        JSON.parse(dados)
-      );
-
-    } else {
-
-      const iniciais = [
-        {
-          id: 1,
-          nome: "Salão de festas",
-          capacidade: "50 pessoas",
-          horario: "08:00 - 22:00",
-          status: "Disponível"
-        },
-        {
-          id: 2,
-          nome: "Churrasqueira",
-          capacidade: "15 pessoas",
-          horario: "09:00 - 23:00",
-          status: "Ocupado"
-        },
-        {
-          id: 3,
-          nome: "Piscina",
-          capacidade: "30 pessoas",
-          horario: "07:00 - 20:00",
-          status: "Manutenção"
-        }
-      ];
-
-      setAreas(iniciais);
-
-      localStorage.setItem(
-        "areasComuns",
-        JSON.stringify(iniciais)
-      );
-
-    }
-
-  }, []);
-
-
-  // =========================
-  // SALVAR AUTOMATICAMENTE
-  // =========================
-
-  useEffect(() => {
-
-    localStorage.setItem(
-      "areasComuns",
-      JSON.stringify(areas)
-    );
-
-  }, [areas]);
-
-
-  // =========================
-  // FILTRO
-  // =========================
 
   const areasFiltradas =
     areas.filter((area) =>
 
       area.nome
-        .toLowerCase()
+        ?.toLowerCase()
         .includes(
           busca.toLowerCase()
         ) ||
 
       area.capacidade
-        .toLowerCase()
+        ?.toLowerCase()
         .includes(
           busca.toLowerCase()
         ) ||
 
       area.status
-        .toLowerCase()
+        ?.toLowerCase()
         .includes(
           busca.toLowerCase()
         )
 
     );
-
-
-  // =========================
-  // SALVAR ÁREA
-  // =========================
 
   function salvarArea() {
 
@@ -143,8 +80,10 @@ function AreasComuns() {
       areas.find(
         (area) =>
 
-          area.nome ===
-            novaArea.nome &&
+          area.nome
+            ?.toLowerCase() ===
+            novaArea.nome
+              .toLowerCase() &&
           area.id !== editId
 
       );
@@ -159,9 +98,11 @@ function AreasComuns() {
 
     }
 
+    let listaAtualizada = [];
+
     if (editId !== null) {
 
-      const lista =
+      listaAtualizada =
         areas.map((area) =>
 
           area.id === editId
@@ -173,8 +114,6 @@ function AreasComuns() {
 
         );
 
-      setAreas(lista);
-
       setEditId(null);
 
     } else {
@@ -184,43 +123,38 @@ function AreasComuns() {
         ...novaArea
       };
 
-      setAreas([
+      listaAtualizada = [
         ...areas,
         nova
-      ]);
+      ];
 
     }
 
-    setNovaArea({
-      nome: "",
-      capacidade: "",
-      horario: "",
-      status: "Disponível"
-    });
+    setAreas(listaAtualizada);
+
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(listaAtualizada)
+    );
+
+    setNovaArea(estadoInicialArea);
 
     setMostrarModal(false);
 
   }
 
-
-  // =========================
-  // EDITAR
-  // =========================
-
   function editarArea(area) {
 
-    setNovaArea(area);
+    setNovaArea({
+      ...estadoInicialArea,
+      ...area
+    });
 
     setEditId(area.id);
 
     setMostrarModal(true);
 
   }
-
-
-  // =========================
-  // EXCLUIR
-  // =========================
 
   function excluirArea(id) {
 
@@ -231,20 +165,30 @@ function AreasComuns() {
 
     if (!confirmar) return;
 
-    const lista =
+    const listaAtualizada =
       areas.filter(
         (area) =>
           area.id !== id
       );
 
-    setAreas(lista);
+    setAreas(listaAtualizada);
+
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(listaAtualizada)
+    );
 
   }
 
+  function fecharModal() {
 
-  // =========================
-  // STATUS
-  // =========================
+    setMostrarModal(false);
+
+    setEditId(null);
+
+    setNovaArea(estadoInicialArea);
+
+  }
 
   function corStatus(status) {
 
@@ -282,17 +226,11 @@ function AreasComuns() {
 
   }
 
-
   return (
 
     <div style={styles.container}>
 
-
-      {/* HEADER */}
-
-
       <div style={styles.header}>
-
 
         <div>
 
@@ -306,9 +244,7 @@ function AreasComuns() {
 
         </div>
 
-
         <div style={styles.headerActions}>
-
 
           <input
             placeholder="Buscar área..."
@@ -321,19 +257,15 @@ function AreasComuns() {
             style={styles.search}
           />
 
-
           <button
             style={styles.button}
             onClick={() => {
 
               setEditId(null);
 
-              setNovaArea({
-                nome: "",
-                capacidade: "",
-                horario: "",
-                status: "Disponível"
-              });
+              setNovaArea(
+                estadoInicialArea
+              );
 
               setMostrarModal(true);
 
@@ -348,12 +280,7 @@ function AreasComuns() {
 
       </div>
 
-
-      {/* RESUMO */}
-
-
       <div style={styles.resumeGrid}>
-
 
         <div style={styles.resumeCard}>
 
@@ -374,7 +301,6 @@ function AreasComuns() {
           </div>
 
         </div>
-
 
         <div style={styles.resumeCard}>
 
@@ -404,15 +330,9 @@ function AreasComuns() {
 
       </div>
 
-
-      {/* TABELA */}
-
-
       <div style={styles.card}>
 
-
         <table style={styles.table}>
-
 
           <thead>
 
@@ -442,9 +362,7 @@ function AreasComuns() {
 
           </thead>
 
-
           <tbody>
-
 
             {areasFiltradas.length === 0 ? (
 
@@ -468,7 +386,6 @@ function AreasComuns() {
 
                 <tr key={area.id}>
 
-
                   <td style={styles.td}>
 
                     <div style={styles.areaInfo}>
@@ -485,16 +402,13 @@ function AreasComuns() {
 
                   </td>
 
-
                   <td style={styles.td}>
                     {area.capacidade}
                   </td>
 
-
                   <td style={styles.td}>
                     {area.horario}
                   </td>
-
 
                   <td style={styles.td}>
 
@@ -513,9 +427,7 @@ function AreasComuns() {
 
                   </td>
 
-
                   <td style={styles.tdCenter}>
-
 
                     <button
                       style={
@@ -529,7 +441,6 @@ function AreasComuns() {
                       Editar
 
                     </button>
-
 
                     <button
                       style={
@@ -560,17 +471,11 @@ function AreasComuns() {
 
       </div>
 
-
-      {/* MODAL */}
-
-
       {mostrarModal && (
 
         <div style={styles.modalBackground}>
 
-
           <div style={styles.modal}>
-
 
             <h2 style={styles.modalTitle}>
 
@@ -579,7 +484,6 @@ function AreasComuns() {
                 : "Nova área"}
 
             </h2>
-
 
             <input
               placeholder="Nome da área"
@@ -594,7 +498,6 @@ function AreasComuns() {
               }
               style={styles.input}
             />
-
 
             <input
               placeholder="Capacidade"
@@ -611,7 +514,6 @@ function AreasComuns() {
               style={styles.input}
             />
 
-
             <input
               placeholder="Horário"
               value={novaArea.horario}
@@ -626,7 +528,6 @@ function AreasComuns() {
               }
               style={styles.input}
             />
-
 
             <select
               value={novaArea.status}
@@ -656,9 +557,7 @@ function AreasComuns() {
 
             </select>
 
-
             <div style={styles.modalButtons}>
-
 
               <button
                 style={styles.saveButton}
@@ -669,12 +568,9 @@ function AreasComuns() {
 
               </button>
 
-
               <button
                 style={styles.cancelButton}
-                onClick={() =>
-                  setMostrarModal(false)
-                }
+                onClick={fecharModal}
               >
 
                 Cancelar
@@ -694,7 +590,6 @@ function AreasComuns() {
   );
 
 }
-
 
 const styles = {
 

@@ -2,11 +2,23 @@ import { useState } from "react";
 
 function Porteiros() {
 
+  const STORAGE_KEY = "porteiros";
+
+  const estadoInicialPorteiro = {
+    nome: "",
+    turno: "",
+    telefone: "",
+    usuario: "",
+    senha: "",
+    status: "Ativo",
+    ultimoLogin: null
+  };
+
   const [porteiros, setPorteiros] =
     useState(() => {
 
       const dados =
-        localStorage.getItem("porteiros");
+        localStorage.getItem(STORAGE_KEY);
 
       return dados
         ? JSON.parse(dados)
@@ -21,75 +33,49 @@ function Porteiros() {
     useState("");
 
   const [novoPorteiro, setNovoPorteiro] =
-    useState({
-      nome: "",
-      turno: "",
-      telefone: "",
-      usuario: "",
-      senha: "",
-      status: "Ativo",
-      ultimoLogin: null
-    });
+    useState(estadoInicialPorteiro);
 
   const [editId, setEditId] =
     useState(null);
-
-  /* =========================
-     FILTRO
-  ========================= */
 
   const porteirosFiltrados =
     porteiros.filter((p) =>
 
       p.nome
-        .toLowerCase()
+        ?.toLowerCase()
         .includes(
           busca.toLowerCase()
         ) ||
 
       p.turno
-        .toLowerCase()
+        ?.toLowerCase()
         .includes(
           busca.toLowerCase()
         ) ||
 
       p.telefone
-        .toLowerCase()
+        ?.toLowerCase()
         .includes(
           busca.toLowerCase()
         ) ||
 
       p.usuario
-        .toLowerCase()
+        ?.toLowerCase()
         .includes(
           busca.toLowerCase()
         )
 
     );
 
-  /* =========================
-     LIMPAR FORMULÁRIO
-  ========================= */
-
   function limparFormulario() {
 
-    setNovoPorteiro({
-      nome: "",
-      turno: "",
-      telefone: "",
-      usuario: "",
-      senha: "",
-      status: "Ativo",
-      ultimoLogin: null
-    });
+    setNovoPorteiro(
+      estadoInicialPorteiro
+    );
 
     setEditId(null);
 
   }
-
-  /* =========================
-     SALVAR
-  ========================= */
 
   function salvarPorteiro() {
 
@@ -115,7 +101,7 @@ function Porteiros() {
         (p) =>
 
           p.usuario
-            .trim()
+            ?.trim()
             .toLowerCase() ===
 
           novoPorteiro.usuario
@@ -136,13 +122,11 @@ function Porteiros() {
 
     }
 
-    /* =========================
-       EDITAR
-    ========================= */
+    let listaAtualizada = [];
 
     if (editId !== null) {
 
-      const listaAtualizada =
+      listaAtualizada =
         porteiros.map((p) =>
 
           p.id === editId
@@ -155,50 +139,32 @@ function Porteiros() {
 
         );
 
-      setPorteiros(
-        listaAtualizada
-      );
+      setEditId(null);
 
-      localStorage.setItem(
-        "porteiros",
-        JSON.stringify(
-          listaAtualizada
-        )
-      );
-
-    }
-
-    /* =========================
-       NOVO
-    ========================= */
-
-    else {
+    } else {
 
       const novo = {
-
         id: Date.now(),
-
         ...novoPorteiro
-
       };
 
-      const listaAtualizada = [
+      listaAtualizada = [
         ...porteiros,
         novo
       ];
 
-      setPorteiros(
-        listaAtualizada
-      );
-
-      localStorage.setItem(
-        "porteiros",
-        JSON.stringify(
-          listaAtualizada
-        )
-      );
-
     }
+
+    setPorteiros(
+      listaAtualizada
+    );
+
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(
+        listaAtualizada
+      )
+    );
 
     limparFormulario();
 
@@ -206,15 +172,12 @@ function Porteiros() {
 
   }
 
-  /* =========================
-     EDITAR
-  ========================= */
-
   function editarPorteiro(
     porteiro
   ) {
 
     setNovoPorteiro({
+      ...estadoInicialPorteiro,
       ...porteiro
     });
 
@@ -225,10 +188,6 @@ function Porteiros() {
     setMostrarModal(true);
 
   }
-
-  /* =========================
-     EXCLUIR
-  ========================= */
 
   function excluirPorteiro(id) {
 
@@ -247,9 +206,17 @@ function Porteiros() {
     setPorteiros(lista);
 
     localStorage.setItem(
-      "porteiros",
+      STORAGE_KEY,
       JSON.stringify(lista)
     );
+
+  }
+
+  function fecharModal() {
+
+    limparFormulario();
+
+    setMostrarModal(false);
 
   }
 
@@ -477,7 +444,27 @@ function Porteiros() {
                   </td>
 
                   <td style={styles.td}>
-                    {p.status}
+
+                    <span
+                      style={{
+                        ...styles.statusBadge,
+
+                        background:
+                          p.status === "Ativo"
+                            ? "#dcfce7"
+                            : "#fee2e2",
+
+                        color:
+                          p.status === "Ativo"
+                            ? "#166534"
+                            : "#dc2626"
+                      }}
+                    >
+
+                      {p.status}
+
+                    </span>
+
                   </td>
 
                   <td style={styles.tdCenter}>
@@ -629,6 +616,30 @@ function Porteiros() {
               style={styles.input}
             />
 
+            <select
+              value={novoPorteiro.status}
+              onChange={(e) =>
+
+                setNovoPorteiro({
+                  ...novoPorteiro,
+                  status:
+                    e.target.value
+                })
+
+              }
+              style={styles.input}
+            >
+
+              <option>
+                Ativo
+              </option>
+
+              <option>
+                Inativo
+              </option>
+
+            </select>
+
             <div style={styles.modalButtons}>
 
               <button
@@ -644,11 +655,7 @@ function Porteiros() {
 
               <button
                 style={styles.cancelBtn}
-                onClick={() =>
-                  setMostrarModal(
-                    false
-                  )
-                }
+                onClick={fecharModal}
               >
 
                 Cancelar
@@ -818,6 +825,13 @@ const styles = {
   },
 
   turnoBadge: {
+    padding: "8px 14px",
+    borderRadius: "999px",
+    fontWeight: "700",
+    fontSize: "13px"
+  },
+
+  statusBadge: {
     padding: "8px 14px",
     borderRadius: "999px",
     fontWeight: "700",
