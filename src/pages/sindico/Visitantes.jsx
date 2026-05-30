@@ -9,6 +9,7 @@ function Visitantes() {
     documento: "",
     apartamento: "",
     morador: "",
+    moradorId: "",
     observacao: "",
     entrada: "",
     autorizado: false,
@@ -39,9 +40,22 @@ function Visitantes() {
           "moradores"
         );
 
-      return dados
-        ? JSON.parse(dados)
-        : [];
+      if (!dados) return [];
+
+      const lista =
+        JSON.parse(dados);
+
+      return lista.map((morador) => ({
+        ...morador,
+        apto:
+          morador.apto ||
+          morador.apartamento ||
+          "",
+        apartamento:
+          morador.apartamento ||
+          morador.apto ||
+          ""
+      }));
 
     });
 
@@ -211,9 +225,6 @@ function Visitantes() {
       ano:
         agora.getFullYear(),
 
-      porteiro:
-        "Porteiro",
-
       entrada:
         novoVisitante.entrada ||
         agora.toLocaleTimeString()
@@ -337,7 +348,13 @@ function Visitantes() {
 
     setNovoVisitante({
       ...estadoInicialVisitante,
-      ...v
+      ...v,
+      moradorId:
+        v.moradorId ||
+        obterMoradorIdPorNomeApartamento(
+          v.morador,
+          v.apartamento
+        )
     });
 
     setEditId(v.id);
@@ -389,6 +406,27 @@ function Visitantes() {
 
   }
 
+  function obterMoradorIdPorNomeApartamento(
+    nome,
+    apartamento
+  ) {
+
+    const moradorEncontrado =
+      moradores.find(
+        (m) =>
+          m.nome === nome &&
+          (
+            m.apto === apartamento ||
+            m.apartamento === apartamento
+          )
+      );
+
+    return moradorEncontrado
+      ? moradorEncontrado.id
+      : "";
+
+  }
+
   function selecionarMorador(
     moradorId
   ) {
@@ -404,6 +442,7 @@ function Visitantes() {
 
       setNovoVisitante({
         ...novoVisitante,
+        moradorId: "",
         morador: "",
         apartamento: ""
       });
@@ -414,10 +453,14 @@ function Visitantes() {
 
     setNovoVisitante({
       ...novoVisitante,
+      moradorId:
+        moradorSelecionado.id,
       morador:
         moradorSelecionado.nome,
       apartamento:
-        moradorSelecionado.apto
+        moradorSelecionado.apartamento ||
+        moradorSelecionado.apto ||
+        ""
     });
 
   }
@@ -845,7 +888,7 @@ function Visitantes() {
 
               <h2 style={styles.modalTitle}>
 
-                {editId
+                {editId !== null
                   ? "Editar visitante"
                   : "Novo visitante"}
 
@@ -900,13 +943,11 @@ function Visitantes() {
 
               <select
                 value={
-                  moradores.find(
-                    (m) =>
-                      m.nome ===
-                      novoVisitante.morador &&
-                      m.apto ===
-                      novoVisitante.apartamento
-                  )?.id || ""
+                  novoVisitante.moradorId ||
+                  obterMoradorIdPorNomeApartamento(
+                    novoVisitante.morador,
+                    novoVisitante.apartamento
+                  )
                 }
                 onChange={(e) =>
                   selecionarMorador(
@@ -930,7 +971,8 @@ function Visitantes() {
 
                       {morador.nome}
                       {" - Apto "}
-                      {morador.apto}
+                      {morador.apartamento ||
+                        morador.apto}
 
                     </option>
 

@@ -8,6 +8,7 @@ function Moradores() {
     id: null,
     nome: "",
     apto: "",
+    apartamento: "",
     telefone: "",
     email: "",
     usuario: "",
@@ -20,9 +21,22 @@ function Moradores() {
     const dados =
       localStorage.getItem(STORAGE_KEY);
 
-    return dados
-      ? JSON.parse(dados)
-      : [];
+    if (!dados) return [];
+
+    const lista =
+      JSON.parse(dados);
+
+    return lista.map((morador) => ({
+      ...morador,
+      apto:
+        morador.apto ||
+        morador.apartamento ||
+        "",
+      apartamento:
+        morador.apartamento ||
+        morador.apto ||
+        ""
+    }));
 
   });
 
@@ -45,6 +59,10 @@ function Moradores() {
         .includes(busca.toLowerCase()) ||
 
       morador.apto
+        ?.toLowerCase()
+        .includes(busca.toLowerCase()) ||
+
+      morador.apartamento
         ?.toLowerCase()
         .includes(busca.toLowerCase()) ||
 
@@ -91,6 +109,12 @@ function Moradores() {
 
     }
 
+    const moradorFormatado = {
+      ...novoMorador,
+      apto: novoMorador.apto,
+      apartamento: novoMorador.apto
+    };
+
     let listaAtualizada = [];
 
     if (editId !== null) {
@@ -100,7 +124,7 @@ function Moradores() {
 
           morador.id === editId
             ? {
-                ...novoMorador,
+                ...moradorFormatado,
                 id: editId
               }
             : morador
@@ -112,7 +136,7 @@ function Moradores() {
     } else {
 
       const novo = {
-        ...novoMorador,
+        ...moradorFormatado,
         id: Date.now()
       };
 
@@ -164,7 +188,15 @@ function Moradores() {
 
     setNovoMorador({
       ...estadoInicialMorador,
-      ...morador
+      ...morador,
+      apto:
+        morador.apto ||
+        morador.apartamento ||
+        "",
+      apartamento:
+        morador.apartamento ||
+        morador.apto ||
+        ""
     });
 
     setEditId(morador.id);
@@ -372,7 +404,8 @@ function Moradores() {
 
                   <span style={styles.aptoBadge}>
 
-                    {morador.apto}
+                    {morador.apto ||
+                      morador.apartamento}
 
                   </span>
 
@@ -483,7 +516,8 @@ function Moradores() {
                 onChange={(e) =>
                   setNovoMorador({
                     ...novoMorador,
-                    apto: e.target.value
+                    apto: e.target.value,
+                    apartamento: e.target.value
                   })
                 }
                 style={styles.input}
