@@ -57,13 +57,11 @@ function DashboardPorteiro() {
     const handleStorage = (event) => {
 
       if (
-
         event.key === "visitantes" ||
         event.key === "encomendas" ||
         event.key === "moradores" ||
         event.key === "encomendas_esperadas" ||
         event.key === "movimentacoes"
-
       ) {
 
         carregarDashboard();
@@ -119,15 +117,10 @@ function DashboardPorteiro() {
     );
 
     setDados({
-
       visitantes: visitantes.length,
-
       encomendas: pendentes.length,
-
       moradores: moradores.length,
-
       esperadas: esperadas.length
-
     });
 
     const movs =
@@ -453,7 +446,303 @@ function DashboardPorteiro() {
 
 const styles = {
 
-/* MANTIDOS EXATAMENTE IGUAIS */
+  container: {
+    width: "100%",
+    fontFamily: "Arial"
+  },
+
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "30px"
+  },
+
+  title: {
+    margin: 0,
+    fontSize: "32px",
+    color: "#14532d"
+  },
+
+  subtitle: {
+    marginTop: "8px",
+    marginBottom: "8px",
+    color: "#6b7280"
+  },
+
+  userInfo: {
+    margin: 0,
+    color: "#374151",
+    fontSize: "14px"
+  },
+
+  dateBox: {
+    background: "white",
+    padding: "18px 24px",
+    borderRadius: "20px",
+    textAlign: "center",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.06)"
+  },
+
+  dateLabel: {
+    margin: 0,
+    color: "#6b7280",
+    fontSize: "14px"
+  },
+
+  date: {
+    margin: "6px 0 0",
+    color: "#14532d",
+    fontSize: "20px"
+  },
+
+  cards: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))",
+    gap: "20px",
+    marginBottom: "30px"
+  },
+
+  card: {
+    background: "white",
+    borderRadius: "24px",
+    padding: "24px",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.06)"
+  },
+
+  cardTop: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "18px"
+  },
+
+  iconGreen: {
+    width: "48px",
+    height: "48px",
+    borderRadius: "16px",
+    background: "#dcfce7",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "24px"
+  },
+
+  iconBlue: {
+    width: "48px",
+    height: "48px",
+    borderRadius: "16px",
+    background: "#dbeafe",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "24px"
+  },
+
+  iconDark: {
+    width: "48px",
+    height: "48px",
+    borderRadius: "16px",
+    background: "#e5e7eb",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "24px"
+  },
+
+  iconYellow: {
+    width: "48px",
+    height: "48px",
+    borderRadius: "16px",
+    background: "#fef3c7",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "24px"
+  },
+
+  badgeWarning: {
+    background: "#fef3c7",
+    color: "#92400e",
+    padding: "7px 12px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "700"
+  },
+
+  badgeBlue: {
+    background: "#dbeafe",
+    color: "#1d4ed8",
+    padding: "7px 12px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "700"
+  },
+
+  badgeGreen: {
+    background: "#dcfce7",
+    color: "#166534",
+    padding: "7px 12px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "700"
+  },
+
+  badgeYellow: {
+    background: "#fef9c3",
+    color: "#854d0e",
+    padding: "7px 12px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "700"
+  },
+
+  cardLabel: {
+    margin: 0,
+    color: "#6b7280",
+    fontSize: "14px"
+  },
+
+  cardNumber: {
+    margin: "12px 0 0",
+    fontSize: "38px",
+    color: "#111827"
+  },
+
+  bottomGrid: {
+    display: "grid",
+    gridTemplateColumns: "2fr 1fr",
+    gap: "24px"
+  },
+
+  history: {
+    background: "white",
+    borderRadius: "24px",
+    padding: "25px",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.06)"
+  },
+
+  sectionHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "20px"
+  },
+
+  historyTitle: {
+    margin: 0,
+    color: "#14532d",
+    fontSize: "22px"
+  },
+
+  live: {
+    background: "#dcfce7",
+    color: "#166534",
+    padding: "8px 12px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "700"
+  },
+
+  empty: {
+    padding: "30px",
+    textAlign: "center",
+    color: "#6b7280",
+    background: "#f9fafb",
+    borderRadius: "16px"
+  },
+
+  historyItem: {
+    display: "flex",
+    alignItems: "flex-start",
+    gap: "14px",
+    padding: "16px",
+    borderRadius: "16px",
+    background: "#f9fafb",
+    marginBottom: "12px"
+  },
+
+  historyIcon: {
+    width: "42px",
+    height: "42px",
+    minWidth: "42px",
+    borderRadius: "14px",
+    background: "#dcfce7",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "20px"
+  },
+
+  historyText: {
+    margin: 0,
+    color: "#111827",
+    fontWeight: "600"
+  },
+
+  historyTime: {
+    display: "block",
+    marginTop: "6px",
+    color: "#6b7280",
+    fontSize: "13px"
+  },
+
+  alerts: {
+    background: "white",
+    borderRadius: "24px",
+    padding: "25px",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.06)"
+  },
+
+  alertTitle: {
+    margin: "0 0 20px",
+    color: "#14532d",
+    fontSize: "22px"
+  },
+
+  alertCardWarning: {
+    background: "#fffbeb",
+    border: "1px solid #fde68a",
+    borderRadius: "18px",
+    padding: "18px",
+    marginBottom: "14px"
+  },
+
+  alertCardBlue: {
+    background: "#eff6ff",
+    border: "1px solid #bfdbfe",
+    borderRadius: "18px",
+    padding: "18px",
+    marginBottom: "14px"
+  },
+
+  alertCardGreen: {
+    background: "#f0fdf4",
+    border: "1px solid #bbf7d0",
+    borderRadius: "18px",
+    padding: "18px",
+    marginBottom: "14px"
+  },
+
+  alertCardNeutral: {
+    background: "#f9fafb",
+    border: "1px solid #e5e7eb",
+    borderRadius: "18px",
+    padding: "18px"
+  },
+
+  alertCardTitle: {
+    margin: "0 0 8px",
+    color: "#111827",
+    fontSize: "16px"
+  },
+
+  alertText: {
+    margin: 0,
+    color: "#6b7280",
+    fontSize: "14px",
+    lineHeight: "1.5"
+  }
 
 };
 

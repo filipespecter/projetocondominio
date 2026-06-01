@@ -30,8 +30,8 @@ function DashboardPorteiroLayout() {
   useEffect(() => {
 
     const usuarioSalvo =
-      localStorage.getItem("usuarioPorteiro") ||
-      sessionStorage.getItem("usuarioPorteiro");
+      localStorage.getItem("sessaoPorteiro") ||
+      sessionStorage.getItem("sessaoPorteiro");
 
     if (usuarioSalvo) {
 
@@ -55,11 +55,11 @@ function DashboardPorteiroLayout() {
       } catch {
 
         localStorage.removeItem(
-          "usuarioPorteiro"
+          "sessaoPorteiro"
         );
 
         sessionStorage.removeItem(
-          "usuarioPorteiro"
+          "sessaoPorteiro"
         );
 
         navigate("/login/porteiro");
@@ -91,11 +91,11 @@ function DashboardPorteiroLayout() {
   function sair() {
 
     localStorage.removeItem(
-      "usuarioPorteiro"
+      "sessaoPorteiro"
     );
 
     sessionStorage.removeItem(
-      "usuarioPorteiro"
+      "sessaoPorteiro"
     );
 
     navigate("/");
