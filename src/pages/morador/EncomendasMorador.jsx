@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 function EncomendasMorador() {
+  const [morador, setMorador] = useState(null);
 
   const [encomendas, setEncomendas] =
     useState([]);
@@ -14,27 +15,44 @@ function EncomendasMorador() {
   const [descricaoEntrega, setDescricaoEntrega] =
     useState("");
 
+  const [transportadora, setTransportadora] =
+    useState("");
+
+  const [busca, setBusca] =
+    useState("");
+
+  const [filtroStatus, setFiltroStatus] =
+    useState("Todos");
+
   useEffect(() => {
-
+    carregarSessao();
     carregarEncomendas();
-
     carregarEsperadas();
-
   }, []);
 
-  function carregarEncomendas() {
+  function carregarSessao() {
+    const sessao =
+      localStorage.getItem("sessaoMorador") ||
+      sessionStorage.getItem("sessaoMorador");
 
+    try {
+      const usuario = sessao ? JSON.parse(sessao) : null;
+      setMorador(usuario);
+    } catch {
+      setMorador(null);
+    }
+  }
+
+  function carregarEncomendas() {
     const data =
       JSON.parse(
         localStorage.getItem("encomendas")
       ) || [];
 
     setEncomendas(data);
-
   }
 
   function carregarEsperadas() {
-
     const data =
       JSON.parse(
         localStorage.getItem(
@@ -43,12 +61,19 @@ function EncomendasMorador() {
       ) || [];
 
     setEsperadas(data);
+  }
 
+  function limparFormulario() {
+    setTipoEntrega("");
+    setDescricaoEntrega("");
+    setTransportadora("");
   }
 
   function registrarEsperada() {
-
-    if (!tipoEntrega) return;
+    if (!tipoEntrega) {
+      alert("Selecione o tipo da entrega");
+      return;
+    }
 
     const todas =
       JSON.parse(
@@ -58,136 +83,278 @@ function EncomendasMorador() {
       ) || [];
 
     const nova = {
-
       id: Date.now(),
 
-      morador: "Carlos Henrique",
+      moradorId: morador?.id || null,
 
-      apartamento: "304",
+      morador:
+        morador?.nome || "Morador",
 
-      tipo: tipoEntrega,
+      nome:
+        morador?.nome || "Morador",
 
-      descricao: descricaoEntrega,
+      usuario:
+        morador?.usuario || "",
+
+      apartamento:
+        morador?.apartamento || "",
+
+      bloco:
+        morador?.bloco || "",
+
+      tipo:
+        tipoEntrega,
+
+      transportadora:
+        transportadora || "Não informada",
+
+      descricao:
+        descricaoEntrega,
 
       status: "aguardando",
 
-      data: new Date().toLocaleString()
-
+      data:
+        new Date().toLocaleString()
     };
 
-    const atualizadas = [...todas, nova];
+    const atualizadas = [
+      nova,
+      ...todas
+    ];
 
     localStorage.setItem(
       "encomendas_esperadas",
       JSON.stringify(atualizadas)
     );
 
-    setTipoEntrega("");
+    setEsperadas(atualizadas);
 
-    setDescricaoEntrega("");
-
-    carregarEsperadas();
-
+    limparFormulario();
   }
 
-  const pendentes = encomendas.filter(
-    (e) => e.status === "pendente"
-  );
+  function cancelarEsperada(id) {
+    const confirmar =
+      window.confirm(
+        "Deseja cancelar este aviso de entrega esperada?"
+      );
 
-  const retiradas = encomendas.filter(
-    (e) => e.status === "retirada"
-  );
+    if (!confirmar) return;
+
+    const atualizadas =
+      esperadas.filter(
+        (item) => item.id !== id
+      );
+
+    localStorage.setItem(
+      "encomendas_esperadas",
+      JSON.stringify(atualizadas)
+    );
+
+    setEsperadas(atualizadas);
+  }
+
+  const encomendasMorador =
+    encomendas.filter(
+      (e) =>
+        String(e.apartamento) ===
+          String(morador?.apartamento) ||
+        e.moradorId === morador?.id ||
+        e.morador === morador?.nome ||
+        e.nome === morador?.nome
+    );
+
+  const esperadasMorador =
+    esperadas.filter(
+      (e) =>
+        String(e.apartamento) ===
+          String(morador?.apartamento) ||
+        e.moradorId === morador?.id ||
+        e.usuario === morador?.usuario ||
+        e.morador === morador?.nome ||
+        e.nome === morador?.nome
+    );
+
+  const encomendasFiltradas =
+    encomendasMorador.filter((item) => {
+      const texto =
+        busca.toLowerCase();
+
+      const correspondeBusca =
+        item.tipo
+          ?.toLowerCase()
+          .includes(texto) ||
+        item.descricao
+          ?.toLowerCase()
+          .includes(texto) ||
+        item.codigo
+          ?.toLowerCase()
+          .includes(texto) ||
+        item.transportadora
+          ?.toLowerCase()
+          .includes(texto) ||
+        item.status
+          ?.toLowerCase()
+          .includes(texto);
+
+      const correspondeStatus =
+        filtroStatus === "Todos" ||
+        item.status === filtroStatus;
+
+      return (
+        correspondeBusca &&
+        correspondeStatus
+      );
+    });
+
+  const pendentes =
+    encomendasMorador.filter(
+      (e) => e.status === "pendente"
+    );
+
+  const retiradas =
+    encomendasMorador.filter(
+      (e) => e.status === "retirada"
+    );
 
   return (
-
     <div style={styles.container}>
+      {/* HERO */}
 
-      {/* HEADER */}
-
-      <div style={styles.header}>
-
+      <div style={styles.hero}>
         <div>
+          <span style={styles.heroBadge}>
+            📦 Central de encomendas
+          </span>
 
           <h1 style={styles.title}>
             Minhas Encomendas
           </h1>
 
           <p style={styles.subtitle}>
-            Acompanhe suas encomendas e retiradas
+            Acompanhe encomendas recebidas pela portaria,
+            retiradas e entregas que você está aguardando.
           </p>
 
+          {morador && (
+            <div style={styles.userLine}>
+              <span style={styles.statusDot}></span>
+
+              <span>
+                Morador:{" "}
+                <strong>
+                  {morador.nome}
+                </strong>
+              </span>
+
+              <span style={styles.apBadge}>
+                Apto {morador.apartamento || "-"}
+              </span>
+            </div>
+          )}
         </div>
 
+        <div style={styles.heroPanel}>
+          <p style={styles.heroLabel}>
+            Pendentes
+          </p>
+
+          <h3 style={styles.heroNumber}>
+            {pendentes.length}
+          </h3>
+
+          <span style={styles.heroStatus}>
+            aguardando retirada
+          </span>
+        </div>
       </div>
 
       {/* RESUMO */}
 
       <div style={styles.resumeGrid}>
-
-        <div style={styles.resumeCard}>
-
-          <div style={styles.resumeIcon}>
-            📦
-          </div>
-
+        <div style={styles.cardPrimary}>
           <div>
-
-            <p style={styles.resumeLabel}>
-              Pendentes
+            <p style={styles.cardLabelLight}>
+              Encomendas pendentes
             </p>
 
-            <h2 style={styles.resumeNumber}>
+            <h2 style={styles.cardNumberLight}>
               {pendentes.length}
             </h2>
 
+            <span style={styles.cardHintLight}>
+              disponíveis na portaria
+            </span>
           </div>
 
+          <div style={styles.cardIconLight}>
+            📦
+          </div>
         </div>
 
         <div style={styles.resumeCard}>
-
-          <div style={styles.resumeIcon}>
+          <div style={styles.cardIconGreen}>
             ✅
           </div>
 
           <div>
-
             <p style={styles.resumeLabel}>
               Retiradas
             </p>
 
-            <h2 style={styles.resumeNumber}>
+            <h2 style={styles.resumeNumberGreen}>
               {retiradas.length}
             </h2>
-
           </div>
-
         </div>
 
+        <div style={styles.resumeCard}>
+          <div style={styles.cardIconBlue}>
+            📬
+          </div>
+
+          <div>
+            <p style={styles.resumeLabel}>
+              Entregas aguardadas
+            </p>
+
+            <h2 style={styles.resumeNumberBlue}>
+              {esperadasMorador.length}
+            </h2>
+          </div>
+        </div>
       </div>
 
-      {/* ENCOMENDAS ESPERADAS */}
+      <div style={styles.mainGrid}>
+        {/* FORM */}
 
-      <div style={styles.expectedBox}>
+        <div style={styles.formCard}>
+          <div style={styles.sectionHeader}>
+            <div>
+              <h2 style={styles.sectionTitle}>
+                Avisar entrega esperada
+              </h2>
 
-        <h2 style={styles.expectedTitle}>
-          📬 Avisar Encomenda Esperada
-        </h2>
+              <p style={styles.sectionSubtitle}>
+                Informe à portaria que você está aguardando uma entrega.
+              </p>
+            </div>
 
-        <p style={styles.expectedText}>
-          Informe para a portaria que você está aguardando uma entrega.
-        </p>
+            <span style={styles.sectionBadge}>
+              Aviso prévio
+            </span>
+          </div>
 
-        <div style={styles.expectedForm}>
+          <label style={styles.label}>
+            Tipo / loja
+          </label>
 
           <select
             value={tipoEntrega}
             onChange={(e) =>
               setTipoEntrega(e.target.value)
             }
-            style={styles.select}
+            style={styles.input}
           >
-
             <option value="">
               Selecione
             </option>
@@ -208,368 +375,617 @@ function EncomendasMorador() {
               iFood
             </option>
 
+            <option value="Documento">
+              Documento
+            </option>
+
             <option value="Outro">
               Outro
             </option>
-
           </select>
 
+          <label style={styles.label}>
+            Transportadora
+          </label>
+
           <input
-            placeholder="Descrição opcional"
-            value={descricaoEntrega}
+            placeholder="Ex: Correios, Jadlog, Loggi..."
+            value={transportadora}
             onChange={(e) =>
-              setDescricaoEntrega(e.target.value)
+              setTransportadora(e.target.value)
             }
             style={styles.input}
           />
 
+          <label style={styles.label}>
+            Descrição
+          </label>
+
+          <textarea
+            placeholder="Descrição opcional da entrega..."
+            value={descricaoEntrega}
+            onChange={(e) =>
+              setDescricaoEntrega(e.target.value)
+            }
+            style={styles.textarea}
+          />
+
           <button
-            style={styles.expectedButton}
+            style={styles.button}
             onClick={registrarEsperada}
           >
-
-            Avisar Portaria
-
+            Avisar portaria
           </button>
 
+          <p style={styles.formHint}>
+            Quando a portaria confirmar o recebimento,
+            a entrega sairá da lista de aguardadas e aparecerá como encomenda pendente.
+          </p>
         </div>
 
-      </div>
+        {/* LISTA */}
 
-      {/* AGUARDANDO RECEBIMENTO */}
+        <div style={styles.listCard}>
+          <div style={styles.listHeader}>
+            <div>
+              <h2 style={styles.sectionTitle}>
+                Encomendas recebidas
+              </h2>
 
-      {esperadas.length > 0 && (
+              <p style={styles.sectionSubtitle}>
+                Encomendas registradas pela portaria para o seu apartamento.
+              </p>
+            </div>
 
-        <div style={styles.waitingBox}>
+            <div style={styles.filters}>
+              <input
+                placeholder="Buscar encomenda..."
+                value={busca}
+                onChange={(e) =>
+                  setBusca(e.target.value)
+                }
+                style={styles.search}
+              />
 
-          <div style={styles.waitingHeader}>
-
-            <h2 style={styles.waitingTitle}>
-              📬 Entregas Aguardadas
-            </h2>
-
-            <p style={styles.waitingSubtitle}>
-              Encomendas avisadas para a portaria
-            </p>
-
+              <select
+                value={filtroStatus}
+                onChange={(e) =>
+                  setFiltroStatus(e.target.value)
+                }
+                style={styles.filter}
+              >
+                <option>Todos</option>
+                <option value="pendente">
+                  Pendente
+                </option>
+                <option value="retirada">
+                  Retirada
+                </option>
+              </select>
+            </div>
           </div>
 
-          <div style={styles.waitingList}>
-
-            {esperadas.map((item) => (
-
-              <div
-                key={item.id}
-                style={styles.waitingCard}
-              >
-
-                <div style={styles.waitingTop}>
-
-                  <h3 style={styles.waitingType}>
-                    📦 {item.tipo}
-                  </h3>
-
-                  <div style={styles.waitingStatus}>
-                    aguardando
-                  </div>
-
-                </div>
-
-                <p style={styles.waitingDescription}>
-                  {item.descricao ||
-                    "Sem descrição"}
-                </p>
-
-                <div style={styles.waitingInfo}>
-
-                  <p>
-                    🕒 {item.data}
-                  </p>
-
-                </div>
-
+          {encomendasFiltradas.length === 0 ? (
+            <div style={styles.empty}>
+              <div style={styles.emptyIcon}>
+                📭
               </div>
 
-            ))}
+              <h3 style={styles.emptyTitle}>
+                Nenhuma encomenda encontrada
+              </h3>
 
-          </div>
+              <p style={styles.emptyText}>
+                Quando a portaria registrar uma encomenda para você,
+                ela aparecerá aqui.
+              </p>
+            </div>
+          ) : (
+            <div style={styles.list}>
+              {encomendasFiltradas.map((item) => (
+                <div
+                  key={item.id}
+                  style={styles.card}
+                >
+                  <div style={styles.cardTop}>
+                    <div style={styles.packageIcon}>
+                      📦
+                    </div>
 
-        </div>
+                    <div style={styles.cardContent}>
+                      <div style={styles.badges}>
+                        <span
+                          style={{
+                            ...styles.status,
+                            background:
+                              item.status === "pendente"
+                                ? "#fef3c7"
+                                : "#dcfce7",
+                            color:
+                              item.status === "pendente"
+                                ? "#92400e"
+                                : "#166534"
+                          }}
+                        >
+                          {item.status === "pendente"
+                            ? "Pendente"
+                            : "Retirada"}
+                        </span>
 
-      )}
+                        <span style={styles.dateBadge}>
+                          🔖 {item.codigo || "Sem código"}
+                        </span>
+                      </div>
 
-      {/* LISTA */}
+                      <h2 style={styles.packageTitle}>
+                        {item.tipo || "Encomenda"}
+                      </h2>
 
-      <div style={styles.list}>
+                      <p style={styles.description}>
+                        {item.descricao || "Sem descrição"}
+                      </p>
 
-        {encomendas.length === 0 && (
+                      <div style={styles.infoGrid}>
+                        <span>
+                          🏢 Apto {item.apartamento}
+                        </span>
 
-          <div style={styles.empty}>
+                        <span>
+                          🕒 Recebida: {item.data}
+                        </span>
 
-            <h3>
-              Nenhuma encomenda encontrada
-            </h3>
+                        {item.transportadora && (
+                          <span>
+                            🚚 {item.transportadora}
+                          </span>
+                        )}
 
-            <p>
-              Você ainda não possui encomendas registradas.
-            </p>
+                        {item.retiradaEm && (
+                          <span>
+                            ✅ Retirada: {item.retiradaEm}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
-          </div>
-
-        )}
-
-        {encomendas.map((item) => (
-
-          <div
-            key={item.id}
-            style={styles.card}
-          >
-
-            <div style={styles.cardTop}>
-
-              <div>
-
-                <h2 style={styles.packageTitle}>
-
-                  📦 {item.tipo || "Encomenda"}
-
+          {esperadasMorador.length > 0 && (
+            <div style={styles.waitingBox}>
+              <div style={styles.waitingHeader}>
+                <h2 style={styles.sectionTitle}>
+                  Entregas aguardadas
                 </h2>
 
-                <p style={styles.description}>
-                  {item.descricao}
+                <p style={styles.sectionSubtitle}>
+                  Avisos enviados para a portaria.
                 </p>
-
               </div>
 
-              <div
-                style={{
-                  ...styles.status,
+              <div style={styles.waitingList}>
+                {esperadasMorador.map((item) => (
+                  <div
+                    key={item.id}
+                    style={styles.waitingCard}
+                  >
+                    <div>
+                      <span style={styles.waitingStatus}>
+                        Aguardando portaria
+                      </span>
 
-                  background:
-                    item.status === "pendente"
-                      ? "#fef3c7"
-                      : "#dcfce7",
+                      <h3 style={styles.waitingType}>
+                        📬 {item.tipo}
+                      </h3>
 
-                  color:
-                    item.status === "pendente"
-                      ? "#92400e"
-                      : "#166534"
-                }}
-              >
+                      <p style={styles.waitingDescription}>
+                        {item.descricao ||
+                          "Sem descrição"}
+                      </p>
 
-                {item.status}
+                      <div style={styles.infoGrid}>
+                        <span>
+                          🚚 {item.transportadora || "Não informada"}
+                        </span>
 
+                        <span>
+                          🕒 {item.data}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      style={styles.cancelButton}
+                      onClick={() =>
+                        cancelarEsperada(item.id)
+                      }
+                    >
+                      Cancelar aviso
+                    </button>
+                  </div>
+                ))}
               </div>
-
             </div>
-
-            <div style={styles.infoArea}>
-
-              <div style={styles.infoItem}>
-                🏢 Apartamento:
-                {" "}
-                {item.apartamento}
-              </div>
-
-              <div style={styles.infoItem}>
-                🔖 Código:
-                {" "}
-                {item.codigo || "N/A"}
-              </div>
-
-              <div style={styles.infoItem}>
-                🕒 Recebido:
-                {" "}
-                {item.data}
-              </div>
-
-              {item.retiradaEm && (
-
-                <div style={styles.infoItem}>
-
-                  ✅ Retirada:
-                  {" "}
-                  {item.retiradaEm}
-
-                </div>
-
-              )}
-
-            </div>
-
-          </div>
-
-        ))}
-
+          )}
+        </div>
       </div>
-
     </div>
-
   );
-
 }
 
 const styles = {
-
   container: {
     width: "100%",
-    padding: "30px",
-    boxSizing: "border-box"
+    fontFamily: "Arial",
+    color: "#111827"
   },
 
-  header: {
-    marginBottom: "30px"
+  hero: {
+    background:
+      "linear-gradient(135deg,#0f172a,#1e3a8a,#2563eb)",
+    borderRadius: "30px",
+    padding: "32px",
+    color: "white",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "28px",
+    marginBottom: "26px",
+    boxShadow:
+      "0 20px 45px rgba(37,99,235,0.25)"
+  },
+
+  heroBadge: {
+    background: "rgba(255,255,255,0.14)",
+    padding: "10px 14px",
+    borderRadius: "999px",
+    fontSize: "13px",
+    fontWeight: "800",
+    display: "inline-block",
+    marginBottom: "15px"
   },
 
   title: {
     margin: 0,
-    fontSize: "34px",
-    color: "#111827"
+    fontSize: "36px",
+    letterSpacing: "-0.5px"
   },
 
   subtitle: {
-    marginTop: "8px",
-    color: "#6b7280"
+    margin: "10px 0 0",
+    color: "rgba(255,255,255,0.78)",
+    maxWidth: "680px",
+    lineHeight: "1.5"
+  },
+
+  userLine: {
+    marginTop: "18px",
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    color: "#dbeafe",
+    fontSize: "14px",
+    fontWeight: "600",
+    flexWrap: "wrap"
+  },
+
+  statusDot: {
+    width: "9px",
+    height: "9px",
+    borderRadius: "50%",
+    background: "#38bdf8",
+    boxShadow:
+      "0 0 0 5px rgba(56,189,248,0.16)"
+  },
+
+  apBadge: {
+    background: "rgba(255,255,255,0.14)",
+    padding: "7px 11px",
+    borderRadius: "999px",
+    color: "white",
+    fontWeight: "800",
+    fontSize: "12px"
+  },
+
+  heroPanel: {
+    background: "rgba(255,255,255,0.12)",
+    border: "1px solid rgba(255,255,255,0.14)",
+    borderRadius: "24px",
+    padding: "22px",
+    minWidth: "230px",
+    textAlign: "center",
+    backdropFilter: "blur(12px)"
+  },
+
+  heroLabel: {
+    margin: 0,
+    color: "rgba(255,255,255,0.68)",
+    fontSize: "13px"
+  },
+
+  heroNumber: {
+    margin: "8px 0 12px",
+    color: "white",
+    fontSize: "38px"
+  },
+
+  heroStatus: {
+    background: "#dbeafe",
+    color: "#1d4ed8",
+    padding: "8px 12px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "800"
   },
 
   resumeGrid: {
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "20px",
-    marginBottom: "30px"
+    gridTemplateColumns:
+      "repeat(auto-fit,minmax(220px,1fr))",
+    gap: "18px",
+    marginBottom: "26px"
+  },
+
+  cardPrimary: {
+    background:
+      "linear-gradient(135deg,#1e3a8a,#2563eb)",
+    borderRadius: "24px",
+    padding: "24px",
+    color: "white",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    boxShadow:
+      "0 14px 35px rgba(37,99,235,0.2)"
+  },
+
+  cardLabelLight: {
+    margin: 0,
+    color: "rgba(255,255,255,0.75)",
+    fontSize: "14px"
+  },
+
+  cardNumberLight: {
+    margin: "10px 0 2px",
+    color: "white",
+    fontSize: "38px"
+  },
+
+  cardHintLight: {
+    color: "rgba(255,255,255,0.72)",
+    fontSize: "13px"
+  },
+
+  cardIconLight: {
+    width: "58px",
+    height: "58px",
+    borderRadius: "18px",
+    background: "rgba(255,255,255,0.16)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "29px"
   },
 
   resumeCard: {
     background: "white",
-    borderRadius: "16px",
-    padding: "25px",
+    borderRadius: "24px",
+    padding: "24px",
     display: "flex",
     alignItems: "center",
     gap: "18px",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.05)"
+    boxShadow:
+      "0 12px 35px rgba(15,23,42,0.07)",
+    border: "1px solid #eef2f7"
   },
 
-  resumeIcon: {
-    fontSize: "42px"
+  cardIconGreen: {
+    width: "54px",
+    height: "54px",
+    borderRadius: "18px",
+    background: "#dcfce7",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "27px"
+  },
+
+  cardIconBlue: {
+    width: "54px",
+    height: "54px",
+    borderRadius: "18px",
+    background: "#dbeafe",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "27px"
   },
 
   resumeLabel: {
-    color: "#6b7280",
-    marginBottom: "6px"
-  },
-
-  resumeNumber: {
     margin: 0,
-    fontSize: "32px"
-  },
-
-  expectedBox: {
-    background: "white",
-    borderRadius: "18px",
-    padding: "25px",
-    marginBottom: "30px",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.05)"
-  },
-
-  expectedTitle: {
-    marginBottom: "10px",
-    color: "#111827"
-  },
-
-  expectedText: {
     color: "#6b7280",
+    fontSize: "14px"
+  },
+
+  resumeNumberGreen: {
+    margin: "8px 0 0",
+    color: "#166534",
+    fontSize: "34px"
+  },
+
+  resumeNumberBlue: {
+    margin: "8px 0 0",
+    color: "#2563eb",
+    fontSize: "34px"
+  },
+
+  mainGrid: {
+    display: "grid",
+    gridTemplateColumns: "390px 1fr",
+    gap: "24px",
+    alignItems: "flex-start"
+  },
+
+  formCard: {
+    background: "white",
+    borderRadius: "28px",
+    padding: "26px",
+    boxShadow:
+      "0 14px 40px rgba(15,23,42,0.08)",
+    border: "1px solid #eef2f7"
+  },
+
+  listCard: {
+    background: "white",
+    borderRadius: "28px",
+    padding: "26px",
+    boxShadow:
+      "0 14px 40px rgba(15,23,42,0.08)",
+    border: "1px solid #eef2f7"
+  },
+
+  sectionHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: "18px",
     marginBottom: "20px"
   },
 
-  expectedForm: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr auto",
-    gap: "14px"
+  sectionTitle: {
+    margin: 0,
+    color: "#1e3a8a",
+    fontSize: "24px"
   },
 
-  select: {
-    padding: "12px",
-    borderRadius: "10px",
-    border: "1px solid #d1d5db",
-    outline: "none"
+  sectionSubtitle: {
+    margin: "7px 0 0",
+    color: "#6b7280",
+    fontSize: "14px",
+    lineHeight: "1.5"
+  },
+
+  sectionBadge: {
+    background: "#eff6ff",
+    color: "#1d4ed8",
+    padding: "9px 13px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "800",
+    whiteSpace: "nowrap"
+  },
+
+  label: {
+    display: "block",
+    marginBottom: "8px",
+    color: "#374151",
+    fontSize: "13px",
+    fontWeight: "800"
   },
 
   input: {
-    padding: "12px",
-    borderRadius: "10px",
+    width: "100%",
+    padding: "14px 15px",
+    borderRadius: "15px",
     border: "1px solid #d1d5db",
-    outline: "none"
+    outline: "none",
+    fontSize: "14px",
+    background: "#f9fafb",
+    boxSizing: "border-box",
+    marginBottom: "15px"
   },
 
-  expectedButton: {
-    background: "#2563eb",
+  textarea: {
+    width: "100%",
+    minHeight: "115px",
+    padding: "14px 15px",
+    borderRadius: "15px",
+    border: "1px solid #d1d5db",
+    outline: "none",
+    fontSize: "14px",
+    background: "#f9fafb",
+    boxSizing: "border-box",
+    marginBottom: "16px",
+    resize: "vertical",
+    fontFamily: "Arial",
+    lineHeight: "1.5"
+  },
+
+  button: {
+    width: "100%",
+    background:
+      "linear-gradient(135deg,#1e3a8a,#2563eb)",
     color: "white",
     border: "none",
-    padding: "12px 20px",
-    borderRadius: "10px",
+    padding: "15px",
+    borderRadius: "16px",
     cursor: "pointer",
-    fontWeight: "600"
+    fontWeight: "800",
+    boxShadow:
+      "0 12px 25px rgba(37,99,235,0.22)"
   },
 
-  waitingBox: {
-    marginBottom: "30px"
+  formHint: {
+    margin: "14px 0 0",
+    color: "#6b7280",
+    fontSize: "13px",
+    lineHeight: "1.5",
+    textAlign: "center"
   },
 
-  waitingHeader: {
-    marginBottom: "18px"
+  listHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: "18px",
+    marginBottom: "20px"
   },
 
-  waitingTitle: {
+  filters: {
+    display: "flex",
+    gap: "10px"
+  },
+
+  search: {
+    padding: "13px 14px",
+    borderRadius: "15px",
+    border: "1px solid #d1d5db",
+    outline: "none",
+    background: "#f9fafb",
+    minWidth: "210px"
+  },
+
+  filter: {
+    padding: "13px 14px",
+    borderRadius: "15px",
+    border: "1px solid #d1d5db",
+    outline: "none",
+    background: "#f9fafb"
+  },
+
+  empty: {
+    background: "#f9fafb",
+    border: "1px dashed #d1d5db",
+    borderRadius: "22px",
+    padding: "45px",
+    textAlign: "center"
+  },
+
+  emptyIcon: {
+    fontSize: "42px",
+    marginBottom: "12px"
+  },
+
+  emptyTitle: {
     margin: 0,
     color: "#111827"
   },
 
-  waitingSubtitle: {
-    marginTop: "6px",
+  emptyText: {
+    margin: "8px 0 0",
     color: "#6b7280"
-  },
-
-  waitingList: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "16px"
-  },
-
-  waitingCard: {
-    background: "white",
-    borderRadius: "16px",
-    padding: "20px",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.05)"
-  },
-
-  waitingTop: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "12px"
-  },
-
-  waitingType: {
-    margin: 0
-  },
-
-  waitingStatus: {
-    background: "#fef3c7",
-    color: "#92400e",
-    padding: "6px 12px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: "700"
-  },
-
-  waitingDescription: {
-    color: "#4b5563",
-    marginBottom: "12px"
-  },
-
-  waitingInfo: {
-    color: "#6b7280",
-    fontSize: "14px"
   },
 
   list: {
@@ -578,57 +994,139 @@ const styles = {
     gap: "18px"
   },
 
-  empty: {
-    background: "white",
-    borderRadius: "16px",
-    padding: "40px",
-    textAlign: "center",
-    color: "#6b7280",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.05)"
-  },
-
   card: {
-    background: "white",
-    borderRadius: "18px",
-    padding: "24px",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.05)"
+    background: "#f9fafb",
+    border: "1px solid #e5e7eb",
+    borderRadius: "24px",
+    padding: "22px",
+    boxShadow:
+      "0 10px 25px rgba(15,23,42,0.04)"
   },
 
   cardTop: {
     display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: "18px"
+    gap: "18px",
+    alignItems: "flex-start"
   },
 
-  packageTitle: {
-    margin: 0,
-    color: "#111827"
+  packageIcon: {
+    width: "56px",
+    height: "56px",
+    borderRadius: "20px",
+    background: "white",
+    border: "1px solid #eef2f7",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "27px",
+    flexShrink: 0
   },
 
-  description: {
-    marginTop: "8px",
-    color: "#4b5563"
+  cardContent: {
+    flex: 1
+  },
+
+  badges: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "8px",
+    marginBottom: "10px"
   },
 
   status: {
-    padding: "8px 14px",
+    padding: "7px 11px",
     borderRadius: "999px",
-    fontSize: "13px",
-    fontWeight: "700"
+    fontSize: "12px",
+    fontWeight: "800"
   },
 
-  infoArea: {
+  dateBadge: {
+    background: "#eff6ff",
+    color: "#1d4ed8",
+    padding: "7px 11px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "800"
+  },
+
+  packageTitle: {
+    margin: "0 0 10px",
+    color: "#111827",
+    fontSize: "22px"
+  },
+
+  description: {
+    color: "#374151",
+    lineHeight: "1.6",
+    margin: "0 0 14px"
+  },
+
+  infoGrid: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "10px",
+    color: "#6b7280",
+    fontSize: "13px"
+  },
+
+  waitingBox: {
+    marginTop: "30px",
+    borderTop: "1px solid #e5e7eb",
+    paddingTop: "24px"
+  },
+
+  waitingHeader: {
+    marginBottom: "16px"
+  },
+
+  waitingList: {
     display: "flex",
     flexDirection: "column",
-    gap: "10px"
+    gap: "14px"
   },
 
-  infoItem: {
-    color: "#374151",
-    fontSize: "14px"
-  }
+  waitingCard: {
+    background: "#f9fafb",
+    border: "1px solid #e5e7eb",
+    borderRadius: "22px",
+    padding: "18px",
+    display: "flex",
+    justifyContent: "space-between",
+    gap: "16px",
+    alignItems: "flex-start"
+  },
 
+  waitingStatus: {
+    display: "inline-block",
+    background: "#fef3c7",
+    color: "#92400e",
+    padding: "7px 11px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "800",
+    marginBottom: "9px"
+  },
+
+  waitingType: {
+    margin: "0 0 8px",
+    color: "#111827"
+  },
+
+  waitingDescription: {
+    color: "#374151",
+    margin: "0 0 12px"
+  },
+
+  cancelButton: {
+    background: "#fee2e2",
+    color: "#dc2626",
+    border: "none",
+    padding: "11px 14px",
+    borderRadius: "13px",
+    cursor: "pointer",
+    fontWeight: "800",
+    whiteSpace: "nowrap"
+  }
 };
 
 export default EncomendasMorador;

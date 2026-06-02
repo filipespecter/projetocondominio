@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import PackageModal from "./PackageModal";
 
-export default function ApartmentGrid() {
+export default function ApartmentGrid({
+  onRefresh
+}) {
 
   const apartamentos = [];
 
@@ -21,6 +23,15 @@ export default function ApartmentGrid() {
   const [encomendas, setEncomendas] =
     useState([]);
 
+  const [esperadas, setEsperadas] =
+    useState([]);
+
+  const [moradores, setMoradores] =
+    useState([]);
+
+  const [ocorrencias, setOcorrencias] =
+    useState([]);
+
   const [busca, setBusca] =
     useState("");
 
@@ -29,18 +40,51 @@ export default function ApartmentGrid() {
 
   useEffect(() => {
 
-    carregarEncomendas();
+    carregarDados();
 
   }, []);
 
-  function carregarEncomendas() {
+  function carregarDados() {
 
-    const data =
+    const dataEncomendas =
       JSON.parse(
         localStorage.getItem("encomendas")
       ) || [];
 
-    setEncomendas(data);
+    const dataEsperadas =
+      JSON.parse(
+        localStorage.getItem("encomendas_esperadas")
+      ) || [];
+
+    const dataMoradores =
+      JSON.parse(
+        localStorage.getItem("moradores")
+      ) || [];
+
+    const dataOcorrencias =
+      JSON.parse(
+        localStorage.getItem("ocorrencias")
+      ) || [];
+
+    setEncomendas(dataEncomendas);
+
+    setEsperadas(dataEsperadas);
+
+    setMoradores(dataMoradores);
+
+    setOcorrencias(dataOcorrencias);
+
+  }
+
+  function obterMorador(ap) {
+
+    const encontrado = moradores.find(
+      (m) =>
+        String(m.apartamento) === String(ap) ||
+        String(m.apto) === String(ap)
+    );
+
+    return encontrado || null;
 
   }
 
@@ -50,7 +94,7 @@ export default function ApartmentGrid() {
 
       (e) =>
 
-        e.apartamento === ap &&
+        String(e.apartamento) === String(ap) &&
         e.status === "pendente"
 
     ).length;
@@ -63,7 +107,7 @@ export default function ApartmentGrid() {
 
       (e) =>
 
-        e.apartamento === ap &&
+        String(e.apartamento) === String(ap) &&
         e.status === "retirada"
 
     ).length;
@@ -72,19 +116,76 @@ export default function ApartmentGrid() {
 
   function contarEsperadas(ap) {
 
-    const esperadas =
-      JSON.parse(
-        localStorage.getItem(
-          "encomendas_esperadas"
-        )
-      ) || [];
-
     return esperadas.filter(
 
       (e) =>
-        e.apartamento === ap
+        String(e.apartamento) === String(ap)
 
     ).length;
+
+  }
+
+  function contarOcorrencias(ap) {
+
+    return ocorrencias.filter(
+
+      (o) =>
+        String(o.apartamento) === String(ap) &&
+        o.status !== "Resolvida" &&
+        o.status !== "Resolvido"
+
+    ).length;
+
+  }
+
+  function definirStatus(ap) {
+
+    const pendentes =
+      contarPendentes(ap);
+
+    const esperadasAp =
+      contarEsperadas(ap);
+
+    const ocorrenciasAp =
+      contarOcorrencias(ap);
+
+    if (ocorrenciasAp > 0) {
+      return {
+        texto: "Com ocorrência",
+        cor: "#dc2626",
+        fundo: "#fee2e2",
+        borda: "#fecaca",
+        destaque: "#dc2626"
+      };
+    }
+
+    if (pendentes > 0) {
+      return {
+        texto: "Pendente",
+        cor: "#92400e",
+        fundo: "#fffbeb",
+        borda: "#fde68a",
+        destaque: "#f59e0b"
+      };
+    }
+
+    if (esperadasAp > 0) {
+      return {
+        texto: "Entrega esperada",
+        cor: "#1d4ed8",
+        fundo: "#eff6ff",
+        borda: "#bfdbfe",
+        destaque: "#2563eb"
+      };
+    }
+
+    return {
+      texto: "Operação normal",
+      cor: "#166534",
+      fundo: "#f0fdf4",
+      borda: "#bbf7d0",
+      destaque: "#16a34a"
+    };
 
   }
 
@@ -97,11 +198,23 @@ export default function ApartmentGrid() {
       const retiradas =
         contarRetiradas(ap);
 
-      const esperadas =
+      const esperadasAp =
         contarEsperadas(ap);
 
+      const ocorrenciasAp =
+        contarOcorrencias(ap);
+
+      const morador =
+        obterMorador(ap);
+
+      const textoBusca =
+        busca.toLowerCase();
+
       const matchBusca =
-        ap.includes(busca);
+        ap.includes(textoBusca) ||
+        morador?.nome
+          ?.toLowerCase()
+          .includes(textoBusca);
 
       if (filtro === "pendentes") {
 
@@ -124,7 +237,16 @@ export default function ApartmentGrid() {
       if (filtro === "esperadas") {
 
         return (
-          esperadas > 0 &&
+          esperadasAp > 0 &&
+          matchBusca
+        );
+
+      }
+
+      if (filtro === "ocorrencias") {
+
+        return (
+          ocorrenciasAp > 0 &&
           matchBusca
         );
 
@@ -134,16 +256,105 @@ export default function ApartmentGrid() {
 
     });
 
+  const totalPendentes = apartamentos.reduce(
+    (total, ap) =>
+      total + contarPendentes(ap),
+    0
+  );
+
+  const totalEsperadas = apartamentos.reduce(
+    (total, ap) =>
+      total + contarEsperadas(ap),
+    0
+  );
+
+  const totalOcorrencias = apartamentos.reduce(
+    (total, ap) =>
+      total + contarOcorrencias(ap),
+    0
+  );
+
   return (
 
     <>
 
-      {/* TOPO */}
+      {/* PAINEL */}
+
+      <div style={styles.panel}>
+
+        <div>
+
+          <h3 style={styles.panelTitle}>
+            Mapa operacional
+          </h3>
+
+          <p style={styles.panelSubtitle}>
+            Visualize os apartamentos por encomendas,
+            entregas esperadas, moradores e ocorrências.
+          </p>
+
+        </div>
+
+        <div style={styles.panelStats}>
+
+          <div style={styles.panelStat}>
+            <span style={styles.statIconYellow}>
+              📦
+            </span>
+
+            <div>
+              <p style={styles.statLabel}>
+                Pendentes
+              </p>
+
+              <strong style={styles.statNumber}>
+                {totalPendentes}
+              </strong>
+            </div>
+          </div>
+
+          <div style={styles.panelStat}>
+            <span style={styles.statIconBlue}>
+              📬
+            </span>
+
+            <div>
+              <p style={styles.statLabel}>
+                Esperadas
+              </p>
+
+              <strong style={styles.statNumber}>
+                {totalEsperadas}
+              </strong>
+            </div>
+          </div>
+
+          <div style={styles.panelStat}>
+            <span style={styles.statIconRed}>
+              📘
+            </span>
+
+            <div>
+              <p style={styles.statLabel}>
+                Ocorrências
+              </p>
+
+              <strong style={styles.statNumber}>
+                {totalOcorrencias}
+              </strong>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* FILTROS */}
 
       <div style={styles.topBar}>
 
         <input
-          placeholder="Buscar apartamento..."
+          placeholder="Buscar apartamento ou morador..."
           value={busca}
           onChange={(e) =>
             setBusca(e.target.value)
@@ -160,19 +371,23 @@ export default function ApartmentGrid() {
         >
 
           <option value="todos">
-            Todos
+            Todos os apartamentos
           </option>
 
           <option value="pendentes">
-            Pendentes
+            Com encomendas pendentes
           </option>
 
           <option value="retiradas">
-            Retiradas
+            Com retiradas
           </option>
 
           <option value="esperadas">
-            Esperadas
+            Com entregas esperadas
+          </option>
+
+          <option value="ocorrencias">
+            Com ocorrências
           </option>
 
         </select>
@@ -191,24 +406,17 @@ export default function ApartmentGrid() {
           const retiradas =
             contarRetiradas(ap);
 
-          const esperadas =
+          const esperadasAp =
             contarEsperadas(ap);
 
-          let background = "white";
+          const ocorrenciasAp =
+            contarOcorrencias(ap);
 
-          if (pendentes > 0) {
+          const morador =
+            obterMorador(ap);
 
-            background = "#fde68a";
-
-          }
-          else if (
-            pendentes === 0 &&
-            retiradas > 0
-          ) {
-
-            background = "#bbf7d0";
-
-          }
+          const status =
+            definirStatus(ap);
 
           return (
 
@@ -216,88 +424,158 @@ export default function ApartmentGrid() {
               key={ap}
               style={{
                 ...styles.card,
-                background
+                border: `1px solid ${status.borda}`
               }}
               onClick={() =>
                 setSelectedAp(ap)
               }
             >
 
+              <div
+                style={{
+                  ...styles.cardGlow,
+                  background: status.destaque
+                }}
+              ></div>
+
               {/* HEADER CARD */}
 
               <div style={styles.cardHeader}>
 
-                <div style={styles.number}>
+                <div>
 
-                  {ap}
+                  <p style={styles.apLabel}>
+                    Apartamento
+                  </p>
+
+                  <div style={styles.number}>
+                    {ap}
+                  </div>
 
                 </div>
 
-                {esperadas > 0 && (
-
-                  <div style={styles.expectedBadge}>
-
-                    📬
-
-                  </div>
-
-                )}
+                <div
+                  style={{
+                    ...styles.statusBadge,
+                    background: status.fundo,
+                    color: status.cor
+                  }}
+                >
+                  {status.texto}
+                </div>
 
               </div>
 
-              {/* STATUS */}
+              {/* MORADOR */}
 
-              <div style={styles.status}>
+              <div style={styles.moradorBox}>
 
-                {pendentes === 0 &&
-                  retiradas === 0 &&
-                  esperadas === 0 &&
-                  "Sem movimentações"}
+                <span style={styles.moradorIcon}>
+                  👤
+                </span>
 
-                {pendentes > 0 && (
+                <div>
 
-                  <div style={styles.pending}>
+                  <p style={styles.moradorLabel}>
+                    Morador
+                  </p>
 
-                    📦 {pendentes}
-                    {" "}
-                    pendente
-                    {pendentes > 1
-                      ? "s"
-                      : ""}
+                  <strong style={styles.moradorNome}>
+                    {morador?.nome ||
+                      "Não vinculado"}
+                  </strong>
 
+                </div>
+
+              </div>
+
+              {/* MÉTRICAS */}
+
+              <div style={styles.metrics}>
+
+                <div style={styles.metric}>
+
+                  <span style={styles.metricIconYellow}>
+                    📦
+                  </span>
+
+                  <div>
+                    <p style={styles.metricLabel}>
+                      Pendentes
+                    </p>
+
+                    <strong style={styles.metricNumber}>
+                      {pendentes}
+                    </strong>
                   </div>
 
-                )}
+                </div>
 
-                {retiradas > 0 && (
+                <div style={styles.metric}>
 
-                  <div style={styles.retiradas}>
+                  <span style={styles.metricIconBlue}>
+                    📬
+                  </span>
 
-                    ✅ {retiradas}
-                    {" "}
-                    retirada
-                    {retiradas > 1
-                      ? "s"
-                      : ""}
+                  <div>
+                    <p style={styles.metricLabel}>
+                      Esperadas
+                    </p>
 
+                    <strong style={styles.metricNumber}>
+                      {esperadasAp}
+                    </strong>
                   </div>
 
-                )}
+                </div>
 
-                {esperadas > 0 && (
+                <div style={styles.metric}>
 
-                  <div style={styles.expected}>
+                  <span style={styles.metricIconGreen}>
+                    ✅
+                  </span>
 
-                    📬 {esperadas}
-                    {" "}
-                    esperada
-                    {esperadas > 1
-                      ? "s"
-                      : ""}
+                  <div>
+                    <p style={styles.metricLabel}>
+                      Retiradas
+                    </p>
 
+                    <strong style={styles.metricNumber}>
+                      {retiradas}
+                    </strong>
                   </div>
 
-                )}
+                </div>
+
+                <div style={styles.metric}>
+
+                  <span style={styles.metricIconRed}>
+                    📘
+                  </span>
+
+                  <div>
+                    <p style={styles.metricLabel}>
+                      Ocorrências
+                    </p>
+
+                    <strong style={styles.metricNumber}>
+                      {ocorrenciasAp}
+                    </strong>
+                  </div>
+
+                </div>
+
+              </div>
+
+              <div style={styles.footer}>
+
+                <span style={styles.footerText}>
+                  Clique para gerenciar
+                </span>
+
+                <span style={styles.arrow}>
+                  →
+                </span>
 
               </div>
 
@@ -309,6 +587,26 @@ export default function ApartmentGrid() {
 
       </div>
 
+      {apartamentosFiltrados.length === 0 && (
+
+        <div style={styles.empty}>
+
+          <div style={styles.emptyIcon}>
+            🔎
+          </div>
+
+          <h3 style={styles.emptyTitle}>
+            Nenhum apartamento encontrado
+          </h3>
+
+          <p style={styles.emptyText}>
+            Ajuste a busca ou altere o filtro selecionado.
+          </p>
+
+        </div>
+
+      )}
+
       {/* MODAL */}
 
       {selectedAp && (
@@ -319,7 +617,11 @@ export default function ApartmentGrid() {
 
             setSelectedAp(null);
 
-            carregarEncomendas();
+            carregarDados();
+
+            if (onRefresh) {
+              onRefresh();
+            }
 
           }}
         />
@@ -334,96 +636,334 @@ export default function ApartmentGrid() {
 
 const styles = {
 
-  topBar: {
+  panel: {
+    background:
+      "linear-gradient(135deg,#ffffff,#f8fafc)",
+    border: "1px solid #eef2f7",
+    borderRadius: "24px",
+    padding: "24px",
+    marginBottom: "20px",
     display: "flex",
     justifyContent: "space-between",
-    gap: "16px",
-    marginBottom: "25px"
+    alignItems: "center",
+    gap: "20px"
   },
 
-  search: {
-    flex: 1,
-    padding: "14px",
-    borderRadius: "12px",
-    border: "1px solid #d1d5db",
-    outline: "none",
-    fontSize: "14px"
+  panelTitle: {
+    margin: 0,
+    color: "#14532d",
+    fontSize: "22px"
   },
 
-  select: {
-    width: "180px",
-    padding: "14px",
-    borderRadius: "12px",
-    border: "1px solid #d1d5db",
-    outline: "none",
+  panelSubtitle: {
+    margin: "7px 0 0",
+    color: "#6b7280",
     fontSize: "14px",
-    background: "white"
+    lineHeight: "1.5"
   },
 
-  grid: {
-    display: "grid",
-    gridTemplateColumns:
-      "repeat(6, 1fr)",
-    gap: "14px"
+  panelStats: {
+    display: "flex",
+    gap: "12px",
+    flexWrap: "wrap"
   },
 
-  card: {
-    borderRadius: "16px",
-    padding: "20px",
-    cursor: "pointer",
+  panelStat: {
+    background: "white",
     border: "1px solid #e5e7eb",
-    transition: "0.2s",
-    boxShadow:
-      "0 2px 6px rgba(0,0,0,0.04)",
-    minHeight: "110px",
+    borderRadius: "18px",
+    padding: "14px",
     display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between"
+    alignItems: "center",
+    gap: "10px",
+    minWidth: "130px"
   },
 
-  cardHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center"
-  },
-
-  number: {
-    fontSize: "24px",
-    fontWeight: "700",
-    color: "#111827"
-  },
-
-  expectedBadge: {
-    background: "#dbeafe",
-    width: "34px",
-    height: "34px",
-    borderRadius: "10px",
+  statIconYellow: {
+    width: "38px",
+    height: "38px",
+    borderRadius: "14px",
+    background: "#fef3c7",
     display: "flex",
     alignItems: "center",
     justifyContent: "center"
   },
 
-  status: {
-    fontSize: "13px",
+  statIconBlue: {
+    width: "38px",
+    height: "38px",
+    borderRadius: "14px",
+    background: "#dbeafe",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+
+  statIconRed: {
+    width: "38px",
+    height: "38px",
+    borderRadius: "14px",
+    background: "#fee2e2",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+
+  statLabel: {
+    margin: 0,
     color: "#6b7280",
+    fontSize: "12px"
+  },
+
+  statNumber: {
+    display: "block",
+    marginTop: "4px",
+    color: "#111827",
+    fontSize: "20px"
+  },
+
+  topBar: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: "16px",
+    marginBottom: "22px"
+  },
+
+  search: {
+    flex: 1,
+    padding: "15px 16px",
+    borderRadius: "16px",
+    border: "1px solid #d1d5db",
+    outline: "none",
+    fontSize: "14px",
+    background: "#f9fafb",
+    boxSizing: "border-box"
+  },
+
+  select: {
+    width: "260px",
+    padding: "15px 16px",
+    borderRadius: "16px",
+    border: "1px solid #d1d5db",
+    outline: "none",
+    fontSize: "14px",
+    background: "#f9fafb",
+    boxSizing: "border-box"
+  },
+
+  grid: {
+    display: "grid",
+    gridTemplateColumns:
+      "repeat(auto-fit,minmax(260px,1fr))",
+    gap: "18px"
+  },
+
+  card: {
+    position: "relative",
+    overflow: "hidden",
+    background: "white",
+    borderRadius: "24px",
+    padding: "20px",
+    cursor: "pointer",
+    transition: "0.2s",
+    boxShadow:
+      "0 12px 35px rgba(15,23,42,0.07)",
+    minHeight: "250px",
     display: "flex",
     flexDirection: "column",
-    gap: "6px"
+    justifyContent: "space-between"
   },
 
-  pending: {
-    color: "#92400e",
-    fontWeight: "600"
+  cardGlow: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "5px"
   },
 
-  retiradas: {
-    color: "#15803d",
-    fontWeight: "600"
+  cardHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: "12px",
+    marginBottom: "16px"
   },
 
-  expected: {
-    color: "#2563eb",
-    fontWeight: "600"
+  apLabel: {
+    margin: 0,
+    color: "#6b7280",
+    fontSize: "12px",
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: "0.6px"
+  },
+
+  number: {
+    marginTop: "5px",
+    fontSize: "31px",
+    fontWeight: "900",
+    color: "#111827",
+    letterSpacing: "-0.5px"
+  },
+
+  statusBadge: {
+    padding: "8px 11px",
+    borderRadius: "999px",
+    fontSize: "11px",
+    fontWeight: "900",
+    whiteSpace: "nowrap"
+  },
+
+  moradorBox: {
+    background: "#f9fafb",
+    border: "1px solid #eef2f7",
+    borderRadius: "18px",
+    padding: "14px",
+    display: "flex",
+    alignItems: "center",
+    gap: "11px",
+    marginBottom: "16px"
+  },
+
+  moradorIcon: {
+    width: "38px",
+    height: "38px",
+    borderRadius: "14px",
+    background: "#dcfce7",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+
+  moradorLabel: {
+    margin: 0,
+    color: "#6b7280",
+    fontSize: "12px"
+  },
+
+  moradorNome: {
+    display: "block",
+    marginTop: "3px",
+    color: "#111827",
+    fontSize: "14px"
+  },
+
+  metrics: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "10px"
+  },
+
+  metric: {
+    background: "#f9fafb",
+    border: "1px solid #eef2f7",
+    borderRadius: "16px",
+    padding: "11px",
+    display: "flex",
+    alignItems: "center",
+    gap: "9px"
+  },
+
+  metricIconYellow: {
+    width: "32px",
+    height: "32px",
+    borderRadius: "12px",
+    background: "#fef3c7",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+
+  metricIconBlue: {
+    width: "32px",
+    height: "32px",
+    borderRadius: "12px",
+    background: "#dbeafe",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+
+  metricIconGreen: {
+    width: "32px",
+    height: "32px",
+    borderRadius: "12px",
+    background: "#dcfce7",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+
+  metricIconRed: {
+    width: "32px",
+    height: "32px",
+    borderRadius: "12px",
+    background: "#fee2e2",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+
+  metricLabel: {
+    margin: 0,
+    color: "#6b7280",
+    fontSize: "11px"
+  },
+
+  metricNumber: {
+    display: "block",
+    color: "#111827",
+    fontSize: "16px",
+    marginTop: "2px"
+  },
+
+  footer: {
+    marginTop: "16px",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    color: "#14532d",
+    fontWeight: "900",
+    fontSize: "13px"
+  },
+
+  footerText: {
+    color: "#14532d"
+  },
+
+  arrow: {
+    width: "30px",
+    height: "30px",
+    borderRadius: "12px",
+    background: "#dcfce7",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+
+  empty: {
+    marginTop: "22px",
+    background: "#f9fafb",
+    border: "1px dashed #d1d5db",
+    borderRadius: "22px",
+    padding: "40px",
+    textAlign: "center"
+  },
+
+  emptyIcon: {
+    fontSize: "40px",
+    marginBottom: "10px"
+  },
+
+  emptyTitle: {
+    margin: 0,
+    color: "#111827"
+  },
+
+  emptyText: {
+    margin: "8px 0 0",
+    color: "#6b7280"
   }
 
 };

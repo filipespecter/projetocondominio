@@ -1,30 +1,33 @@
 import { useEffect, useState } from "react";
 
-function ReservasMorador() {
-  const STORAGE_KEY = "reservas";
+function SugestoesMorador() {
+  const STORAGE_KEY = "ocorrencias";
+
+  const estadoInicial = {
+    tipo: "Reclamação",
+    categoria: "",
+    prioridade: "Média",
+    titulo: "",
+    descricao: ""
+  };
 
   const [morador, setMorador] = useState(null);
 
-  const [reservas, setReservas] = useState([]);
+  const [ocorrencias, setOcorrencias] =
+    useState([]);
 
-  const [areasComuns, setAreasComuns] = useState([]);
+  const [form, setForm] =
+    useState(estadoInicial);
 
-  const [area, setArea] = useState("");
+  const [busca, setBusca] =
+    useState("");
 
-  const [data, setData] = useState("");
-
-  const [horario, setHorario] = useState("");
-
-  const [observacao, setObservacao] = useState("");
-
-  const [busca, setBusca] = useState("");
-
-  const [filtroStatus, setFiltroStatus] = useState("Todos");
+  const [filtroStatus, setFiltroStatus] =
+    useState("Todos");
 
   useEffect(() => {
     carregarSessao();
-    carregarAreasComuns();
-    carregarReservas();
+    carregarOcorrencias();
   }, []);
 
   function carregarSessao() {
@@ -40,202 +43,191 @@ function ReservasMorador() {
     }
   }
 
-  function carregarAreasComuns() {
-    const dataStorage =
-      JSON.parse(
-        localStorage.getItem("areasComuns")
-      ) || [];
-
-    setAreasComuns(dataStorage);
-  }
-
-  function carregarReservas() {
-    const dataStorage =
+  function carregarOcorrencias() {
+    const data =
       JSON.parse(
         localStorage.getItem(STORAGE_KEY)
       ) || [];
 
-    setReservas(dataStorage);
+    setOcorrencias(data);
   }
 
   function limparFormulario() {
-    setArea("");
-    setData("");
-    setHorario("");
-    setObservacao("");
+    setForm(estadoInicial);
   }
 
-  function solicitarReserva() {
-    if (!area || !data || !horario) {
-      alert("Preencha área, data e horário");
+  function enviarSolicitacao() {
+    if (
+      !form.tipo ||
+      !form.categoria ||
+      !form.titulo ||
+      !form.descricao
+    ) {
+      alert("Preencha todos os campos obrigatórios");
       return;
     }
+
+    const agora = new Date();
 
     const nova = {
       id: Date.now(),
 
-      area,
+      origem: "morador",
+      tipoRegistro: form.tipo,
+      tipo: form.tipo,
+      categoria: form.categoria,
+      prioridade: form.prioridade,
+      titulo: form.titulo,
+      descricao: form.descricao,
 
-      data,
+      status: "Encaminhada ao síndico",
+      etapa: "aguardando_sindico",
 
-      horario,
-
-      observacao,
-
-      status: "pendente",
-
-      criadoEm: new Date().toLocaleString(),
+      data: agora.toLocaleDateString(),
+      hora: agora.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      }),
+      dataCriacao: agora.toLocaleString(),
 
       moradorId: morador?.id || null,
-
       moradorNome: morador?.nome || "Morador",
-
       moradorUsuario: morador?.usuario || "",
-
       apartamento: morador?.apartamento || "",
+      bloco: morador?.bloco || "",
 
-      bloco: morador?.bloco || ""
+      porteiroId: null,
+      porteiroNome: "",
+      porteiroUsuario: "",
+
+      lidaPorteiro: false,
+      lidaSindico: false,
+
+      observacoesPorteiro: [],
+      respostasSindico: [],
+      respostaSindico: "",
+      sindicoResponsavel: "",
+      dataResposta: "",
+      dataResolucao: "",
+      horaResolucao: ""
     };
 
-    const atualizadas = [
+    const listaAtualizada = [
       nova,
-      ...reservas
+      ...ocorrencias
     ];
 
+    setOcorrencias(listaAtualizada);
+
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify(atualizadas)
+      JSON.stringify(listaAtualizada)
     );
-
-    setReservas(atualizadas);
 
     limparFormulario();
+
+    alert("Solicitação enviada com sucesso");
   }
 
-  function cancelarReserva(id) {
-    const confirmar =
-      window.confirm(
-        "Deseja cancelar esta reserva?"
-      );
+  const minhasSolicitacoes =
+    ocorrencias.filter((item) => {
+      const mesmoMorador =
+        item.origem === "morador" &&
+        (
+          item.moradorId === morador?.id ||
+          item.moradorUsuario === morador?.usuario ||
+          item.apartamento === morador?.apartamento
+        );
 
-    if (!confirmar) return;
-
-    const atualizadas =
-      reservas.filter(
-        (r) => r.id !== id
-      );
-
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(atualizadas)
-    );
-
-    setReservas(atualizadas);
-  }
-
-  function obterStatus(status) {
-    if (status === "aprovada" || status === "Aprovada") {
-      return {
-        texto: "Aprovada",
-        fundo: "#dcfce7",
-        cor: "#166534"
-      };
-    }
-
-    if (status === "recusada" || status === "Recusada") {
-      return {
-        texto: "Recusada",
-        fundo: "#fee2e2",
-        cor: "#dc2626"
-      };
-    }
-
-    if (status === "cancelada" || status === "Cancelada") {
-      return {
-        texto: "Cancelada",
-        fundo: "#f3f4f6",
-        cor: "#374151"
-      };
-    }
-
-    return {
-      texto: "Pendente",
-      fundo: "#fef3c7",
-      cor: "#92400e"
-    };
-  }
-
-  const minhasReservas =
-    reservas.filter((item) => {
-      const pertenceAoMorador =
-        item.moradorId === morador?.id ||
-        item.moradorUsuario === morador?.usuario ||
-        item.moradorNome === morador?.nome ||
-        String(item.apartamento) ===
-          String(morador?.apartamento);
-
-      if (!pertenceAoMorador) return false;
+      if (!mesmoMorador) return false;
 
       const texto = busca.toLowerCase();
 
       const correspondeBusca =
-        item.area?.toLowerCase().includes(texto) ||
-        item.status?.toLowerCase().includes(texto) ||
-        item.data?.toLowerCase().includes(texto) ||
-        item.horario?.toLowerCase().includes(texto);
-
-      const statusAtual =
-        obterStatus(item.status).texto;
+        item.titulo?.toLowerCase().includes(texto) ||
+        item.descricao?.toLowerCase().includes(texto) ||
+        item.categoria?.toLowerCase().includes(texto) ||
+        item.tipo?.toLowerCase().includes(texto) ||
+        item.tipoRegistro?.toLowerCase().includes(texto) ||
+        item.status?.toLowerCase().includes(texto);
 
       const correspondeStatus =
         filtroStatus === "Todos" ||
-        statusAtual === filtroStatus;
+        item.status === filtroStatus;
 
       return correspondeBusca && correspondeStatus;
     });
 
   const pendentes =
-    minhasReservas.filter(
-      (r) => obterStatus(r.status).texto === "Pendente"
+    minhasSolicitacoes.filter(
+      (item) =>
+        item.status !== "Resolvida" &&
+        item.status !== "Resolvido"
     ).length;
 
-  const aprovadas =
-    minhasReservas.filter(
-      (r) => obterStatus(r.status).texto === "Aprovada"
+  const resolvidas =
+    minhasSolicitacoes.filter(
+      (item) =>
+        item.status === "Resolvida" ||
+        item.status === "Resolvido"
     ).length;
 
-  const recusadas =
-    minhasReservas.filter(
-      (r) => obterStatus(r.status).texto === "Recusada"
+  const reclamacoes =
+    minhasSolicitacoes.filter(
+      (item) =>
+        item.tipo === "Reclamação" ||
+        item.tipoRegistro === "Reclamação"
     ).length;
 
-  const opcoesAreas =
-    areasComuns.length > 0
-      ? areasComuns
-      : [
-          { id: 1, nome: "Salão de Festas" },
-          { id: 2, nome: "Churrasqueira" },
-          { id: 3, nome: "Piscina" },
-          { id: 4, nome: "Quadra" }
-        ];
+  const sugestoes =
+    minhasSolicitacoes.filter(
+      (item) =>
+        item.tipo === "Sugestão" ||
+        item.tipoRegistro === "Sugestão"
+    ).length;
+
+  function obterStatus(status) {
+    if (
+      status === "Resolvida" ||
+      status === "Resolvido"
+    ) {
+      return {
+        texto: "Resolvida",
+        fundo: "#dcfce7",
+        cor: "#166534"
+      };
+    }
+
+    if (status === "Em análise") {
+      return {
+        texto: "Em análise",
+        fundo: "#dbeafe",
+        cor: "#1d4ed8"
+      };
+    }
+
+    return {
+      texto: "Encaminhada ao síndico",
+      fundo: "#fef3c7",
+      cor: "#92400e"
+    };
+  }
 
   return (
     <div style={styles.container}>
-      {/* HERO */}
-
       <div style={styles.hero}>
         <div>
           <span style={styles.heroBadge}>
-            📅 Reservas online
+            💬 Canal do morador
           </span>
 
           <h1 style={styles.title}>
-            Reservas
+            Sugestões / Reclamações
           </h1>
 
           <p style={styles.subtitle}>
-            Solicite áreas comuns do condomínio e acompanhe
-            a aprovação da administração.
+            Envie solicitações para o condomínio e acompanhe
+            o retorno da administração.
           </p>
 
           {morador && (
@@ -256,26 +248,24 @@ function ReservasMorador() {
 
         <div style={styles.heroPanel}>
           <p style={styles.heroLabel}>
-            Minhas reservas
+            Minhas solicitações
           </p>
 
           <h3 style={styles.heroNumber}>
-            {minhasReservas.length}
+            {minhasSolicitacoes.length}
           </h3>
 
           <span style={styles.heroStatus}>
-            Controle integrado
+            Central integrada
           </span>
         </div>
       </div>
 
-      {/* RESUMO */}
-
-      <div style={styles.resumeGrid}>
+      <div style={styles.cards}>
         <div style={styles.cardPrimary}>
           <div>
             <p style={styles.cardLabelLight}>
-              Reservas pendentes
+              Aguardando retorno
             </p>
 
             <h2 style={styles.cardNumberLight}>
@@ -283,177 +273,208 @@ function ReservasMorador() {
             </h2>
 
             <span style={styles.cardHintLight}>
-              aguardando aprovação
+              encaminhadas ao síndico
             </span>
           </div>
 
           <div style={styles.cardIconLight}>
-            🕒
+            📤
           </div>
         </div>
 
-        <div style={styles.resumeCard}>
+        <div style={styles.card}>
           <div style={styles.cardIconGreen}>
             ✅
           </div>
 
           <div>
-            <p style={styles.resumeLabel}>
-              Aprovadas
+            <p style={styles.cardLabel}>
+              Resolvidas
             </p>
 
-            <h2 style={styles.resumeNumberGreen}>
-              {aprovadas}
+            <h2 style={styles.cardNumberGreen}>
+              {resolvidas}
             </h2>
           </div>
         </div>
 
-        <div style={styles.resumeCard}>
-          <div style={styles.cardIconRed}>
-            🚫
+        <div style={styles.card}>
+          <div style={styles.cardIconYellow}>
+            ⚠️
           </div>
 
           <div>
-            <p style={styles.resumeLabel}>
-              Recusadas
+            <p style={styles.cardLabel}>
+              Reclamações
             </p>
 
-            <h2 style={styles.resumeNumberRed}>
-              {recusadas}
+            <h2 style={styles.cardNumberYellow}>
+              {reclamacoes}
             </h2>
           </div>
         </div>
 
-        <div style={styles.resumeCard}>
+        <div style={styles.card}>
           <div style={styles.cardIconBlue}>
-            🏢
+            💡
           </div>
 
           <div>
-            <p style={styles.resumeLabel}>
-              Áreas disponíveis
+            <p style={styles.cardLabel}>
+              Sugestões
             </p>
 
-            <h2 style={styles.resumeNumberBlue}>
-              {opcoesAreas.length}
+            <h2 style={styles.cardNumberBlue}>
+              {sugestoes}
             </h2>
           </div>
         </div>
       </div>
 
       <div style={styles.mainGrid}>
-        {/* FORM */}
-
         <div style={styles.formCard}>
           <div style={styles.sectionHeader}>
             <div>
               <h2 style={styles.sectionTitle}>
-                Nova reserva
+                Nova solicitação
               </h2>
 
               <p style={styles.sectionSubtitle}>
-                Escolha a área comum, data e horário desejados.
+                Sua mensagem será registrada e encaminhada
+                para análise do síndico.
               </p>
             </div>
 
             <span style={styles.sectionBadge}>
-              Solicitação
+              Envio direto
             </span>
           </div>
 
           <label style={styles.label}>
-            Área comum
+            Tipo
           </label>
 
           <select
-            value={area}
+            value={form.tipo}
             onChange={(e) =>
-              setArea(e.target.value)
+              setForm({
+                ...form,
+                tipo: e.target.value
+              })
+            }
+            style={styles.input}
+          >
+            <option>Reclamação</option>
+            <option>Sugestão</option>
+          </select>
+
+          <label style={styles.label}>
+            Categoria
+          </label>
+
+          <select
+            value={form.categoria}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                categoria: e.target.value
+              })
             }
             style={styles.input}
           >
             <option value="">
-              Selecione a área
+              Selecione uma categoria
             </option>
-
-            {opcoesAreas.map((item) => (
-              <option
-                key={item.id || item.nome}
-                value={item.nome || item.area || item.titulo}
-              >
-                {item.nome || item.area || item.titulo}
-              </option>
-            ))}
+            <option>Barulho</option>
+            <option>Limpeza</option>
+            <option>Segurança</option>
+            <option>Manutenção</option>
+            <option>Área comum</option>
+            <option>Garagem</option>
+            <option>Convivência</option>
+            <option>Outros</option>
           </select>
 
           <label style={styles.label}>
-            Data
+            Prioridade
+          </label>
+
+          <select
+            value={form.prioridade}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                prioridade: e.target.value
+              })
+            }
+            style={styles.input}
+          >
+            <option>Baixa</option>
+            <option>Média</option>
+            <option>Alta</option>
+            <option>Urgente</option>
+          </select>
+
+          <label style={styles.label}>
+            Título
           </label>
 
           <input
-            type="date"
-            value={data}
+            placeholder="Ex: Barulho após as 22h"
+            value={form.titulo}
             onChange={(e) =>
-              setData(e.target.value)
+              setForm({
+                ...form,
+                titulo: e.target.value
+              })
             }
             style={styles.input}
           />
 
           <label style={styles.label}>
-            Horário
-          </label>
-
-          <input
-            type="time"
-            value={horario}
-            onChange={(e) =>
-              setHorario(e.target.value)
-            }
-            style={styles.input}
-          />
-
-          <label style={styles.label}>
-            Observação
+            Descrição
           </label>
 
           <textarea
-            placeholder="Ex: reserva para aniversário, reunião familiar..."
-            value={observacao}
+            placeholder="Descreva sua solicitação com detalhes..."
+            value={form.descricao}
             onChange={(e) =>
-              setObservacao(e.target.value)
+              setForm({
+                ...form,
+                descricao: e.target.value
+              })
             }
             style={styles.textarea}
           />
 
           <button
-            style={styles.button}
-            onClick={solicitarReserva}
+            style={styles.submitButton}
+            onClick={enviarSolicitacao}
           >
-            Solicitar reserva
+            Enviar ao síndico
           </button>
 
           <p style={styles.formHint}>
-            Sua reserva ficará pendente até a análise do síndico.
+            O porteiro poderá visualizar o registro no livro de
+            ocorrências, e o síndico poderá responder pelo painel administrativo.
           </p>
         </div>
-
-        {/* LISTA */}
 
         <div style={styles.listCard}>
           <div style={styles.listHeader}>
             <div>
               <h2 style={styles.sectionTitle}>
-                Minhas reservas
+                Minhas solicitações
               </h2>
 
               <p style={styles.sectionSubtitle}>
-                Acompanhe suas solicitações de áreas comuns.
+                Acompanhe o andamento das suas reclamações e sugestões.
               </p>
             </div>
 
             <div style={styles.filters}>
               <input
-                placeholder="Buscar reserva..."
+                placeholder="Buscar..."
                 value={busca}
                 onChange={(e) =>
                   setBusca(e.target.value)
@@ -469,105 +490,117 @@ function ReservasMorador() {
                 style={styles.filter}
               >
                 <option>Todos</option>
-                <option>Pendente</option>
-                <option>Aprovada</option>
-                <option>Recusada</option>
-                <option>Cancelada</option>
+                <option>Encaminhada ao síndico</option>
+                <option>Em análise</option>
+                <option>Resolvida</option>
               </select>
             </div>
           </div>
 
-          {minhasReservas.length === 0 ? (
+          {minhasSolicitacoes.length === 0 ? (
             <div style={styles.empty}>
               <div style={styles.emptyIcon}>
                 📭
               </div>
 
               <h3 style={styles.emptyTitle}>
-                Nenhuma reserva encontrada
+                Nenhuma solicitação encontrada
               </h3>
 
               <p style={styles.emptyText}>
-                Quando você solicitar uma reserva,
+                Quando você enviar uma sugestão ou reclamação,
                 ela aparecerá aqui.
               </p>
             </div>
           ) : (
-            <div style={styles.list}>
-              {minhasReservas.map((item) => {
-                const status =
-                  obterStatus(item.status);
+            <div style={styles.timeline}>
+              {minhasSolicitacoes.map((item) => {
+                const status = obterStatus(item.status);
 
                 return (
                   <div
                     key={item.id}
-                    style={styles.card}
+                    style={styles.solicitacaoCard}
                   >
                     <div style={styles.cardTop}>
-                      <div style={styles.areaIcon}>
-                        🏢
-                      </div>
-
-                      <div style={styles.cardContent}>
+                      <div>
                         <div style={styles.badges}>
-                          <span
-                            style={{
-                              ...styles.status,
-                              background: status.fundo,
-                              color: status.cor
-                            }}
-                          >
-                            {status.texto}
+                          <span style={styles.typeBadge}>
+                            {item.tipoRegistro || item.tipo}
                           </span>
 
-                          <span style={styles.dateBadge}>
-                            📅 {item.data}
+                          <span style={styles.categoryBadge}>
+                            {item.categoria}
                           </span>
 
-                          <span style={styles.dateBadge}>
-                            🕒 {item.horario}
+                          <span style={styles.priorityBadge}>
+                            {item.prioridade}
                           </span>
                         </div>
 
-                        <h2 style={styles.area}>
-                          {item.area}
-                        </h2>
-
-                        {item.observacao && (
-                          <p style={styles.description}>
-                            {item.observacao}
-                          </p>
-                        )}
-
-                        <div style={styles.meta}>
-                          <span>
-                            Solicitada em {item.criadoEm}
-                          </span>
-
-                          <span>
-                            Apto {item.apartamento || morador?.apartamento || "-"}
-                          </span>
-                        </div>
+                        <h3 style={styles.solicitacaoTitle}>
+                          {item.titulo}
+                        </h3>
                       </div>
+
+                      <span
+                        style={{
+                          ...styles.statusBadge,
+                          background: status.fundo,
+                          color: status.cor
+                        }}
+                      >
+                        {status.texto}
+                      </span>
                     </div>
 
-                    <div style={styles.footer}>
-                      <span style={styles.created}>
-                        Status atual:{" "}
-                        <strong>{status.texto}</strong>
+                    <p style={styles.description}>
+                      {item.descricao}
+                    </p>
+
+                    <div style={styles.meta}>
+                      <span>
+                        📅 {item.data} às {item.hora}
                       </span>
 
-                      {status.texto === "Pendente" && (
-                        <button
-                          style={styles.cancelButton}
-                          onClick={() =>
-                            cancelarReserva(item.id)
-                          }
-                        >
-                          Cancelar
-                        </button>
-                      )}
+                      <span>
+                        🏠 Apto {item.apartamento || "-"}
+                      </span>
+
+                      <span>
+                        👤 {item.moradorNome || morador?.nome}
+                      </span>
                     </div>
+
+                    {item.respostasSindico?.length > 0 ? (
+                      <div style={styles.responseBox}>
+                        <strong>
+                          Resposta do síndico:
+                        </strong>
+
+                        <p style={styles.responseText}>
+                          {
+                            item.respostasSindico[
+                              item.respostasSindico.length - 1
+                            ].texto
+                          }
+                        </p>
+                      </div>
+                    ) : item.respostaSindico ? (
+                      <div style={styles.responseBox}>
+                        <strong>
+                          Resposta do síndico:
+                        </strong>
+
+                        <p style={styles.responseText}>
+                          {item.respostaSindico}
+                        </p>
+                      </div>
+                    ) : (
+                      <div style={styles.waitBox}>
+                        Solicitação encaminhada e aguardando retorno.
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -684,7 +717,7 @@ const styles = {
     fontWeight: "800"
   },
 
-  resumeGrid: {
+  cards: {
     display: "grid",
     gridTemplateColumns:
       "repeat(auto-fit,minmax(220px,1fr))",
@@ -703,6 +736,18 @@ const styles = {
     alignItems: "center",
     boxShadow:
       "0 14px 35px rgba(37,99,235,0.2)"
+  },
+
+  card: {
+    background: "white",
+    borderRadius: "24px",
+    padding: "24px",
+    display: "flex",
+    alignItems: "center",
+    gap: "18px",
+    boxShadow:
+      "0 12px 35px rgba(15,23,42,0.07)",
+    border: "1px solid #eef2f7"
   },
 
   cardLabelLight: {
@@ -733,18 +778,6 @@ const styles = {
     fontSize: "29px"
   },
 
-  resumeCard: {
-    background: "white",
-    borderRadius: "24px",
-    padding: "24px",
-    display: "flex",
-    alignItems: "center",
-    gap: "18px",
-    boxShadow:
-      "0 12px 35px rgba(15,23,42,0.07)",
-    border: "1px solid #eef2f7"
-  },
-
   cardIconGreen: {
     width: "54px",
     height: "54px",
@@ -756,11 +789,11 @@ const styles = {
     fontSize: "27px"
   },
 
-  cardIconRed: {
+  cardIconYellow: {
     width: "54px",
     height: "54px",
     borderRadius: "18px",
-    background: "#fee2e2",
+    background: "#fef3c7",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -778,25 +811,25 @@ const styles = {
     fontSize: "27px"
   },
 
-  resumeLabel: {
+  cardLabel: {
     margin: 0,
     color: "#6b7280",
     fontSize: "14px"
   },
 
-  resumeNumberGreen: {
+  cardNumberGreen: {
     margin: "8px 0 0",
     color: "#166534",
     fontSize: "34px"
   },
 
-  resumeNumberRed: {
+  cardNumberYellow: {
     margin: "8px 0 0",
-    color: "#dc2626",
+    color: "#92400e",
     fontSize: "34px"
   },
 
-  resumeNumberBlue: {
+  cardNumberBlue: {
     margin: "8px 0 0",
     color: "#2563eb",
     fontSize: "34px"
@@ -804,7 +837,7 @@ const styles = {
 
   mainGrid: {
     display: "grid",
-    gridTemplateColumns: "390px 1fr",
+    gridTemplateColumns: "400px 1fr",
     gap: "24px",
     alignItems: "flex-start"
   },
@@ -880,7 +913,7 @@ const styles = {
 
   textarea: {
     width: "100%",
-    minHeight: "115px",
+    minHeight: "140px",
     padding: "14px 15px",
     borderRadius: "15px",
     border: "1px solid #d1d5db",
@@ -894,7 +927,7 @@ const styles = {
     lineHeight: "1.5"
   },
 
-  button: {
+  submitButton: {
     width: "100%",
     background:
       "linear-gradient(135deg,#1e3a8a,#2563eb)",
@@ -969,42 +1002,25 @@ const styles = {
     color: "#6b7280"
   },
 
-  list: {
+  timeline: {
     display: "flex",
     flexDirection: "column",
-    gap: "18px"
+    gap: "16px"
   },
 
-  card: {
+  solicitacaoCard: {
     background: "#f9fafb",
     border: "1px solid #e5e7eb",
     borderRadius: "24px",
-    padding: "22px",
-    boxShadow:
-      "0 10px 25px rgba(15,23,42,0.04)"
+    padding: "22px"
   },
 
   cardTop: {
     display: "flex",
+    justifyContent: "space-between",
     gap: "18px",
-    alignItems: "flex-start"
-  },
-
-  areaIcon: {
-    width: "56px",
-    height: "56px",
-    borderRadius: "20px",
-    background: "white",
-    border: "1px solid #eef2f7",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "27px",
-    flexShrink: 0
-  },
-
-  cardContent: {
-    flex: 1
+    alignItems: "flex-start",
+    marginBottom: "14px"
   },
 
   badges: {
@@ -1014,15 +1030,8 @@ const styles = {
     marginBottom: "10px"
   },
 
-  status: {
-    padding: "7px 11px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: "800"
-  },
-
-  dateBadge: {
-    background: "#eff6ff",
+  typeBadge: {
+    background: "#dbeafe",
     color: "#1d4ed8",
     padding: "7px 11px",
     borderRadius: "999px",
@@ -1030,16 +1039,42 @@ const styles = {
     fontWeight: "800"
   },
 
-  area: {
-    margin: "0 0 10px",
+  categoryBadge: {
+    background: "#f0fdf4",
+    color: "#166534",
+    padding: "7px 11px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "800"
+  },
+
+  priorityBadge: {
+    background: "#fef3c7",
+    color: "#92400e",
+    padding: "7px 11px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "800"
+  },
+
+  solicitacaoTitle: {
+    margin: 0,
     color: "#111827",
-    fontSize: "22px"
+    fontSize: "20px"
+  },
+
+  statusBadge: {
+    padding: "9px 13px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "800",
+    whiteSpace: "nowrap"
   },
 
   description: {
     color: "#374151",
     lineHeight: "1.6",
-    margin: "0 0 14px"
+    margin: "0 0 15px"
   },
 
   meta: {
@@ -1047,33 +1082,34 @@ const styles = {
     flexWrap: "wrap",
     gap: "10px",
     color: "#6b7280",
-    fontSize: "13px"
+    fontSize: "13px",
+    marginBottom: "14px"
   },
 
-  footer: {
-    marginTop: "18px",
-    paddingTop: "16px",
-    borderTop: "1px solid #e5e7eb",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: "14px"
+  responseBox: {
+    background: "#f0fdf4",
+    border: "1px solid #bbf7d0",
+    color: "#166534",
+    padding: "14px",
+    borderRadius: "16px",
+    fontSize: "14px"
   },
 
-  created: {
-    color: "#6b7280",
-    fontSize: "13px"
+  responseText: {
+    margin: "8px 0 0",
+    color: "#374151",
+    lineHeight: "1.5"
   },
 
-  cancelButton: {
-    background: "#fee2e2",
-    color: "#dc2626",
-    border: "none",
-    padding: "11px 14px",
-    borderRadius: "13px",
-    cursor: "pointer",
-    fontWeight: "800"
+  waitBox: {
+    background: "#fffbeb",
+    border: "1px solid #fde68a",
+    color: "#92400e",
+    padding: "14px",
+    borderRadius: "16px",
+    fontSize: "14px",
+    fontWeight: "700"
   }
 };
 
-export default ReservasMorador;
+export default SugestoesMorador;

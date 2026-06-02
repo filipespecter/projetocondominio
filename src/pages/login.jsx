@@ -28,17 +28,17 @@ function Login() {
 
     porteiro: {
       titulo: "Porteiro",
-      subtitulo: "Controle de visitantes e encomendas",
+      subtitulo: "Controle de visitantes, encomendas e ocorrências",
       cor: "#166534",
-      gradient: "linear-gradient(135deg,#14532d,#166534)",
+      gradient: "linear-gradient(135deg,#052e16,#14532d,#166534)",
       icon: <FaIdBadge size={38} color="white" />
     },
 
     morador: {
       titulo: "Morador",
-      subtitulo: "Acompanhe avisos, reservas e encomendas",
+      subtitulo: "Acompanhe avisos, reservas, encomendas e solicitações",
       cor: "#2563eb",
-      gradient: "linear-gradient(135deg,#2563eb,#3b82f6)",
+      gradient: "linear-gradient(135deg,#0f172a,#1e3a8a,#2563eb)",
       icon: <FaUserCircle size={38} color="white" />
     }
   };
@@ -74,6 +74,16 @@ function Login() {
     sessionStorage.removeItem("sessaoSindico");
     sessionStorage.removeItem("sessaoPorteiro");
     sessionStorage.removeItem("sessaoMorador");
+
+    localStorage.removeItem("usuarioSindico");
+    localStorage.removeItem("usuarioPorteiro");
+    localStorage.removeItem("usuarioMorador");
+    localStorage.removeItem("usuarioLogado");
+
+    sessionStorage.removeItem("usuarioSindico");
+    sessionStorage.removeItem("usuarioPorteiro");
+    sessionStorage.removeItem("usuarioMorador");
+    sessionStorage.removeItem("usuarioLogado");
   }
 
   function salvarSessao(dadosUsuario) {
@@ -86,11 +96,26 @@ function Login() {
     sessionStorage.setItem(chave, dados);
   }
 
+  function usuarioAtivo(status) {
+    if (!status) return true;
+
+    return (
+      status === "ativo" ||
+      status === "Ativo" ||
+      status === "ATIVO"
+    );
+  }
+
   function fazerLogin() {
     setErro("");
 
     const usuarioDigitado = usuario.trim().toLowerCase();
     const senhaDigitada = senha.trim();
+
+    if (!usuarioDigitado || !senhaDigitada) {
+      setErro("Informe usuário e senha");
+      return;
+    }
 
     if (tipo === "sindico") {
       if (
@@ -122,22 +147,28 @@ function Login() {
           p.senha?.trim() === senhaDigitada
       );
 
-      if (encontrado) {
-        salvarSessao({
-          tipo: "porteiro",
-          id: encontrado.id,
-          nome: encontrado.nome,
-          usuario: encontrado.usuario,
-          telefone: encontrado.telefone,
-          turno: encontrado.turno,
-          loginEm: new Date().toISOString()
-        });
-
-        navigate(obterRotaDestino(), { replace: true });
+      if (!encontrado) {
+        setErro("Usuário ou senha inválidos");
         return;
       }
 
-      setErro("Usuário ou senha inválidos");
+      if (!usuarioAtivo(encontrado.status)) {
+        setErro("Este porteiro está inativo no sistema");
+        return;
+      }
+
+      salvarSessao({
+        tipo: "porteiro",
+        id: encontrado.id,
+        nome: encontrado.nome,
+        usuario: encontrado.usuario,
+        telefone: encontrado.telefone,
+        turno: encontrado.turno,
+        status: encontrado.status || "Ativo",
+        loginEm: new Date().toISOString()
+      });
+
+      navigate(obterRotaDestino(), { replace: true });
       return;
     }
 
@@ -151,21 +182,34 @@ function Login() {
           m.senha?.trim() === senhaDigitada
       );
 
-      if (encontrado) {
-        salvarSessao({
-          tipo: "morador",
-          id: encontrado.id,
-          nome: encontrado.nome,
-          usuario: encontrado.usuario,
-          apartamento: encontrado.apartamento,
-          loginEm: new Date().toISOString()
-        });
-
-        navigate(obterRotaDestino(), { replace: true });
+      if (!encontrado) {
+        setErro("Usuário ou senha inválidos");
         return;
       }
 
-      setErro("Usuário ou senha inválidos");
+      if (!usuarioAtivo(encontrado.status)) {
+        setErro("Este morador está inativo no sistema");
+        return;
+      }
+
+      salvarSessao({
+        tipo: "morador",
+        id: encontrado.id,
+        nome: encontrado.nome,
+        usuario: encontrado.usuario,
+        apartamento:
+          encontrado.apartamento ||
+          encontrado.apto ||
+          "",
+        bloco: encontrado.bloco || "",
+        telefone: encontrado.telefone || "",
+        email: encontrado.email || "",
+        status: encontrado.status || "Ativo",
+        loginEm: new Date().toISOString()
+      });
+
+      navigate(obterRotaDestino(), { replace: true });
+      return;
     }
   }
 
@@ -195,9 +239,22 @@ function Login() {
           {perfil.icon}
         </div>
 
-        <h1 style={styles.title}>{perfil.titulo}</h1>
+        <span
+          style={{
+            ...styles.profileBadge,
+            background: perfil.gradient
+          }}
+        >
+          Acesso seguro
+        </span>
 
-        <p style={styles.subtitle}>{perfil.subtitulo}</p>
+        <h1 style={styles.title}>
+          {perfil.titulo}
+        </h1>
+
+        <p style={styles.subtitle}>
+          {perfil.subtitulo}
+        </p>
 
         <input
           style={styles.input}
@@ -216,7 +273,11 @@ function Login() {
           onKeyDown={handleKeyPress}
         />
 
-        {erro && <div style={styles.errorBox}>{erro}</div>}
+        {erro && (
+          <div style={styles.errorBox}>
+            {erro}
+          </div>
+        )}
 
         <button
           style={{
@@ -227,6 +288,10 @@ function Login() {
         >
           Entrar no sistema
         </button>
+
+        <p style={styles.footerText}>
+          Sistema residencial integrado • Portaria Digital
+        </p>
       </div>
     </div>
   );
@@ -238,21 +303,24 @@ const styles = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    background: "linear-gradient(135deg,#ecfdf5,#dbeafe,#ede9fe)",
+    background:
+      "radial-gradient(circle at top left,#dcfce7,transparent 32%), radial-gradient(circle at bottom right,#dbeafe,transparent 35%), linear-gradient(135deg,#ecfdf5,#f8fafc,#ede9fe)",
     padding: "20px",
     fontFamily: "Arial"
   },
 
   card: {
-    width: "430px",
-    background: "white",
-    borderRadius: "30px",
-    padding: "45px",
+    width: "440px",
+    background: "rgba(255,255,255,0.92)",
+    borderRadius: "34px",
+    padding: "46px",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    boxShadow: "0 20px 50px rgba(0,0,0,0.12)",
-    position: "relative"
+    boxShadow: "0 30px 80px rgba(15,23,42,0.16)",
+    position: "relative",
+    border: "1px solid rgba(255,255,255,0.65)",
+    backdropFilter: "blur(18px)"
   },
 
   backButton: {
@@ -262,69 +330,93 @@ const styles = {
     border: "none",
     background: "#f3f4f6",
     padding: "10px 14px",
-    borderRadius: "12px",
+    borderRadius: "14px",
     cursor: "pointer",
     display: "flex",
     alignItems: "center",
     gap: "8px",
-    fontWeight: "600"
+    fontWeight: "700",
+    color: "#374151"
   },
 
   iconCircle: {
-    width: "95px",
-    height: "95px",
-    borderRadius: "28px",
+    width: "96px",
+    height: "96px",
+    borderRadius: "30px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: "20px"
+    marginBottom: "18px",
+    boxShadow: "0 16px 35px rgba(15,23,42,0.18)"
+  },
+
+  profileBadge: {
+    color: "white",
+    padding: "8px 13px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "800",
+    marginBottom: "14px"
   },
 
   title: {
     margin: 0,
     fontSize: "30px",
     color: "#111827",
-    textAlign: "center"
+    textAlign: "center",
+    letterSpacing: "-0.4px"
   },
 
   subtitle: {
     marginTop: "10px",
     marginBottom: "30px",
     color: "#6b7280",
-    textAlign: "center"
+    textAlign: "center",
+    lineHeight: "1.5"
   },
 
   input: {
     width: "100%",
     padding: "16px",
     marginBottom: "16px",
-    borderRadius: "16px",
+    borderRadius: "17px",
     border: "1px solid #d1d5db",
     fontSize: "15px",
-    outline: "none"
+    outline: "none",
+    background: "#f9fafb",
+    boxSizing: "border-box"
   },
 
   errorBox: {
     width: "100%",
     background: "#fee2e2",
     color: "#dc2626",
-    padding: "12px",
-    borderRadius: "12px",
+    padding: "13px",
+    borderRadius: "14px",
     marginBottom: "16px",
     textAlign: "center",
-    fontWeight: "600"
+    fontWeight: "700",
+    boxSizing: "border-box"
   },
 
   button: {
     width: "100%",
     padding: "16px",
     border: "none",
-    borderRadius: "16px",
+    borderRadius: "17px",
     color: "white",
-    fontWeight: "700",
+    fontWeight: "800",
     fontSize: "15px",
     cursor: "pointer",
-    marginTop: "8px"
+    marginTop: "8px",
+    boxShadow: "0 14px 28px rgba(15,23,42,0.16)"
+  },
+
+  footerText: {
+    margin: "22px 0 0",
+    color: "#9ca3af",
+    fontSize: "12px",
+    textAlign: "center"
   }
 };
 

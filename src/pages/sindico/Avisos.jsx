@@ -1,885 +1,917 @@
 import { useState } from "react";
 
 function Avisos() {
+  const STORAGE_KEY = "avisos";
 
-  // CARREGA DIRETO DO LOCALSTORAGE
+  const estadoInicialAviso = {
+    titulo: "",
+    descricao: "",
+    prioridade: "Média",
+    data: new Date().toLocaleDateString("pt-BR")
+  };
+
   const [avisos, setAvisos] = useState(() => {
-
-    const dados =
-      localStorage.getItem("avisos");
-
-    return dados
-      ? JSON.parse(dados)
-      : [];
-
+    const dados = localStorage.getItem(STORAGE_KEY);
+    return dados ? JSON.parse(dados) : [];
   });
 
-  const [mostrarModal, setMostrarModal] =
-    useState(false);
+  const [mostrarModal, setMostrarModal] = useState(false);
+  const [busca, setBusca] = useState("");
+  const [filtroPrioridade, setFiltroPrioridade] = useState("Todas");
+  const [novoAviso, setNovoAviso] = useState(estadoInicialAviso);
+  const [editId, setEditId] = useState(null);
 
-  const [busca, setBusca] =
-    useState("");
+  const avisosFiltrados = avisos.filter((a) => {
+    const texto = busca.toLowerCase();
 
-  const [novoAviso, setNovoAviso] =
-    useState({
-      titulo: "",
-      descricao: "",
-      prioridade: "Média",
-      data: new Date()
-        .toLocaleDateString("pt-BR")
-    });
+    const correspondeBusca =
+      a.titulo?.toLowerCase().includes(texto) ||
+      a.descricao?.toLowerCase().includes(texto) ||
+      a.prioridade?.toLowerCase().includes(texto) ||
+      a.data?.toLowerCase().includes(texto);
 
-  const [editId, setEditId] =
-    useState(null);
+    const correspondePrioridade =
+      filtroPrioridade === "Todas" ||
+      a.prioridade === filtroPrioridade;
 
-  // FILTRO
+    return correspondeBusca && correspondePrioridade;
+  });
 
-  const avisosFiltrados =
-    avisos.filter((a) =>
+  const alta = avisos.filter(
+    (a) => a.prioridade === "Alta"
+  ).length;
 
-      a.titulo
-        .toLowerCase()
-        .includes(
-          busca.toLowerCase()
-        ) ||
+  const media = avisos.filter(
+    (a) => a.prioridade === "Média"
+  ).length;
 
-      a.descricao
-        .toLowerCase()
-        .includes(
-          busca.toLowerCase()
-        ) ||
-
-      a.prioridade
-        .toLowerCase()
-        .includes(
-          busca.toLowerCase()
-        )
-
-    );
-
-  // SALVAR AVISO
+  const baixa = avisos.filter(
+    (a) => a.prioridade === "Baixa"
+  ).length;
 
   function salvarAviso() {
-
-    if (
-      !novoAviso.titulo ||
-      !novoAviso.descricao
-    ) {
-
-      alert(
-        "Preencha todos os campos"
-      );
-
+    if (!novoAviso.titulo || !novoAviso.descricao) {
+      alert("Preencha todos os campos");
       return;
-
     }
 
     let listaAtualizada = [];
 
     if (editId !== null) {
-
-      listaAtualizada =
-        avisos.map((a) =>
-
-          a.id === editId
-            ? {
-                ...novoAviso,
-                id: editId
-              }
-            : a
-
-        );
+      listaAtualizada = avisos.map((a) =>
+        a.id === editId
+          ? {
+              ...novoAviso,
+              id: editId
+            }
+          : a
+      );
 
       setEditId(null);
-
     } else {
-
       const novo = {
-
         id: Date.now(),
-
         ...novoAviso,
-
-        data:
-          new Date()
-            .toLocaleDateString(
-              "pt-BR"
-            )
-
+        data: new Date().toLocaleDateString("pt-BR")
       };
 
       listaAtualizada = [
-        ...avisos,
-        novo
+        novo,
+        ...avisos
       ];
-
     }
 
     setAvisos(listaAtualizada);
 
     localStorage.setItem(
-      "avisos",
+      STORAGE_KEY,
       JSON.stringify(listaAtualizada)
     );
 
-    setNovoAviso({
-      titulo: "",
-      descricao: "",
-      prioridade: "Média",
-      data: new Date()
-        .toLocaleDateString("pt-BR")
-    });
-
+    setNovoAviso(estadoInicialAviso);
     setMostrarModal(false);
-
   }
-
-  // EDITAR
 
   function editarAviso(aviso) {
-
-    setNovoAviso(aviso);
+    setNovoAviso({
+      ...estadoInicialAviso,
+      ...aviso
+    });
 
     setEditId(aviso.id);
-
     setMostrarModal(true);
-
   }
 
-  // EXCLUIR
-
   function excluirAviso(id) {
-
-    const confirmar =
-      window.confirm(
-        "Deseja realmente excluir este aviso?"
-      );
+    const confirmar = window.confirm(
+      "Deseja realmente excluir este aviso?"
+    );
 
     if (!confirmar) return;
 
-    const lista =
-      avisos.filter(
-        (a) => a.id !== id
-      );
+    const lista = avisos.filter(
+      (a) => a.id !== id
+    );
 
     setAvisos(lista);
 
     localStorage.setItem(
-      "avisos",
+      STORAGE_KEY,
       JSON.stringify(lista)
     );
-
   }
 
-  // COR PRIORIDADE
+  function fecharModal() {
+    setMostrarModal(false);
+    setEditId(null);
+    setNovoAviso(estadoInicialAviso);
+  }
 
-  function corPrioridade(
-    prioridade
-  ) {
-
+  function corPrioridade(prioridade) {
     switch (prioridade) {
-
       case "Alta":
         return {
-          background:
-            "#fee2e2",
-          color:
-            "#dc2626"
+          background: "#fee2e2",
+          color: "#b91c1c",
+          border: "#fecaca",
+          icon: "🚨",
+          label: "Alta prioridade"
         };
 
       case "Média":
         return {
-          background:
-            "#fef3c7",
-          color:
-            "#d97706"
+          background: "#fef3c7",
+          color: "#92400e",
+          border: "#fde68a",
+          icon: "⚠️",
+          label: "Média prioridade"
         };
 
       case "Baixa":
         return {
-          background:
-            "#dcfce7",
-          color:
-            "#166534"
+          background: "#dcfce7",
+          color: "#166534",
+          border: "#bbf7d0",
+          icon: "✅",
+          label: "Baixa prioridade"
         };
 
       default:
         return {
-          background:
-            "#f3f4f6",
-          color:
-            "#374151"
+          background: "#f3f4f6",
+          color: "#374151",
+          border: "#e5e7eb",
+          icon: "📢",
+          label: prioridade || "Sem prioridade"
         };
-
     }
-
   }
 
-  const alta =
-    avisos.filter(
-      (a) =>
-        a.prioridade === "Alta"
-    ).length;
-
-  const media =
-    avisos.filter(
-      (a) =>
-        a.prioridade === "Média"
-    ).length;
-
-  const baixa =
-    avisos.filter(
-      (a) =>
-        a.prioridade === "Baixa"
-    ).length;
-
   return (
-
     <div style={styles.container}>
-
-      {/* HEADER */}
-
-      <div style={styles.header}>
-
-        <div>
+      <section style={styles.hero}>
+        <div style={styles.heroLeft}>
+          <span style={styles.heroBadge}>
+            📢 Central de comunicação
+          </span>
 
           <h1 style={styles.title}>
             Avisos
           </h1>
 
           <p style={styles.subtitle}>
-            Gerencie comunicados do condomínio
+            Publique comunicados, alertas e mensagens oficiais para os moradores.
           </p>
-
         </div>
 
-        <div style={styles.headerActions}>
+        <div style={styles.heroRight}>
+          <div style={styles.noticeBoard}>
+            <div style={styles.noticeItem}>
+              <span>🚨</span>
+              <strong>{alta}</strong>
+              <small>alta</small>
+            </div>
 
-          <input
-            placeholder="Buscar aviso..."
-            value={busca}
-            onChange={(e) =>
-              setBusca(
-                e.target.value
-              )
-            }
-            style={styles.search}
-          />
+            <div style={styles.noticeItem}>
+              <span>⚠️</span>
+              <strong>{media}</strong>
+              <small>média</small>
+            </div>
+
+            <div style={styles.noticeItem}>
+              <span>✅</span>
+              <strong>{baixa}</strong>
+              <small>baixa</small>
+            </div>
+          </div>
 
           <button
-            style={styles.button}
+            style={styles.heroButton}
             onClick={() => {
-
               setEditId(null);
-
-              setNovoAviso({
-                titulo: "",
-                descricao: "",
-                prioridade:
-                  "Média",
-                data:
-                  new Date()
-                    .toLocaleDateString(
-                      "pt-BR"
-                    )
-              });
-
-              setMostrarModal(
-                true
-              );
-
+              setNovoAviso(estadoInicialAviso);
+              setMostrarModal(true);
             }}
           >
-
             + Novo aviso
-
           </button>
+        </div>
+      </section>
 
+      <section style={styles.controlStrip}>
+        <div style={styles.searchWrap}>
+          <span style={styles.searchIcon}>⌕</span>
+
+          <input
+            placeholder="Buscar por título, descrição, data ou prioridade..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            style={styles.search}
+          />
         </div>
 
-      </div>
+        <select
+          value={filtroPrioridade}
+          onChange={(e) => setFiltroPrioridade(e.target.value)}
+          style={styles.filter}
+        >
+          <option>Todas</option>
+          <option>Alta</option>
+          <option>Média</option>
+          <option>Baixa</option>
+        </select>
 
-      {/* RESUMO */}
+        <div style={styles.compactStats}>
+          <span>
+            <b>{avisos.length}</b> avisos
+          </span>
 
-      <div style={styles.resumeGrid}>
+          <span>
+            <b>{avisosFiltrados.length}</b> resultado(s)
+          </span>
+        </div>
+      </section>
 
-        <div style={styles.resumeCard}>
+      <section style={styles.communicationPanel}>
+        <div style={styles.panelHeader}>
+          <div>
+            <span style={styles.panelLabel}>
+              Mural oficial
+            </span>
 
-          <div style={styles.resumeIcon}>
-            📢
+            <h2 style={styles.panelTitle}>
+              Comunicados publicados
+            </h2>
           </div>
 
-          <div>
+          <span style={styles.resultBadge}>
+            {avisosFiltrados.length} resultado(s)
+          </span>
+        </div>
 
-            <p style={styles.resumeLabel}>
-              Total
+        {avisosFiltrados.length === 0 ? (
+          <div style={styles.empty}>
+            <div style={styles.emptyIcon}>
+              📢
+            </div>
+
+            <h3 style={styles.emptyTitle}>
+              Nenhum aviso cadastrado
+            </h3>
+
+            <p style={styles.emptyText}>
+              Publique comunicados para que apareçam no painel dos moradores.
             </p>
 
-            <h2 style={styles.resumeNumber}>
-              {avisos.length}
-            </h2>
-
+            <button
+              style={styles.emptyButton}
+              onClick={() => {
+                setEditId(null);
+                setNovoAviso(estadoInicialAviso);
+                setMostrarModal(true);
+              }}
+            >
+              Publicar aviso
+            </button>
           </div>
+        ) : (
+          <div style={styles.noticeGrid}>
+            {avisosFiltrados.map((aviso) => {
+              const prioridade = corPrioridade(aviso.prioridade);
 
-        </div>
-
-        <div style={styles.resumeCard}>
-
-          <div style={styles.resumeIcon}>
-            🚨
-          </div>
-
-          <div>
-
-            <p style={styles.resumeLabel}>
-              Alta prioridade
-            </p>
-
-            <h2 style={styles.resumeNumber}>
-              {alta}
-            </h2>
-
-          </div>
-
-        </div>
-
-        <div style={styles.resumeCard}>
-
-          <div style={styles.resumeIcon}>
-            ⚠️
-          </div>
-
-          <div>
-
-            <p style={styles.resumeLabel}>
-              Média prioridade
-            </p>
-
-            <h2 style={styles.resumeNumber}>
-              {media}
-            </h2>
-
-          </div>
-
-        </div>
-
-        <div style={styles.resumeCard}>
-
-          <div style={styles.resumeIcon}>
-            ✅
-          </div>
-
-          <div>
-
-            <p style={styles.resumeLabel}>
-              Baixa prioridade
-            </p>
-
-            <h2 style={styles.resumeNumber}>
-              {baixa}
-            </h2>
-
-          </div>
-
-        </div>
-
-      </div>
-
-      {/* TABELA */}
-
-      <div style={styles.card}>
-
-        <table style={styles.table}>
-
-          <thead>
-
-            <tr>
-
-              <th style={styles.th}>
-                Título
-              </th>
-
-              <th style={styles.th}>
-                Descrição
-              </th>
-
-              <th style={styles.th}>
-                Prioridade
-              </th>
-
-              <th style={styles.th}>
-                Data
-              </th>
-
-              <th style={styles.thCenter}>
-                Ações
-              </th>
-
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            {avisosFiltrados.length === 0 ? (
-
-              <tr>
-
-                <td
-                  colSpan="5"
-                  style={styles.empty}
+              return (
+                <article
+                  key={aviso.id}
+                  style={{
+                    ...styles.noticeCard,
+                    borderColor: prioridade.border
+                  }}
                 >
-
-                  Nenhum aviso cadastrado
-
-                </td>
-
-              </tr>
-
-            ) : (
-
-              avisosFiltrados.map(
-                (aviso) => (
-
-                <tr key={aviso.id}>
-
-                  <td style={styles.td}>
-                    <strong>
-                      {aviso.titulo}
-                    </strong>
-                  </td>
-
-                  <td style={styles.td}>
-                    {aviso.descricao}
-                  </td>
-
-                  <td style={styles.td}>
+                  <div style={styles.cardTop}>
+                    <div style={styles.noticeIcon}>
+                      {prioridade.icon}
+                    </div>
 
                     <span
                       style={{
-                        ...styles.badge,
-                        ...corPrioridade(
-                          aviso.prioridade
-                        )
+                        ...styles.priorityBadge,
+                        background: prioridade.background,
+                        color: prioridade.color
                       }}
                     >
-
-                      {aviso.prioridade}
-
+                      {prioridade.label}
                     </span>
+                  </div>
 
-                  </td>
+                  <h3 style={styles.noticeTitle}>
+                    {aviso.titulo}
+                  </h3>
 
-                  <td style={styles.td}>
-                    {aviso.data}
-                  </td>
+                  <p style={styles.noticeDescription}>
+                    {aviso.descricao}
+                  </p>
 
-                  <td style={styles.tdCenter}>
+                  <div style={styles.dateBox}>
+                    <span>Publicado em</span>
+                    <strong>{aviso.data}</strong>
+                  </div>
 
+                  <div style={styles.actionRow}>
                     <button
-                      style={
-                        styles.editButton
-                      }
-                      onClick={() =>
-                        editarAviso(
-                          aviso
-                        )
-                      }
+                      style={styles.editButton}
+                      onClick={() => editarAviso(aviso)}
                     >
-
                       Editar
-
                     </button>
 
                     <button
-                      style={
-                        styles.deleteButton
-                      }
-                      onClick={() =>
-                        excluirAviso(
-                          aviso.id
-                        )
-                      }
+                      style={styles.deleteButton}
+                      onClick={() => excluirAviso(aviso.id)}
                     >
-
                       Excluir
-
                     </button>
-
-                  </td>
-
-                </tr>
-
-              ))
-
-            )}
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-      {/* MODAL */}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
       {mostrarModal && (
-
         <div style={styles.modalBg}>
-
           <div style={styles.modal}>
+            <div style={styles.modalTop}>
+              <div>
+                <span style={styles.modalBadge}>
+                  {editId !== null ? "Editar comunicado" : "Novo comunicado"}
+                </span>
 
-            <h2 style={styles.modalTitle}>
-
-              {editId !== null
-                ? "Editar aviso"
-                : "Novo aviso"}
-
-            </h2>
-
-            <input
-              placeholder="Título"
-              value={novoAviso.titulo}
-              onChange={(e) =>
-                setNovoAviso({
-                  ...novoAviso,
-                  titulo:
-                    e.target.value
-                })
-              }
-              style={styles.input}
-            />
-
-            <textarea
-              placeholder="Descrição"
-              value={
-                novoAviso.descricao
-              }
-              onChange={(e) =>
-                setNovoAviso({
-                  ...novoAviso,
-                  descricao:
-                    e.target.value
-                })
-              }
-              style={styles.textarea}
-            />
-
-            <select
-              value={
-                novoAviso.prioridade
-              }
-              onChange={(e) =>
-                setNovoAviso({
-                  ...novoAviso,
-                  prioridade:
-                    e.target.value
-                })
-              }
-              style={styles.input}
-            >
-
-              <option>
-                Alta
-              </option>
-
-              <option>
-                Média
-              </option>
-
-              <option>
-                Baixa
-              </option>
-
-            </select>
-
-            <div style={styles.modalButtons}>
+                <h2 style={styles.modalTitle}>
+                  {editId !== null ? "Editar aviso" : "Publicar aviso"}
+                </h2>
+              </div>
 
               <button
-                style={styles.saveBtn}
-                onClick={
-                  salvarAviso
-                }
+                style={styles.closeButton}
+                onClick={fecharModal}
               >
+                ✕
+              </button>
+            </div>
 
-                Salvar
+            <div style={styles.modalSection}>
+              <h3 style={styles.modalSectionTitle}>
+                Conteúdo do aviso
+              </h3>
 
+              <div style={styles.formGrid}>
+                <div style={styles.formRowFull}>
+                  <label style={styles.label}>
+                    Título
+                  </label>
+
+                  <input
+                    placeholder="Ex: Manutenção no elevador"
+                    value={novoAviso.titulo}
+                    onChange={(e) =>
+                      setNovoAviso({
+                        ...novoAviso,
+                        titulo: e.target.value
+                      })
+                    }
+                    style={styles.input}
+                  />
+                </div>
+
+                <div style={styles.formRowFull}>
+                  <label style={styles.label}>
+                    Descrição
+                  </label>
+
+                  <textarea
+                    placeholder="Digite a mensagem do comunicado..."
+                    value={novoAviso.descricao}
+                    onChange={(e) =>
+                      setNovoAviso({
+                        ...novoAviso,
+                        descricao: e.target.value
+                      })
+                    }
+                    style={styles.textarea}
+                  />
+                </div>
+
+                <div style={styles.formRowFull}>
+                  <label style={styles.label}>
+                    Prioridade
+                  </label>
+
+                  <select
+                    value={novoAviso.prioridade}
+                    onChange={(e) =>
+                      setNovoAviso({
+                        ...novoAviso,
+                        prioridade: e.target.value
+                      })
+                    }
+                    style={styles.input}
+                  >
+                    <option>Alta</option>
+                    <option>Média</option>
+                    <option>Baixa</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div style={styles.modalButtons}>
+              <button
+                style={styles.saveBtn}
+                onClick={salvarAviso}
+              >
+                Salvar aviso
               </button>
 
               <button
                 style={styles.cancelBtn}
-                onClick={() => {
-
-                  setMostrarModal(false);
-
-                  setEditId(null);
-
-                  setNovoAviso({
-                    titulo: "",
-                    descricao: "",
-                    prioridade: "Média",
-                    data: new Date()
-                      .toLocaleDateString("pt-BR")
-                  });
-
-                }}
+                onClick={fecharModal}
               >
-
                 Cancelar
-
               </button>
-
             </div>
-
           </div>
-
         </div>
-
       )}
-
     </div>
-
   );
-
 }
 
 const styles = {
-
   container: {
-    width: "100%"
+    width: "100%",
+    fontFamily: "Arial",
+    color: "#111827"
   },
 
-  header: {
+  hero: {
+    background:
+      "linear-gradient(135deg,#02140b,#064e3b 55%,#15803d)",
+    borderRadius: "36px",
+    padding: "34px",
+    color: "white",
     display: "flex",
-    justifyContent:
-      "space-between",
+    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: "30px"
+    gap: "28px",
+    boxShadow: "0 26px 70px rgba(6,78,59,0.30)",
+    marginBottom: "24px"
+  },
+
+  heroLeft: {
+    maxWidth: "680px"
+  },
+
+  heroBadge: {
+    display: "inline-block",
+    background: "rgba(255,255,255,0.13)",
+    border: "1px solid rgba(255,255,255,0.14)",
+    color: "#dcfce7",
+    padding: "9px 13px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "900",
+    marginBottom: "15px"
   },
 
   title: {
-    fontSize: "34px",
     margin: 0,
-    color: "#14532d"
+    fontSize: "44px",
+    letterSpacing: "-1px"
   },
 
   subtitle: {
-    marginTop: "8px",
-    color: "#6b7280"
+    margin: "10px 0 0",
+    color: "rgba(255,255,255,0.76)",
+    lineHeight: "1.55"
   },
 
-  headerActions: {
+  heroRight: {
     display: "flex",
-    gap: "12px"
+    alignItems: "center",
+    gap: "14px"
+  },
+
+  noticeBoard: {
+    display: "flex",
+    gap: "10px",
+    background: "rgba(255,255,255,0.10)",
+    border: "1px solid rgba(255,255,255,0.14)",
+    padding: "12px",
+    borderRadius: "24px"
+  },
+
+  noticeItem: {
+    width: "84px",
+    height: "76px",
+    borderRadius: "18px",
+    background: "rgba(255,255,255,0.11)",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "3px"
+  },
+
+  heroButton: {
+    background: "#dcfce7",
+    color: "#166534",
+    border: "none",
+    padding: "15px 20px",
+    borderRadius: "17px",
+    cursor: "pointer",
+    fontWeight: "900",
+    whiteSpace: "nowrap"
+  },
+
+  controlStrip: {
+    background: "white",
+    border: "1px solid #e5e7eb",
+    borderRadius: "28px",
+    padding: "18px",
+    marginBottom: "24px",
+    display: "flex",
+    alignItems: "center",
+    gap: "14px",
+    boxShadow: "0 14px 35px rgba(15,23,42,0.06)"
+  },
+
+  searchWrap: {
+    flex: 1,
+    background: "#f8fafc",
+    border: "1px solid #d1d5db",
+    borderRadius: "18px",
+    display: "flex",
+    alignItems: "center",
+    padding: "0 14px"
+  },
+
+  searchIcon: {
+    color: "#166534",
+    fontSize: "20px",
+    marginRight: "8px"
   },
 
   search: {
-    padding: "14px",
-    borderRadius: "12px",
-    border:
-      "1px solid #d1d5db",
-    outline: "none",
-    minWidth: "240px"
-  },
-
-  button: {
-    background:
-      "linear-gradient(135deg,#166534,#14532d)",
-    color: "white",
+    flex: 1,
+    padding: "15px 0",
     border: "none",
-    padding: "14px 22px",
-    borderRadius: "12px",
-    cursor: "pointer",
-    fontWeight: "700"
+    outline: "none",
+    background: "transparent",
+    fontSize: "14px"
   },
 
-  resumeGrid: {
-    display: "grid",
-    gridTemplateColumns:
-      "repeat(auto-fit,minmax(220px,1fr))",
-    gap: "20px",
-    marginBottom: "30px"
-  },
-
-  resumeCard: {
-    background:
-      "linear-gradient(135deg,#dcfce7,#ffffff)",
+  filter: {
+    width: "150px",
+    padding: "15px",
     borderRadius: "18px",
-    padding: "24px",
+    border: "1px solid #d1d5db",
+    outline: "none",
+    background: "#f8fafc"
+  },
+
+  compactStats: {
     display: "flex",
-    alignItems: "center",
-    gap: "18px",
-    boxShadow:
-      "0 2px 10px rgba(0,0,0,0.05)"
+    gap: "10px",
+    flexWrap: "wrap",
+    fontSize: "12px",
+    color: "#374151"
   },
 
-  resumeIcon: {
-    fontSize: "40px"
-  },
-
-  resumeLabel: {
-    color: "#6b7280",
-    marginBottom: "6px"
-  },
-
-  resumeNumber: {
-    margin: 0,
-    fontSize: "32px",
-    color: "#14532d"
-  },
-
-  card: {
+  communicationPanel: {
     background: "white",
-    borderRadius: "18px",
-    padding: "25px",
-    boxShadow:
-      "0 2px 10px rgba(0,0,0,0.05)"
+    border: "1px solid #eef2f7",
+    borderRadius: "34px",
+    padding: "28px",
+    boxShadow: "0 18px 55px rgba(15,23,42,0.08)"
   },
 
-  table: {
-    width: "100%",
-    borderCollapse:
-      "collapse"
+  panelHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: "24px"
   },
 
-  th: {
-    textAlign: "left",
-    padding: "16px",
-    borderBottom:
-      "2px solid #e5e7eb",
-    color: "#14532d"
+  panelLabel: {
+    background: "#dcfce7",
+    color: "#166534",
+    padding: "7px 11px",
+    borderRadius: "999px",
+    fontSize: "11px",
+    fontWeight: "900"
   },
 
-  thCenter: {
-    textAlign: "center",
-    padding: "16px",
-    borderBottom:
-      "2px solid #e5e7eb",
-    color: "#14532d"
+  panelTitle: {
+    margin: "12px 0 0",
+    color: "#052e16",
+    fontSize: "28px"
   },
 
-  td: {
-    padding: "16px",
-    borderBottom:
-      "1px solid #f3f4f6"
-  },
-
-  tdCenter: {
-    padding: "16px",
-    textAlign: "center",
-    borderBottom:
-      "1px solid #f3f4f6"
-  },
-
-  badge: {
-    padding: "8px 14px",
+  resultBadge: {
+    background: "#f0fdf4",
+    color: "#166534",
+    border: "1px solid #bbf7d0",
+    padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
-    fontWeight: "700"
+    fontWeight: "900"
+  },
+
+  noticeGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit,minmax(340px,1fr))",
+    gap: "18px"
+  },
+
+  noticeCard: {
+    background: "linear-gradient(180deg,#ffffff,#f8fafc)",
+    borderRadius: "30px",
+    padding: "22px",
+    boxShadow: "0 15px 38px rgba(15,23,42,0.06)",
+    border: "1px solid #eef2f7"
+  },
+
+  cardTop: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "12px",
+    marginBottom: "18px"
+  },
+
+  noticeIcon: {
+    width: "64px",
+    height: "64px",
+    borderRadius: "24px",
+    background:
+      "linear-gradient(135deg,#052e16,#16a34a)",
+    color: "white",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "28px",
+    boxShadow: "0 14px 26px rgba(22,163,74,0.22)"
+  },
+
+  priorityBadge: {
+    padding: "7px 11px",
+    borderRadius: "999px",
+    fontWeight: "900",
+    fontSize: "12px",
+    whiteSpace: "nowrap"
+  },
+
+  noticeTitle: {
+    margin: "0 0 10px",
+    color: "#111827",
+    fontSize: "22px"
+  },
+
+  noticeDescription: {
+    margin: 0,
+    color: "#4b5563",
+    lineHeight: "1.55",
+    minHeight: "70px"
+  },
+
+  dateBox: {
+    marginTop: "16px",
+    background: "#f0fdf4",
+    border: "1px solid #bbf7d0",
+    color: "#166534",
+    borderRadius: "17px",
+    padding: "13px"
+  },
+
+  actionRow: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "10px",
+    marginTop: "18px"
   },
 
   editButton: {
-    background: "#16a34a",
-    color: "white",
+    background: "#dcfce7",
+    color: "#166534",
     border: "none",
-    padding: "8px 12px",
-    borderRadius: "8px",
+    padding: "12px",
+    borderRadius: "15px",
     cursor: "pointer",
-    marginRight: "10px"
+    fontWeight: "900"
   },
 
   deleteButton: {
-    background: "#dc2626",
-    color: "white",
+    background: "#fee2e2",
+    color: "#dc2626",
     border: "none",
-    padding: "8px 12px",
-    borderRadius: "8px",
-    cursor: "pointer"
+    padding: "12px",
+    borderRadius: "15px",
+    cursor: "pointer",
+    fontWeight: "900"
   },
 
   empty: {
-    textAlign: "center",
-    padding: "30px",
+    background: "#f8fafc",
+    border: "1px dashed #d1d5db",
+    borderRadius: "26px",
+    padding: "48px",
+    textAlign: "center"
+  },
+
+  emptyIcon: {
+    fontSize: "44px",
+    marginBottom: "12px"
+  },
+
+  emptyTitle: {
+    margin: 0,
+    color: "#111827"
+  },
+
+  emptyText: {
+    margin: "8px 0 18px",
     color: "#6b7280"
+  },
+
+  emptyButton: {
+    background:
+      "linear-gradient(135deg,#064e3b,#16a34a)",
+    color: "white",
+    border: "none",
+    padding: "13px 18px",
+    borderRadius: "15px",
+    cursor: "pointer",
+    fontWeight: "900"
   },
 
   modalBg: {
     position: "fixed",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
-    background:
-      "rgba(0,0,0,0.4)",
+    inset: 0,
+    background: "rgba(15,23,42,0.62)",
+    backdropFilter: "blur(8px)",
     display: "flex",
-    justifyContent:
-      "center",
+    justifyContent: "center",
     alignItems: "center",
-    backdropFilter:
-      "blur(4px)"
+    zIndex: 999,
+    padding: "20px"
   },
 
   modal: {
-    background: "white",
-    width: "420px",
-    borderRadius: "18px",
-    padding: "28px",
+    width: "680px",
+    maxHeight: "90vh",
+    overflowY: "auto",
+    background: "#f8fafc",
+    padding: "26px",
+    borderRadius: "36px",
+    boxShadow: "0 30px 80px rgba(0,0,0,0.28)"
+  },
+
+  modalTop: {
+    background:
+      "linear-gradient(135deg,#052e16,#166534)",
+    color: "white",
+    borderRadius: "28px",
+    padding: "26px",
     display: "flex",
-    flexDirection:
-      "column",
-    gap: "14px"
+    justifyContent: "space-between",
+    marginBottom: "20px"
+  },
+
+  modalBadge: {
+    background: "rgba(255,255,255,0.14)",
+    padding: "8px 12px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "900"
   },
 
   modalTitle: {
-    margin: 0,
-    color: "#14532d"
+    margin: "14px 0 0",
+    fontSize: "28px"
+  },
+
+  closeButton: {
+    width: "42px",
+    height: "42px",
+    borderRadius: "15px",
+    border: "none",
+    background: "rgba(255,255,255,0.14)",
+    color: "white",
+    cursor: "pointer",
+    fontWeight: "900"
+  },
+
+  modalSection: {
+    background: "white",
+    border: "1px solid #eef2f7",
+    borderRadius: "26px",
+    padding: "20px",
+    marginBottom: "15px"
+  },
+
+  modalSectionTitle: {
+    margin: "0 0 16px",
+    color: "#052e16"
+  },
+
+  formGrid: {
+    display: "grid",
+    gridTemplateColumns: "1fr",
+    gap: "15px"
+  },
+
+  formRowFull: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "7px"
+  },
+
+  label: {
+    color: "#374151",
+    fontSize: "13px",
+    fontWeight: "900"
   },
 
   input: {
-    padding: "14px",
-    borderRadius: "10px",
-    border:
-      "1px solid #d1d5db",
-    outline: "none"
+    padding: "15px",
+    borderRadius: "16px",
+    border: "1px solid #d1d5db",
+    outline: "none",
+    fontSize: "14px",
+    background: "#f9fafb"
   },
 
   textarea: {
-    padding: "14px",
-    borderRadius: "10px",
-    border:
-      "1px solid #d1d5db",
-    resize: "none",
-    minHeight: "120px",
-    outline: "none"
+    padding: "15px",
+    borderRadius: "16px",
+    border: "1px solid #d1d5db",
+    resize: "vertical",
+    minHeight: "140px",
+    outline: "none",
+    fontSize: "14px",
+    background: "#f9fafb",
+    fontFamily: "Arial"
   },
 
   modalButtons: {
     display: "flex",
-    justifyContent:
-      "space-between",
-    marginTop: "10px",
-    gap: "12px"
+    gap: "12px",
+    marginTop: "18px"
   },
 
   saveBtn: {
     flex: 1,
-    background: "#166534",
+    background:
+      "linear-gradient(135deg,#064e3b,#16a34a)",
     color: "white",
     border: "none",
-    padding: "12px 18px",
-    borderRadius: "10px",
+    padding: "14px",
+    borderRadius: "17px",
     cursor: "pointer",
-    fontWeight: "700"
+    fontWeight: "900"
   },
 
   cancelBtn: {
     flex: 1,
-    background: "#d1d5db",
+    background: "#f3f4f6",
+    color: "#374151",
     border: "none",
-    padding: "12px 18px",
-    borderRadius: "10px",
-    cursor: "pointer"
+    padding: "14px",
+    borderRadius: "17px",
+    cursor: "pointer",
+    fontWeight: "900"
   }
-
 };
 
 export default Avisos;

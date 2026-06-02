@@ -9,7 +9,9 @@ import {
   FaBox,
   FaClipboardList,
   FaUsers,
-  FaSignOutAlt
+  FaSignOutAlt,
+  FaBook,
+  FaChartPie
 } from "react-icons/fa";
 
 import { useEffect, useState } from "react";
@@ -108,13 +110,43 @@ function DashboardPorteiroLayout() {
 
       {/* SIDEBAR */}
 
-      <div style={styles.sidebar}>
+      <aside style={styles.sidebar}>
 
         <div>
 
-          <h2 style={styles.logo}>
-            🛡️ Portaria
-          </h2>
+          {/* LOGO */}
+
+          <div style={styles.logoBox}>
+
+            <div style={styles.logoIcon}>
+              🏢
+            </div>
+
+            <div>
+
+              <h2 style={styles.logo}>
+                Condomínio
+              </h2>
+
+              <p style={styles.logoSub}>
+                Portaria Digital
+              </p>
+
+            </div>
+
+          </div>
+
+          {/* STATUS */}
+
+          <div style={styles.statusBox}>
+
+            <div style={styles.statusDot}></div>
+
+            <span style={styles.statusText}>
+              Plantão ativo
+            </span>
+
+          </div>
 
           {/* USUÁRIO */}
 
@@ -132,8 +164,16 @@ function DashboardPorteiroLayout() {
               </div>
 
               <div style={styles.userRole}>
-                Porteiro
+                Operador da portaria
               </div>
+
+              {usuarioLogado?.turno && (
+
+                <div style={styles.userShift}>
+                  Turno: {usuarioLogado.turno}
+                </div>
+
+              )}
 
             </div>
 
@@ -141,7 +181,11 @@ function DashboardPorteiroLayout() {
 
           {/* MENU */}
 
-          <div style={styles.menu}>
+          <div style={styles.menuLabel}>
+            MENU OPERACIONAL
+          </div>
+
+          <nav style={styles.menu}>
 
             <Link
               to="/dashboard/porteiro"
@@ -152,7 +196,13 @@ function DashboardPorteiroLayout() {
                   : {})
               }}
             >
-              🏠 Dashboard
+              <span style={styles.menuIcon}>
+                <FaChartPie />
+              </span>
+
+              <span>
+                Dashboard
+              </span>
             </Link>
 
             <Link
@@ -164,8 +214,13 @@ function DashboardPorteiroLayout() {
                   : {})
               }}
             >
-              <FaBox />
-              Encomendas
+              <span style={styles.menuIcon}>
+                <FaBox />
+              </span>
+
+              <span>
+                Encomendas
+              </span>
             </Link>
 
             <Link
@@ -177,8 +232,13 @@ function DashboardPorteiroLayout() {
                   : {})
               }}
             >
-              <FaClipboardList />
-              Visitantes
+              <span style={styles.menuIcon}>
+                <FaClipboardList />
+              </span>
+
+              <span>
+                Visitantes
+              </span>
             </Link>
 
             <Link
@@ -190,36 +250,75 @@ function DashboardPorteiroLayout() {
                   : {})
               }}
             >
-              <FaUsers />
-              Moradores
+              <span style={styles.menuIcon}>
+                <FaUsers />
+              </span>
+
+              <span>
+                Moradores
+              </span>
             </Link>
 
-          </div>
+            <Link
+              to="/dashboard/porteiro/ocorrencias"
+              style={{
+                ...styles.menuItem,
+                ...(ativo("/dashboard/porteiro/ocorrencias")
+                  ? styles.active
+                  : {})
+              }}
+            >
+              <span style={styles.menuIcon}>
+                <FaBook />
+              </span>
+
+              <span>
+                Livro de Ocorrências
+              </span>
+            </Link>
+
+          </nav>
 
         </div>
 
-        {/* LOGOUT */}
+        {/* FOOTER */}
 
-        <button
-          style={styles.logoutButton}
-          onClick={sair}
-        >
+        <div style={styles.sidebarFooter}>
 
-          <FaSignOutAlt />
+          <div style={styles.footerCard}>
 
-          Sair
+            <p style={styles.footerTitle}>
+              Central da Portaria
+            </p>
 
-        </button>
+            <p style={styles.footerText}>
+              Registre, acompanhe e mantenha o plantão organizado.
+            </p>
 
-      </div>
+          </div>
+
+          <button
+            style={styles.logoutButton}
+            onClick={sair}
+          >
+
+            <FaSignOutAlt />
+
+            Encerrar sessão
+
+          </button>
+
+        </div>
+
+      </aside>
 
       {/* CONTEÚDO */}
 
-      <div style={styles.content}>
+      <main style={styles.content}>
 
         <Outlet />
 
-      </div>
+      </main>
 
     </div>
 
@@ -232,46 +331,137 @@ const styles = {
   container: {
     display: "flex",
     minHeight: "100vh",
-    background: "#f3f4f6"
+    background: "#f3f4f6",
+    fontFamily: "Arial"
   },
 
   sidebar: {
-    width: "260px",
+    width: "292px",
+    minWidth: "292px",
     minHeight: "100vh",
     background:
-      "linear-gradient(180deg,#14532d,#166534)",
+      "linear-gradient(180deg,#052e16,#14532d,#166534)",
     color: "white",
-    padding: "24px",
+    padding: "26px 20px",
     display: "flex",
     flexDirection: "column",
-    justifyContent: "space-between"
+    justifyContent: "space-between",
+    boxShadow: "8px 0 35px rgba(5,46,22,0.22)",
+    position: "relative",
+    overflow: "hidden"
+  },
+
+  logoBox: {
+    display: "flex",
+    alignItems: "center",
+    gap: "14px",
+    marginBottom: "20px"
+  },
+
+  logoIcon: {
+    width: "58px",
+    height: "58px",
+    borderRadius: "20px",
+    background: "rgba(255,255,255,0.14)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "29px",
+    boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.12)",
+    backdropFilter: "blur(10px)"
   },
 
   logo: {
-    marginBottom: "30px"
+    margin: 0,
+    fontSize: "21px",
+    fontWeight: "800",
+    letterSpacing: "-0.3px"
+  },
+
+  logoSub: {
+    margin: "4px 0 0",
+    color: "rgba(255,255,255,0.68)",
+    fontSize: "13px",
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: "0.8px"
+  },
+
+  statusBox: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "9px",
+    background: "rgba(220,252,231,0.12)",
+    border: "1px solid rgba(220,252,231,0.22)",
+    padding: "9px 12px",
+    borderRadius: "999px",
+    marginBottom: "18px"
+  },
+
+  statusDot: {
+    width: "9px",
+    height: "9px",
+    borderRadius: "50%",
+    background: "#22c55e",
+    boxShadow: "0 0 0 5px rgba(34,197,94,0.16)"
+  },
+
+  statusText: {
+    fontSize: "12px",
+    fontWeight: "800",
+    color: "#dcfce7"
   },
 
   userBox: {
+    background: "rgba(255,255,255,0.10)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: "24px",
+    padding: "16px",
     display: "flex",
     alignItems: "center",
-    gap: "12px",
-    background: "rgba(255,255,255,0.1)",
-    padding: "14px",
-    borderRadius: "14px",
-    marginBottom: "24px"
+    gap: "13px",
+    marginBottom: "26px",
+    boxShadow: "0 14px 30px rgba(0,0,0,0.12)",
+    backdropFilter: "blur(12px)"
   },
 
   avatar: {
-    fontSize: "26px"
+    width: "52px",
+    height: "52px",
+    borderRadius: "18px",
+    background: "rgba(255,255,255,0.14)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "25px",
+    flexShrink: 0
   },
 
   userName: {
-    fontWeight: "700"
+    fontSize: "16px",
+    fontWeight: "800",
+    marginBottom: "3px"
   },
 
   userRole: {
-    fontSize: "13px",
-    opacity: 0.8
+    fontSize: "12px",
+    color: "rgba(255,255,255,0.72)",
+    fontWeight: "600"
+  },
+
+  userShift: {
+    marginTop: "5px",
+    color: "#bbf7d0",
+    fontSize: "12px",
+    fontWeight: "700"
+  },
+
+  menuLabel: {
+    color: "rgba(255,255,255,0.42)",
+    fontSize: "11px",
+    fontWeight: "900",
+    letterSpacing: "1.5px",
+    margin: "0 0 12px 6px"
   },
 
   menu: {
@@ -281,39 +471,86 @@ const styles = {
   },
 
   menuItem: {
-    color: "white",
+    color: "rgba(255,255,255,0.86)",
     textDecoration: "none",
-    padding: "14px",
-    borderRadius: "12px",
+    padding: "14px 15px",
+    borderRadius: "17px",
     display: "flex",
     alignItems: "center",
-    gap: "10px",
-    background: "rgba(255,255,255,0.08)",
-    transition: "0.2s"
+    gap: "12px",
+    background: "rgba(255,255,255,0.07)",
+    border: "1px solid rgba(255,255,255,0.07)",
+    transition: "0.2s",
+    fontWeight: "800",
+    fontSize: "14px"
+  },
+
+  menuIcon: {
+    width: "35px",
+    height: "35px",
+    borderRadius: "13px",
+    background: "rgba(255,255,255,0.10)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "15px",
+    flexShrink: 0
   },
 
   active: {
-    background: "rgba(255,255,255,0.18)"
+    background:
+      "linear-gradient(135deg,#16a34a,#22c55e)",
+    color: "white",
+    border: "1px solid rgba(255,255,255,0.20)",
+    boxShadow: "0 14px 28px rgba(34,197,94,0.24)"
+  },
+
+  sidebarFooter: {
+    marginTop: "24px"
+  },
+
+  footerCard: {
+    background: "rgba(255,255,255,0.08)",
+    border: "1px solid rgba(255,255,255,0.10)",
+    borderRadius: "22px",
+    padding: "16px",
+    marginBottom: "14px"
+  },
+
+  footerTitle: {
+    margin: 0,
+    fontSize: "14px",
+    fontWeight: "800"
+  },
+
+  footerText: {
+    margin: "7px 0 0",
+    color: "rgba(255,255,255,0.62)",
+    fontSize: "12px",
+    lineHeight: "1.45"
   },
 
   logoutButton: {
-    border: "none",
-    background: "rgba(255,255,255,0.1)",
+    width: "100%",
+    border: "1px solid rgba(255,255,255,0.12)",
+    background: "rgba(255,255,255,0.10)",
     color: "white",
     padding: "14px",
-    borderRadius: "12px",
+    borderRadius: "16px",
     cursor: "pointer",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     gap: "10px",
-    fontWeight: "700"
+    fontWeight: "800"
   },
 
   content: {
     flex: 1,
     padding: "30px",
-    overflowY: "auto"
+    overflowY: "auto",
+    background:
+      "linear-gradient(180deg,#f8fafc,#f3f4f6)"
   }
 
 };

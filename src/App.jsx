@@ -34,15 +34,16 @@ import Relatorios from "./pages/Sindico/Relatorios";
 import Configuracoes from "./pages/Sindico/Configuracoes";
 
 import DashboardPorteiro from "./pages/Porteiro/DashboardPorteiro";
-import PrestadoresPorteiro from "./pages/Porteiro/PrestadoresPorteiro";
 import EncomendasPorteiro from "./pages/Porteiro/EncomendasPorteiro";
 import VisitantesPorteiro from "./pages/Porteiro/VisitantesPorteiro";
 import MoradoresPorteiro from "./pages/Porteiro/MoradoresPorteiro";
+import OcorrenciasPorteiro from "./pages/Porteiro/OcorrenciasPorteiro";
 
 import DashboardMorador from "./pages/Morador/DashboardMorador";
 import AvisosMorador from "./pages/Morador/AvisosMorador";
 import EncomendasMorador from "./pages/Morador/EncomendasMorador";
 import ReservasMorador from "./pages/Morador/ReservasMorador";
+import SugestoesMorador from "./pages/Morador/SugestoesMorador";
 
 function Home() {
   const navigate = useNavigate();
@@ -140,7 +141,7 @@ function App() {
           <Route path="encomendas" element={<EncomendasPorteiro />} />
           <Route path="visitantes" element={<VisitantesPorteiro />} />
           <Route path="moradores" element={<MoradoresPorteiro />} />
-          <Route path="prestadores" element={<PrestadoresPorteiro />} />
+          <Route path="ocorrencias" element={<OcorrenciasPorteiro />} />
         </Route>
 
         <Route
@@ -155,6 +156,7 @@ function App() {
           <Route path="avisos" element={<AvisosMorador />} />
           <Route path="encomendas" element={<EncomendasMorador />} />
           <Route path="reservas" element={<ReservasMorador />} />
+          <Route path="sugestoes" element={<SugestoesMorador />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

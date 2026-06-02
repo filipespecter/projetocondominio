@@ -1,55 +1,102 @@
 import { useEffect, useState } from "react";
 
+import {
+  salvarMovimentacao
+} from "../../Services/movimentacaoService";
+
 function VisitantesPorteiro() {
 
-  const [visitantes, setVisitantes] = useState([]);
+  const STORAGE_KEY = "visitantes";
 
-  const [nome, setNome] = useState("");
+  const estadoInicial = {
+    nome: "",
+    apartamento: "",
+    observacao: "",
+    tipoVisitante: "Pessoa comum",
+    documento: ""
+  };
 
-  const [apartamento, setApartamento] = useState("");
+  const [visitantes, setVisitantes] =
+    useState([]);
 
-  const [observacao, setObservacao] = useState("");
+  const [form, setForm] =
+    useState(estadoInicial);
 
-  const [tipoVisitante, setTipoVisitante] =
-    useState("Pessoa comum");
+  const [porteiro, setPorteiro] =
+    useState(null);
 
-  const [documento, setDocumento] =
+  const [busca, setBusca] =
     useState("");
 
+  const [filtroStatus, setFiltroStatus] =
+    useState("Todos");
 
   useEffect(() => {
+
+    carregarSessao();
 
     carregarVisitantes();
 
   }, []);
 
+  function carregarSessao() {
+
+    const sessao =
+      localStorage.getItem("sessaoPorteiro") ||
+      sessionStorage.getItem("sessaoPorteiro");
+
+    try {
+
+      const usuario =
+        sessao
+          ? JSON.parse(sessao)
+          : null;
+
+      setPorteiro(usuario);
+
+    } catch {
+
+      setPorteiro(null);
+
+    }
+
+  }
 
   function carregarVisitantes() {
 
     const data =
       JSON.parse(
-        localStorage.getItem("visitantes")
+        localStorage.getItem(STORAGE_KEY)
       ) || [];
 
     setVisitantes(data);
 
   }
 
+  function limparFormulario() {
+
+    setForm(estadoInicial);
+
+  }
 
   function cadastrarVisitante() {
 
-    if (!nome || !apartamento) {
+    if (
+      !form.nome ||
+      !form.apartamento
+    ) {
 
-      alert("Preencha os campos obrigatórios");
+      alert(
+        "Preencha o nome do visitante e o apartamento"
+      );
 
       return;
 
     }
 
-    // DOCUMENTO OBRIGATÓRIO
     if (
-      tipoVisitante === "Prestador de serviço" &&
-      !documento
+      form.tipoVisitante === "Prestador de serviço" &&
+      !form.documento
     ) {
 
       alert(
@@ -60,126 +107,93 @@ function VisitantesPorteiro() {
 
     }
 
-    // USUÁRIO LOGADO
-    const usuarioLogado =
-      JSON.parse(
-        localStorage.getItem("usuarioLogado")
-      ) || {};
+    const agora = new Date();
 
     const novo = {
 
       id: Date.now(),
 
-      nome,
+      nome:
+        form.nome,
 
-      apartamento,
+      apartamento:
+        form.apartamento,
 
-      observacao,
+      observacao:
+        form.observacao,
 
-      tipoVisitante,
+      tipoVisitante:
+        form.tipoVisitante,
 
-      documento,
+      documento:
+        form.documento,
 
       horarioEntrada:
-        new Date().toLocaleTimeString(),
+        agora.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit"
+        }),
 
       horarioSaida: "",
 
       data:
-        new Date().toLocaleDateString(),
+        agora.toLocaleDateString(),
 
       status: "aguardando",
 
-      porteiro: usuarioLogado.nome || "Não identificado",
+      porteiro:
+        porteiro?.nome || "Porteiro",
 
-      turno: usuarioLogado.turno || "-"
+      porteiroUsuario:
+        porteiro?.usuario || "",
+
+      turno:
+        porteiro?.turno || "-"
 
     };
 
     const atualizados = [
-      ...visitantes,
-      novo
+      novo,
+      ...visitantes
     ];
 
     localStorage.setItem(
-      "visitantes",
+      STORAGE_KEY,
       JSON.stringify(atualizados)
     );
 
-    // LOG DE MOVIMENTAÇÃO
-    salvarMovimentacao(
-      "Novo visitante cadastrado",
-      novo.nome
-    );
-
-    setVisitantes(atualizados);
-
-    setNome("");
-
-    setApartamento("");
-
-    setObservacao("");
-
-    setDocumento("");
-
-    setTipoVisitante("Pessoa comum");
-
-  }
-
-
-  function salvarMovimentacao(
-    acao,
-    visitante
-  ) {
-
-    const usuarioLogado =
-      JSON.parse(
-        localStorage.getItem("usuarioLogado")
-      ) || {};
-
-    const movimentacoes =
-      JSON.parse(
-        localStorage.getItem("movimentacoesPorteiro")
-      ) || [];
-
-    const novaMovimentacao = {
+    salvarMovimentacao({
 
       id: Date.now(),
 
-      acao,
+      tipo: "visitante",
 
-      visitante,
+      apartamento:
+        novo.apartamento,
+
+      mensagem:
+        `Visitante ${novo.nome} cadastrado para o AP ${novo.apartamento}`,
 
       porteiro:
-        usuarioLogado.nome || "Sem identificação",
-
-      turno:
-        usuarioLogado.turno || "-",
+        porteiro?.nome || "Porteiro",
 
       data:
-        new Date().toLocaleDateString(),
+        agora.toLocaleString()
 
-      hora:
-        new Date().toLocaleTimeString()
+    });
 
-    };
+    setVisitantes(atualizados);
 
-    movimentacoes.push(
-      novaMovimentacao
-    );
-
-    localStorage.setItem(
-      "movimentacoesPorteiro",
-      JSON.stringify(movimentacoes)
-    );
+    limparFormulario();
 
   }
-
 
   function alterarStatus(
     id,
     novoStatus
   ) {
+
+    const agora = new Date();
 
     const atualizados = visitantes.map((v) => {
 
@@ -193,18 +207,38 @@ function VisitantesPorteiro() {
 
         };
 
-        // HORÁRIO SAÍDA AUTOMÁTICO
         if (novoStatus === "saiu") {
 
           atualizado.horarioSaida =
-            new Date().toLocaleTimeString();
+            agora.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit"
+            });
+
+          atualizado.saidaEm =
+            agora.toLocaleString();
 
         }
 
-        salvarMovimentacao(
-          `Visitante ${novoStatus}`,
-          v.nome
-        );
+        salvarMovimentacao({
+
+          id: Date.now(),
+
+          tipo: "visitante",
+
+          apartamento:
+            v.apartamento,
+
+          mensagem:
+            `Visitante ${v.nome} teve status alterado para ${novoStatus}`,
+
+          porteiro:
+            porteiro?.nome || "Porteiro",
+
+          data:
+            agora.toLocaleString()
+
+        });
 
         return atualizado;
 
@@ -215,7 +249,7 @@ function VisitantesPorteiro() {
     });
 
     localStorage.setItem(
-      "visitantes",
+      STORAGE_KEY,
       JSON.stringify(atualizados)
     );
 
@@ -223,304 +257,664 @@ function VisitantesPorteiro() {
 
   }
 
-
   function excluirVisitante(id) {
+
+    const confirmar =
+      window.confirm(
+        "Deseja excluir este visitante?"
+      );
+
+    if (!confirmar) return;
 
     const visitante =
       visitantes.find(
         (v) => v.id === id
       );
 
-    const atualizados = visitantes.filter(
-      (v) => v.id !== id
-    );
+    const atualizados =
+      visitantes.filter(
+        (v) => v.id !== id
+      );
 
     localStorage.setItem(
-      "visitantes",
+      STORAGE_KEY,
       JSON.stringify(atualizados)
     );
 
-    salvarMovimentacao(
-      "Visitante removido",
-      visitante?.nome
-    );
+    salvarMovimentacao({
+
+      id: Date.now(),
+
+      tipo: "visitante",
+
+      apartamento:
+        visitante?.apartamento || "",
+
+      mensagem:
+        `Visitante ${visitante?.nome || ""} removido da portaria`,
+
+      porteiro:
+        porteiro?.nome || "Porteiro",
+
+      data:
+        new Date().toLocaleString()
+
+    });
 
     setVisitantes(atualizados);
 
   }
 
+  function obterStatus(status) {
 
-  function corStatus(status) {
+    if (status === "aguardando") {
+      return {
+        texto: "Aguardando",
+        fundo: "#fef3c7",
+        cor: "#92400e"
+      };
+    }
 
-    if (status === "aguardando")
-      return "#f59e0b";
+    if (status === "liberado") {
+      return {
+        texto: "Liberado",
+        fundo: "#dbeafe",
+        cor: "#1d4ed8"
+      };
+    }
 
-    if (status === "liberado")
-      return "#2563eb";
+    if (status === "entrou") {
+      return {
+        texto: "Dentro do condomínio",
+        fundo: "#dcfce7",
+        cor: "#166534"
+      };
+    }
 
-    if (status === "entrou")
-      return "#16a34a";
+    if (status === "saiu") {
+      return {
+        texto: "Saiu",
+        fundo: "#f3f4f6",
+        cor: "#374151"
+      };
+    }
 
-    if (status === "saiu")
-      return "#6b7280";
-
-    return "#111827";
+    return {
+      texto: status,
+      fundo: "#f3f4f6",
+      cor: "#111827"
+    };
 
   }
 
+  const visitantesFiltrados =
+    visitantes.filter((item) => {
+
+      const texto =
+        busca.toLowerCase();
+
+      const correspondeBusca =
+        item.nome
+          ?.toLowerCase()
+          .includes(texto) ||
+        item.apartamento
+          ?.toLowerCase()
+          .includes(texto) ||
+        item.tipoVisitante
+          ?.toLowerCase()
+          .includes(texto) ||
+        item.documento
+          ?.toLowerCase()
+          .includes(texto);
+
+      const correspondeStatus =
+        filtroStatus === "Todos" ||
+        item.status === filtroStatus;
+
+      return (
+        correspondeBusca &&
+        correspondeStatus
+      );
+
+    });
+
+  const aguardando =
+    visitantes.filter(
+      (v) => v.status === "aguardando"
+    ).length;
+
+  const liberados =
+    visitantes.filter(
+      (v) => v.status === "liberado"
+    ).length;
+
+  const dentro =
+    visitantes.filter(
+      (v) => v.status === "entrou"
+    ).length;
+
+  const saiu =
+    visitantes.filter(
+      (v) => v.status === "saiu"
+    ).length;
 
   return (
 
     <div style={styles.container}>
 
-      <div style={styles.header}>
+      {/* HERO */}
 
-        <h1 style={styles.title}>
-          Controle de Visitantes
-        </h1>
+      <div style={styles.hero}>
 
-        <p style={styles.subtitle}>
-          Gerencie entradas e saídas do condomínio
-        </p>
+        <div>
+
+          <span style={styles.heroBadge}>
+            🚶 Controle de acesso
+          </span>
+
+          <h1 style={styles.title}>
+            Visitantes da Portaria
+          </h1>
+
+          <p style={styles.subtitle}>
+            Registre visitantes, libere entradas, acompanhe saídas
+            e mantenha o plantão organizado em tempo real.
+          </p>
+
+          {porteiro && (
+
+            <div style={styles.userLine}>
+
+              <span style={styles.statusDot}></span>
+
+              <span>
+                Porteiro responsável:{" "}
+
+                <strong>
+                  {porteiro.nome}
+                </strong>
+              </span>
+
+            </div>
+
+          )}
+
+        </div>
+
+        <div style={styles.heroPanel}>
+
+          <p style={styles.heroLabel}>
+            Dentro agora
+          </p>
+
+          <h3 style={styles.heroNumber}>
+            {dentro}
+          </h3>
+
+          <span style={styles.heroStatus}>
+            Visitantes ativos
+          </span>
+
+        </div>
 
       </div>
 
+      {/* CARDS */}
+
+      <div style={styles.cards}>
+
+        <div style={styles.cardPrimary}>
+
+          <div>
+
+            <p style={styles.cardLabelLight}>
+              Aguardando
+            </p>
+
+            <h2 style={styles.cardNumberLight}>
+              {aguardando}
+            </h2>
+
+            <span style={styles.cardHintLight}>
+              aguardando liberação
+            </span>
+
+          </div>
+
+          <div style={styles.cardIconLight}>
+            ⏳
+          </div>
+
+        </div>
+
+        <div style={styles.card}>
+
+          <div style={styles.cardIconBlue}>
+            🔓
+          </div>
+
+          <div>
+
+            <p style={styles.cardLabel}>
+              Liberados
+            </p>
+
+            <h2 style={styles.cardNumberBlue}>
+              {liberados}
+            </h2>
+
+          </div>
+
+        </div>
+
+        <div style={styles.card}>
+
+          <div style={styles.cardIconGreen}>
+            🚶
+          </div>
+
+          <div>
+
+            <p style={styles.cardLabel}>
+              Dentro
+            </p>
+
+            <h2 style={styles.cardNumberGreen}>
+              {dentro}
+            </h2>
+
+          </div>
+
+        </div>
+
+        <div style={styles.card}>
+
+          <div style={styles.cardIconDark}>
+            ✅
+          </div>
+
+          <div>
+
+            <p style={styles.cardLabel}>
+              Saíram
+            </p>
+
+            <h2 style={styles.cardNumberDark}>
+              {saiu}
+            </h2>
+
+          </div>
+
+        </div>
+
+      </div>
 
       {/* FORM */}
 
+      <div style={styles.formCard}>
 
-      <div style={styles.form}>
+        <div style={styles.sectionHeader}>
 
-        <input
-          placeholder="Nome visitante"
-          value={nome}
-          onChange={(e) =>
-            setNome(e.target.value)
-          }
-          style={styles.input}
-        />
+          <div>
 
-        <input
-          placeholder="Apartamento"
-          value={apartamento}
-          onChange={(e) =>
-            setApartamento(e.target.value)
-          }
-          style={styles.input}
-        />
+            <h2 style={styles.sectionTitle}>
+              Novo visitante
+            </h2>
 
-        <select
-          value={tipoVisitante}
-          onChange={(e) =>
-            setTipoVisitante(
-              e.target.value
-            )
-          }
-          style={styles.input}
-        >
+            <p style={styles.sectionSubtitle}>
+              Preencha os dados para registrar uma nova entrada.
+            </p>
 
-          <option>
-            Pessoa comum
-          </option>
+          </div>
 
-          <option>
-            Prestador de serviço
-          </option>
+          <span style={styles.sectionBadge}>
+            Registro rápido
+          </span>
 
-        </select>
+        </div>
 
-        <input
-          placeholder="Observação"
-          value={observacao}
-          onChange={(e) =>
-            setObservacao(e.target.value)
-          }
-          style={styles.input}
-        />
-
-        {/* DOCUMENTO */}
-
-        {tipoVisitante ===
-          "Prestador de serviço" && (
+        <div style={styles.formGrid}>
 
           <input
-            placeholder="Documento obrigatório"
-            value={documento}
+            placeholder="Nome do visitante"
+            value={form.nome}
             onChange={(e) =>
-              setDocumento(
-                e.target.value
-              )
+              setForm({
+                ...form,
+                nome: e.target.value
+              })
             }
             style={styles.input}
           />
 
-        )}
+          <input
+            placeholder="Apartamento"
+            value={form.apartamento}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                apartamento: e.target.value
+              })
+            }
+            style={styles.input}
+          />
+
+          <select
+            value={form.tipoVisitante}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                tipoVisitante: e.target.value
+              })
+            }
+            style={styles.input}
+          >
+
+            <option>
+              Pessoa comum
+            </option>
+
+            <option>
+              Prestador de serviço
+            </option>
+
+          </select>
+
+          <input
+            placeholder={
+              form.tipoVisitante ===
+              "Prestador de serviço"
+                ? "Documento obrigatório"
+                : "Documento opcional"
+            }
+            value={form.documento}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                documento: e.target.value
+              })
+            }
+            style={styles.input}
+          />
+
+        </div>
+
+        <textarea
+          placeholder="Observação sobre a visita"
+          value={form.observacao}
+          onChange={(e) =>
+            setForm({
+              ...form,
+              observacao: e.target.value
+            })
+          }
+          style={styles.textarea}
+        />
 
         <button
           style={styles.button}
           onClick={cadastrarVisitante}
         >
 
-          Cadastrar
+          Cadastrar visitante
 
         </button>
 
       </div>
 
-
       {/* LISTA */}
 
+      <div style={styles.listCard}>
 
-      <div style={styles.grid}>
+        <div style={styles.listHeader}>
 
-        {visitantes.map((item) => (
+          <div>
 
-          <div
-            key={item.id}
-            style={styles.card}
-          >
+            <h2 style={styles.sectionTitle}>
+              Registros de visitantes
+            </h2>
 
-            <div>
-
-              <h3 style={styles.nome}>
-                {item.nome}
-              </h3>
-
-              <p style={styles.info}>
-                Apartamento:
-                {" "}
-                {item.apartamento}
-              </p>
-
-              <p style={styles.info}>
-                Tipo:
-                {" "}
-                {item.tipoVisitante}
-              </p>
-
-              {item.documento && (
-
-                <p style={styles.info}>
-                  Documento:
-                  {" "}
-                  {item.documento}
-                </p>
-
-              )}
-
-              <p style={styles.info}>
-                Entrada:
-                {" "}
-                {item.horarioEntrada}
-              </p>
-
-              {item.horarioSaida && (
-
-                <p style={styles.info}>
-                  Saída:
-                  {" "}
-                  {item.horarioSaida}
-                </p>
-
-              )}
-
-              <p style={styles.info}>
-                Porteiro:
-                {" "}
-                {item.porteiro}
-              </p>
-
-              <p style={styles.info}>
-                Turno:
-                {" "}
-                {item.turno}
-              </p>
-
-              {item.observacao && (
-
-                <p style={styles.obs}>
-                  {item.observacao}
-                </p>
-
-              )}
-
-              <p
-                style={{
-                  ...styles.status,
-                  color: corStatus(
-                    item.status
-                  )
-                }}
-              >
-
-                ● {item.status}
-
-              </p>
-
-            </div>
-
-            <div style={styles.actions}>
-
-              <button
-                style={styles.blue}
-                onClick={() =>
-                  alterarStatus(
-                    item.id,
-                    "liberado"
-                  )
-                }
-              >
-
-                Liberar
-
-              </button>
-
-              <button
-                style={styles.green}
-                onClick={() =>
-                  alterarStatus(
-                    item.id,
-                    "entrou"
-                  )
-                }
-              >
-
-                Entrada
-
-              </button>
-
-              <button
-                style={styles.gray}
-                onClick={() =>
-                  alterarStatus(
-                    item.id,
-                    "saiu"
-                  )
-                }
-              >
-
-                Saída
-
-              </button>
-
-              <button
-                style={styles.red}
-                onClick={() =>
-                  excluirVisitante(
-                    item.id
-                  )
-                }
-              >
-
-                Excluir
-
-              </button>
-
-            </div>
+            <p style={styles.sectionSubtitle}>
+              Controle operacional de entradas e saídas.
+            </p>
 
           </div>
 
-        ))}
+          <div style={styles.filters}>
+
+            <input
+              placeholder="Buscar visitante..."
+              value={busca}
+              onChange={(e) =>
+                setBusca(e.target.value)
+              }
+              style={styles.search}
+            />
+
+            <select
+              value={filtroStatus}
+              onChange={(e) =>
+                setFiltroStatus(e.target.value)
+              }
+              style={styles.filter}
+            >
+
+              <option>Todos</option>
+              <option value="aguardando">
+                Aguardando
+              </option>
+              <option value="liberado">
+                Liberado
+              </option>
+              <option value="entrou">
+                Entrou
+              </option>
+              <option value="saiu">
+                Saiu
+              </option>
+
+            </select>
+
+          </div>
+
+        </div>
+
+        {visitantesFiltrados.length === 0 ? (
+
+          <div style={styles.empty}>
+
+            <div style={styles.emptyIcon}>
+              📭
+            </div>
+
+            <h3 style={styles.emptyTitle}>
+              Nenhum visitante encontrado
+            </h3>
+
+            <p style={styles.emptyText}>
+              Os registros aparecerão aqui conforme forem cadastrados.
+            </p>
+
+          </div>
+
+        ) : (
+
+          <div style={styles.grid}>
+
+            {visitantesFiltrados.map((item) => {
+
+              const status =
+                obterStatus(item.status);
+
+              return (
+
+                <div
+                  key={item.id}
+                  style={styles.visitorCard}
+                >
+
+                  <div style={styles.cardTop}>
+
+                    <div>
+
+                      <span
+                        style={{
+                          ...styles.statusBadge,
+                          background: status.fundo,
+                          color: status.cor
+                        }}
+                      >
+                        {status.texto}
+                      </span>
+
+                      <h3 style={styles.nome}>
+                        {item.nome}
+                      </h3>
+
+                    </div>
+
+                    <div style={styles.visitorIcon}>
+                      🚶
+                    </div>
+
+                  </div>
+
+                  <div style={styles.infoGrid}>
+
+                    <div style={styles.infoItem}>
+                      <span style={styles.infoLabel}>
+                        Apartamento
+                      </span>
+
+                      <strong>
+                        {item.apartamento}
+                      </strong>
+                    </div>
+
+                    <div style={styles.infoItem}>
+                      <span style={styles.infoLabel}>
+                        Tipo
+                      </span>
+
+                      <strong>
+                        {item.tipoVisitante}
+                      </strong>
+                    </div>
+
+                    <div style={styles.infoItem}>
+                      <span style={styles.infoLabel}>
+                        Entrada
+                      </span>
+
+                      <strong>
+                        {item.horarioEntrada}
+                      </strong>
+                    </div>
+
+                    <div style={styles.infoItem}>
+                      <span style={styles.infoLabel}>
+                        Saída
+                      </span>
+
+                      <strong>
+                        {item.horarioSaida || "-"}
+                      </strong>
+                    </div>
+
+                  </div>
+
+                  {item.documento && (
+
+                    <p style={styles.documento}>
+                      Documento: {item.documento}
+                    </p>
+
+                  )}
+
+                  {item.observacao && (
+
+                    <p style={styles.obs}>
+                      {item.observacao}
+                    </p>
+
+                  )}
+
+                  <p style={styles.porteiroInfo}>
+                    Registrado por{" "}
+                    <strong>
+                      {item.porteiro || "Porteiro"}
+                    </strong>{" "}
+                    • Turno {item.turno || "-"}
+                  </p>
+
+                  <div style={styles.actions}>
+
+                    <button
+                      style={styles.blue}
+                      onClick={() =>
+                        alterarStatus(
+                          item.id,
+                          "liberado"
+                        )
+                      }
+                    >
+
+                      Liberar
+
+                    </button>
+
+                    <button
+                      style={styles.green}
+                      onClick={() =>
+                        alterarStatus(
+                          item.id,
+                          "entrou"
+                        )
+                      }
+                    >
+
+                      Entrada
+
+                    </button>
+
+                    <button
+                      style={styles.gray}
+                      onClick={() =>
+                        alterarStatus(
+                          item.id,
+                          "saiu"
+                        )
+                      }
+                    >
+
+                      Saída
+
+                    </button>
+
+                    <button
+                      style={styles.red}
+                      onClick={() =>
+                        excluirVisitante(
+                          item.id
+                        )
+                      }
+                    >
+
+                      Excluir
+
+                    </button>
+
+                  </div>
+
+                </div>
+
+              );
+
+            })}
+
+          </div>
+
+        )}
 
       </div>
 
@@ -530,138 +924,513 @@ function VisitantesPorteiro() {
 
 }
 
-
 const styles = {
 
   container: {
-    width: "100%"
-  },
-
-  header: {
-    marginBottom: "30px"
-  },
-
-  title: {
-    fontSize: "30px",
-    marginBottom: "5px",
+    width: "100%",
+    fontFamily: "Arial",
     color: "#111827"
   },
 
-  subtitle: {
-    color: "#6b7280"
+  hero: {
+    background:
+      "linear-gradient(135deg,#052e16,#14532d,#166534)",
+    borderRadius: "30px",
+    padding: "32px",
+    color: "white",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "28px",
+    marginBottom: "26px",
+    boxShadow:
+      "0 20px 45px rgba(20,83,45,0.25)"
   },
 
-  form: {
-    background: "white",
-    padding: "20px",
-    borderRadius: "14px",
+  heroBadge: {
+    background: "rgba(255,255,255,0.14)",
+    padding: "10px 14px",
+    borderRadius: "999px",
+    fontSize: "13px",
+    fontWeight: "800",
+    display: "inline-block",
+    marginBottom: "15px"
+  },
+
+  title: {
+    margin: 0,
+    fontSize: "36px",
+    letterSpacing: "-0.5px"
+  },
+
+  subtitle: {
+    margin: "10px 0 0",
+    color: "rgba(255,255,255,0.78)",
+    maxWidth: "680px",
+    lineHeight: "1.5"
+  },
+
+  userLine: {
+    marginTop: "18px",
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    color: "#dcfce7",
+    fontSize: "14px",
+    fontWeight: "600"
+  },
+
+  statusDot: {
+    width: "9px",
+    height: "9px",
+    borderRadius: "50%",
+    background: "#22c55e",
+    boxShadow:
+      "0 0 0 5px rgba(34,197,94,0.16)"
+  },
+
+  heroPanel: {
+    background: "rgba(255,255,255,0.12)",
+    border: "1px solid rgba(255,255,255,0.14)",
+    borderRadius: "24px",
+    padding: "22px",
+    minWidth: "230px",
+    textAlign: "center",
+    backdropFilter: "blur(12px)"
+  },
+
+  heroLabel: {
+    margin: 0,
+    color: "rgba(255,255,255,0.68)",
+    fontSize: "13px"
+  },
+
+  heroNumber: {
+    margin: "8px 0 12px",
+    color: "white",
+    fontSize: "38px"
+  },
+
+  heroStatus: {
+    background: "#dcfce7",
+    color: "#166534",
+    padding: "8px 12px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "800"
+  },
+
+  cards: {
     display: "grid",
     gridTemplateColumns:
-      "repeat(4,1fr)",
-    gap: "15px",
-    marginBottom: "30px",
+      "repeat(auto-fit,minmax(220px,1fr))",
+    gap: "18px",
+    marginBottom: "26px"
+  },
+
+  cardPrimary: {
+    background:
+      "linear-gradient(135deg,#14532d,#16a34a)",
+    borderRadius: "24px",
+    padding: "24px",
+    color: "white",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
     boxShadow:
-      "0 2px 10px rgba(0,0,0,0.05)"
+      "0 14px 35px rgba(22,163,74,0.2)"
+  },
+
+  card: {
+    background: "white",
+    borderRadius: "24px",
+    padding: "24px",
+    display: "flex",
+    alignItems: "center",
+    gap: "18px",
+    boxShadow:
+      "0 12px 35px rgba(15,23,42,0.07)",
+    border: "1px solid #eef2f7"
+  },
+
+  cardLabelLight: {
+    margin: 0,
+    color: "rgba(255,255,255,0.75)",
+    fontSize: "14px"
+  },
+
+  cardNumberLight: {
+    margin: "10px 0 2px",
+    color: "white",
+    fontSize: "38px"
+  },
+
+  cardHintLight: {
+    color: "rgba(255,255,255,0.72)",
+    fontSize: "13px"
+  },
+
+  cardIconLight: {
+    width: "58px",
+    height: "58px",
+    borderRadius: "18px",
+    background: "rgba(255,255,255,0.16)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "29px"
+  },
+
+  cardIconBlue: {
+    width: "54px",
+    height: "54px",
+    borderRadius: "18px",
+    background: "#dbeafe",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "27px"
+  },
+
+  cardIconGreen: {
+    width: "54px",
+    height: "54px",
+    borderRadius: "18px",
+    background: "#dcfce7",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "27px"
+  },
+
+  cardIconDark: {
+    width: "54px",
+    height: "54px",
+    borderRadius: "18px",
+    background: "#f3f4f6",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "27px"
+  },
+
+  cardLabel: {
+    margin: 0,
+    color: "#6b7280",
+    fontSize: "14px"
+  },
+
+  cardNumberBlue: {
+    margin: "8px 0 0",
+    color: "#2563eb",
+    fontSize: "34px"
+  },
+
+  cardNumberGreen: {
+    margin: "8px 0 0",
+    color: "#166534",
+    fontSize: "34px"
+  },
+
+  cardNumberDark: {
+    margin: "8px 0 0",
+    color: "#374151",
+    fontSize: "34px"
+  },
+
+  formCard: {
+    background: "white",
+    borderRadius: "28px",
+    padding: "26px",
+    marginBottom: "26px",
+    boxShadow:
+      "0 14px 40px rgba(15,23,42,0.08)",
+    border: "1px solid #eef2f7"
+  },
+
+  sectionHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: "18px",
+    marginBottom: "20px"
+  },
+
+  sectionTitle: {
+    margin: 0,
+    color: "#14532d",
+    fontSize: "24px"
+  },
+
+  sectionSubtitle: {
+    margin: "7px 0 0",
+    color: "#6b7280",
+    fontSize: "14px",
+    lineHeight: "1.5"
+  },
+
+  sectionBadge: {
+    background: "#f0fdf4",
+    color: "#166534",
+    padding: "9px 13px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "800",
+    whiteSpace: "nowrap"
+  },
+
+  formGrid: {
+    display: "grid",
+    gridTemplateColumns:
+      "repeat(auto-fit,minmax(220px,1fr))",
+    gap: "14px"
   },
 
   input: {
-    padding: "12px",
-    borderRadius: "8px",
-    border:
-      "1px solid #d1d5db",
-    outline: "none"
+    width: "100%",
+    padding: "14px 15px",
+    borderRadius: "15px",
+    border: "1px solid #d1d5db",
+    outline: "none",
+    fontSize: "14px",
+    background: "#f9fafb",
+    boxSizing: "border-box"
+  },
+
+  textarea: {
+    width: "100%",
+    minHeight: "95px",
+    padding: "14px 15px",
+    borderRadius: "15px",
+    border: "1px solid #d1d5db",
+    outline: "none",
+    fontSize: "14px",
+    background: "#f9fafb",
+    boxSizing: "border-box",
+    marginTop: "14px",
+    resize: "vertical",
+    fontFamily: "Arial"
   },
 
   button: {
-    background: "#166534",
+    marginTop: "14px",
+    width: "100%",
+    background:
+      "linear-gradient(135deg,#14532d,#16a34a)",
     color: "white",
     border: "none",
-    borderRadius: "8px",
+    padding: "15px",
+    borderRadius: "16px",
     cursor: "pointer",
-    fontWeight: "600"
+    fontWeight: "800",
+    boxShadow:
+      "0 12px 25px rgba(22,163,74,0.20)"
+  },
+
+  listCard: {
+    background: "white",
+    borderRadius: "28px",
+    padding: "26px",
+    boxShadow:
+      "0 14px 40px rgba(15,23,42,0.08)",
+    border: "1px solid #eef2f7"
+  },
+
+  listHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: "18px",
+    marginBottom: "22px"
+  },
+
+  filters: {
+    display: "flex",
+    gap: "10px"
+  },
+
+  search: {
+    padding: "13px 14px",
+    borderRadius: "15px",
+    border: "1px solid #d1d5db",
+    outline: "none",
+    background: "#f9fafb",
+    minWidth: "230px"
+  },
+
+  filter: {
+    padding: "13px 14px",
+    borderRadius: "15px",
+    border: "1px solid #d1d5db",
+    outline: "none",
+    background: "#f9fafb"
+  },
+
+  empty: {
+    background: "#f9fafb",
+    border: "1px dashed #d1d5db",
+    borderRadius: "22px",
+    padding: "45px",
+    textAlign: "center"
+  },
+
+  emptyIcon: {
+    fontSize: "42px",
+    marginBottom: "12px"
+  },
+
+  emptyTitle: {
+    margin: 0,
+    color: "#111827"
+  },
+
+  emptyText: {
+    margin: "8px 0 0",
+    color: "#6b7280"
   },
 
   grid: {
     display: "grid",
     gridTemplateColumns:
-      "repeat(3,1fr)",
-    gap: "20px"
+      "repeat(auto-fit,minmax(310px,1fr))",
+    gap: "18px"
   },
 
-  card: {
-    background: "white",
-    borderRadius: "14px",
-    padding: "20px",
+  visitorCard: {
+    background: "#f9fafb",
+    border: "1px solid #e5e7eb",
+    borderRadius: "24px",
+    padding: "22px",
     boxShadow:
-      "0 2px 10px rgba(0,0,0,0.05)",
+      "0 10px 25px rgba(15,23,42,0.04)"
+  },
+
+  cardTop: {
     display: "flex",
-    flexDirection: "column",
     justifyContent: "space-between",
-    gap: "20px"
+    gap: "14px",
+    alignItems: "flex-start",
+    marginBottom: "16px"
+  },
+
+  statusBadge: {
+    display: "inline-block",
+    padding: "7px 11px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "800",
+    marginBottom: "10px"
   },
 
   nome: {
-    marginBottom: "10px",
-    color: "#111827"
+    margin: 0,
+    color: "#111827",
+    fontSize: "21px"
   },
 
-  info: {
+  visitorIcon: {
+    width: "48px",
+    height: "48px",
+    borderRadius: "17px",
+    background: "#dcfce7",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "24px"
+  },
+
+  infoGrid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "10px",
+    marginBottom: "14px"
+  },
+
+  infoItem: {
+    background: "white",
+    border: "1px solid #eef2f7",
+    borderRadius: "16px",
+    padding: "12px"
+  },
+
+  infoLabel: {
+    display: "block",
     color: "#6b7280",
+    fontSize: "12px",
     marginBottom: "5px"
   },
 
-  obs: {
-    marginTop: "10px",
-    fontStyle: "italic",
-    color: "#374151"
+  documento: {
+    background: "#eff6ff",
+    border: "1px solid #bfdbfe",
+    color: "#1d4ed8",
+    padding: "12px",
+    borderRadius: "14px",
+    fontSize: "13px",
+    fontWeight: "700"
   },
 
-  status: {
-    marginTop: "12px",
-    fontWeight: "bold"
+  obs: {
+    background: "white",
+    border: "1px solid #eef2f7",
+    borderRadius: "14px",
+    padding: "12px",
+    color: "#374151",
+    fontStyle: "italic",
+    lineHeight: "1.5"
+  },
+
+  porteiroInfo: {
+    color: "#6b7280",
+    fontSize: "13px",
+    marginTop: "14px"
   },
 
   actions: {
     display: "grid",
-    gridTemplateColumns:
-      "repeat(2,1fr)",
-    gap: "10px"
+    gridTemplateColumns: "repeat(2,1fr)",
+    gap: "10px",
+    marginTop: "16px"
   },
 
   blue: {
     background: "#2563eb",
     color: "white",
     border: "none",
-    padding: "10px",
-    borderRadius: "8px",
-    cursor: "pointer"
+    padding: "11px",
+    borderRadius: "13px",
+    cursor: "pointer",
+    fontWeight: "800"
   },
 
   green: {
     background: "#16a34a",
     color: "white",
     border: "none",
-    padding: "10px",
-    borderRadius: "8px",
-    cursor: "pointer"
+    padding: "11px",
+    borderRadius: "13px",
+    cursor: "pointer",
+    fontWeight: "800"
   },
 
   gray: {
     background: "#6b7280",
     color: "white",
     border: "none",
-    padding: "10px",
-    borderRadius: "8px",
-    cursor: "pointer"
+    padding: "11px",
+    borderRadius: "13px",
+    cursor: "pointer",
+    fontWeight: "800"
   },
 
   red: {
-    background: "#dc2626",
-    color: "white",
+    background: "#fee2e2",
+    color: "#dc2626",
     border: "none",
-    padding: "10px",
-    borderRadius: "8px",
-    cursor: "pointer"
+    padding: "11px",
+    borderRadius: "13px",
+    cursor: "pointer",
+    fontWeight: "800"
   }
 
 };

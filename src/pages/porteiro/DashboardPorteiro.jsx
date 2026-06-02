@@ -10,7 +10,9 @@ function DashboardPorteiro() {
     visitantes: 0,
     encomendas: 0,
     moradores: 0,
-    esperadas: 0
+    esperadas: 0,
+    ocorrencias: 0,
+    ocorrenciasResolvidas: 0
   });
 
   const [movimentacoes, setMovimentacoes] =
@@ -61,7 +63,8 @@ function DashboardPorteiro() {
         event.key === "encomendas" ||
         event.key === "moradores" ||
         event.key === "encomendas_esperadas" ||
-        event.key === "movimentacoes"
+        event.key === "movimentacoes" ||
+        event.key === "ocorrencias"
       ) {
 
         carregarDashboard();
@@ -112,15 +115,36 @@ function DashboardPorteiro() {
         localStorage.getItem("encomendas_esperadas")
       ) || [];
 
+    const ocorrencias =
+      JSON.parse(
+        localStorage.getItem("ocorrencias")
+      ) || [];
+
     const pendentes = encomendas.filter(
       (e) => e.status === "pendente"
     );
+
+    const ocorrenciasEncaminhadas =
+      ocorrencias.filter(
+        (item) =>
+          item.status !== "Resolvida" &&
+          item.status !== "Resolvido"
+      );
+
+    const ocorrenciasResolvidas =
+      ocorrencias.filter(
+        (item) =>
+          item.status === "Resolvida" ||
+          item.status === "Resolvido"
+      );
 
     setDados({
       visitantes: visitantes.length,
       encomendas: pendentes.length,
       moradores: moradores.length,
-      esperadas: esperadas.length
+      esperadas: esperadas.length,
+      ocorrencias: ocorrenciasEncaminhadas.length,
+      ocorrenciasResolvidas: ocorrenciasResolvidas.length
     });
 
     const movs =
@@ -134,37 +158,51 @@ function DashboardPorteiro() {
 
     <div style={styles.container}>
 
-      {/* HEADER */}
+      {/* HERO */}
 
-      <div style={styles.header}>
+      <div style={styles.hero}>
 
         <div>
 
+          <span style={styles.heroBadge}>
+            🛡️ Central operacional
+          </span>
+
           <h1 style={styles.title}>
-            Dashboard
+            Dashboard da Portaria
           </h1>
 
           <p style={styles.subtitle}>
-            Central operacional do porteiro
+            Acompanhe encomendas, visitantes, moradores,
+            movimentações e ocorrências do plantão.
           </p>
 
           {porteiro && (
 
-            <p style={styles.userInfo}>
+            <div style={styles.userLine}>
 
-              Plantão ativo:{" "}
+              <span style={styles.statusDot}></span>
 
-              <strong>
-                {porteiro.nome}
-              </strong>
+              <span>
+                Plantão ativo:{" "}
+                <strong>
+                  {porteiro.nome}
+                </strong>
+              </span>
 
-            </p>
+              {porteiro.turno && (
+                <span style={styles.turnoBadge}>
+                  {porteiro.turno}
+                </span>
+              )}
+
+            </div>
 
           )}
 
         </div>
 
-        <div style={styles.dateBox}>
+        <div style={styles.datePanel}>
 
           <p style={styles.dateLabel}>
             Hoje
@@ -174,6 +212,10 @@ function DashboardPorteiro() {
             {new Date().toLocaleDateString()}
           </h3>
 
+          <span style={styles.dateStatus}>
+            Operação em andamento
+          </span>
+
         </div>
 
       </div>
@@ -182,27 +224,27 @@ function DashboardPorteiro() {
 
       <div style={styles.cards}>
 
-        <div style={styles.card}>
+        <div style={styles.cardPrimary}>
 
-          <div style={styles.cardTop}>
+          <div>
 
-            <div style={styles.iconGreen}>
-              📦
-            </div>
+            <p style={styles.cardLabelLight}>
+              Encomendas pendentes
+            </p>
 
-            <span style={styles.badgeWarning}>
-              Pendentes
+            <h1 style={styles.cardNumberLight}>
+              {dados.encomendas}
+            </h1>
+
+            <span style={styles.cardHintLight}>
+              Aguardando retirada
             </span>
 
           </div>
 
-          <p style={styles.cardLabel}>
-            Encomendas aguardando retirada
-          </p>
-
-          <h1 style={styles.cardNumber}>
-            {dados.encomendas}
-          </h1>
+          <div style={styles.cardIconLight}>
+            📦
+          </div>
 
         </div>
 
@@ -234,18 +276,18 @@ function DashboardPorteiro() {
 
           <div style={styles.cardTop}>
 
-            <div style={styles.iconDark}>
+            <div style={styles.iconGreen}>
               👥
             </div>
 
             <span style={styles.badgeGreen}>
-              Cadastrados
+              Base
             </span>
 
           </div>
 
           <p style={styles.cardLabel}>
-            Moradores ativos
+            Moradores cadastrados
           </p>
 
           <h1 style={styles.cardNumber}>
@@ -280,6 +322,102 @@ function DashboardPorteiro() {
 
       </div>
 
+      {/* SEGUNDA LINHA */}
+
+      <div style={styles.secondaryGrid}>
+
+        <div style={styles.operationCard}>
+
+          <div>
+
+            <span style={styles.operationBadge}>
+              📘 Livro de Ocorrências
+            </span>
+
+            <h2 style={styles.operationTitle}>
+              Ocorrências encaminhadas
+            </h2>
+
+            <p style={styles.operationText}>
+              Registros feitos pela portaria ou enviados por moradores
+              ficam aguardando resolução do síndico.
+            </p>
+
+          </div>
+
+          <div style={styles.operationNumbers}>
+
+            <div>
+
+              <p style={styles.operationLabel}>
+                Aguardando síndico
+              </p>
+
+              <h1 style={styles.operationNumber}>
+                {dados.ocorrencias}
+              </h1>
+
+            </div>
+
+            <div style={styles.operationDivider}></div>
+
+            <div>
+
+              <p style={styles.operationLabel}>
+                Resolvidas
+              </p>
+
+              <h1 style={styles.operationNumberGreen}>
+                {dados.ocorrenciasResolvidas}
+              </h1>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        <div style={styles.quickStatus}>
+
+          <h2 style={styles.quickTitle}>
+            Status do plantão
+          </h2>
+
+          <div style={styles.statusList}>
+
+            <div style={styles.statusItem}>
+              <span style={styles.statusIconGreen}>
+                ●
+              </span>
+              <span>
+                Sistema operacional ativo
+              </span>
+            </div>
+
+            <div style={styles.statusItem}>
+              <span style={styles.statusIconBlue}>
+                ●
+              </span>
+              <span>
+                Dados carregados do localStorage
+              </span>
+            </div>
+
+            <div style={styles.statusItem}>
+              <span style={styles.statusIconYellow}>
+                ●
+              </span>
+              <span>
+                Ocorrências integradas ao síndico
+              </span>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
       {/* GRID */}
 
       <div style={styles.bottomGrid}>
@@ -290,9 +428,17 @@ function DashboardPorteiro() {
 
           <div style={styles.sectionHeader}>
 
-            <h2 style={styles.historyTitle}>
-              Movimentações recentes
-            </h2>
+            <div>
+
+              <h2 style={styles.historyTitle}>
+                Movimentações recentes
+              </h2>
+
+              <p style={styles.sectionSubtitle}>
+                Últimos registros operacionais do condomínio
+              </p>
+
+            </div>
 
             <span style={styles.live}>
               ● AO VIVO
@@ -303,7 +449,19 @@ function DashboardPorteiro() {
           {movimentacoes.length === 0 && (
 
             <div style={styles.empty}>
-              Nenhuma movimentação encontrada
+
+              <div style={styles.emptyIcon}>
+                📭
+              </div>
+
+              <h3 style={styles.emptyTitle}>
+                Nenhuma movimentação encontrada
+              </h3>
+
+              <p style={styles.emptyText}>
+                As movimentações aparecerão aqui conforme o uso do sistema.
+              </p>
+
             </div>
 
           )}
@@ -361,8 +519,28 @@ function DashboardPorteiro() {
         <div style={styles.alerts}>
 
           <h2 style={styles.alertTitle}>
-            Alertas do condomínio
+            Alertas operacionais
           </h2>
+
+          <p style={styles.alertSubtitle}>
+            Pontos que precisam de atenção no plantão.
+          </p>
+
+          {dados.ocorrencias > 0 && (
+
+            <div style={styles.alertCardDark}>
+
+              <h3 style={styles.alertCardTitle}>
+                📘 Ocorrências encaminhadas
+              </h3>
+
+              <p style={styles.alertText}>
+                Existem registros aguardando resolução do síndico.
+              </p>
+
+            </div>
+
+          )}
 
           {dados.encomendas > 0 && (
 
@@ -401,7 +579,7 @@ function DashboardPorteiro() {
             <div style={styles.alertCardGreen}>
 
               <h3 style={styles.alertCardTitle}>
-                🚶 Visitantes ativos
+                🚶 Visitantes registrados
               </h3>
 
               <p style={styles.alertText}>
@@ -414,7 +592,8 @@ function DashboardPorteiro() {
 
           {dados.encomendas === 0 &&
             dados.visitantes === 0 &&
-            dados.esperadas === 0 && (
+            dados.esperadas === 0 &&
+            dados.ocorrencias === 0 && (
 
             <div style={styles.alertCardNeutral}>
 
@@ -448,66 +627,131 @@ const styles = {
 
   container: {
     width: "100%",
-    fontFamily: "Arial"
+    fontFamily: "Arial",
+    color: "#111827"
   },
 
-  header: {
+  hero: {
+    background:
+      "linear-gradient(135deg,#052e16,#14532d,#166534)",
+    borderRadius: "30px",
+    padding: "32px",
+    color: "white",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: "30px"
+    gap: "28px",
+    marginBottom: "26px",
+    boxShadow: "0 20px 45px rgba(20,83,45,0.25)"
+  },
+
+  heroBadge: {
+    background: "rgba(255,255,255,0.14)",
+    padding: "10px 14px",
+    borderRadius: "999px",
+    fontSize: "13px",
+    fontWeight: "800",
+    display: "inline-block",
+    marginBottom: "15px"
   },
 
   title: {
     margin: 0,
-    fontSize: "32px",
-    color: "#14532d"
+    fontSize: "36px",
+    letterSpacing: "-0.5px"
   },
 
   subtitle: {
-    marginTop: "8px",
-    marginBottom: "8px",
-    color: "#6b7280"
+    margin: "10px 0 0",
+    color: "rgba(255,255,255,0.78)",
+    maxWidth: "680px",
+    lineHeight: "1.5"
   },
 
-  userInfo: {
-    margin: 0,
-    color: "#374151",
-    fontSize: "14px"
+  userLine: {
+    marginTop: "18px",
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    color: "#dcfce7",
+    fontSize: "14px",
+    fontWeight: "600"
   },
 
-  dateBox: {
-    background: "white",
-    padding: "18px 24px",
-    borderRadius: "20px",
+  statusDot: {
+    width: "9px",
+    height: "9px",
+    borderRadius: "50%",
+    background: "#22c55e",
+    boxShadow: "0 0 0 5px rgba(34,197,94,0.16)"
+  },
+
+  turnoBadge: {
+    background: "rgba(255,255,255,0.14)",
+    padding: "7px 11px",
+    borderRadius: "999px",
+    color: "white",
+    fontWeight: "800",
+    fontSize: "12px"
+  },
+
+  datePanel: {
+    background: "rgba(255,255,255,0.12)",
+    border: "1px solid rgba(255,255,255,0.14)",
+    borderRadius: "24px",
+    padding: "22px",
+    minWidth: "240px",
     textAlign: "center",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.06)"
+    backdropFilter: "blur(12px)"
   },
 
   dateLabel: {
     margin: 0,
-    color: "#6b7280",
-    fontSize: "14px"
+    color: "rgba(255,255,255,0.68)",
+    fontSize: "13px"
   },
 
   date: {
-    margin: "6px 0 0",
-    color: "#14532d",
-    fontSize: "20px"
+    margin: "8px 0 14px",
+    color: "white",
+    fontSize: "22px"
+  },
+
+  dateStatus: {
+    background: "#dcfce7",
+    color: "#166534",
+    padding: "8px 12px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "800"
   },
 
   cards: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))",
-    gap: "20px",
-    marginBottom: "30px"
+    gridTemplateColumns:
+      "repeat(auto-fit,minmax(230px,1fr))",
+    gap: "18px",
+    marginBottom: "24px"
+  },
+
+  cardPrimary: {
+    background:
+      "linear-gradient(135deg,#14532d,#16a34a)",
+    borderRadius: "24px",
+    padding: "24px",
+    color: "white",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    boxShadow: "0 14px 35px rgba(22,163,74,0.2)"
   },
 
   card: {
     background: "white",
     borderRadius: "24px",
     padding: "24px",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.06)"
+    boxShadow: "0 12px 35px rgba(15,23,42,0.07)",
+    border: "1px solid #eef2f7"
   },
 
   cardTop: {
@@ -517,10 +761,38 @@ const styles = {
     marginBottom: "18px"
   },
 
+  cardLabelLight: {
+    margin: 0,
+    color: "rgba(255,255,255,0.75)",
+    fontSize: "14px"
+  },
+
+  cardNumberLight: {
+    margin: "10px 0 2px",
+    color: "white",
+    fontSize: "38px"
+  },
+
+  cardHintLight: {
+    color: "rgba(255,255,255,0.72)",
+    fontSize: "13px"
+  },
+
+  cardIconLight: {
+    width: "58px",
+    height: "58px",
+    borderRadius: "18px",
+    background: "rgba(255,255,255,0.16)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "29px"
+  },
+
   iconGreen: {
-    width: "48px",
-    height: "48px",
-    borderRadius: "16px",
+    width: "50px",
+    height: "50px",
+    borderRadius: "17px",
     background: "#dcfce7",
     display: "flex",
     alignItems: "center",
@@ -529,9 +801,9 @@ const styles = {
   },
 
   iconBlue: {
-    width: "48px",
-    height: "48px",
-    borderRadius: "16px",
+    width: "50px",
+    height: "50px",
+    borderRadius: "17px",
     background: "#dbeafe",
     display: "flex",
     alignItems: "center",
@@ -539,35 +811,15 @@ const styles = {
     fontSize: "24px"
   },
 
-  iconDark: {
-    width: "48px",
-    height: "48px",
-    borderRadius: "16px",
-    background: "#e5e7eb",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "24px"
-  },
-
   iconYellow: {
-    width: "48px",
-    height: "48px",
-    borderRadius: "16px",
+    width: "50px",
+    height: "50px",
+    borderRadius: "17px",
     background: "#fef3c7",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "24px"
-  },
-
-  badgeWarning: {
-    background: "#fef3c7",
-    color: "#92400e",
-    padding: "7px 12px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: "700"
   },
 
   badgeBlue: {
@@ -576,7 +828,7 @@ const styles = {
     padding: "7px 12px",
     borderRadius: "999px",
     fontSize: "12px",
-    fontWeight: "700"
+    fontWeight: "800"
   },
 
   badgeGreen: {
@@ -585,7 +837,7 @@ const styles = {
     padding: "7px 12px",
     borderRadius: "999px",
     fontSize: "12px",
-    fontWeight: "700"
+    fontWeight: "800"
   },
 
   badgeYellow: {
@@ -594,7 +846,7 @@ const styles = {
     padding: "7px 12px",
     borderRadius: "999px",
     fontSize: "12px",
-    fontWeight: "700"
+    fontWeight: "800"
   },
 
   cardLabel: {
@@ -609,6 +861,125 @@ const styles = {
     color: "#111827"
   },
 
+  secondaryGrid: {
+    display: "grid",
+    gridTemplateColumns: "2fr 1fr",
+    gap: "24px",
+    marginBottom: "24px"
+  },
+
+  operationCard: {
+    background: "white",
+    borderRadius: "28px",
+    padding: "26px",
+    boxShadow: "0 14px 40px rgba(15,23,42,0.08)",
+    border: "1px solid #eef2f7",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "24px"
+  },
+
+  operationBadge: {
+    display: "inline-block",
+    background: "#f0fdf4",
+    color: "#166534",
+    padding: "9px 13px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "800",
+    marginBottom: "14px"
+  },
+
+  operationTitle: {
+    margin: 0,
+    color: "#14532d",
+    fontSize: "24px"
+  },
+
+  operationText: {
+    margin: "9px 0 0",
+    color: "#6b7280",
+    lineHeight: "1.5",
+    maxWidth: "560px"
+  },
+
+  operationNumbers: {
+    display: "flex",
+    alignItems: "center",
+    gap: "22px",
+    background: "#f9fafb",
+    padding: "18px",
+    borderRadius: "22px"
+  },
+
+  operationLabel: {
+    margin: 0,
+    color: "#6b7280",
+    fontSize: "13px",
+    whiteSpace: "nowrap"
+  },
+
+  operationNumber: {
+    margin: "8px 0 0",
+    color: "#92400e",
+    fontSize: "34px"
+  },
+
+  operationNumberGreen: {
+    margin: "8px 0 0",
+    color: "#166534",
+    fontSize: "34px"
+  },
+
+  operationDivider: {
+    width: "1px",
+    height: "54px",
+    background: "#e5e7eb"
+  },
+
+  quickStatus: {
+    background:
+      "linear-gradient(135deg,#ffffff,#f8fafc)",
+    borderRadius: "28px",
+    padding: "26px",
+    boxShadow: "0 14px 40px rgba(15,23,42,0.08)",
+    border: "1px solid #eef2f7"
+  },
+
+  quickTitle: {
+    margin: "0 0 18px",
+    color: "#14532d",
+    fontSize: "22px"
+  },
+
+  statusList: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "13px"
+  },
+
+  statusItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    color: "#374151",
+    fontSize: "14px",
+    fontWeight: "600"
+  },
+
+  statusIconGreen: {
+    color: "#16a34a"
+  },
+
+  statusIconBlue: {
+    color: "#2563eb"
+  },
+
+  statusIconYellow: {
+    color: "#d97706"
+  },
+
   bottomGrid: {
     display: "grid",
     gridTemplateColumns: "2fr 1fr",
@@ -617,87 +988,128 @@ const styles = {
 
   history: {
     background: "white",
-    borderRadius: "24px",
-    padding: "25px",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.06)"
+    borderRadius: "28px",
+    padding: "26px",
+    boxShadow: "0 14px 40px rgba(15,23,42,0.08)",
+    border: "1px solid #eef2f7"
   },
 
   sectionHeader: {
     display: "flex",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "20px"
+    alignItems: "flex-start",
+    marginBottom: "22px",
+    gap: "16px"
   },
 
   historyTitle: {
     margin: 0,
     color: "#14532d",
-    fontSize: "22px"
+    fontSize: "23px"
+  },
+
+  sectionSubtitle: {
+    margin: "6px 0 0",
+    color: "#6b7280",
+    fontSize: "14px"
   },
 
   live: {
     background: "#dcfce7",
     color: "#166534",
-    padding: "8px 12px",
+    padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
-    fontWeight: "700"
+    fontWeight: "800"
   },
 
   empty: {
-    padding: "30px",
+    padding: "45px",
     textAlign: "center",
     color: "#6b7280",
     background: "#f9fafb",
-    borderRadius: "16px"
+    borderRadius: "22px",
+    border: "1px dashed #d1d5db"
+  },
+
+  emptyIcon: {
+    fontSize: "42px",
+    marginBottom: "12px"
+  },
+
+  emptyTitle: {
+    margin: 0,
+    color: "#111827"
+  },
+
+  emptyText: {
+    margin: "8px 0 0",
+    color: "#6b7280"
   },
 
   historyItem: {
     display: "flex",
     alignItems: "flex-start",
     gap: "14px",
-    padding: "16px",
-    borderRadius: "16px",
+    padding: "17px",
+    borderRadius: "18px",
     background: "#f9fafb",
-    marginBottom: "12px"
+    marginBottom: "12px",
+    border: "1px solid #eef2f7"
   },
 
   historyIcon: {
-    width: "42px",
-    height: "42px",
-    minWidth: "42px",
-    borderRadius: "14px",
+    width: "44px",
+    height: "44px",
+    minWidth: "44px",
+    borderRadius: "15px",
     background: "#dcfce7",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    fontSize: "20px"
+    fontSize: "21px"
   },
 
   historyText: {
     margin: 0,
     color: "#111827",
-    fontWeight: "600"
+    fontWeight: "700",
+    lineHeight: "1.4"
   },
 
   historyTime: {
     display: "block",
-    marginTop: "6px",
+    marginTop: "7px",
     color: "#6b7280",
     fontSize: "13px"
   },
 
   alerts: {
     background: "white",
-    borderRadius: "24px",
-    padding: "25px",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.06)"
+    borderRadius: "28px",
+    padding: "26px",
+    boxShadow: "0 14px 40px rgba(15,23,42,0.08)",
+    border: "1px solid #eef2f7"
   },
 
   alertTitle: {
-    margin: "0 0 20px",
+    margin: 0,
     color: "#14532d",
-    fontSize: "22px"
+    fontSize: "23px"
+  },
+
+  alertSubtitle: {
+    margin: "6px 0 18px",
+    color: "#6b7280",
+    fontSize: "14px"
+  },
+
+  alertCardDark: {
+    background: "#f0fdf4",
+    border: "1px solid #bbf7d0",
+    borderRadius: "18px",
+    padding: "18px",
+    marginBottom: "14px"
   },
 
   alertCardWarning: {

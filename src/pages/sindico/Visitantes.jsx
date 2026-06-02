@@ -1,7 +1,6 @@
 import { useState } from "react";
 
 function Visitantes() {
-
   const STORAGE_KEY = "visitantes";
 
   const estadoInicialVisitante = {
@@ -18,334 +17,189 @@ function Visitantes() {
     tipo: "Visita"
   };
 
-  const [visitantes, setVisitantes] =
-    useState(() => {
+  const [visitantes, setVisitantes] = useState(() => {
+    const dados = localStorage.getItem(STORAGE_KEY);
+    return dados ? JSON.parse(dados) : [];
+  });
 
-      const dados =
-        localStorage.getItem(
-          STORAGE_KEY
-        );
+  const [moradores] = useState(() => {
+    const dados = localStorage.getItem("moradores");
 
-      return dados
-        ? JSON.parse(dados)
-        : [];
+    if (!dados) return [];
 
-    });
+    const lista = JSON.parse(dados);
 
-  const [moradores] =
-    useState(() => {
+    return lista.map((morador) => ({
+      ...morador,
+      apto: morador.apto || morador.apartamento || "",
+      apartamento: morador.apartamento || morador.apto || ""
+    }));
+  });
 
-      const dados =
-        localStorage.getItem(
-          "moradores"
-        );
+  const [mostrarModal, setMostrarModal] = useState(false);
+  const [busca, setBusca] = useState("");
+  const [filtroStatus, setFiltroStatus] = useState("Todos");
+  const [novoVisitante, setNovoVisitante] = useState(estadoInicialVisitante);
+  const [editId, setEditId] = useState(null);
 
-      if (!dados) return [];
+  const visitantesFiltrados = visitantes.filter((v) => {
+    const texto = busca.toLowerCase();
 
-      const lista =
-        JSON.parse(dados);
+    const correspondeBusca =
+      v.nome?.toLowerCase().includes(texto) ||
+      v.documento?.toLowerCase().includes(texto) ||
+      v.apartamento?.toLowerCase().includes(texto) ||
+      v.morador?.toLowerCase().includes(texto) ||
+      v.tipo?.toLowerCase().includes(texto) ||
+      v.status?.toLowerCase().includes(texto);
 
-      return lista.map((morador) => ({
-        ...morador,
-        apto:
-          morador.apto ||
-          morador.apartamento ||
-          "",
-        apartamento:
-          morador.apartamento ||
-          morador.apto ||
-          ""
-      }));
+    const correspondeStatus =
+      filtroStatus === "Todos" ||
+      v.status === filtroStatus;
 
-    });
+    return correspondeBusca && correspondeStatus;
+  });
 
-  const [mostrarModal, setMostrarModal] =
-    useState(false);
+  const pendentes = visitantes.filter(
+    (v) => v.status === "Pendente"
+  );
 
-  const [busca, setBusca] =
-    useState("");
+  const emVisita = visitantes.filter(
+    (v) => v.status === "Em visita"
+  );
 
-  const [novoVisitante, setNovoVisitante] =
-    useState(estadoInicialVisitante);
+  const autorizados = visitantes.filter(
+    (v) => v.status === "Autorizado"
+  );
 
-  const [editId, setEditId] =
-    useState(null);
+  const bloqueados = visitantes.filter(
+    (v) => v.status === "Bloqueado" || v.bloqueado === true
+  );
 
-  const visitantesFiltrados =
-    visitantes.filter((v) =>
+  const encerrados = visitantes.filter(
+    (v) => v.status === "Saiu" || v.status === "Encerrado"
+  );
 
-      v.nome
-        ?.toLowerCase()
-        .includes(
-          busca.toLowerCase()
-        ) ||
-
-      v.documento
-        ?.toLowerCase()
-        .includes(
-          busca.toLowerCase()
-        ) ||
-
-      v.apartamento
-        ?.toLowerCase()
-        .includes(
-          busca.toLowerCase()
-        ) ||
-
-      v.morador
-        ?.toLowerCase()
-        .includes(
-          busca.toLowerCase()
-        )
-
-    );
-
-  const emVisita =
-    visitantes.filter(
-      (v) =>
-        v.status ===
-        "Em visita"
-    );
-
-  const autorizados =
-    visitantes.filter(
-      (v) =>
-        v.autorizado === true
-    );
-
-  const bloqueados =
-    visitantes.filter(
-      (v) =>
-        v.bloqueado === true
-    );
-
-  function salvarHistorico(
-    acao,
-    visitante
-  ) {
-
+  function salvarHistorico(acao, visitante) {
     const historico =
-      JSON.parse(
-        localStorage.getItem(
-          "movimentacoes"
-        )
-      ) || [];
+      JSON.parse(localStorage.getItem("movimentacoes")) || [];
 
     historico.unshift({
-
       id: Date.now(),
-
       tipo: "visitante",
-
       acao,
-
       nome: visitante.nome,
-
-      apartamento:
-        visitante.apartamento,
-
-      data:
-        new Date().toLocaleDateString(),
-
-      hora:
-        new Date().toLocaleTimeString(),
-
-      timestamp:
-        Date.now()
-
+      apartamento: visitante.apartamento,
+      data: new Date().toLocaleDateString(),
+      hora: new Date().toLocaleTimeString(),
+      timestamp: Date.now()
     });
 
     localStorage.setItem(
       "movimentacoes",
-      JSON.stringify(
-        historico
-      )
+      JSON.stringify(historico)
     );
-
   }
 
   function salvarVisitante() {
-
     if (
       !novoVisitante.nome ||
       !novoVisitante.documento ||
       !novoVisitante.apartamento ||
       !novoVisitante.morador
     ) {
-
-      alert(
-        "Preencha os campos obrigatórios"
-      );
-
+      alert("Preencha os campos obrigatórios");
       return;
-
     }
 
-    const agora =
-      new Date();
+    const agora = new Date();
 
-    let statusFinal =
-      "Pendente";
+    let statusFinal = "Pendente";
 
-    if (
-      novoVisitante.bloqueado
-    ) {
-
-      statusFinal =
-        "Bloqueado";
-
-    } else if (
-      novoVisitante.autorizado
-    ) {
-
-      statusFinal =
-        "Autorizado";
-
+    if (novoVisitante.bloqueado) {
+      statusFinal = "Bloqueado";
+    } else if (novoVisitante.autorizado) {
+      statusFinal = "Autorizado";
     }
 
     const visitanteCompleto = {
-
       ...novoVisitante,
-
-      status:
-        statusFinal,
-
-      data:
-        agora.toLocaleDateString(),
-
-      hora:
-        agora.toLocaleTimeString(),
-
-      timestamp:
-        agora.getTime(),
-
-      mes:
-        agora.getMonth() + 1,
-
-      ano:
-        agora.getFullYear(),
-
-      entrada:
-        novoVisitante.entrada ||
-        agora.toLocaleTimeString()
-
+      status: statusFinal,
+      data: agora.toLocaleDateString(),
+      hora: agora.toLocaleTimeString(),
+      timestamp: agora.getTime(),
+      mes: agora.getMonth() + 1,
+      ano: agora.getFullYear(),
+      entrada: novoVisitante.entrada || agora.toLocaleTimeString()
     };
 
     let listaAtualizada = [];
 
-    if (
-      editId !== null
-    ) {
-
-      listaAtualizada =
-        visitantes.map((v) =>
-
-          v.id === editId
-            ? {
-                ...visitanteCompleto,
-                id: editId
-              }
-            : v
-
-        );
-
-      salvarHistorico(
-        "edição",
-        visitanteCompleto
+    if (editId !== null) {
+      listaAtualizada = visitantes.map((v) =>
+        v.id === editId
+          ? {
+              ...visitanteCompleto,
+              id: editId
+            }
+          : v
       );
 
+      salvarHistorico("edição", visitanteCompleto);
       setEditId(null);
-
     } else {
-
       const novo = {
-
         id: Date.now(),
-
         ...visitanteCompleto
-
       };
 
       listaAtualizada = [
-        ...visitantes,
-        novo
+        novo,
+        ...visitantes
       ];
 
-      salvarHistorico(
-        "cadastro",
-        novo
-      );
-
+      salvarHistorico("cadastro", novo);
     }
 
-    setVisitantes(
-      listaAtualizada
-    );
+    setVisitantes(listaAtualizada);
 
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify(
-        listaAtualizada
-      )
+      JSON.stringify(listaAtualizada)
     );
 
-    setNovoVisitante(
-      estadoInicialVisitante
-    );
-
+    setNovoVisitante(estadoInicialVisitante);
     setMostrarModal(false);
-
   }
 
-  function excluirVisitante(
-    id
-  ) {
-
-    const confirmar =
-      window.confirm(
-        "Deseja realmente excluir este visitante?"
-      );
+  function excluirVisitante(id) {
+    const confirmar = window.confirm(
+      "Deseja realmente excluir este visitante?"
+    );
 
     if (!confirmar) return;
 
-    const visitante =
-      visitantes.find(
-        (v) =>
-          v.id === id
-      );
+    const visitante = visitantes.find(
+      (v) => v.id === id
+    );
 
     if (visitante) {
-
-      salvarHistorico(
-        "exclusão",
-        visitante
-      );
-
+      salvarHistorico("exclusão", visitante);
     }
 
-    const novaLista =
-      visitantes.filter(
-        (v) =>
-          v.id !== id
-      );
-
-    setVisitantes(
-      novaLista
+    const novaLista = visitantes.filter(
+      (v) => v.id !== id
     );
+
+    setVisitantes(novaLista);
 
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify(
-        novaLista
-      )
+      JSON.stringify(novaLista)
     );
-
   }
 
-  function editarVisitante(
-    v
-  ) {
-
+  function editarVisitante(v) {
     setNovoVisitante({
       ...estadoInicialVisitante,
       ...v,
@@ -358,88 +212,69 @@ function Visitantes() {
     });
 
     setEditId(v.id);
-
     setMostrarModal(true);
-
   }
 
-  function mudarStatus(
-    id,
-    status
-  ) {
+  function mudarStatus(id, status) {
+    const lista = visitantes.map((v) =>
+      v.id === id
+        ? {
+            ...v,
+            status,
+            autorizado:
+              status === "Autorizado" ||
+              status === "Em visita"
+                ? true
+                : v.autorizado,
+            bloqueado:
+              status === "Bloqueado"
+                ? true
+                : status === "Autorizado" || status === "Em visita"
+                  ? false
+                  : v.bloqueado,
+            saida:
+              status === "Saiu"
+                ? new Date().toLocaleTimeString()
+                : v.saida
+          }
+        : v
+    );
 
-    const lista =
-      visitantes.map((v) =>
-
-        v.id === id
-          ? {
-              ...v,
-              status
-            }
-          : v
-
-      );
-
-    const visitante =
-      lista.find(
-        (v) =>
-          v.id === id
-      );
+    const visitante = lista.find(
+      (v) => v.id === id
+    );
 
     if (visitante) {
-
-      salvarHistorico(
-        `status: ${status}`,
-        visitante
-      );
-
+      salvarHistorico(`status: ${status}`, visitante);
     }
 
     setVisitantes(lista);
 
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify(
-        lista
-      )
+      JSON.stringify(lista)
+    );
+  }
+
+  function obterMoradorIdPorNomeApartamento(nome, apartamento) {
+    const moradorEncontrado = moradores.find(
+      (m) =>
+        m.nome === nome &&
+        (
+          m.apto === apartamento ||
+          m.apartamento === apartamento
+        )
     );
 
+    return moradorEncontrado ? moradorEncontrado.id : "";
   }
 
-  function obterMoradorIdPorNomeApartamento(
-    nome,
-    apartamento
-  ) {
-
-    const moradorEncontrado =
-      moradores.find(
-        (m) =>
-          m.nome === nome &&
-          (
-            m.apto === apartamento ||
-            m.apartamento === apartamento
-          )
-      );
-
-    return moradorEncontrado
-      ? moradorEncontrado.id
-      : "";
-
-  }
-
-  function selecionarMorador(
-    moradorId
-  ) {
-
-    const moradorSelecionado =
-      moradores.find(
-        (m) =>
-          String(m.id) ===
-          String(moradorId)
-      );
+  function selecionarMorador(moradorId) {
+    const moradorSelecionado = moradores.find(
+      (m) => String(m.id) === String(moradorId)
+    );
 
     if (!moradorSelecionado) {
-
       setNovoVisitante({
         ...novoVisitante,
         moradorId: "",
@@ -448,1028 +283,1090 @@ function Visitantes() {
       });
 
       return;
-
     }
 
     setNovoVisitante({
       ...novoVisitante,
-      moradorId:
-        moradorSelecionado.id,
-      morador:
-        moradorSelecionado.nome,
+      moradorId: moradorSelecionado.id,
+      morador: moradorSelecionado.nome,
       apartamento:
         moradorSelecionado.apartamento ||
         moradorSelecionado.apto ||
         ""
     });
-
   }
 
-  function corStatus(
-    status
-  ) {
-
+  function corStatus(status) {
     switch (status) {
-
       case "Em visita":
-
         return {
           bg: "#dcfce7",
-          color:
-            "#166534"
+          color: "#166534",
+          border: "#bbf7d0",
+          label: "Dentro do condomínio"
         };
 
       case "Autorizado":
-
         return {
           bg: "#dbeafe",
-          color:
-            "#1d4ed8"
+          color: "#1d4ed8",
+          border: "#bfdbfe",
+          label: "Liberado"
         };
 
       case "Bloqueado":
-
         return {
           bg: "#fee2e2",
-          color:
-            "#dc2626"
+          color: "#b91c1c",
+          border: "#fecaca",
+          label: "Bloqueado"
         };
 
       case "Saiu":
-
+      case "Encerrado":
         return {
-          bg: "#e5e7eb",
-          color:
-            "#374151"
+          bg: "#f3f4f6",
+          color: "#374151",
+          border: "#e5e7eb",
+          label: "Encerrado"
         };
 
       default:
-
         return {
-          bg: "#fef9c3",
-          color:
-            "#854d0e"
+          bg: "#fef3c7",
+          color: "#92400e",
+          border: "#fde68a",
+          label: "Aguardando"
         };
+    }
+  }
 
+  function tipoVisual(tipo) {
+    if (tipo === "Entrega") return "📦";
+    if (tipo === "Prestador") return "🧰";
+    if (tipo === "Familiar") return "👨‍👩‍👧";
+    return "👤";
+  }
+
+  function iniciais(nome) {
+    if (!nome) return "V";
+
+    const partes = nome.trim().split(" ");
+
+    if (partes.length === 1) {
+      return partes[0].charAt(0).toUpperCase();
     }
 
+    return `${partes[0].charAt(0)}${partes[partes.length - 1].charAt(0)}`.toUpperCase();
   }
 
   function fecharModal() {
-
     setMostrarModal(false);
-
     setEditId(null);
-
-    setNovoVisitante(
-      estadoInicialVisitante
-    );
-
+    setNovoVisitante(estadoInicialVisitante);
   }
 
   return (
-
     <div style={styles.container}>
-
-      {/* HEADER */}
-
-      <div style={styles.header}>
-
-        <div>
+      <section style={styles.hero}>
+        <div style={styles.heroLeft}>
+          <span style={styles.heroBadge}>
+            🛂 Controle de acesso
+          </span>
 
           <h1 style={styles.title}>
             Visitantes
           </h1>
 
           <p style={styles.subtitle}>
-            Controle e monitoramento
-            de visitantes
+            Monitore entradas, autorizações, bloqueios e saídas do condomínio.
           </p>
-
         </div>
 
-        <div style={styles.actions}>
+        <div style={styles.heroRight}>
+          <div style={styles.accessBoard}>
+            <div style={styles.accessItem}>
+              <span>🟡</span>
+              <strong>{pendentes.length}</strong>
+              <small>pendentes</small>
+            </div>
 
-          <input
-            placeholder="Buscar visitante..."
-            value={busca}
-            onChange={(e) =>
-              setBusca(
-                e.target.value
-              )
-            }
-            style={styles.search}
-          />
+            <div style={styles.accessItem}>
+              <span>🟢</span>
+              <strong>{emVisita.length}</strong>
+              <small>em visita</small>
+            </div>
+
+            <div style={styles.accessItem}>
+              <span>🔴</span>
+              <strong>{bloqueados.length}</strong>
+              <small>bloqueados</small>
+            </div>
+          </div>
 
           <button
-            style={styles.button}
+            style={styles.heroButton}
             onClick={() => {
-
               setEditId(null);
-
-              setNovoVisitante(
-                estadoInicialVisitante
-              );
-
-              setMostrarModal(
-                true
-              );
-
+              setNovoVisitante(estadoInicialVisitante);
+              setMostrarModal(true);
             }}
           >
-
-            + Novo Visitante
-
+            + Novo visitante
           </button>
+        </div>
+      </section>
 
+      <section style={styles.controlStrip}>
+        <div style={styles.searchWrap}>
+          <span style={styles.searchIcon}>⌕</span>
+
+          <input
+            placeholder="Buscar visitante, documento, morador, apartamento ou tipo..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            style={styles.search}
+          />
         </div>
 
-      </div>
+        <select
+          value={filtroStatus}
+          onChange={(e) => setFiltroStatus(e.target.value)}
+          style={styles.filter}
+        >
+          <option>Todos</option>
+          <option>Pendente</option>
+          <option>Autorizado</option>
+          <option>Em visita</option>
+          <option>Bloqueado</option>
+          <option>Saiu</option>
+        </select>
 
-      {/* RESUMO */}
+        <div style={styles.compactStats}>
+          <span>
+            <b>{visitantes.length}</b> total
+          </span>
 
-      <div style={styles.resumeGrid}>
+          <span>
+            <b>{autorizados.length}</b> liberados
+          </span>
 
-        <div style={styles.resumeCard}>
+          <span>
+            <b>{encerrados.length}</b> encerrados
+          </span>
+        </div>
+      </section>
 
-          <div style={styles.resumeIcon}>
-            👥
+      <section style={styles.accessPanel}>
+        <div style={styles.panelHeader}>
+          <div>
+            <span style={styles.panelLabel}>
+              Monitoramento
+            </span>
+
+            <h2 style={styles.panelTitle}>
+              Fluxo de visitantes
+            </h2>
           </div>
 
-          <div>
+          <span style={styles.resultBadge}>
+            {visitantesFiltrados.length} resultado(s)
+          </span>
+        </div>
 
-            <p style={styles.resumeLabel}>
-              Total
+        {visitantesFiltrados.length === 0 ? (
+          <div style={styles.empty}>
+            <div style={styles.emptyIcon}>
+              🛂
+            </div>
+
+            <h3 style={styles.emptyTitle}>
+              Nenhum visitante encontrado
+            </h3>
+
+            <p style={styles.emptyText}>
+              Registre visitantes para acompanhar entrada, autorização e saída.
             </p>
 
-            <h2 style={styles.resumeNumber}>
-              {visitantes.length}
-            </h2>
-
+            <button
+              style={styles.emptyButton}
+              onClick={() => {
+                setEditId(null);
+                setNovoVisitante(estadoInicialVisitante);
+                setMostrarModal(true);
+              }}
+            >
+              Registrar visitante
+            </button>
           </div>
+        ) : (
+          <div style={styles.visitorGrid}>
+            {visitantesFiltrados.map((v) => {
+              const status = corStatus(v.status);
 
-        </div>
-
-        <div style={styles.resumeCard}>
-
-          <div style={styles.resumeIcon}>
-            🟢
-          </div>
-
-          <div>
-
-            <p style={styles.resumeLabel}>
-              Em visita
-            </p>
-
-            <h2 style={styles.resumeNumber}>
-              {emVisita.length}
-            </h2>
-
-          </div>
-
-        </div>
-
-        <div style={styles.resumeCard}>
-
-          <div style={styles.resumeIcon}>
-            🔵
-          </div>
-
-          <div>
-
-            <p style={styles.resumeLabel}>
-              Autorizados
-            </p>
-
-            <h2 style={styles.resumeNumber}>
-              {autorizados.length}
-            </h2>
-
-          </div>
-
-        </div>
-
-        <div style={styles.resumeCard}>
-
-          <div style={styles.resumeIcon}>
-            🔴
-          </div>
-
-          <div>
-
-            <p style={styles.resumeLabel}>
-              Bloqueados
-            </p>
-
-            <h2 style={styles.resumeNumber}>
-              {bloqueados.length}
-            </h2>
-
-          </div>
-
-        </div>
-
-      </div>
-
-      {/* TABELA */}
-
-      <div style={styles.card}>
-
-        <table style={styles.table}>
-
-          <thead>
-
-            <tr>
-
-              <th style={styles.th}>
-                Visitante
-              </th>
-
-              <th style={styles.th}>
-                Apartamento
-              </th>
-
-              <th style={styles.th}>
-                Entrada
-              </th>
-
-              <th style={styles.th}>
-                Status
-              </th>
-
-              <th style={styles.thCenter}>
-                Ações
-              </th>
-
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            {visitantesFiltrados.length === 0 && (
-
-              <tr>
-
-                <td
-                  colSpan="5"
-                  style={styles.empty}
+              return (
+                <article
+                  key={v.id}
+                  style={{
+                    ...styles.visitorCard,
+                    borderColor: status.border
+                  }}
                 >
-
-                  Nenhum visitante encontrado
-
-                </td>
-
-              </tr>
-
-            )}
-
-            {visitantesFiltrados.map(
-              (v) => (
-
-                <tr key={v.id}>
-
-                  <td style={styles.td}>
-
-                    <div style={styles.userArea}>
-
+                  <div style={styles.cardHeader}>
+                    <div style={styles.identityArea}>
                       <div style={styles.avatar}>
-
-                        {v.nome
-                          ?.charAt(0)
-                          .toUpperCase()}
-
+                        {iniciais(v.nome)}
                       </div>
 
                       <div>
-
-                        <strong>
+                        <h3 style={styles.visitorName}>
                           {v.nome}
-                        </strong>
+                        </h3>
 
-                        <p style={styles.info}>
-                          {v.documento}
+                        <p style={styles.document}>
+                          Doc: {v.documento}
                         </p>
-
-                        <p style={styles.info}>
-                          Morador:
-                          {" "}
-                          {v.morador ||
-                            "N/A"}
-                        </p>
-
-                        <p style={styles.info}>
-                          Tipo:
-                          {" "}
-                          {v.tipo}
-                        </p>
-
                       </div>
-
                     </div>
-
-                  </td>
-
-                  <td style={styles.td}>
-
-                    <span style={styles.apto}>
-                      {v.apartamento}
-                    </span>
-
-                  </td>
-
-                  <td style={styles.td}>
-                    {v.entrada}
-                  </td>
-
-                  <td style={styles.td}>
 
                     <span
                       style={{
-
-                        ...styles.status,
-
-                        background:
-                          corStatus(
-                            v.status
-                          ).bg,
-
-                        color:
-                          corStatus(
-                            v.status
-                          ).color
-
+                        ...styles.statusBadge,
+                        background: status.bg,
+                        color: status.color
                       }}
                     >
+                      {status.label}
+                    </span>
+                  </div>
 
-                      {v.status}
-
+                  <div style={styles.typeLine}>
+                    <span style={styles.typeIcon}>
+                      {tipoVisual(v.tipo)}
                     </span>
 
-                  </td>
+                    <strong>
+                      {v.tipo || "Visita"}
+                    </strong>
+                  </div>
 
-                  <td style={styles.tdCenter}>
+                  <div style={styles.infoGrid}>
+                    <div style={styles.infoItem}>
+                      <span>Morador responsável</span>
+                      <strong>{v.morador || "N/A"}</strong>
+                    </div>
 
+                    <div style={styles.infoItem}>
+                      <span>Apartamento</span>
+                      <strong>{v.apartamento || "-"}</strong>
+                    </div>
+
+                    <div style={styles.infoItem}>
+                      <span>Entrada</span>
+                      <strong>{v.entrada || v.hora || "-"}</strong>
+                    </div>
+
+                    <div style={styles.infoItem}>
+                      <span>Data</span>
+                      <strong>{v.data || "-"}</strong>
+                    </div>
+                  </div>
+
+                  {v.observacao && (
+                    <div style={styles.noteBox}>
+                      {v.observacao}
+                    </div>
+                  )}
+
+                  <div style={styles.actionRow}>
                     <button
                       style={styles.enterBtn}
-                      onClick={() =>
-                        mudarStatus(
-                          v.id,
-                          "Em visita"
-                        )
-                      }
+                      onClick={() => mudarStatus(v.id, "Em visita")}
                     >
-
                       Entrou
-
                     </button>
 
                     <button
                       style={styles.exitBtn}
-                      onClick={() =>
-                        mudarStatus(
-                          v.id,
-                          "Saiu"
-                        )
-                      }
+                      onClick={() => mudarStatus(v.id, "Saiu")}
                     >
-
                       Saiu
-
                     </button>
 
                     <button
                       style={styles.editBtn}
-                      onClick={() =>
-                        editarVisitante(v)
-                      }
+                      onClick={() => editarVisitante(v)}
                     >
-
                       Editar
-
                     </button>
 
                     <button
                       style={styles.deleteBtn}
-                      onClick={() =>
-                        excluirVisitante(
-                          v.id
-                        )
-                      }
+                      onClick={() => excluirVisitante(v.id)}
                     >
-
                       Excluir
-
                     </button>
-
-                  </td>
-
-                </tr>
-
-              )
-            )}
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-      {/* MODAL */}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
       {mostrarModal && (
-
         <div style={styles.modalBg}>
-
           <div style={styles.modal}>
+            <div style={styles.modalTop}>
+              <div>
+                <span style={styles.modalBadge}>
+                  {editId !== null ? "Editar acesso" : "Novo acesso"}
+                </span>
 
-            <div style={styles.modalHeader}>
-
-              <h2 style={styles.modalTitle}>
-
-                {editId !== null
-                  ? "Editar visitante"
-                  : "Novo visitante"}
-
-              </h2>
+                <h2 style={styles.modalTitle}>
+                  {editId !== null
+                    ? "Editar visitante"
+                    : "Registrar visitante"}
+                </h2>
+              </div>
 
               <button
-                style={styles.close}
+                style={styles.closeButton}
                 onClick={fecharModal}
               >
                 ✕
               </button>
-
             </div>
 
-            <div style={styles.form}>
+            <div style={styles.modalSection}>
+              <h3 style={styles.modalSectionTitle}>
+                Dados do visitante
+              </h3>
 
-              <input
-                placeholder="Nome"
-                value={novoVisitante.nome}
-                onChange={(e) =>
+              <div style={styles.formGrid}>
+                <div style={styles.formRow}>
+                  <label style={styles.label}>
+                    Nome
+                  </label>
 
-                  setNovoVisitante({
+                  <input
+                    placeholder="Nome do visitante"
+                    value={novoVisitante.nome}
+                    onChange={(e) =>
+                      setNovoVisitante({
+                        ...novoVisitante,
+                        nome: e.target.value
+                      })
+                    }
+                    style={styles.input}
+                  />
+                </div>
 
-                    ...novoVisitante,
+                <div style={styles.formRow}>
+                  <label style={styles.label}>
+                    Documento
+                  </label>
 
-                    nome:
-                      e.target.value
+                  <input
+                    placeholder="Documento"
+                    value={novoVisitante.documento}
+                    onChange={(e) =>
+                      setNovoVisitante({
+                        ...novoVisitante,
+                        documento: e.target.value
+                      })
+                    }
+                    style={styles.input}
+                  />
+                </div>
 
-                  })
+                <div style={styles.formRow}>
+                  <label style={styles.label}>
+                    Tipo
+                  </label>
 
-                }
-                style={styles.input}
-              />
+                  <select
+                    value={novoVisitante.tipo}
+                    onChange={(e) =>
+                      setNovoVisitante({
+                        ...novoVisitante,
+                        tipo: e.target.value
+                      })
+                    }
+                    style={styles.input}
+                  >
+                    <option>Visita</option>
+                    <option>Entrega</option>
+                    <option>Prestador</option>
+                    <option>Familiar</option>
+                  </select>
+                </div>
 
-              <input
-                placeholder="Documento"
-                value={novoVisitante.documento}
-                onChange={(e) =>
+                <div style={styles.formRow}>
+                  <label style={styles.label}>
+                    Hora de entrada
+                  </label>
 
-                  setNovoVisitante({
+                  <input
+                    placeholder="Ex: 14:35"
+                    value={novoVisitante.entrada}
+                    onChange={(e) =>
+                      setNovoVisitante({
+                        ...novoVisitante,
+                        entrada: e.target.value
+                      })
+                    }
+                    style={styles.input}
+                  />
+                </div>
+              </div>
+            </div>
 
-                    ...novoVisitante,
+            <div style={styles.modalSection}>
+              <h3 style={styles.modalSectionTitle}>
+                Responsável pela visita
+              </h3>
 
-                    documento:
-                      e.target.value
+              <div style={styles.formGrid}>
+                <div style={styles.formRow}>
+                  <label style={styles.label}>
+                    Morador responsável
+                  </label>
 
-                  })
-
-                }
-                style={styles.input}
-              />
-
-              <select
-                value={
-                  novoVisitante.moradorId ||
-                  obterMoradorIdPorNomeApartamento(
-                    novoVisitante.morador,
-                    novoVisitante.apartamento
-                  )
-                }
-                onChange={(e) =>
-                  selecionarMorador(
-                    e.target.value
-                  )
-                }
-                style={styles.input}
-              >
-
-                <option value="">
-                  Selecione o morador responsável
-                </option>
-
-                {moradores.map(
-                  (morador) => (
-
-                    <option
-                      key={morador.id}
-                      value={morador.id}
-                    >
-
-                      {morador.nome}
-                      {" - Apto "}
-                      {morador.apartamento ||
-                        morador.apto}
-
+                  <select
+                    value={
+                      novoVisitante.moradorId ||
+                      obterMoradorIdPorNomeApartamento(
+                        novoVisitante.morador,
+                        novoVisitante.apartamento
+                      )
+                    }
+                    onChange={(e) => selecionarMorador(e.target.value)}
+                    style={styles.input}
+                  >
+                    <option value="">
+                      Selecione o morador responsável
                     </option>
 
-                  )
-                )}
+                    {moradores.map((morador) => (
+                      <option
+                        key={morador.id}
+                        value={morador.id}
+                      >
+                        {morador.nome} - Apto{" "}
+                        {morador.apartamento || morador.apto}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              </select>
+                <div style={styles.formRow}>
+                  <label style={styles.label}>
+                    Apartamento
+                  </label>
 
-              <input
-                placeholder="Apartamento"
-                value={novoVisitante.apartamento}
-                readOnly
-                style={styles.input}
-              />
+                  <input
+                    placeholder="Apartamento"
+                    value={novoVisitante.apartamento}
+                    readOnly
+                    style={styles.input}
+                  />
+                </div>
+              </div>
+            </div>
 
-              <select
-                value={novoVisitante.tipo}
-                onChange={(e) =>
+            <div style={styles.modalSection}>
+              <h3 style={styles.modalSectionTitle}>
+                Controle de acesso
+              </h3>
 
-                  setNovoVisitante({
-
-                    ...novoVisitante,
-
-                    tipo:
-                      e.target.value
-
-                  })
-
-                }
-                style={styles.input}
-              >
-
-                <option>
-                  Visita
-                </option>
-
-                <option>
-                  Entrega
-                </option>
-
-                <option>
-                  Prestador
-                </option>
-
-                <option>
-                  Familiar
-                </option>
-
-              </select>
-
-              <input
-                placeholder="Hora entrada"
-                value={novoVisitante.entrada}
-                onChange={(e) =>
-
-                  setNovoVisitante({
-
-                    ...novoVisitante,
-
-                    entrada:
-                      e.target.value
-
-                  })
-
-                }
-                style={styles.input}
-              />
-
-              <label style={styles.checkboxLabel}>
-
-                <input
-                  type="checkbox"
-                  checked={
-                    novoVisitante.autorizado
-                  }
-                  onChange={(e) =>
-
-                    setNovoVisitante({
-
-                      ...novoVisitante,
-
-                      autorizado:
-                        e.target.checked,
-
-                      bloqueado:
-                        e.target.checked
+              <div style={styles.accessOptions}>
+                <label style={styles.optionCard}>
+                  <input
+                    type="checkbox"
+                    checked={novoVisitante.autorizado}
+                    onChange={(e) =>
+                      setNovoVisitante({
+                        ...novoVisitante,
+                        autorizado: e.target.checked,
+                        bloqueado: e.target.checked
                           ? false
                           : novoVisitante.bloqueado
+                      })
+                    }
+                  />
 
-                    })
+                  <span>
+                    ✅ Autorizado
+                  </span>
+                </label>
 
-                  }
-                />
-
-                Autorizado
-
-              </label>
-
-              <label style={styles.checkboxLabel}>
-
-                <input
-                  type="checkbox"
-                  checked={
-                    novoVisitante.bloqueado
-                  }
-                  onChange={(e) =>
-
-                    setNovoVisitante({
-
-                      ...novoVisitante,
-
-                      bloqueado:
-                        e.target.checked,
-
-                      autorizado:
-                        e.target.checked
+                <label style={styles.optionCard}>
+                  <input
+                    type="checkbox"
+                    checked={novoVisitante.bloqueado}
+                    onChange={(e) =>
+                      setNovoVisitante({
+                        ...novoVisitante,
+                        bloqueado: e.target.checked,
+                        autorizado: e.target.checked
                           ? false
                           : novoVisitante.autorizado
+                      })
+                    }
+                  />
 
-                    })
-
-                  }
-                />
-
-                Bloqueado
-
-              </label>
+                  <span>
+                    ⛔ Bloqueado
+                  </span>
+                </label>
+              </div>
 
               <textarea
                 placeholder="Observações"
                 value={novoVisitante.observacao}
                 onChange={(e) =>
-
                   setNovoVisitante({
-
                     ...novoVisitante,
-
-                    observacao:
-                      e.target.value
-
+                    observacao: e.target.value
                   })
-
                 }
                 style={styles.textarea}
               />
-
             </div>
 
             <div style={styles.modalButtons}>
-
               <button
                 style={styles.saveBtn}
-                onClick={
-                  salvarVisitante
-                }
+                onClick={salvarVisitante}
               >
-
-                Salvar Visitante
-
+                Salvar visitante
               </button>
 
               <button
                 style={styles.cancelBtn}
                 onClick={fecharModal}
               >
-
                 Cancelar
-
               </button>
-
             </div>
-
           </div>
-
         </div>
-
       )}
-
     </div>
-
   );
-
 }
 
 const styles = {
-
   container: {
-    width: "100%"
+    width: "100%",
+    fontFamily: "Arial",
+    color: "#111827"
   },
 
-  header: {
+  hero: {
+    background:
+      "linear-gradient(135deg,#02140b,#064e3b 55%,#15803d)",
+    borderRadius: "36px",
+    padding: "34px",
+    color: "white",
     display: "flex",
-    justifyContent:
-      "space-between",
+    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: "30px"
+    gap: "28px",
+    boxShadow: "0 26px 70px rgba(6,78,59,0.30)",
+    marginBottom: "24px"
+  },
+
+  heroLeft: {
+    maxWidth: "680px"
+  },
+
+  heroBadge: {
+    display: "inline-block",
+    background: "rgba(255,255,255,0.13)",
+    border: "1px solid rgba(255,255,255,0.14)",
+    color: "#dcfce7",
+    padding: "9px 13px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "900",
+    marginBottom: "15px"
   },
 
   title: {
     margin: 0,
-    fontSize: "34px",
-    color: "#14532d"
+    fontSize: "44px",
+    letterSpacing: "-1px"
   },
 
   subtitle: {
-    marginTop: "8px",
-    color: "#6b7280"
+    margin: "10px 0 0",
+    color: "rgba(255,255,255,0.76)",
+    lineHeight: "1.55"
   },
 
-  actions: {
+  heroRight: {
     display: "flex",
-    gap: "12px"
+    alignItems: "center",
+    gap: "14px"
+  },
+
+  accessBoard: {
+    display: "flex",
+    gap: "10px",
+    background: "rgba(255,255,255,0.10)",
+    border: "1px solid rgba(255,255,255,0.14)",
+    padding: "12px",
+    borderRadius: "24px"
+  },
+
+  accessItem: {
+    width: "84px",
+    height: "76px",
+    borderRadius: "18px",
+    background: "rgba(255,255,255,0.11)",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "3px"
+  },
+
+  heroButton: {
+    background: "#dcfce7",
+    color: "#166534",
+    border: "none",
+    padding: "15px 20px",
+    borderRadius: "17px",
+    cursor: "pointer",
+    fontWeight: "900",
+    whiteSpace: "nowrap"
+  },
+
+  controlStrip: {
+    background: "white",
+    border: "1px solid #e5e7eb",
+    borderRadius: "28px",
+    padding: "18px",
+    marginBottom: "24px",
+    display: "flex",
+    alignItems: "center",
+    gap: "14px",
+    boxShadow: "0 14px 35px rgba(15,23,42,0.06)"
+  },
+
+  searchWrap: {
+    flex: 1,
+    background: "#f8fafc",
+    border: "1px solid #d1d5db",
+    borderRadius: "18px",
+    display: "flex",
+    alignItems: "center",
+    padding: "0 14px"
+  },
+
+  searchIcon: {
+    color: "#166534",
+    fontSize: "20px",
+    marginRight: "8px"
   },
 
   search: {
-    padding: "12px 16px",
-    borderRadius: "12px",
-    border:
-      "1px solid #d1d5db",
-    width: "240px",
-    outline: "none"
-  },
-
-  button: {
-    background:
-      "linear-gradient(135deg,#14532d,#166534)",
-    color: "white",
+    flex: 1,
+    padding: "15px 0",
     border: "none",
-    padding: "12px 18px",
-    borderRadius: "12px",
-    cursor: "pointer",
-    fontWeight: "700"
+    outline: "none",
+    background: "transparent",
+    fontSize: "14px"
   },
 
-  resumeGrid: {
-    display: "grid",
-    gridTemplateColumns:
-      "repeat(auto-fit,minmax(240px,1fr))",
-    gap: "20px",
-    marginBottom: "30px"
+  filter: {
+    width: "170px",
+    padding: "15px",
+    borderRadius: "18px",
+    border: "1px solid #d1d5db",
+    outline: "none",
+    background: "#f8fafc"
   },
 
-  resumeCard: {
-    background:
-      "linear-gradient(135deg,#14532d,#166534)",
-    color: "white",
-    borderRadius: "20px",
-    padding: "24px",
+  compactStats: {
     display: "flex",
-    alignItems: "center",
-    gap: "18px",
-    boxShadow:
-      "0 6px 20px rgba(20,83,45,0.18)"
+    gap: "10px",
+    flexWrap: "wrap",
+    fontSize: "12px",
+    color: "#374151"
   },
 
-  resumeIcon: {
-    fontSize: "42px"
-  },
-
-  resumeLabel: {
-    opacity: 0.9
-  },
-
-  resumeNumber: {
-    margin: "6px 0 0",
-    fontSize: "34px"
-  },
-
-  card: {
+  accessPanel: {
     background: "white",
-    borderRadius: "24px",
-    overflow: "hidden",
-    boxShadow:
-      "0 4px 20px rgba(0,0,0,0.05)"
+    border: "1px solid #eef2f7",
+    borderRadius: "34px",
+    padding: "28px",
+    boxShadow: "0 18px 55px rgba(15,23,42,0.08)"
   },
 
-  table: {
-    width: "100%",
-    borderCollapse:
-      "collapse"
+  panelHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: "24px"
   },
 
-  th: {
-    padding: "18px",
-    textAlign: "left",
+  panelLabel: {
+    background: "#dcfce7",
+    color: "#166534",
+    padding: "7px 11px",
+    borderRadius: "999px",
+    fontSize: "11px",
+    fontWeight: "900"
+  },
+
+  panelTitle: {
+    margin: "12px 0 0",
+    color: "#052e16",
+    fontSize: "28px"
+  },
+
+  resultBadge: {
     background: "#f0fdf4",
-    color: "#14532d",
-    borderBottom:
-      "1px solid #dcfce7"
+    color: "#166534",
+    border: "1px solid #bbf7d0",
+    padding: "9px 13px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "900"
   },
 
-  thCenter: {
-    padding: "18px",
-    textAlign: "center",
-    background: "#f0fdf4",
-    color: "#14532d",
-    borderBottom:
-      "1px solid #dcfce7"
+  visitorGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit,minmax(340px,1fr))",
+    gap: "18px"
   },
 
-  td: {
-    padding: "18px",
-    borderBottom:
-      "1px solid #f3f4f6"
+  visitorCard: {
+    background: "linear-gradient(180deg,#ffffff,#f8fafc)",
+    borderRadius: "30px",
+    padding: "22px",
+    boxShadow: "0 15px 38px rgba(15,23,42,0.06)",
+    border: "1px solid #eef2f7"
   },
 
-  tdCenter: {
-    padding: "18px",
-    textAlign: "center",
-    borderBottom:
-      "1px solid #f3f4f6"
+  cardHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: "12px",
+    marginBottom: "18px"
   },
 
-  empty: {
-    padding: "35px",
-    textAlign: "center",
-    color: "#6b7280"
-  },
-
-  userArea: {
+  identityArea: {
     display: "flex",
     alignItems: "center",
     gap: "14px"
   },
 
   avatar: {
-    width: "44px",
-    height: "44px",
-    borderRadius: "50%",
+    width: "64px",
+    height: "64px",
+    borderRadius: "24px",
     background:
-      "linear-gradient(135deg,#166534,#22c55e)",
+      "linear-gradient(135deg,#052e16,#16a34a)",
     color: "white",
     display: "flex",
-    justifyContent:
-      "center",
     alignItems: "center",
-    fontWeight: "700"
+    justifyContent: "center",
+    fontSize: "24px",
+    fontWeight: "900",
+    boxShadow: "0 14px 26px rgba(22,163,74,0.22)"
   },
 
-  info: {
-    marginTop: "4px",
+  visitorName: {
+    margin: 0,
+    color: "#111827",
+    fontSize: "21px"
+  },
+
+  document: {
+    margin: "5px 0 0",
     color: "#6b7280",
     fontSize: "13px"
   },
 
-  apto: {
-    background: "#dcfce7",
-    color: "#166534",
-    padding: "8px 14px",
+  statusBadge: {
+    padding: "7px 11px",
     borderRadius: "999px",
-    fontWeight: "700",
+    fontWeight: "900",
+    fontSize: "12px",
+    whiteSpace: "nowrap"
+  },
+
+  typeLine: {
+    background: "#f0fdf4",
+    border: "1px solid #bbf7d0",
+    borderRadius: "18px",
+    padding: "13px",
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    color: "#166534",
+    marginBottom: "14px"
+  },
+
+  typeIcon: {
+    fontSize: "21px"
+  },
+
+  infoGrid: {
+    display: "grid",
+    gridTemplateColumns: "1fr",
+    gap: "10px"
+  },
+
+  infoItem: {
+    background: "white",
+    border: "1px solid #eef2f7",
+    borderRadius: "17px",
+    padding: "13px"
+  },
+
+  noteBox: {
+    marginTop: "12px",
+    background: "#fffbeb",
+    border: "1px solid #fde68a",
+    color: "#92400e",
+    padding: "12px",
+    borderRadius: "16px",
     fontSize: "13px"
   },
 
-  status: {
-    padding: "8px 14px",
-    borderRadius: "999px",
-    fontWeight: "700",
-    fontSize: "13px"
+  actionRow: {
+    display: "grid",
+    gridTemplateColumns: "repeat(4,1fr)",
+    gap: "8px",
+    marginTop: "18px"
   },
 
   enterBtn: {
     background: "#dcfce7",
     color: "#166534",
     border: "none",
-    padding: "9px 12px",
-    borderRadius: "10px",
+    padding: "11px",
+    borderRadius: "13px",
     cursor: "pointer",
-    fontWeight: "700",
-    marginRight: "6px"
+    fontWeight: "900"
   },
 
   exitBtn: {
-    background: "#e5e7eb",
+    background: "#f3f4f6",
     color: "#374151",
     border: "none",
-    padding: "9px 12px",
-    borderRadius: "10px",
+    padding: "11px",
+    borderRadius: "13px",
     cursor: "pointer",
-    fontWeight: "700",
-    marginRight: "6px"
+    fontWeight: "900"
   },
 
   editBtn: {
     background: "#dbeafe",
     color: "#1d4ed8",
     border: "none",
-    padding: "9px 12px",
-    borderRadius: "10px",
+    padding: "11px",
+    borderRadius: "13px",
     cursor: "pointer",
-    fontWeight: "700",
-    marginRight: "6px"
+    fontWeight: "900"
   },
 
   deleteBtn: {
     background: "#fee2e2",
     color: "#dc2626",
     border: "none",
-    padding: "9px 12px",
-    borderRadius: "10px",
+    padding: "11px",
+    borderRadius: "13px",
     cursor: "pointer",
-    fontWeight: "700"
+    fontWeight: "900"
+  },
+
+  empty: {
+    background: "#f8fafc",
+    border: "1px dashed #d1d5db",
+    borderRadius: "26px",
+    padding: "48px",
+    textAlign: "center"
+  },
+
+  emptyIcon: {
+    fontSize: "44px",
+    marginBottom: "12px"
+  },
+
+  emptyTitle: {
+    margin: 0,
+    color: "#111827"
+  },
+
+  emptyText: {
+    margin: "8px 0 18px",
+    color: "#6b7280"
+  },
+
+  emptyButton: {
+    background:
+      "linear-gradient(135deg,#064e3b,#16a34a)",
+    color: "white",
+    border: "none",
+    padding: "13px 18px",
+    borderRadius: "15px",
+    cursor: "pointer",
+    fontWeight: "900"
   },
 
   modalBg: {
     position: "fixed",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
-    background:
-      "rgba(0,0,0,0.45)",
+    inset: 0,
+    background: "rgba(15,23,42,0.62)",
+    backdropFilter: "blur(8px)",
     display: "flex",
-    justifyContent:
-      "center",
+    justifyContent: "center",
     alignItems: "center",
-    zIndex: 999
+    zIndex: 999,
+    padding: "20px"
   },
 
   modal: {
-    width: "480px",
-    background: "white",
-    borderRadius: "24px",
-    padding: "28px",
-    boxShadow:
-      "0 10px 40px rgba(0,0,0,0.15)"
+    width: "780px",
+    maxHeight: "90vh",
+    overflowY: "auto",
+    background: "#f8fafc",
+    padding: "26px",
+    borderRadius: "36px",
+    boxShadow: "0 30px 80px rgba(0,0,0,0.28)"
   },
 
-  modalHeader: {
+  modalTop: {
+    background:
+      "linear-gradient(135deg,#052e16,#166534)",
+    color: "white",
+    borderRadius: "28px",
+    padding: "26px",
     display: "flex",
-    justifyContent:
-      "space-between",
-    alignItems: "center",
-    marginBottom: "25px"
+    justifyContent: "space-between",
+    marginBottom: "20px"
+  },
+
+  modalBadge: {
+    background: "rgba(255,255,255,0.14)",
+    padding: "8px 12px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "900"
   },
 
   modalTitle: {
-    margin: 0,
-    color: "#14532d"
+    margin: "14px 0 0",
+    fontSize: "28px"
   },
 
-  close: {
-    width: "34px",
-    height: "34px",
-    borderRadius: "50%",
+  closeButton: {
+    width: "42px",
+    height: "42px",
+    borderRadius: "15px",
     border: "none",
-    cursor: "pointer"
+    background: "rgba(255,255,255,0.14)",
+    color: "white",
+    cursor: "pointer",
+    fontWeight: "900"
   },
 
-  form: {
+  modalSection: {
+    background: "white",
+    border: "1px solid #eef2f7",
+    borderRadius: "26px",
+    padding: "20px",
+    marginBottom: "15px"
+  },
+
+  modalSectionTitle: {
+    margin: "0 0 16px",
+    color: "#052e16"
+  },
+
+  formGrid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "15px"
+  },
+
+  formRow: {
     display: "flex",
     flexDirection: "column",
-    gap: "14px"
+    gap: "7px"
+  },
+
+  label: {
+    color: "#374151",
+    fontSize: "13px",
+    fontWeight: "900"
   },
 
   input: {
-    padding: "14px",
-    borderRadius: "12px",
-    border:
-      "1px solid #d1d5db",
-    outline: "none"
+    padding: "15px",
+    borderRadius: "16px",
+    border: "1px solid #d1d5db",
+    outline: "none",
+    fontSize: "14px",
+    background: "#f9fafb"
   },
 
-  textarea: {
-    padding: "14px",
-    borderRadius: "12px",
-    border:
-      "1px solid #d1d5db",
-    resize: "none",
-    minHeight: "90px",
-    outline: "none"
+  accessOptions: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "12px",
+    marginBottom: "14px"
   },
 
-  checkboxLabel: {
+  optionCard: {
+    background: "#f9fafb",
+    border: "1px solid #e5e7eb",
+    borderRadius: "17px",
+    padding: "14px",
     display: "flex",
     alignItems: "center",
     gap: "10px",
-    fontWeight: "600",
+    fontWeight: "900",
     color: "#374151"
+  },
+
+  textarea: {
+    width: "100%",
+    minHeight: "100px",
+    padding: "15px",
+    borderRadius: "16px",
+    border: "1px solid #d1d5db",
+    outline: "none",
+    fontSize: "14px",
+    background: "#f9fafb",
+    resize: "vertical",
+    boxSizing: "border-box",
+    fontFamily: "Arial"
   },
 
   modalButtons: {
     display: "flex",
     gap: "12px",
-    marginTop: "24px"
+    marginTop: "18px"
   },
 
   saveBtn: {
     flex: 1,
     background:
-      "linear-gradient(135deg,#14532d,#166534)",
+      "linear-gradient(135deg,#064e3b,#16a34a)",
     color: "white",
     border: "none",
     padding: "14px",
-    borderRadius: "12px",
+    borderRadius: "17px",
     cursor: "pointer",
-    fontWeight: "700"
+    fontWeight: "900"
   },
 
   cancelBtn: {
@@ -1478,11 +1375,10 @@ const styles = {
     color: "#374151",
     border: "none",
     padding: "14px",
-    borderRadius: "12px",
+    borderRadius: "17px",
     cursor: "pointer",
-    fontWeight: "700"
+    fontWeight: "900"
   }
-
 };
 
 export default Visitantes;
