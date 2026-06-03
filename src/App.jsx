@@ -52,7 +52,7 @@ function Home() {
     <div style={styles.container}>
       <div style={styles.logo}>🏢</div>
 
-      <h1 style={styles.title}>PORTARIA</h1>
+      <h1 style={styles.title}>GreenCondo</h1>
 
       <p style={styles.subtitle}>
         Selecione o tipo de acesso ao sistema
@@ -167,34 +167,55 @@ function App() {
 
 const styles = {
   container: {
-    height: "100vh",
-    backgroundColor: "#0b4f82",
+    minHeight: "100vh",
+    background:
+      "radial-gradient(circle at top left, rgba(34,197,94,0.30), transparent 32%), radial-gradient(circle at bottom right, rgba(250,204,21,0.20), transparent 28%), linear-gradient(135deg,#020617,#052e16 45%,#064e3b)",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
     color: "white",
-    fontFamily: "Arial"
+    fontFamily: "Arial",
+    overflow: "hidden",
+    position: "relative",
+    padding: "40px",
+    boxSizing: "border-box"
   },
 
   logo: {
-    fontSize: "80px",
-    marginBottom: "15px"
+    width: "92px",
+    height: "92px",
+    borderRadius: "32px",
+    background:
+      "linear-gradient(135deg,rgba(255,255,255,0.18),rgba(255,255,255,0.06))",
+    border: "1px solid rgba(255,255,255,0.18)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "52px",
+    marginBottom: "22px",
+    boxShadow: "0 22px 50px rgba(0,0,0,0.28)"
   },
 
   title: {
-    fontSize: "45px",
-    margin: "0"
+    fontSize: "52px",
+    margin: "0",
+    fontWeight: "900",
+    letterSpacing: "2px"
   },
 
   subtitle: {
-    marginBottom: "40px",
-    opacity: "0.8"
+    marginTop: "14px",
+    marginBottom: "46px",
+    color: "rgba(255,255,255,0.72)",
+    fontSize: "16px"
   },
 
   cards: {
     display: "flex",
-    gap: "40px"
+    gap: "34px",
+    flexWrap: "wrap",
+    justifyContent: "center"
   }
 };
 
