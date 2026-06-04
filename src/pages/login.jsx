@@ -17,12 +17,12 @@ function Login() {
   const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
+  const [avisoPadrao, setAvisoPadrao] = useState(null);
 
   const perfis = {
     sindico: {
       titulo: "Síndico / Administrador",
       subtitulo: "Acesso executivo para gestão completa do condomínio.",
-      cor: "#22c55e",
       gradient: "linear-gradient(135deg,#052e16,#166534,#22c55e)",
       icon: <FaShieldAlt size={42} color="white" />,
       chamada: "Gestão completa",
@@ -37,7 +37,6 @@ function Login() {
     porteiro: {
       titulo: "Porteiro",
       subtitulo: "Controle operacional de visitantes, encomendas e ocorrências.",
-      cor: "#16a34a",
       gradient: "linear-gradient(135deg,#031b0f,#14532d,#16a34a)",
       icon: <FaIdBadge size={42} color="white" />,
       chamada: "Controle de portaria",
@@ -52,7 +51,6 @@ function Login() {
     morador: {
       titulo: "Morador",
       subtitulo: "Acompanhe avisos, reservas, encomendas e solicitações.",
-      cor: "#4ade80",
       gradient: "linear-gradient(135deg,#052e16,#047857,#4ade80)",
       icon: <FaUserCircle size={42} color="white" />,
       chamada: "Portal do morador",
@@ -114,6 +112,24 @@ function Login() {
 
     localStorage.setItem(chave, dados);
     sessionStorage.setItem(chave, dados);
+
+    if (dadosUsuario.tipo === "sindico") {
+      localStorage.setItem("usuarioSindico", dados);
+      sessionStorage.setItem("usuarioSindico", dados);
+    }
+
+    if (dadosUsuario.tipo === "porteiro") {
+      localStorage.setItem("usuarioPorteiro", dados);
+      sessionStorage.setItem("usuarioPorteiro", dados);
+    }
+
+    if (dadosUsuario.tipo === "morador") {
+      localStorage.setItem("usuarioMorador", dados);
+      sessionStorage.setItem("usuarioMorador", dados);
+    }
+
+    localStorage.setItem("usuarioLogado", dados);
+    sessionStorage.setItem("usuarioLogado", dados);
   }
 
   function usuarioAtivo(status) {
@@ -126,8 +142,79 @@ function Login() {
     );
   }
 
+  function obterUsuariosSindico() {
+    const dados =
+      JSON.parse(localStorage.getItem("usuariosSindico")) || [];
+
+    if (dados.length > 0) return dados;
+
+    const usuarioMestrePadrao = {
+      id: Date.now(),
+      nome: "Administrador Principal",
+      usuario: "admin",
+      senha: "1234",
+      perfil: "mestre",
+      status: "Ativo",
+      usuarioPadrao: true,
+      criadoEm: new Date().toLocaleString("pt-BR")
+    };
+
+    localStorage.setItem(
+      "usuariosSindico",
+      JSON.stringify([usuarioMestrePadrao])
+    );
+
+    return [usuarioMestrePadrao];
+  }
+
+  function loginSindico(usuarioDigitado, senhaDigitada) {
+    const usuariosSindico = obterUsuariosSindico();
+
+    const encontrado = usuariosSindico.find(
+      (u) =>
+        u.usuario?.trim().toLowerCase() === usuarioDigitado &&
+        u.senha?.trim() === senhaDigitada
+    );
+
+    if (!encontrado) {
+      setErro("Usuário ou senha inválidos");
+      return;
+    }
+
+    if (!usuarioAtivo(encontrado.status)) {
+      setErro("Este usuário administrativo está inativo");
+      return;
+    }
+
+    const dadosSessao = {
+      tipo: "sindico",
+      id: encontrado.id,
+      nome: encontrado.nome,
+      usuario: encontrado.usuario,
+      perfilAdmin: encontrado.perfil || "sub",
+      status: encontrado.status || "Ativo",
+      usuarioPadrao: encontrado.usuarioPadrao || false,
+      loginEm: new Date().toISOString()
+    };
+
+    salvarSessao(dadosSessao);
+
+    const usandoPadrao =
+      encontrado.perfil === "mestre" &&
+      encontrado.usuario === "admin" &&
+      encontrado.senha === "1234";
+
+    if (usandoPadrao) {
+      setAvisoPadrao(dadosSessao);
+      return;
+    }
+
+    navigate(obterRotaDestino(), { replace: true });
+  }
+
   function fazerLogin() {
     setErro("");
+    setAvisoPadrao(null);
 
     const usuarioDigitado = usuario.trim().toLowerCase();
     const senhaDigitada = senha.trim();
@@ -138,22 +225,7 @@ function Login() {
     }
 
     if (tipo === "sindico") {
-      if (
-        usuarioDigitado === "admin" &&
-        senhaDigitada === "1234"
-      ) {
-        salvarSessao({
-          tipo: "sindico",
-          usuario: "admin",
-          nome: "Administrador",
-          loginEm: new Date().toISOString()
-        });
-
-        navigate(obterRotaDestino(), { replace: true });
-        return;
-      }
-
-      setErro("Usuário ou senha inválidos");
+      loginSindico(usuarioDigitado, senhaDigitada);
       return;
     }
 
@@ -231,6 +303,16 @@ function Login() {
       navigate(obterRotaDestino(), { replace: true });
       return;
     }
+  }
+
+  function continuarComUsuarioPadrao() {
+    setAvisoPadrao(null);
+    navigate(obterRotaDestino(), { replace: true });
+  }
+
+  function irParaConfiguracoes() {
+    setAvisoPadrao(null);
+    navigate("/dashboard/configuracoes", { replace: true });
   }
 
   function handleKeyPress(e) {
@@ -323,7 +405,7 @@ function Login() {
         </div>
 
         <div style={styles.infoSide}>
-          <div style={styles.infoTop}>
+          <div>
             <span style={styles.systemBadge}>
               Infinity Condo
             </span>
@@ -362,6 +444,46 @@ function Login() {
           </div>
         </div>
       </div>
+
+      {avisoPadrao && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.warningModal}>
+            <div style={styles.warningIcon}>
+              ⚠️
+            </div>
+
+            <h2 style={styles.warningTitle}>
+              Acesso padrão em uso
+            </h2>
+
+            <p style={styles.warningText}>
+              Você está usando o usuário mestre padrão do sistema:
+              <strong> admin / 1234</strong>.
+            </p>
+
+            <p style={styles.warningText}>
+              Recomendamos alterar usuário e senha em Configurações para
+              aumentar a segurança do seu condomínio.
+            </p>
+
+            <div style={styles.warningActions}>
+              <button
+                style={styles.changeNowButton}
+                onClick={irParaConfiguracoes}
+              >
+                Alterar agora
+              </button>
+
+              <button
+                style={styles.continueButton}
+                onClick={continuarComUsuarioPadrao}
+              >
+                Continuar por enquanto
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -602,6 +724,81 @@ const styles = {
     borderRadius: "22px",
     padding: "18px",
     color: "#fef3c7"
+  },
+
+  modalOverlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(2,6,23,0.72)",
+    backdropFilter: "blur(10px)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 20,
+    padding: "20px"
+  },
+
+  warningModal: {
+    width: "460px",
+    background:
+      "linear-gradient(180deg,rgba(255,255,255,0.18),rgba(255,255,255,0.08))",
+    border: "1px solid rgba(250,204,21,0.35)",
+    borderRadius: "32px",
+    padding: "34px",
+    color: "white",
+    textAlign: "center",
+    boxShadow:
+      "0 35px 90px rgba(0,0,0,0.42), 0 0 40px rgba(250,204,21,0.14)"
+  },
+
+  warningIcon: {
+    width: "74px",
+    height: "74px",
+    borderRadius: "24px",
+    margin: "0 auto 18px",
+    background: "linear-gradient(135deg,#92400e,#facc15)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "34px"
+  },
+
+  warningTitle: {
+    margin: "0 0 12px",
+    fontSize: "28px"
+  },
+
+  warningText: {
+    color: "rgba(255,255,255,0.76)",
+    lineHeight: "1.6"
+  },
+
+  warningActions: {
+    display: "flex",
+    gap: "12px",
+    marginTop: "24px"
+  },
+
+  changeNowButton: {
+    flex: 1,
+    background: "linear-gradient(135deg,#16a34a,#facc15)",
+    color: "white",
+    border: "none",
+    padding: "14px",
+    borderRadius: "16px",
+    cursor: "pointer",
+    fontWeight: "900"
+  },
+
+  continueButton: {
+    flex: 1,
+    background: "rgba(255,255,255,0.10)",
+    color: "white",
+    border: "1px solid rgba(255,255,255,0.18)",
+    padding: "14px",
+    borderRadius: "16px",
+    cursor: "pointer",
+    fontWeight: "900"
   }
 };
 

@@ -31,6 +31,8 @@ import Reservas from "./pages/Sindico/Reservas";
 import AreasComuns from "./pages/Sindico/AreasComuns";
 import Avisos from "./pages/Sindico/Avisos";
 import Relatorios from "./pages/Sindico/Relatorios";
+import BIAnalytics from "./pages/Sindico/BIAnalytics";
+import BIMonitor from "./pages/Sindico/BIMonitor";
 import Configuracoes from "./pages/Sindico/Configuracoes";
 
 import DashboardPorteiro from "./pages/Porteiro/DashboardPorteiro";
@@ -125,9 +127,19 @@ function App() {
           <Route path="areas-comuns" element={<AreasComuns />} />
           <Route path="avisos" element={<Avisos />} />
           <Route path="relatorios" element={<Relatorios />} />
+          <Route path="bi-analytics" element={<BIAnalytics />} />
           <Route path="configuracoes" element={<Configuracoes />} />
           <Route path="prestadores" element={<Prestadores />} />
         </Route>
+
+        <Route
+          path="/bi-monitor"
+          element={
+            <ProtectedRoute tipoPermitido="sindico">
+              <BIMonitor />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/dashboard/porteiro"

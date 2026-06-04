@@ -8,6 +8,7 @@ import {
 
 import {
   FaChartPie,
+  FaChartLine,
   FaUsers,
   FaUserShield,
   FaBox,
@@ -48,6 +49,8 @@ function DashboardLayout() {
   function sair() {
     localStorage.removeItem("sessaoSindico");
     sessionStorage.removeItem("sessaoSindico");
+    localStorage.removeItem("usuarioSindico");
+    sessionStorage.removeItem("usuarioSindico");
 
     navigate("/", {
       replace: true
@@ -84,7 +87,7 @@ function DashboardLayout() {
 
           <div style={styles.userBox}>
             <div style={styles.userAvatar}>
-              👑
+              {usuarioLogado?.perfilAdmin === "sub" ? "🛡️" : "👑"}
             </div>
 
             <div>
@@ -93,7 +96,9 @@ function DashboardLayout() {
               </div>
 
               <div style={styles.userRole}>
-                Síndico / Administrador
+                {usuarioLogado?.perfilAdmin === "sub"
+                  ? "Subsíndico"
+                  : "Síndico Mestre"}
               </div>
 
               <div style={styles.onlineLine}>
@@ -179,7 +184,7 @@ function DashboardLayout() {
             />
           </MenuGroup>
 
-          <MenuGroup title="COMUNICAÇÃO">
+          <MenuGroup title="ANÁLISE E GESTÃO">
             <MenuItem
               to="/dashboard/avisos"
               active={itemAtivo("/dashboard/avisos")}
@@ -192,6 +197,13 @@ function DashboardLayout() {
               active={itemAtivo("/dashboard/relatorios")}
               icon={<FaChartPie />}
               label="Relatórios"
+            />
+
+            <MenuItem
+              to="/dashboard/bi-analytics"
+              active={itemAtivo("/dashboard/bi-analytics")}
+              icon={<FaChartLine />}
+              label="BI Analytics"
             />
 
             <MenuItem
