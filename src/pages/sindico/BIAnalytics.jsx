@@ -3,10 +3,13 @@ import { useEffect, useState } from "react";
 import PanelHeader from "../../components/BI/PanelHeader";
 import CompareCard from "../../components/BI/CompareCard";
 import IndicatorCard from "../../components/BI/IndicatorCard";
-import ActivityColumn from "../../components/BI/ActivityColumn";
 import DynamicCharts from "../../components/BI/DynamicCharts";
 import ExecutiveSummary from "../../components/BI/ExecutiveSummary";
 import MonitorButton from "../../components/BI/MonitorButton";
+import SecurityDashboard from "../../components/BI/SecurityDashboard";
+import OperationalDashboard from "../../components/BI/OperationalDashboard";
+import HeatMap from "../../components/BI/HeatMap";
+import TrendAnalysis from "../../components/BI/TrendAnalysis";
 
 import {
   buscarDadosBI,
@@ -60,8 +63,18 @@ function BIAnalytics() {
     setUltimaAtualizacao(new Date().toLocaleString("pt-BR"));
   }
 
+  function trocarAba(id) {
+    setAbaAtiva(id);
+    localStorage.setItem("bi_monitor_tela", id);
+
+    if (id === "geral") {
+      localStorage.setItem("bi_monitor_visao", "geral");
+    }
+  }
+
   function sincronizarMonitor(id) {
     setGraficoAtivo(id);
+    localStorage.setItem("bi_monitor_tela", "geral");
 
     if (id === "distribuicao") {
       localStorage.setItem("bi_monitor_visao", "geral");
@@ -133,8 +146,7 @@ function BIAnalytics() {
   ];
 
   const graficoSelecionado =
-    graficos.find((item) => item.id === graficoAtivo) ||
-    graficos[0];
+    graficos.find((item) => item.id === graficoAtivo) || graficos[0];
 
   return (
     <div style={styles.container}>
@@ -146,9 +158,7 @@ function BIAnalytics() {
             🧠 Infinity Intelligence Center
           </span>
 
-          <h1 style={styles.title}>
-            BI Command Center
-          </h1>
+          <h1 style={styles.title}>BI Command Center</h1>
 
           <p style={styles.subtitle}>
             Visão geral executiva, indicadores críticos, leitura inteligente
@@ -182,7 +192,7 @@ function BIAnalytics() {
         {abas.map((aba) => (
           <button
             key={aba.id}
-            onClick={() => setAbaAtiva(aba.id)}
+            onClick={() => trocarAba(aba.id)}
             style={{
               ...styles.tabButton,
               ...(abaAtiva === aba.id ? styles.tabButtonActive : {})
@@ -232,10 +242,7 @@ function BIAnalytics() {
           </div>
         </div>
 
-        <button
-          style={styles.refreshButton}
-          onClick={() => carregarBI()}
-        >
+        <button style={styles.refreshButton} onClick={() => carregarBI()}>
           🔄 Atualizar BI
         </button>
       </section>
@@ -315,153 +322,106 @@ function BIAnalytics() {
               detail={`${indicadores.totalOcorrenciasAbertas || 0} abertas`}
             />
           </section>
+          <div style={styles.extraGrid}>
+            <HeatMap dados={distribuicao} />
+
+            <TrendAnalysis
+              comparativos={comparativos}
+            />
+          </div>
+
+          <section style={styles.commandCenterGrid}>
+            <div style={styles.mainChartPanel}>
+              <div style={styles.chartTop}>
+                <PanelHeader
+                  badge={graficoSelecionado.badge}
+                  title={graficoSelecionado.title}
+                />
+
+                <div style={styles.chartTabs}>
+                  {graficos.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => sincronizarMonitor(item.id)}
+                      style={{
+                        ...styles.chartTab,
+                        ...(graficoAtivo === item.id
+                          ? styles.chartTabActive
+                          : {})
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <DynamicCharts
+                tipo={tipoGrafico}
+                data={graficoSelecionado.data}
+                dataKey={graficoSelecionado.dataKey}
+                xKey={graficoSelecionado.xKey}
+                secondKey={graficoSelecionado.secondKey}
+              />
+            </div>
+
+            <div style={styles.healthPanel}>
+              <PanelHeader
+                badge="Saúde operacional"
+                title="Status do condomínio"
+                gold
+              />
+
+              <div
+                style={{
+                  ...styles.healthCircle,
+                  borderColor: saude.cor || "#7cff4a",
+                  color: saude.cor || "#7cff4a"
+                }}
+              >
+                <strong>{saude.pontuacao || 100}%</strong>
+                <span>{saude.status || "Excelente"}</span>
+              </div>
+
+              <p style={styles.healthText}>
+                {saude.descricao || "Operação estável e sem sinais críticos."}
+              </p>
+
+              <div style={styles.healthList}>
+                <MiniMetric
+                  label="Encomendas pendentes"
+                  value={indicadores.totalPendentes || 0}
+                />
+
+                <MiniMetric
+                  label="Ocorrências abertas"
+                  value={indicadores.totalOcorrenciasAbertas || 0}
+                />
+
+                <MiniMetric
+                  label="Visitantes ativos"
+                  value={indicadores.totalVisitantesAtivos || 0}
+                />
+              </div>
+            </div>
+          </section>
         </>
       )}
 
-      {(abaAtiva === "geral" || abaAtiva === "seguranca") && (
-        <section style={styles.commandCenterGrid}>
-          <div style={styles.mainChartPanel}>
-            <div style={styles.chartTop}>
-              <PanelHeader
-                badge={graficoSelecionado.badge}
-                title={graficoSelecionado.title}
-              />
-
-              <div style={styles.chartTabs}>
-                {graficos.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => sincronizarMonitor(item.id)}
-                    style={{
-                      ...styles.chartTab,
-                      ...(graficoAtivo === item.id
-                        ? styles.chartTabActive
-                        : {})
-                    }}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <DynamicCharts
-              tipo={tipoGrafico}
-              data={graficoSelecionado.data}
-              dataKey={graficoSelecionado.dataKey}
-              xKey={graficoSelecionado.xKey}
-              secondKey={graficoSelecionado.secondKey}
-            />
-          </div>
-
-          <div style={styles.healthPanel}>
-            <PanelHeader
-              badge="Saúde operacional"
-              title="Status do condomínio"
-              gold
-            />
-
-            <div
-              style={{
-                ...styles.healthCircle,
-                borderColor: saude.cor || "#7cff4a",
-                color: saude.cor || "#7cff4a"
-              }}
-            >
-              <strong>{saude.pontuacao || 100}%</strong>
-              <span>{saude.status || "Excelente"}</span>
-            </div>
-
-            <p style={styles.healthText}>
-              {saude.descricao ||
-                "Operação estável e sem sinais críticos."}
-            </p>
-
-            <div style={styles.healthList}>
-              <MiniMetric
-                label="Encomendas pendentes"
-                value={indicadores.totalPendentes || 0}
-              />
-
-              <MiniMetric
-                label="Ocorrências abertas"
-                value={indicadores.totalOcorrenciasAbertas || 0}
-              />
-
-              <MiniMetric
-                label="Visitantes ativos"
-                value={indicadores.totalVisitantesAtivos || 0}
-              />
-            </div>
-          </div>
-        </section>
+      {abaAtiva === "seguranca" && (
+        <SecurityDashboard
+          indicadores={indicadores}
+          saude={saude}
+          insights={insights}
+        />
       )}
 
       {abaAtiva === "operacional" && (
-        <section style={styles.bottomGrid}>
-          <div style={styles.rankingPanel}>
-            <PanelHeader
-              badge="Ranking"
-              title="Módulos com mais registros"
-              gold
-            />
-
-            <div style={styles.rankingList}>
-              {ranking.map((item, index) => (
-                <div key={item.nome} style={styles.rankingItem}>
-                  <div>
-                    <span style={styles.position}>
-                      #{index + 1}
-                    </span>
-
-                    <strong>{item.nome}</strong>
-                  </div>
-
-                  <span style={styles.rankingValue}>
-                    {item.total}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div style={styles.activityPanel}>
-            <PanelHeader
-              badge="Tempo real"
-              title="Últimas movimentações"
-            />
-
-            <div style={styles.activityGrid}>
-              <ActivityColumn
-                title="Visitantes"
-                icon="🚶"
-                items={atividades.visitantes || []}
-                empty="Nenhum visitante recente"
-              />
-
-              <ActivityColumn
-                title="Encomendas"
-                icon="📦"
-                items={atividades.encomendas || []}
-                empty="Nenhuma encomenda recente"
-              />
-
-              <ActivityColumn
-                title="Reservas"
-                icon="📅"
-                items={atividades.reservas || []}
-                empty="Nenhuma reserva recente"
-              />
-
-              <ActivityColumn
-                title="Ocorrências"
-                icon="🚨"
-                items={atividades.ocorrencias || []}
-                empty="Nenhuma ocorrência recente"
-              />
-            </div>
-          </div>
-        </section>
+        <OperationalDashboard
+          ranking={ranking}
+          atividades={atividades}
+          indicadores={indicadores}
+        />
       )}
 
       {abaAtiva === "inteligencia" && (
@@ -486,9 +446,7 @@ function BIAnalytics() {
             <div style={styles.insightsList}>
               {insights.map((item, index) => (
                 <div key={index} style={styles.insightItem}>
-                  <span style={styles.insightType}>
-                    {item.tipo}
-                  </span>
+                  <span style={styles.insightType}>{item.tipo}</span>
 
                   <strong>{item.titulo}</strong>
 
@@ -523,7 +481,13 @@ const styles = {
     padding: "4px",
     boxSizing: "border-box"
   },
-
+  extraGrid: {
+    display: "grid",
+    gridTemplateColumns:
+      "repeat(auto-fit,minmax(360px,1fr))",
+    gap: "22px",
+    marginBottom: "22px"
+  },
   hero: {
     position: "relative",
     overflow: "hidden",
@@ -805,12 +769,6 @@ const styles = {
     marginBottom: "22px"
   },
 
-  bottomGrid: {
-    display: "grid",
-    gridTemplateColumns: "minmax(320px,0.75fr) minmax(420px,1.25fr)",
-    gap: "22px"
-  },
-
   executivePanel: {
     background:
       "radial-gradient(circle at top right,rgba(124,255,74,0.13),transparent 35%), rgba(7,19,13,0.96)",
@@ -850,61 +808,6 @@ const styles = {
     fontSize: "11px",
     fontWeight: "900",
     marginBottom: "8px"
-  },
-
-  rankingPanel: {
-    background:
-      "radial-gradient(circle at top right,rgba(124,255,74,0.13),transparent 35%), rgba(7,19,13,0.96)",
-    border: "1px solid rgba(124,255,74,0.14)",
-    borderRadius: "32px",
-    padding: "26px",
-    color: "white"
-  },
-
-  rankingList: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "12px",
-    marginTop: "20px"
-  },
-
-  rankingItem: {
-    background: "rgba(255,255,255,0.08)",
-    border: "1px solid rgba(124,255,74,0.12)",
-    borderRadius: "16px",
-    padding: "14px",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center"
-  },
-
-  position: {
-    display: "inline-flex",
-    marginRight: "10px",
-    color: "#7cff4a",
-    fontWeight: "900"
-  },
-
-  rankingValue: {
-    background: "rgba(124,255,74,0.12)",
-    color: "#b9ff8a",
-    padding: "7px 11px",
-    borderRadius: "999px",
-    fontWeight: "900"
-  },
-
-  activityPanel: {
-    background: "rgba(7,19,13,0.94)",
-    border: "1px solid rgba(124,255,74,0.14)",
-    borderRadius: "32px",
-    padding: "26px",
-    color: "white"
-  },
-
-  activityGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))",
-    gap: "16px"
   }
 };
 

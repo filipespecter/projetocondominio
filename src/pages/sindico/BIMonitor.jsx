@@ -7,23 +7,34 @@ import {
   gerarIndicadoresCriticos,
   gerarInsightsBI,
   gerarDadosComparativoGrafico,
-  gerarResumoExecutivoBI
+  gerarResumoExecutivoBI,
+  gerarRankingModulos,
+  buscarAtividadesRecentes,
+  gerarComparativosBI
 } from "../../Services/biService";
 
 import DynamicCharts from "../../components/BI/DynamicCharts";
+import SecurityDashboard from "../../components/BI/SecurityDashboard";
+import OperationalDashboard from "../../components/BI/OperationalDashboard";
+import HeatMap from "../../components/BI/HeatMap";
+import TrendAnalysis from "../../components/BI/TrendAnalysis";
 
 function BIMonitor() {
   const [hora, setHora] = useState("");
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState("");
   const [visaoAtiva, setVisaoAtiva] = useState("geral");
+  const [telaMonitor, setTelaMonitor] = useState("geral");
 
   const [indicadores, setIndicadores] = useState({});
   const [saude, setSaude] = useState({});
   const [distribuicao, setDistribuicao] = useState([]);
   const [criticos, setCriticos] = useState([]);
   const [comparativo, setComparativo] = useState([]);
+  const [comparativos, setComparativos] = useState({});
   const [insights, setInsights] = useState([]);
   const [resumo, setResumo] = useState([]);
+  const [ranking, setRanking] = useState([]);
+  const [atividades, setAtividades] = useState({});
 
   useEffect(() => {
     carregarDados();
@@ -38,9 +49,14 @@ function BIMonitor() {
 
     const sincronizador = setInterval(() => {
       const visaoSalva = localStorage.getItem("bi_monitor_visao");
+      const telaSalva = localStorage.getItem("bi_monitor_tela");
 
       if (visaoSalva && visaoSalva !== visaoAtiva) {
         setVisaoAtiva(visaoSalva);
+      }
+
+      if (telaSalva && telaSalva !== telaMonitor) {
+        setTelaMonitor(telaSalva);
       }
     }, 1000);
 
@@ -49,7 +65,7 @@ function BIMonitor() {
       clearInterval(relogio);
       clearInterval(sincronizador);
     };
-  }, [visaoAtiva]);
+  }, [visaoAtiva, telaMonitor]);
 
   function carregarDados() {
     setIndicadores(gerarIndicadoresBI("geral"));
@@ -57,13 +73,24 @@ function BIMonitor() {
     setDistribuicao(gerarDistribuicaoGeral("geral"));
     setCriticos(gerarIndicadoresCriticos("geral"));
     setComparativo(gerarDadosComparativoGrafico("30dias"));
+    setComparativos(gerarComparativosBI("geral"));
     setInsights(gerarInsightsBI("geral"));
     setResumo(gerarResumoExecutivoBI("geral"));
+    setRanking(gerarRankingModulos("geral"));
+    setAtividades(buscarAtividadesRecentes("geral"));
     setUltimaAtualizacao(new Date().toLocaleTimeString("pt-BR"));
   }
 
+  function trocarTela(tela) {
+    setTelaMonitor(tela);
+    localStorage.setItem("bi_monitor_tela", tela);
+  }
+
   function trocarVisao(visao) {
+    setTelaMonitor("geral");
     setVisaoAtiva(visao);
+
+    localStorage.setItem("bi_monitor_tela", "geral");
     localStorage.setItem("bi_monitor_visao", visao);
   }
 
@@ -110,7 +137,7 @@ function BIMonitor() {
           </h1>
 
           <p style={styles.subtitle}>
-            Tela independente para TV, segundo monitor ou sala administrativa.
+            Segunda tela controlada pelo BI principal.
           </p>
         </div>
 
@@ -130,137 +157,236 @@ function BIMonitor() {
         </div>
       </header>
 
-      <section style={styles.kpis}>
-        <KpiCard
-          label="Moradores"
-          value={indicadores.totalMoradores}
-          detail="Base residencial"
-        />
+      <section style={styles.monitorTabs}>
+        <button
+          onClick={() => trocarTela("geral")}
+          style={{
+            ...styles.monitorTab,
+            ...(telaMonitor === "geral" ? styles.monitorTabActive : {})
+          }}
+        >
+          📊 Geral
+        </button>
 
-        <KpiCard
-          label="Visitantes"
-          value={indicadores.totalVisitantes}
-          detail={`${indicadores.totalVisitantesAtivos || 0} ativos`}
-        />
+        <button
+          onClick={() => trocarTela("operacional")}
+          style={{
+            ...styles.monitorTab,
+            ...(telaMonitor === "operacional" ? styles.monitorTabActive : {})
+          }}
+        >
+          ⚙ Operacional
+        </button>
 
-        <KpiCard
-          label="Encomendas"
-          value={indicadores.totalEncomendas}
-          detail={`${indicadores.totalPendentes || 0} pendentes`}
-        />
+        <button
+          onClick={() => trocarTela("seguranca")}
+          style={{
+            ...styles.monitorTab,
+            ...(telaMonitor === "seguranca" ? styles.monitorTabActive : {})
+          }}
+        >
+          🛡 Segurança
+        </button>
 
-        <KpiCard
-          label="Reservas"
-          value={indicadores.totalReservas}
-          detail={`${indicadores.totalReservasAtivas || 0} ativas`}
-        />
-
-        <KpiCard
-          label="Ocorrências"
-          value={indicadores.totalOcorrencias}
-          detail={`${indicadores.totalOcorrenciasAbertas || 0} abertas`}
-          danger={indicadores.totalOcorrenciasAbertas > 0}
-        />
+        <button
+          onClick={() => trocarTela("inteligencia")}
+          style={{
+            ...styles.monitorTab,
+            ...(telaMonitor === "inteligencia" ? styles.monitorTabActive : {})
+          }}
+        >
+          🧠 Inteligência
+        </button>
       </section>
 
-      <main style={styles.commandGrid}>
-        <section style={styles.mainPanel}>
-          <div style={styles.panelHeader}>
-            <div>
-              <span style={styles.panelBadge}>
-                VISUALIZAÇÃO ATIVA
-              </span>
-
-              <h2 style={styles.panelTitle}>
-                {graficoPrincipal.titulo}
-              </h2>
-
-              <p style={styles.panelSubtitle}>
-                {graficoPrincipal.subtitulo}
-              </p>
-            </div>
-
-            <div style={styles.viewButtons}>
-              <button
-                onClick={() => trocarVisao("geral")}
-                style={{
-                  ...styles.viewButton,
-                  ...(visaoAtiva === "geral" ? styles.viewButtonActive : {})
-                }}
-              >
-                Geral
-              </button>
-
-              <button
-                onClick={() => trocarVisao("comparativo")}
-                style={{
-                  ...styles.viewButton,
-                  ...(visaoAtiva === "comparativo"
-                    ? styles.viewButtonActive
-                    : {})
-                }}
-              >
-                Comparativo
-              </button>
-
-              <button
-                onClick={() => trocarVisao("criticos")}
-                style={{
-                  ...styles.viewButton,
-                  ...(visaoAtiva === "criticos" ? styles.viewButtonActive : {})
-                }}
-              >
-                Críticos
-              </button>
-            </div>
-          </div>
-
-          <div style={styles.bigChart}>
-            <DynamicCharts
-              height={520}
-              tipo={graficoPrincipal.tipo}
-              data={graficoPrincipal.data}
-              dataKey={graficoPrincipal.dataKey}
-              xKey="nome"
-              secondKey={graficoPrincipal.secondKey}
+      {telaMonitor === "geral" && (
+        <>
+          <section style={styles.kpis}>
+            <KpiCard
+              label="Moradores"
+              value={indicadores.totalMoradores}
+              detail="Base residencial"
             />
-          </div>
-        </section>
 
-        <aside style={styles.sidePanel}>
-          <div style={styles.healthBox}>
-            <span style={styles.panelBadgeGold}>
-              SAÚDE OPERACIONAL
+            <KpiCard
+              label="Visitantes"
+              value={indicadores.totalVisitantes}
+              detail={`${indicadores.totalVisitantesAtivos || 0} ativos`}
+            />
+
+            <KpiCard
+              label="Encomendas"
+              value={indicadores.totalEncomendas}
+              detail={`${indicadores.totalPendentes || 0} pendentes`}
+            />
+
+            <KpiCard
+              label="Reservas"
+              value={indicadores.totalReservas}
+              detail={`${indicadores.totalReservasAtivas || 0} ativas`}
+            />
+
+            <KpiCard
+              label="Ocorrências"
+              value={indicadores.totalOcorrencias}
+              detail={`${indicadores.totalOcorrenciasAbertas || 0} abertas`}
+              danger={indicadores.totalOcorrenciasAbertas > 0}
+            />
+          </section>
+
+          <main style={styles.commandGrid}>
+            <section style={styles.mainPanel}>
+              <div style={styles.panelHeader}>
+                <div>
+                  <span style={styles.panelBadge}>
+                    VISUALIZAÇÃO ATIVA
+                  </span>
+
+                  <h2 style={styles.panelTitle}>
+                    {graficoPrincipal.titulo}
+                  </h2>
+
+                  <p style={styles.panelSubtitle}>
+                    {graficoPrincipal.subtitulo}
+                  </p>
+                </div>
+
+                <div style={styles.viewButtons}>
+                  <button
+                    onClick={() => trocarVisao("geral")}
+                    style={{
+                      ...styles.viewButton,
+                      ...(visaoAtiva === "geral" ? styles.viewButtonActive : {})
+                    }}
+                  >
+                    Geral
+                  </button>
+
+                  <button
+                    onClick={() => trocarVisao("comparativo")}
+                    style={{
+                      ...styles.viewButton,
+                      ...(visaoAtiva === "comparativo"
+                        ? styles.viewButtonActive
+                        : {})
+                    }}
+                  >
+                    Comparativo
+                  </button>
+
+                  <button
+                    onClick={() => trocarVisao("criticos")}
+                    style={{
+                      ...styles.viewButton,
+                      ...(visaoAtiva === "criticos"
+                        ? styles.viewButtonActive
+                        : {})
+                    }}
+                  >
+                    Críticos
+                  </button>
+                </div>
+              </div>
+
+              <div style={styles.bigChart}>
+                <DynamicCharts
+                  height={520}
+                  tipo={graficoPrincipal.tipo}
+                  data={graficoPrincipal.data}
+                  dataKey={graficoPrincipal.dataKey}
+                  xKey="nome"
+                  secondKey={graficoPrincipal.secondKey}
+                />
+              </div>
+            </section>
+
+            <aside style={styles.sidePanel}>
+              <div style={styles.healthBox}>
+                <span style={styles.panelBadgeGold}>
+                  SAÚDE OPERACIONAL
+                </span>
+
+                <div
+                  style={{
+                    ...styles.healthCircle,
+                    borderColor: saude.cor || "#7cff4a",
+                    color: saude.cor || "#7cff4a"
+                  }}
+                >
+                  <strong>{saude.pontuacao || 100}%</strong>
+                  <span>{saude.status || "Excelente"}</span>
+                </div>
+
+                <p style={styles.healthText}>
+                  {saude.descricao ||
+                    "Operação estável e sem sinais críticos."}
+                </p>
+              </div>
+
+              <div style={styles.alertBox}>
+                <span style={styles.panelBadgeGold}>
+                  ALERTAS INTELIGENTES
+                </span>
+
+                <div style={styles.alertList}>
+                  {insights.slice(0, 4).map((item, index) => (
+                    <div key={index} style={styles.alertItem}>
+                      <strong>{item.titulo}</strong>
+                      <p>{item.texto}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </aside>
+          </main>
+
+          <section style={styles.analyticsGrid}>
+            <HeatMap dados={distribuicao} />
+
+            <TrendAnalysis comparativos={comparativos} />
+          </section>
+        </>
+      )}
+
+      {telaMonitor === "operacional" && (
+        <OperationalDashboard
+          ranking={ranking}
+          atividades={atividades}
+          indicadores={indicadores}
+        />
+      )}
+
+      {telaMonitor === "seguranca" && (
+        <SecurityDashboard
+          indicadores={indicadores}
+          saude={saude}
+          insights={insights}
+        />
+      )}
+
+      {telaMonitor === "inteligencia" && (
+        <section style={styles.bottomGrid}>
+          <div style={styles.summaryPanel}>
+            <span style={styles.panelBadge}>
+              RESUMO EXECUTIVO
             </span>
 
-            <div
-              style={{
-                ...styles.healthCircle,
-                borderColor: saude.cor || "#7cff4a",
-                color: saude.cor || "#7cff4a"
-              }}
-            >
-              <strong>
-                {saude.pontuacao || 100}%
-              </strong>
-
-              <span>
-                {saude.status || "Excelente"}
-              </span>
+            <div style={styles.summaryList}>
+              {resumo.map((item, index) => (
+                <div key={index} style={styles.summaryItem}>
+                  🧠 {item}
+                </div>
+              ))}
             </div>
-
-            <p style={styles.healthText}>
-              {saude.descricao || "Operação estável e sem sinais críticos."}
-            </p>
           </div>
 
           <div style={styles.alertBox}>
             <span style={styles.panelBadgeGold}>
-              ALERTAS INTELIGENTES
+              INSIGHTS INTELIGENTES
             </span>
 
             <div style={styles.alertList}>
-              {insights.slice(0, 4).map((item, index) => (
+              {insights.map((item, index) => (
                 <div key={index} style={styles.alertItem}>
                   <strong>{item.titulo}</strong>
                   <p>{item.texto}</p>
@@ -268,43 +394,13 @@ function BIMonitor() {
               ))}
             </div>
           </div>
-        </aside>
-      </main>
-
-      <section style={styles.bottomGrid}>
-        <div style={styles.summaryPanel}>
-          <span style={styles.panelBadge}>
-            RESUMO EXECUTIVO
-          </span>
-
-          <div style={styles.summaryList}>
-            {resumo.map((item, index) => (
-              <div key={index} style={styles.summaryItem}>
-                🧠 {item}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div style={styles.miniPanel}>
-          <span style={styles.panelBadge}>
-            OPERAÇÃO CRÍTICA
-          </span>
-
-          <DynamicCharts
-            height={300}
-            tipo="area"
-            data={criticos}
-            dataKey="total"
-            xKey="nome"
-          />
-        </div>
-      </section>
+        </section>
+      )}
 
       <footer style={styles.footer}>
         <span>GreenCondo Monitor • modo independente</span>
         <span>Rota: /bi-monitor</span>
-        <span>Sincronizado com BIAnalytics</span>
+        <span>Controlado pelo BIAnalytics</span>
       </footer>
     </div>
   );
@@ -430,6 +526,29 @@ const styles = {
   updateText: {
     color: "rgba(255,255,255,0.50)",
     fontSize: "12px"
+  },
+
+  monitorTabs: {
+    display: "flex",
+    gap: "12px",
+    flexWrap: "wrap",
+    marginBottom: "20px"
+  },
+
+  monitorTab: {
+    background: "rgba(255,255,255,0.06)",
+    color: "rgba(255,255,255,0.72)",
+    border: "1px solid rgba(255,255,255,0.10)",
+    borderRadius: "14px",
+    padding: "12px 16px",
+    cursor: "pointer",
+    fontWeight: "900"
+  },
+
+  monitorTabActive: {
+    background: "linear-gradient(135deg,#7cff4a,#b9ff8a)",
+    color: "#07130d",
+    border: "1px solid rgba(124,255,74,0.40)"
   },
 
   kpis: {
@@ -617,6 +736,13 @@ const styles = {
     padding: "11px"
   },
 
+  analyticsGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit,minmax(420px,1fr))",
+    gap: "20px",
+    marginBottom: "20px"
+  },
+
   bottomGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit,minmax(420px,1fr))",
@@ -646,21 +772,14 @@ const styles = {
     fontSize: "13px"
   },
 
-  miniPanel: {
-    background: "rgba(7,19,13,0.94)",
-    border: "1px solid rgba(124,255,74,0.14)",
-    borderRadius: "28px",
-    padding: "20px",
-    minWidth: 0
-  },
-
   footer: {
     display: "flex",
     justifyContent: "space-between",
     flexWrap: "wrap",
     gap: "10px",
     color: "rgba(255,255,255,0.42)",
-    fontSize: "12px"
+    fontSize: "12px",
+    marginTop: "20px"
   }
 };
 

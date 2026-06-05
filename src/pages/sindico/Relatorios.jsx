@@ -1,26 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-
-import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-  Legend
-} from "recharts";
-
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import * as XLSX from "xlsx";
 
 function Relatorios() {
   const STORAGE_KEYS = {
@@ -34,20 +14,35 @@ function Relatorios() {
     avisos: "avisos",
     prestadores: "condominio_prestadores",
     prestadoresParticulares: "prestadores_particulares_v2",
-    operacional: "operacional_condominio_v2",
     ocorrencias: "ocorrencias",
     sugestoes: "sugestoesMorador",
-    historicoBI: "historico_bi_infinity"
+    historico: "historico_relatorios_greencondo"
   };
 
   const [dados, setDados] = useState({});
-  const [moduloAtivo, setModuloAtivo] = useState("visitantes");
-  const [tipoGrafico, setTipoGrafico] = useState("barra");
-  const [periodo, setPeriodo] = useState("mes");
+  const [tipoRelatorio, setTipoRelatorio] = useState("executivo");
+  const [periodo, setPeriodo] = useState("30dias");
+  const [assinatura, setAssinatura] = useState("Síndico / Administração");
+  const [observacoes, setObservacoes] = useState("");
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState("");
-  const [historicoBI, setHistoricoBI] = useState(() => {
-    const dadosSalvos = localStorage.getItem(STORAGE_KEYS.historicoBI);
-    return dadosSalvos ? JSON.parse(dadosSalvos) : [];
+  const [historico, setHistorico] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEYS.historico)) || [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [relatorioPersonalizado, setRelatorioPersonalizado] = useState({
+    titulo: "Relatório Personalizado",
+    incluirMoradores: true,
+    incluirVisitantes: true,
+    incluirEncomendas: false,
+    incluirReservas: false,
+    incluirOcorrencias: false,
+    incluirPrestadores: false,
+    incluirAvisos: false,
+    incluirAreas: false
   });
 
   useEffect(() => {
@@ -55,11 +50,15 @@ function Relatorios() {
   }, []);
 
   function lerStorage(chave) {
-    return JSON.parse(localStorage.getItem(chave)) || [];
+    try {
+      return JSON.parse(localStorage.getItem(chave)) || [];
+    } catch {
+      return [];
+    }
   }
 
   function carregarDados() {
-    const base = {
+    setDados({
       moradores: lerStorage(STORAGE_KEYS.moradores),
       apartamentos: lerStorage(STORAGE_KEYS.apartamentos),
       porteiros: lerStorage(STORAGE_KEYS.porteiros),
@@ -68,372 +67,569 @@ function Relatorios() {
       reservas: lerStorage(STORAGE_KEYS.reservas),
       areasComuns: lerStorage(STORAGE_KEYS.areasComuns),
       avisos: lerStorage(STORAGE_KEYS.avisos),
-      prestadores: lerStorage(STORAGE_KEYS.prestadores),
-      prestadoresParticulares: lerStorage(STORAGE_KEYS.prestadoresParticulares),
-      operacional: lerStorage(STORAGE_KEYS.operacional),
+      prestadores: [
+        ...lerStorage(STORAGE_KEYS.prestadores),
+        ...lerStorage(STORAGE_KEYS.prestadoresParticulares)
+      ],
       ocorrencias: lerStorage(STORAGE_KEYS.ocorrencias),
       sugestoes: lerStorage(STORAGE_KEYS.sugestoes)
-    };
+    });
 
-    setDados(base);
     setUltimaAtualizacao(new Date().toLocaleString("pt-BR"));
   }
 
-  const modulos = [
+  function obterDataItem(item) {
+    const valor = [
+      item.data,
+      item.dataEntrada,
+      item.dataSaida,
+      item.criadoEm,
+      item.createdAt,
+      item.dataCadastro,
+      item.recebidoEm,
+      item.retiradoEm,
+      item.dataReserva,
+      item.dataVisita
+    ].find(Boolean);
+
+    if (!valor) return null;
+
+    if (String(valor).includes("/")) {
+      const partes = String(valor).split(/[\/,\s:]+/);
+
+      if (partes.length >= 3) {
+        const dataBR = new Date(`${partes[2]}-${partes[1]}-${partes[0]}`);
+
+        if (!isNaN(dataBR.getTime())) return dataBR;
+      }
+    }
+
+    const data = new Date(valor);
+
+    return isNaN(data.getTime()) ? null : data;
+  }
+
+  function filtrarPeriodo(lista) {
+    if (periodo === "geral") return lista;
+
+    const hoje = new Date();
+    hoje.setHours(23, 59, 59, 999);
+
+    const inicio = new Date();
+
+    if (periodo === "hoje") inicio.setHours(0, 0, 0, 0);
+    if (periodo === "7dias") inicio.setDate(inicio.getDate() - 7);
+    if (periodo === "14dias") inicio.setDate(inicio.getDate() - 14);
+    if (periodo === "30dias") inicio.setDate(inicio.getDate() - 30);
+    if (periodo === "3meses") inicio.setMonth(inicio.getMonth() - 3);
+
+    inicio.setHours(0, 0, 0, 0);
+
+    return lista.filter((item) => {
+      const data = obterDataItem(item);
+
+      if (!data) return true;
+
+      return data >= inicio && data <= hoje;
+    });
+  }
+
+  const relatorios = [
+    {
+      id: "executivo",
+      nome: "Relatório Executivo",
+      icon: "📊",
+      descricao: "Resumo geral e indicadores principais."
+    },
     {
       id: "moradores",
       nome: "Moradores",
       icon: "👥",
-      descricao: "Cadastros residenciais",
-      dados: dados.moradores || []
-    },
-    {
-      id: "apartamentos",
-      nome: "Apartamentos",
-      icon: "🏢",
-      descricao: "Unidades cadastradas",
-      dados: dados.apartamentos || []
-    },
-    {
-      id: "porteiros",
-      nome: "Porteiros",
-      icon: "🛡️",
-      descricao: "Equipe operacional",
-      dados: dados.porteiros || []
+      descricao: "Moradores, apartamentos e contatos."
     },
     {
       id: "visitantes",
       nome: "Visitantes",
       icon: "🚶",
-      descricao: "Controle de acesso",
-      dados: dados.visitantes || []
+      descricao: "Controle de acesso e status."
     },
     {
       id: "encomendas",
       nome: "Encomendas",
       icon: "📦",
-      descricao: "Fluxo logístico",
-      dados: dados.encomendas || []
+      descricao: "Pacotes pendentes e retirados."
     },
     {
       id: "reservas",
       nome: "Reservas",
       icon: "📅",
-      descricao: "Áreas comuns",
-      dados: dados.reservas || []
-    },
-    {
-      id: "areasComuns",
-      nome: "Áreas Comuns",
-      icon: "🏊",
-      descricao: "Estruturas do condomínio",
-      dados: dados.areasComuns || []
-    },
-    {
-      id: "avisos",
-      nome: "Avisos",
-      icon: "📢",
-      descricao: "Comunicação",
-      dados: dados.avisos || []
-    },
-    {
-      id: "prestadores",
-      nome: "Prestadores",
-      icon: "🧰",
-      descricao: "Serviços e fornecedores",
-      dados: [
-        ...(dados.prestadores || []),
-        ...(dados.prestadoresParticulares || [])
-      ]
-    },
-    {
-      id: "operacional",
-      nome: "COMPESA / Poço",
-      icon: "💧",
-      descricao: "Controle operacional",
-      dados: dados.operacional || []
+      descricao: "Reservas das áreas comuns."
     },
     {
       id: "ocorrencias",
       nome: "Ocorrências",
       icon: "🚨",
-      descricao: "Registros internos",
-      dados: dados.ocorrencias || []
+      descricao: "Registros internos do condomínio."
     },
     {
-      id: "sugestoes",
-      nome: "Sugestões",
-      icon: "💡",
-      descricao: "Feedback dos moradores",
-      dados: dados.sugestoes || []
+      id: "prestadores",
+      nome: "Prestadores",
+      icon: "🧰",
+      descricao: "Serviços e fornecedores."
+    },
+    {
+      id: "comunicacao",
+      nome: "Comunicação",
+      icon: "📢",
+      descricao: "Avisos e comunicados enviados."
+    },
+    {
+      id: "areas",
+      nome: "Áreas Comuns",
+      icon: "🏊",
+      descricao: "Estruturas e utilização."
+    },
+    {
+      id: "personalizado",
+      nome: "Personalizado",
+      icon: "📝",
+      descricao: "Monte seu próprio relatório."
     }
   ];
 
-  const moduloSelecionado = useMemo(() => {
-    return modulos.find((m) => m.id === moduloAtivo) || modulos[0];
-  }, [modulos, moduloAtivo]);
-
-  const totalRegistros = modulos.reduce(
-    (total, modulo) => total + modulo.dados.length,
-    0
-  );
-
-  const dadosGrafico = modulos.map((modulo) => ({
-    name: modulo.nome,
-    value: modulo.dados.length
-  }));
-
-  const dadosModuloAtivo = gerarDadosModulo(moduloSelecionado);
-
-  const COLORS = [
-    "#22c55e",
-    "#16a34a",
-    "#15803d",
-    "#facc15",
-    "#84cc16",
-    "#4ade80",
-    "#bbf7d0",
-    "#eab308"
+  const periodos = [
+    { id: "hoje", nome: "Hoje" },
+    { id: "7dias", nome: "Últimos 7 dias" },
+    { id: "14dias", nome: "Últimas 2 semanas" },
+    { id: "30dias", nome: "Último mês" },
+    { id: "3meses", nome: "Últimos 3 meses" },
+    { id: "geral", nome: "Geral" }
   ];
 
-  function gerarDadosModulo(modulo) {
-    const lista = modulo.dados || [];
+  const relatorioSelecionado =
+    relatorios.find((item) => item.id === tipoRelatorio) || relatorios[0];
 
-    if (lista.length === 0) {
-      return [
-        { name: "Sem dados", value: 0 }
-      ];
-    }
+  const preview = useMemo(() => {
+    return gerarPreview();
+  }, [dados, tipoRelatorio, periodo, relatorioPersonalizado]);
 
-    const agrupado = {};
-
-    lista.forEach((item, index) => {
-      let chave = "Registros";
-
-      if (modulo.id === "visitantes") {
-        chave = item.status || "Sem status";
-      } else if (modulo.id === "encomendas") {
-        chave = item.status || "Sem status";
-      } else if (modulo.id === "reservas") {
-        chave = item.status || "Sem status";
-      } else if (modulo.id === "avisos") {
-        chave = item.prioridade || "Sem prioridade";
-      } else if (modulo.id === "prestadores") {
-        chave = item.status || "Sem status";
-      } else if (modulo.id === "areasComuns") {
-        chave = item.status || "Sem status";
-      } else if (modulo.id === "porteiros") {
-        chave = item.turno || "Sem turno";
-      } else if (modulo.id === "operacional") {
-        chave = item.poco || "Sem status";
-      } else {
-        chave = `Grupo ${index + 1}`;
-      }
-
-      agrupado[chave] = (agrupado[chave] || 0) + 1;
-    });
-
-    return Object.keys(agrupado).map((key) => ({
-      name: key,
-      value: agrupado[key]
-    }));
+  function normalizarLinha(valor) {
+    if (valor === undefined || valor === null || valor === "") return "-";
+    if (typeof valor === "object") return JSON.stringify(valor);
+    return String(valor);
   }
 
-  function renderizarGrafico() {
-    const data =
-      moduloAtivo === "geral"
-        ? dadosGrafico
-        : dadosModuloAtivo;
+  function montarTabelaModulo(modulo) {
+    const lista = filtrarPeriodo(dados[modulo] || []);
 
-    if (tipoGrafico === "linha") {
-      return (
-        <ResponsiveContainer width="100%" height={360}>
-          <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
-            <XAxis dataKey="name" stroke="#d1d5db" />
-            <YAxis stroke="#d1d5db" />
-            <Tooltip />
-            <Legend />
-            <Line
-              type="monotone"
-              dataKey="value"
-              stroke="#facc15"
-              strokeWidth={4}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      );
+    if (modulo === "moradores") {
+      return {
+        titulo: "Moradores",
+        colunas: ["Nome", "Apartamento", "Telefone", "E-mail", "Status"],
+        linhas: lista.map((item) => [
+          normalizarLinha(item.nome),
+          normalizarLinha(item.apartamento || item.apto),
+          normalizarLinha(item.telefone),
+          normalizarLinha(item.email),
+          normalizarLinha(item.status || "Ativo")
+        ])
+      };
     }
 
-    if (tipoGrafico === "pizza") {
-      return (
-        <ResponsiveContainer width="100%" height={360}>
-          <PieChart>
-            <Pie
-              data={data}
-              dataKey="value"
-              nameKey="name"
-              outerRadius={125}
-              label
-            >
-              {data.map((_, index) => (
-                <Cell
-                  key={index}
-                  fill={COLORS[index % COLORS.length]}
-                />
-              ))}
-            </Pie>
-            <Tooltip />
-            <Legend />
-          </PieChart>
-        </ResponsiveContainer>
-      );
+    if (modulo === "visitantes") {
+      return {
+        titulo: "Visitantes",
+        colunas: ["Nome", "Apartamento", "Morador", "Status", "Data"],
+        linhas: lista.map((item) => [
+          normalizarLinha(item.nome),
+          normalizarLinha(item.apartamento || item.apto),
+          normalizarLinha(item.morador || item.responsavel),
+          normalizarLinha(item.status),
+          normalizarLinha(item.data || item.dataEntrada || item.criadoEm)
+        ])
+      };
     }
 
-    if (tipoGrafico === "area") {
-      return (
-        <ResponsiveContainer width="100%" height={360}>
-          <AreaChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
-            <XAxis dataKey="name" stroke="#d1d5db" />
-            <YAxis stroke="#d1d5db" />
-            <Tooltip />
-            <Legend />
-            <Area
-              type="monotone"
-              dataKey="value"
-              stroke="#22c55e"
-              fill="#14532d"
-              strokeWidth={3}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      );
+    if (modulo === "encomendas") {
+      return {
+        titulo: "Encomendas",
+        colunas: ["Destinatário", "Apartamento", "Status", "Data", "Descrição"],
+        linhas: lista.map((item) => [
+          normalizarLinha(item.nome || item.destinatario || item.morador),
+          normalizarLinha(item.apartamento || item.apto),
+          normalizarLinha(item.status),
+          normalizarLinha(item.data || item.recebidoEm),
+          normalizarLinha(item.descricao || item.tipo || item.observacao)
+        ])
+      };
     }
 
-    return (
-      <ResponsiveContainer width="100%" height={360}>
-        <BarChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
-          <XAxis dataKey="name" stroke="#d1d5db" />
-          <YAxis stroke="#d1d5db" />
-          <Tooltip />
-          <Legend />
-          <Bar
-            dataKey="value"
-            fill="#22c55e"
-            radius={[12, 12, 0, 0]}
-          />
-        </BarChart>
-      </ResponsiveContainer>
+    if (modulo === "reservas") {
+      return {
+        titulo: "Reservas",
+        colunas: ["Morador", "Apartamento", "Área", "Status", "Data"],
+        linhas: lista.map((item) => [
+          normalizarLinha(item.morador || item.nome),
+          normalizarLinha(item.apartamento || item.apto),
+          normalizarLinha(item.area || item.areaComum),
+          normalizarLinha(item.status),
+          normalizarLinha(item.data || item.dataReserva)
+        ])
+      };
+    }
+
+    if (modulo === "ocorrencias") {
+      return {
+        titulo: "Ocorrências",
+        colunas: ["Título", "Responsável", "Status", "Data", "Descrição"],
+        linhas: lista.map((item) => [
+          normalizarLinha(item.titulo || item.tipo),
+          normalizarLinha(item.responsavel || item.criadoPor),
+          normalizarLinha(item.status),
+          normalizarLinha(item.data || item.criadoEm),
+          normalizarLinha(item.descricao || item.observacao)
+        ])
+      };
+    }
+
+    if (modulo === "prestadores") {
+      return {
+        titulo: "Prestadores",
+        colunas: ["Nome", "Serviço", "Contato", "Status", "Data"],
+        linhas: lista.map((item) => [
+          normalizarLinha(item.nome),
+          normalizarLinha(item.servico || item.tipo),
+          normalizarLinha(item.telefone || item.contato),
+          normalizarLinha(item.status),
+          normalizarLinha(item.data || item.criadoEm)
+        ])
+      };
+    }
+
+    if (modulo === "comunicacao") {
+      const listaAvisos = filtrarPeriodo(dados.avisos || []);
+
+      return {
+        titulo: "Comunicação",
+        colunas: ["Título", "Prioridade", "Destino", "Data", "Mensagem"],
+        linhas: listaAvisos.map((item) => [
+          normalizarLinha(item.titulo),
+          normalizarLinha(item.prioridade),
+          normalizarLinha(item.destino || item.publico || "Todos"),
+          normalizarLinha(item.data || item.criadoEm),
+          normalizarLinha(item.mensagem || item.descricao)
+        ])
+      };
+    }
+
+    if (modulo === "areas") {
+      return {
+        titulo: "Áreas Comuns",
+        colunas: ["Área", "Status", "Capacidade", "Regras", "Reservas"],
+        linhas: (dados.areasComuns || []).map((item) => {
+          const totalReservas = (dados.reservas || []).filter((reserva) => {
+            return (
+              reserva.area === item.nome ||
+              reserva.areaComum === item.nome ||
+              reserva.areaId === item.id
+            );
+          }).length;
+
+          return [
+            normalizarLinha(item.nome),
+            normalizarLinha(item.status),
+            normalizarLinha(item.capacidade),
+            normalizarLinha(item.regras || item.descricao),
+            totalReservas
+          ];
+        })
+      };
+    }
+
+    return {
+      titulo: "Dados",
+      colunas: ["Nome", "Status", "Data"],
+      linhas: lista.map((item) => [
+        normalizarLinha(item.nome || item.titulo || item.descricao),
+        normalizarLinha(item.status),
+        normalizarLinha(item.data || item.criadoEm)
+      ])
+    };
+  }
+
+  function gerarPreview() {
+    const moradores = dados.moradores || [];
+    const visitantes = filtrarPeriodo(dados.visitantes || []);
+    const encomendas = filtrarPeriodo(dados.encomendas || []);
+    const reservas = filtrarPeriodo(dados.reservas || []);
+    const ocorrencias = filtrarPeriodo(dados.ocorrencias || []);
+    const prestadores = filtrarPeriodo(dados.prestadores || []);
+    const avisos = filtrarPeriodo(dados.avisos || []);
+    const areas = dados.areasComuns || [];
+
+    if (tipoRelatorio === "executivo") {
+      return {
+        titulo: "Relatório Executivo Condominial",
+        descricao:
+          "Documento administrativo com visão geral dos principais módulos do condomínio.",
+        resumo: [
+          `Total de moradores cadastrados: ${moradores.length}`,
+          `Visitantes no período: ${visitantes.length}`,
+          `Encomendas no período: ${encomendas.length}`,
+          `Reservas no período: ${reservas.length}`,
+          `Ocorrências no período: ${ocorrencias.length}`,
+          `Prestadores no período: ${prestadores.length}`,
+          `Avisos no período: ${avisos.length}`,
+          `Áreas comuns cadastradas: ${areas.length}`
+        ],
+        tabelas: [
+          {
+            titulo: "Resumo Geral",
+            colunas: ["Módulo", "Quantidade"],
+            linhas: [
+              ["Moradores", moradores.length],
+              ["Visitantes", visitantes.length],
+              ["Encomendas", encomendas.length],
+              ["Reservas", reservas.length],
+              ["Ocorrências", ocorrencias.length],
+              ["Prestadores", prestadores.length],
+              ["Comunicação", avisos.length],
+              ["Áreas Comuns", areas.length]
+            ]
+          }
+        ]
+      };
+    }
+
+    if (tipoRelatorio === "personalizado") {
+      const tabelas = [];
+
+      if (relatorioPersonalizado.incluirMoradores) {
+        tabelas.push(montarTabelaModulo("moradores"));
+      }
+
+      if (relatorioPersonalizado.incluirVisitantes) {
+        tabelas.push(montarTabelaModulo("visitantes"));
+      }
+
+      if (relatorioPersonalizado.incluirEncomendas) {
+        tabelas.push(montarTabelaModulo("encomendas"));
+      }
+
+      if (relatorioPersonalizado.incluirReservas) {
+        tabelas.push(montarTabelaModulo("reservas"));
+      }
+
+      if (relatorioPersonalizado.incluirOcorrencias) {
+        tabelas.push(montarTabelaModulo("ocorrencias"));
+      }
+
+      if (relatorioPersonalizado.incluirPrestadores) {
+        tabelas.push(montarTabelaModulo("prestadores"));
+      }
+
+      if (relatorioPersonalizado.incluirAvisos) {
+        tabelas.push(montarTabelaModulo("comunicacao"));
+      }
+
+      if (relatorioPersonalizado.incluirAreas) {
+        tabelas.push(montarTabelaModulo("areas"));
+      }
+
+      return {
+        titulo: relatorioPersonalizado.titulo || "Relatório Personalizado",
+        descricao:
+          "Documento personalizado gerado com base nos módulos selecionados.",
+        resumo: [
+          `Módulos selecionados: ${tabelas.length}`,
+          `Total estimado de registros: ${tabelas.reduce(
+            (total, tabela) => total + tabela.linhas.length,
+            0
+          )}`,
+          `Período aplicado: ${nomePeriodo()}`
+        ],
+        tabelas
+      };
+    }
+
+    const tabela = montarTabelaModulo(tipoRelatorio);
+
+    return {
+      titulo: `Relatório de ${relatorioSelecionado.nome}`,
+      descricao: relatorioSelecionado.descricao,
+      resumo: [
+        `Tipo selecionado: ${relatorioSelecionado.nome}`,
+        `Período aplicado: ${nomePeriodo()}`,
+        `Registros encontrados: ${tabela.linhas.length}`,
+        `Última atualização: ${ultimaAtualizacao || "Agora"}`
+      ],
+      tabelas: [tabela]
+    };
+  }
+
+  function nomePeriodo() {
+    return periodos.find((item) => item.id === periodo)?.nome || "Geral";
+  }
+
+  function salvarHistorico(tipo) {
+    const novo = {
+      id: Date.now(),
+      tipo,
+      relatorio: preview.titulo,
+      periodo: nomePeriodo(),
+      data: new Date().toLocaleString("pt-BR")
+    };
+
+    const atualizado = [novo, ...historico].slice(0, 10);
+
+    setHistorico(atualizado);
+
+    localStorage.setItem(
+      STORAGE_KEYS.historico,
+      JSON.stringify(atualizado)
     );
   }
 
   function gerarPDF() {
     const doc = new jsPDF();
+    const dataGeracao = new Date().toLocaleString("pt-BR");
 
-    doc.setFillColor(5, 46, 22);
+    doc.setFillColor(22, 163, 74);
     doc.rect(0, 0, 210, 38, "F");
 
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(22);
-    doc.text("Infinity BI Center", 14, 18);
+    doc.setFontSize(20);
+    doc.text("GreenCondo", 14, 17);
 
-    doc.setFontSize(11);
-    doc.text("Relatório Executivo Condominial", 14, 28);
+    doc.setFontSize(10);
+    doc.text("Central de Relatórios Condominiais", 14, 27);
 
     doc.setTextColor(20, 83, 45);
-    doc.setFontSize(14);
-    doc.text(`Módulo analisado: ${moduloSelecionado.nome}`, 14, 50);
+    doc.setFontSize(15);
+    doc.text(preview.titulo, 14, 50);
 
+    doc.setTextColor(80, 80, 80);
     doc.setFontSize(10);
-    doc.text(`Período: ${periodo}`, 14, 58);
-    doc.text(`Atualizado em: ${ultimaAtualizacao}`, 14, 66);
+    doc.text(`Período: ${nomePeriodo()}`, 14, 58);
+    doc.text(`Gerado em: ${dataGeracao}`, 14, 65);
 
     autoTable(doc, {
-      startY: 78,
-      head: [["Indicador", "Quantidade"]],
-      body: modulos.map((modulo) => [
-        modulo.nome,
-        modulo.dados.length
-      ]),
+      startY: 76,
+      head: [["Resumo"]],
+      body: preview.resumo.map((item) => [item]),
       headStyles: {
-        fillColor: [20, 83, 45]
+        fillColor: [22, 163, 74]
       },
       styles: {
-        fontSize: 10
+        fontSize: 9,
+        cellPadding: 3
       }
     });
 
-    autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 12,
-      head: [["Análise", "Valor"]],
-      body: dadosModuloAtivo.map((item) => [
-        item.name,
-        item.value
-      ]),
-      headStyles: {
-        fillColor: [234, 179, 8]
-      },
-      styles: {
-        fontSize: 10
+    let posicao = doc.lastAutoTable.finalY + 10;
+
+    preview.tabelas.forEach((tabela) => {
+      if (posicao > 245) {
+        doc.addPage();
+        posicao = 18;
       }
+
+      doc.setTextColor(20, 83, 45);
+      doc.setFontSize(12);
+      doc.text(tabela.titulo, 14, posicao);
+
+      autoTable(doc, {
+        startY: posicao + 6,
+        head: [tabela.colunas],
+        body:
+          tabela.linhas.length > 0
+            ? tabela.linhas.slice(0, 80)
+            : [["Sem registros"]],
+        headStyles: {
+          fillColor: [20, 83, 45]
+        },
+        styles: {
+          fontSize: 8,
+          cellPadding: 2,
+          overflow: "linebreak"
+        }
+      });
+
+      posicao = doc.lastAutoTable.finalY + 12;
     });
 
+    if (observacoes.trim()) {
+      if (posicao > 240) {
+        doc.addPage();
+        posicao = 18;
+      }
+
+      doc.setTextColor(20, 83, 45);
+      doc.setFontSize(12);
+      doc.text("Observações", 14, posicao);
+
+      doc.setTextColor(80, 80, 80);
+      doc.setFontSize(10);
+      doc.text(doc.splitTextToSize(observacoes, 180), 14, posicao + 8);
+
+      posicao += 30;
+    }
+
+    if (posicao > 245) {
+      doc.addPage();
+      posicao = 18;
+    }
+
+    doc.setDrawColor(20, 83, 45);
+    doc.line(14, posicao + 14, 90, posicao + 14);
+
+    doc.setTextColor(80, 80, 80);
     doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    doc.text(
-      "Relatório gerado automaticamente pelo Infinity Condo.",
-      14,
-      285
-    );
+    doc.text(assinatura || "Responsável", 14, posicao + 20);
+    doc.text("Assinatura digital / Responsável pelo relatório", 14, posicao + 26);
 
-    salvarHistoricoBI("PDF Executivo", moduloSelecionado.nome);
+    doc.setFontSize(8);
+    doc.setTextColor(130, 130, 130);
+    doc.text("Relatório gerado automaticamente pelo GreenCondo.", 14, 287);
 
-    doc.save(`infinity-bi-${moduloSelecionado.id}.pdf`);
-  }
+    salvarHistorico("PDF");
 
-  function exportarExcel() {
-    const workbook = XLSX.utils.book_new();
-
-    const resumo = modulos.map((modulo) => ({
-      Modulo: modulo.nome,
-      Quantidade: modulo.dados.length
-    }));
-
-    const wsResumo = XLSX.utils.json_to_sheet(resumo);
-    XLSX.utils.book_append_sheet(workbook, wsResumo, "Resumo");
-
-    const dadosModulo = moduloSelecionado.dados.map((item, index) => ({
-      ID: item.id || index + 1,
-      Nome: item.nome || item.titulo || item.area || item.descricao || "-",
-      Status: item.status || item.prioridade || "-",
-      Data: item.data || item.criadoEm || item.dataEntrada || "-",
-      Informacao: JSON.stringify(item)
-    }));
-
-    const wsModulo = XLSX.utils.json_to_sheet(dadosModulo);
-    XLSX.utils.book_append_sheet(workbook, wsModulo, moduloSelecionado.nome);
-
-    salvarHistoricoBI("Excel", moduloSelecionado.nome);
-
-    XLSX.writeFile(
-      workbook,
-      `infinity-bi-${moduloSelecionado.id}.xlsx`
+    doc.save(
+      `${preview.titulo
+        .toLowerCase()
+        .replaceAll(" ", "-")
+        .replace(/[^\w-]/g, "")}.pdf`
     );
   }
 
   function exportarCSV() {
-    const linhas = [
-      ["Modulo", "Quantidade"],
-      ...modulos.map((modulo) => [
-        modulo.nome,
-        modulo.dados.length
-      ])
-    ];
+    const linhas = [];
+
+    linhas.push(["Relatório", preview.titulo]);
+    linhas.push(["Período", nomePeriodo()]);
+    linhas.push(["Gerado em", new Date().toLocaleString("pt-BR")]);
+    linhas.push([]);
+
+    preview.resumo.forEach((item) => {
+      linhas.push(["Resumo", item]);
+    });
+
+    preview.tabelas.forEach((tabela) => {
+      linhas.push([]);
+      linhas.push([tabela.titulo]);
+      linhas.push(tabela.colunas);
+
+      tabela.linhas.forEach((linha) => {
+        linhas.push(linha);
+      });
+    });
 
     const csv = linhas
-      .map((linha) => linha.join(";"))
+      .map((linha) =>
+        linha
+          .map((celula) => `"${String(celula || "").replaceAll('"', '""')}"`)
+          .join(";")
+      )
       .join("\n");
 
     const blob = new Blob([csv], {
@@ -444,335 +640,358 @@ function Relatorios() {
 
     const link = document.createElement("a");
     link.href = url;
-    link.download = "infinity-bi-resumo.csv";
+    link.download = `${preview.titulo
+      .toLowerCase()
+      .replaceAll(" ", "-")
+      .replace(/[^\w-]/g, "")}.csv`;
     link.click();
 
     URL.revokeObjectURL(url);
 
-    salvarHistoricoBI("CSV", "Resumo geral");
+    salvarHistorico("CSV");
   }
 
-  function gerarBackup() {
-    const backup = {};
-
-    Object.keys(STORAGE_KEYS).forEach((key) => {
-      if (key !== "historicoBI") {
-        backup[STORAGE_KEYS[key]] =
-          JSON.parse(localStorage.getItem(STORAGE_KEYS[key])) || [];
-      }
-    });
-
-    const arquivo = {
-      sistema: "Infinity Condo",
-      tipo: "backup-local",
-      geradoEm: new Date().toISOString(),
-      dados: backup
-    };
-
-    const blob = new Blob([JSON.stringify(arquivo, null, 2)], {
-      type: "application/json"
-    });
-
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `backup-infinity-condo-${Date.now()}.json`;
-    link.click();
-
-    URL.revokeObjectURL(url);
-
-    salvarHistoricoBI("Backup", "Backup geral");
-  }
-
-  function restaurarBackup(event) {
-    const arquivo = event.target.files[0];
-
-    if (!arquivo) return;
-
-    const leitor = new FileReader();
-
-    leitor.onload = function (e) {
-      try {
-        const conteudo = JSON.parse(e.target.result);
-
-        if (!conteudo.dados) {
-          alert("Arquivo de backup inválido.");
-          return;
-        }
-
-        Object.keys(conteudo.dados).forEach((chave) => {
-          localStorage.setItem(
-            chave,
-            JSON.stringify(conteudo.dados[chave])
-          );
-        });
-
-        alert("Backup restaurado com sucesso.");
-        carregarDados();
-        salvarHistoricoBI("Restauração", "Backup restaurado");
-      } catch (error) {
-        alert("Erro ao restaurar backup.");
-      }
-    };
-
-    leitor.readAsText(arquivo);
-  }
-
-  function salvarHistoricoBI(tipo, modulo) {
-    const novo = {
-      id: Date.now(),
-      tipo,
-      modulo,
-      data: new Date().toLocaleString("pt-BR")
-    };
-
-    const atualizado = [
-      novo,
-      ...historicoBI
-    ].slice(0, 8);
-
-    setHistoricoBI(atualizado);
-
-    localStorage.setItem(
-      STORAGE_KEYS.historicoBI,
-      JSON.stringify(atualizado)
-    );
-  }
-
-  function abrirModoMonitor() {
-    const elemento = document.documentElement;
-
-    if (elemento.requestFullscreen) {
-      elemento.requestFullscreen();
-    }
+  function atualizarPersonalizado(campo, valor) {
+    setRelatorioPersonalizado((anterior) => ({
+      ...anterior,
+      [campo]: valor
+    }));
   }
 
   return (
     <div style={styles.container}>
       <section style={styles.hero}>
         <div>
-          <span style={styles.heroBadge}>
-            🧠 Central BI em tempo real
-          </span>
+          <span style={styles.heroBadge}>📄 Central de Documentos</span>
 
-          <h1 style={styles.title}>
-            Infinity BI Center
-          </h1>
+          <h1 style={styles.title}>Relatórios GreenCondo</h1>
 
           <p style={styles.subtitle}>
-            Relatórios, movimentações, análise operacional, exportações,
-            backup e inteligência condominial em uma única central.
+            Gere documentos operacionais, executivos e personalizados com
+            pré-visualização, período definido, assinatura digital e exportação.
           </p>
         </div>
 
         <div style={styles.heroStats}>
           <div style={styles.heroStat}>
-            <span>Sistema</span>
-            <strong>Online</strong>
+            <span>Relatório</span>
+            <strong>{relatorioSelecionado.nome}</strong>
           </div>
 
           <div style={styles.heroStat}>
-            <span>Registros</span>
-            <strong>{totalRegistros}</strong>
+            <span>Período</span>
+            <strong>{nomePeriodo()}</strong>
           </div>
 
-          <div style={styles.heroStatGold}>
+          <div style={styles.heroStatGreen}>
             <span>Atualizado</span>
             <strong>{ultimaAtualizacao || "Agora"}</strong>
           </div>
         </div>
       </section>
 
-      <section style={styles.commandBar}>
-        <select
-          value={periodo}
-          onChange={(e) => setPeriodo(e.target.value)}
-          style={styles.select}
-        >
-          <option value="hoje">Hoje</option>
-          <option value="semana">Esta semana</option>
-          <option value="mes">Este mês</option>
-          <option value="ano">Este ano</option>
-          <option value="geral">Geral</option>
-        </select>
-
-        <select
-          value={tipoGrafico}
-          onChange={(e) => setTipoGrafico(e.target.value)}
-          style={styles.select}
-        >
-          <option value="barra">Barras</option>
-          <option value="linha">Linha</option>
-          <option value="pizza">Pizza</option>
-          <option value="area">Área</option>
-        </select>
-
-        <button style={styles.actionButton} onClick={carregarDados}>
-          🔄 Atualizar
-        </button>
-
-        <button style={styles.goldButton} onClick={abrirModoMonitor}>
-          🖥️ Modo Monitor
-        </button>
-
-        <button style={styles.actionButton} onClick={gerarPDF}>
-          📄 PDF
-        </button>
-
-        <button style={styles.actionButton} onClick={exportarExcel}>
-          📊 Excel
-        </button>
-
-        <button style={styles.actionButton} onClick={exportarCSV}>
-          CSV
-        </button>
-
-        <button style={styles.goldButton} onClick={gerarBackup}>
-          💾 Backup
-        </button>
-
-        <label style={styles.restoreButton}>
-          Restaurar
-          <input
-            type="file"
-            accept=".json"
-            onChange={restaurarBackup}
-            style={{ display: "none" }}
-          />
-        </label>
-      </section>
-
-      <section style={styles.cardsGrid}>
-        {modulos.map((modulo) => (
-          <button
-            key={modulo.id}
-            style={{
-              ...styles.biCard,
-              ...(moduloAtivo === modulo.id ? styles.biCardActive : {})
-            }}
-            onClick={() => setModuloAtivo(modulo.id)}
-          >
-            <div style={styles.cardIcon}>
-              {modulo.icon}
-            </div>
-
-            <div>
-              <p style={styles.cardLabel}>
-                {modulo.nome}
-              </p>
-
-              <h2 style={styles.cardNumber}>
-                {modulo.dados.length}
-              </h2>
-
-              <span style={styles.cardMini}>
-                {modulo.descricao}
-              </span>
-            </div>
-          </button>
-        ))}
-      </section>
-
-      <section style={styles.analysisGrid}>
-        <div style={styles.chartPanel}>
+      <section style={styles.layoutGrid}>
+        <aside style={styles.configPanel}>
           <div style={styles.panelHeader}>
-            <div>
-              <span style={styles.panelBadge}>
-                Visualização BI
-              </span>
+            <span style={styles.panelBadge}>Configuração</span>
 
-              <h2 style={styles.panelTitle}>
-                {moduloSelecionado.icon} {moduloSelecionado.nome}
-              </h2>
-            </div>
-
-            <span style={styles.liveBadge}>
-              ● Live
-            </span>
+            <h2 style={styles.panelTitle}>Montar relatório</h2>
           </div>
 
-          {renderizarGrafico()}
+          <label style={styles.label}>Tipo de relatório</label>
+
+          <div style={styles.reportGrid}>
+            {relatorios.map((relatorio) => (
+              <button
+                key={relatorio.id}
+                onClick={() => setTipoRelatorio(relatorio.id)}
+                style={{
+                  ...styles.reportButton,
+                  ...(tipoRelatorio === relatorio.id
+                    ? styles.reportButtonActive
+                    : {})
+                }}
+              >
+                <span style={styles.reportIcon}>{relatorio.icon}</span>
+
+                <div>
+                  <strong>{relatorio.nome}</strong>
+                  <small>{relatorio.descricao}</small>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          <label style={styles.label}>Período</label>
+
+          <select
+            value={periodo}
+            onChange={(e) => setPeriodo(e.target.value)}
+            style={styles.select}
+          >
+            {periodos.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.nome}
+              </option>
+            ))}
+          </select>
+
+          {tipoRelatorio === "personalizado" && (
+            <div style={styles.customBox}>
+              <label style={styles.label}>Nome do relatório</label>
+
+              <input
+                value={relatorioPersonalizado.titulo}
+                onChange={(e) =>
+                  atualizarPersonalizado("titulo", e.target.value)
+                }
+                style={styles.input}
+              />
+
+              <label style={styles.label}>Módulos incluídos</label>
+
+              <CheckOption
+                label="Moradores"
+                checked={relatorioPersonalizado.incluirMoradores}
+                onChange={(valor) =>
+                  atualizarPersonalizado("incluirMoradores", valor)
+                }
+              />
+
+              <CheckOption
+                label="Visitantes"
+                checked={relatorioPersonalizado.incluirVisitantes}
+                onChange={(valor) =>
+                  atualizarPersonalizado("incluirVisitantes", valor)
+                }
+              />
+
+              <CheckOption
+                label="Encomendas"
+                checked={relatorioPersonalizado.incluirEncomendas}
+                onChange={(valor) =>
+                  atualizarPersonalizado("incluirEncomendas", valor)
+                }
+              />
+
+              <CheckOption
+                label="Reservas"
+                checked={relatorioPersonalizado.incluirReservas}
+                onChange={(valor) =>
+                  atualizarPersonalizado("incluirReservas", valor)
+                }
+              />
+
+              <CheckOption
+                label="Ocorrências"
+                checked={relatorioPersonalizado.incluirOcorrencias}
+                onChange={(valor) =>
+                  atualizarPersonalizado("incluirOcorrencias", valor)
+                }
+              />
+
+              <CheckOption
+                label="Prestadores"
+                checked={relatorioPersonalizado.incluirPrestadores}
+                onChange={(valor) =>
+                  atualizarPersonalizado("incluirPrestadores", valor)
+                }
+              />
+
+              <CheckOption
+                label="Comunicação"
+                checked={relatorioPersonalizado.incluirAvisos}
+                onChange={(valor) =>
+                  atualizarPersonalizado("incluirAvisos", valor)
+                }
+              />
+
+              <CheckOption
+                label="Áreas comuns"
+                checked={relatorioPersonalizado.incluirAreas}
+                onChange={(valor) =>
+                  atualizarPersonalizado("incluirAreas", valor)
+                }
+              />
+            </div>
+          )}
+
+          <label style={styles.label}>Assinatura digital</label>
+
+          <input
+            value={assinatura}
+            onChange={(e) => setAssinatura(e.target.value)}
+            style={styles.input}
+            placeholder="Ex: Síndico / Administração"
+          />
+
+          <label style={styles.label}>Observações finais</label>
+
+          <textarea
+            value={observacoes}
+            onChange={(e) => setObservacoes(e.target.value)}
+            style={styles.textarea}
+            placeholder="Digite observações que serão incluídas no PDF..."
+          />
+
+          <div style={styles.actions}>
+            <button style={styles.primaryButton} onClick={gerarPDF}>
+              📄 Gerar PDF
+            </button>
+
+            <button style={styles.secondaryButton} onClick={exportarCSV}>
+              CSV
+            </button>
+
+            <button style={styles.secondaryButton} onClick={carregarDados}>
+              🔄 Atualizar
+            </button>
+          </div>
+        </aside>
+
+        <main style={styles.previewPanel}>
+          <div style={styles.previewHeader}>
+            <div>
+              <span style={styles.previewBadge}>Pré-visualização</span>
+
+              <h2 style={styles.previewTitle}>{preview.titulo}</h2>
+
+              <p style={styles.previewSubtitle}>{preview.descricao}</p>
+            </div>
+
+            <div style={styles.previewSeal}>GreenCondo</div>
+          </div>
+
+          <div style={styles.metaGrid}>
+            <div>
+              <span>Período</span>
+              <strong>{nomePeriodo()}</strong>
+            </div>
+
+            <div>
+              <span>Registros</span>
+              <strong>
+                {preview.tabelas.reduce(
+                  (total, tabela) => total + tabela.linhas.length,
+                  0
+                )}
+              </strong>
+            </div>
+
+            <div>
+              <span>Emitido por</span>
+              <strong>{assinatura || "-"}</strong>
+            </div>
+          </div>
+
+          <section style={styles.summaryBox}>
+            <h3>Resumo</h3>
+
+            {preview.resumo.map((item, index) => (
+              <p key={index}>• {item}</p>
+            ))}
+          </section>
+
+          {preview.tabelas.map((tabela, tabelaIndex) => (
+            <section key={tabelaIndex} style={styles.tableBox}>
+              <h3>{tabela.titulo}</h3>
+
+              <div style={styles.tableWrapper}>
+                <table style={styles.table}>
+                  <thead>
+                    <tr>
+                      {tabela.colunas.map((coluna) => (
+                        <th key={coluna} style={styles.th}>
+                          {coluna}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {tabela.linhas.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={tabela.colunas.length}
+                          style={styles.td}
+                        >
+                          Sem registros para o período selecionado.
+                        </td>
+                      </tr>
+                    ) : (
+                      tabela.linhas.slice(0, 8).map((linha, index) => (
+                        <tr key={index}>
+                          {linha.map((celula, cellIndex) => (
+                            <td key={cellIndex} style={styles.td}>
+                              {normalizarLinha(celula)}
+                            </td>
+                          ))}
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {tabela.linhas.length > 8 && (
+                <small style={styles.moreInfo}>
+                  Mostrando 8 de {tabela.linhas.length} registros na prévia.
+                  O PDF/CSV inclui mais registros.
+                </small>
+              )}
+            </section>
+          ))}
+
+          <section style={styles.signatureBox}>
+            <div>
+              <strong>{assinatura || "Responsável"}</strong>
+              <span>Assinatura digital / Responsável pelo relatório</span>
+            </div>
+
+            <small>
+              Gerado automaticamente em {new Date().toLocaleString("pt-BR")}
+            </small>
+          </section>
+        </main>
+      </section>
+
+      <section style={styles.historyPanel}>
+        <div style={styles.panelHeader}>
+          <span style={styles.panelBadge}>Histórico</span>
+
+          <h2 style={styles.panelTitle}>Relatórios gerados</h2>
         </div>
 
-        <div style={styles.sidePanel}>
-          <div style={styles.panelHeader}>
-            <div>
-              <span style={styles.panelBadgeGold}>
-                Análise
-              </span>
-
-              <h2 style={styles.panelTitle}>
-                Resumo do setor
-              </h2>
-            </div>
-          </div>
-
-          <div style={styles.sectorList}>
-            {dadosModuloAtivo.map((item, index) => (
-              <div key={index} style={styles.sectorItem}>
-                <span>{item.name}</span>
-                <strong>{item.value}</strong>
+        {historico.length === 0 ? (
+          <div style={styles.empty}>Nenhum relatório gerado ainda.</div>
+        ) : (
+          <div style={styles.historyList}>
+            {historico.map((item) => (
+              <div key={item.id} style={styles.historyItem}>
+                <span>{item.tipo}</span>
+                <strong>{item.relatorio}</strong>
+                <small>{item.periodo}</small>
+                <small>{item.data}</small>
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      <section style={styles.bottomGrid}>
-        <div style={styles.historyPanel}>
-          <div style={styles.panelHeader}>
-            <div>
-              <span style={styles.panelBadge}>
-                Histórico BI
-              </span>
-
-              <h2 style={styles.panelTitle}>
-                Relatórios recentes
-              </h2>
-            </div>
-          </div>
-
-          {historicoBI.length === 0 ? (
-            <div style={styles.empty}>
-              Nenhum relatório gerado ainda.
-            </div>
-          ) : (
-            <div style={styles.historyList}>
-              {historicoBI.map((item) => (
-                <div key={item.id} style={styles.historyItem}>
-                  <span>{item.tipo}</span>
-                  <strong>{item.modulo}</strong>
-                  <small>{item.data}</small>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div style={styles.systemPanel}>
-          <div style={styles.panelHeader}>
-            <div>
-              <span style={styles.panelBadgeGold}>
-                Sistema
-              </span>
-
-              <h2 style={styles.panelTitle}>
-                Status operacional
-              </h2>
-            </div>
-          </div>
-
-          <div style={styles.systemList}>
-            <div style={styles.systemItem}>🟢 Sistema online</div>
-            <div style={styles.systemItem}>🟢 Dados locais sincronizados</div>
-            <div style={styles.systemItem}>🟡 Backup local disponível</div>
-            <div style={styles.systemItem}>🟢 BI operacional ativo</div>
-            <div style={styles.systemItem}>🟡 Segurança final entra com backend</div>
-          </div>
-        </div>
+        )}
       </section>
     </div>
+  );
+}
+
+function CheckOption({ label, checked, onChange }) {
+  return (
+    <label style={styles.checkOption}>
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+
+      <span>{label}</span>
+    </label>
   );
 }
 
@@ -780,29 +999,28 @@ const styles = {
   container: {
     width: "100%",
     minHeight: "100vh",
-    color: "white",
+    color: "#111827",
     fontFamily: "Arial"
   },
 
   hero: {
-    background:
-      "radial-gradient(circle at top right,rgba(250,204,21,0.22),transparent 32%), linear-gradient(135deg,#020617,#052e16 55%,#064e3b)",
-    borderRadius: "38px",
-    padding: "36px",
+    background: "linear-gradient(135deg,#ffffff,#f0fdf4)",
+    borderRadius: "28px",
+    padding: "34px",
     display: "flex",
     justifyContent: "space-between",
     gap: "28px",
     alignItems: "center",
-    boxShadow: "0 30px 85px rgba(5,46,22,0.35)",
+    boxShadow: "0 18px 45px rgba(15,23,42,0.08)",
     marginBottom: "24px",
-    border: "1px solid rgba(255,255,255,0.12)"
+    border: "1px solid #dcfce7"
   },
 
   heroBadge: {
     display: "inline-block",
-    background: "rgba(34,197,94,0.15)",
-    border: "1px solid rgba(34,197,94,0.30)",
-    color: "#bbf7d0",
+    background: "#dcfce7",
+    border: "1px solid #bbf7d0",
+    color: "#166534",
     padding: "9px 13px",
     borderRadius: "999px",
     fontWeight: "900",
@@ -812,12 +1030,13 @@ const styles = {
 
   title: {
     margin: 0,
-    fontSize: "46px",
-    letterSpacing: "-1px"
+    fontSize: "42px",
+    letterSpacing: "-1px",
+    color: "#111827"
   },
 
   subtitle: {
-    color: "rgba(255,255,255,0.70)",
+    color: "#6b7280",
     maxWidth: "760px",
     lineHeight: "1.6"
   },
@@ -830,175 +1049,56 @@ const styles = {
   },
 
   heroStat: {
-    minWidth: "130px",
-    background: "rgba(255,255,255,0.10)",
-    border: "1px solid rgba(255,255,255,0.14)",
-    padding: "16px",
-    borderRadius: "20px"
-  },
-
-  heroStatGold: {
-    minWidth: "160px",
-    background: "rgba(250,204,21,0.14)",
-    border: "1px solid rgba(250,204,21,0.30)",
-    color: "#fef3c7",
-    padding: "16px",
-    borderRadius: "20px"
-  },
-
-  commandBar: {
-    background: "#07130d",
-    border: "1px solid rgba(255,255,255,0.10)",
-    borderRadius: "28px",
-    padding: "16px",
-    display: "flex",
-    gap: "10px",
-    flexWrap: "wrap",
-    marginBottom: "24px",
-    boxShadow: "0 18px 55px rgba(15,23,42,0.18)"
-  },
-
-  select: {
-    background: "#0f1f16",
-    color: "white",
-    border: "1px solid rgba(255,255,255,0.14)",
-    borderRadius: "16px",
-    padding: "13px",
-    outline: "none"
-  },
-
-  actionButton: {
-    background: "#10251a",
-    color: "white",
-    border: "1px solid rgba(255,255,255,0.14)",
-    padding: "13px 15px",
-    borderRadius: "16px",
-    cursor: "pointer",
-    fontWeight: "900"
-  },
-
-  goldButton: {
-    background: "linear-gradient(135deg,#92400e,#facc15)",
-    color: "white",
-    border: "none",
-    padding: "13px 15px",
-    borderRadius: "16px",
-    cursor: "pointer",
-    fontWeight: "900"
-  },
-
-  restoreButton: {
-    background: "#facc15",
-    color: "#713f12",
-    border: "none",
-    padding: "13px 15px",
-    borderRadius: "16px",
-    cursor: "pointer",
-    fontWeight: "900"
-  },
-
-  cardsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))",
-    gap: "16px",
-    marginBottom: "24px"
-  },
-
-  biCard: {
-    background: "linear-gradient(180deg,#ffffff,#f8fafc)",
-    color: "#111827",
+    minWidth: "140px",
+    background: "#ffffff",
     border: "1px solid #e5e7eb",
-    borderRadius: "28px",
-    padding: "20px",
-    display: "flex",
-    alignItems: "center",
-    gap: "14px",
-    cursor: "pointer",
-    textAlign: "left",
-    boxShadow: "0 14px 35px rgba(15,23,42,0.08)"
+    padding: "16px",
+    borderRadius: "18px"
   },
 
-  biCardActive: {
-    border: "2px solid #facc15",
-    boxShadow:
-      "0 18px 45px rgba(250,204,21,0.20), 0 0 0 4px rgba(250,204,21,0.10)"
+  heroStatGreen: {
+    minWidth: "160px",
+    background: "#ecfdf5",
+    border: "1px solid #bbf7d0",
+    color: "#166534",
+    padding: "16px",
+    borderRadius: "18px"
   },
 
-  cardIcon: {
-    width: "58px",
-    height: "58px",
-    borderRadius: "20px",
-    background: "linear-gradient(135deg,#052e16,#16a34a)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "28px",
-    color: "white"
-  },
-
-  cardLabel: {
-    margin: 0,
-    color: "#6b7280",
-    fontSize: "13px",
-    fontWeight: "900"
-  },
-
-  cardNumber: {
-    margin: "4px 0",
-    color: "#052e16",
-    fontSize: "32px"
-  },
-
-  cardMini: {
-    color: "#6b7280",
-    fontSize: "12px"
-  },
-
-  analysisGrid: {
+  layoutGrid: {
     display: "grid",
-    gridTemplateColumns: "1.6fr 0.8fr",
+    gridTemplateColumns: "380px minmax(0,1fr)",
     gap: "22px",
+    alignItems: "flex-start",
     marginBottom: "24px"
   },
 
-  chartPanel: {
-    background: "#07130d",
-    border: "1px solid rgba(255,255,255,0.10)",
-    borderRadius: "32px",
-    padding: "26px",
-    boxShadow: "0 22px 60px rgba(15,23,42,0.20)"
+  configPanel: {
+    background: "#ffffff",
+    border: "1px solid #e5e7eb",
+    borderRadius: "24px",
+    padding: "24px",
+    boxShadow: "0 16px 40px rgba(15,23,42,0.07)"
   },
 
-  sidePanel: {
-    background: "#07130d",
-    border: "1px solid rgba(255,255,255,0.10)",
-    borderRadius: "32px",
-    padding: "26px",
-    boxShadow: "0 22px 60px rgba(15,23,42,0.20)"
+  previewPanel: {
+    background: "#ffffff",
+    color: "#111827",
+    borderRadius: "24px",
+    padding: "28px",
+    boxShadow: "0 16px 40px rgba(15,23,42,0.07)",
+    border: "1px solid #e5e7eb"
   },
 
   panelHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: "14px",
-    alignItems: "flex-start",
     marginBottom: "20px"
   },
 
   panelBadge: {
-    background: "rgba(34,197,94,0.14)",
-    color: "#bbf7d0",
-    border: "1px solid rgba(34,197,94,0.28)",
-    padding: "7px 11px",
-    borderRadius: "999px",
-    fontWeight: "900",
-    fontSize: "11px"
-  },
-
-  panelBadgeGold: {
-    background: "rgba(250,204,21,0.14)",
-    color: "#facc15",
-    border: "1px solid rgba(250,204,21,0.28)",
+    display: "inline-block",
+    background: "#ecfdf5",
+    color: "#166534",
+    border: "1px solid #bbf7d0",
     padding: "7px 11px",
     borderRadius: "999px",
     fontWeight: "900",
@@ -1007,83 +1107,255 @@ const styles = {
 
   panelTitle: {
     margin: "12px 0 0",
-    color: "white",
-    fontSize: "26px"
+    color: "#111827",
+    fontSize: "24px"
   },
 
-  liveBadge: {
-    color: "#22c55e",
+  label: {
+    display: "block",
+    marginTop: "16px",
+    marginBottom: "8px",
+    color: "#374151",
+    fontSize: "13px",
     fontWeight: "900"
   },
 
-  sectorList: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "12px"
-  },
-
-  sectorItem: {
-    background: "rgba(255,255,255,0.08)",
-    border: "1px solid rgba(255,255,255,0.10)",
-    borderRadius: "16px",
-    padding: "14px",
-    display: "flex",
-    justifyContent: "space-between"
-  },
-
-  bottomGrid: {
+  reportGrid: {
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "22px"
+    gap: "10px"
+  },
+
+  reportButton: {
+    background: "#ffffff",
+    color: "#111827",
+    border: "1px solid #e5e7eb",
+    borderRadius: "16px",
+    padding: "13px",
+    display: "flex",
+    gap: "12px",
+    textAlign: "left",
+    cursor: "pointer"
+  },
+
+  reportButtonActive: {
+    background: "#ecfdf5",
+    color: "#166534",
+    border: "1px solid #22c55e",
+    boxShadow: "0 0 0 3px rgba(34,197,94,0.12)"
+  },
+
+  reportIcon: {
+    fontSize: "22px"
+  },
+
+  select: {
+    width: "100%",
+    background: "#ffffff",
+    color: "#111827",
+    border: "1px solid #d1d5db",
+    borderRadius: "14px",
+    padding: "13px",
+    outline: "none"
+  },
+
+  input: {
+    width: "100%",
+    background: "#ffffff",
+    color: "#111827",
+    border: "1px solid #d1d5db",
+    borderRadius: "14px",
+    padding: "13px",
+    outline: "none",
+    boxSizing: "border-box"
+  },
+
+  textarea: {
+    width: "100%",
+    minHeight: "92px",
+    background: "#ffffff",
+    color: "#111827",
+    border: "1px solid #d1d5db",
+    borderRadius: "14px",
+    padding: "13px",
+    outline: "none",
+    boxSizing: "border-box",
+    resize: "vertical"
+  },
+
+  customBox: {
+    marginTop: "16px",
+    padding: "14px",
+    borderRadius: "18px",
+    background: "#f9fafb",
+    border: "1px solid #e5e7eb"
+  },
+
+  checkOption: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    color: "#374151",
+    marginBottom: "8px",
+    fontSize: "13px"
+  },
+
+  actions: {
+    display: "flex",
+    gap: "10px",
+    flexWrap: "wrap",
+    marginTop: "20px"
+  },
+
+  primaryButton: {
+    background: "#16a34a",
+    color: "white",
+    border: "none",
+    padding: "13px 16px",
+    borderRadius: "14px",
+    cursor: "pointer",
+    fontWeight: "900"
+  },
+
+  secondaryButton: {
+    background: "#f3f4f6",
+    color: "#111827",
+    border: "1px solid #d1d5db",
+    padding: "13px 16px",
+    borderRadius: "14px",
+    cursor: "pointer",
+    fontWeight: "900"
+  },
+
+  previewHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: "18px",
+    alignItems: "flex-start",
+    marginBottom: "20px"
+  },
+
+  previewBadge: {
+    display: "inline-block",
+    background: "#fef3c7",
+    color: "#92400e",
+    border: "1px solid #fde68a",
+    padding: "7px 11px",
+    borderRadius: "999px",
+    fontWeight: "900",
+    fontSize: "11px"
+  },
+
+  previewTitle: {
+    margin: "12px 0 0",
+    color: "#111827",
+    fontSize: "30px"
+  },
+
+  previewSubtitle: {
+    color: "#64748b",
+    lineHeight: "1.6"
+  },
+
+  previewSeal: {
+    background: "#16a34a",
+    color: "white",
+    padding: "14px 18px",
+    borderRadius: "16px",
+    fontWeight: "900"
+  },
+
+  metaGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
+    gap: "12px",
+    marginBottom: "18px"
+  },
+
+  summaryBox: {
+    background: "#f0fdf4",
+    border: "1px solid #bbf7d0",
+    color: "#064e3b",
+    borderRadius: "18px",
+    padding: "18px",
+    marginBottom: "18px"
+  },
+
+  tableBox: {
+    marginBottom: "22px"
+  },
+
+  tableWrapper: {
+    overflowX: "auto",
+    border: "1px solid #e5e7eb",
+    borderRadius: "16px"
+  },
+
+  table: {
+    width: "100%",
+    borderCollapse: "collapse",
+    fontSize: "13px"
+  },
+
+  th: {
+    background: "#f3f4f6",
+    color: "#374151",
+    padding: "12px",
+    textAlign: "left",
+    borderBottom: "1px solid #e5e7eb"
+  },
+
+  td: {
+    padding: "11px",
+    borderBottom: "1px solid #f1f5f9",
+    color: "#374151"
+  },
+
+  moreInfo: {
+    display: "block",
+    marginTop: "8px",
+    color: "#64748b"
+  },
+
+  signatureBox: {
+    marginTop: "24px",
+    borderTop: "1px solid #cbd5e1",
+    paddingTop: "18px",
+    display: "flex",
+    justifyContent: "space-between",
+    gap: "16px",
+    flexWrap: "wrap",
+    color: "#475569"
   },
 
   historyPanel: {
-    background: "#07130d",
-    border: "1px solid rgba(255,255,255,0.10)",
-    borderRadius: "32px",
-    padding: "26px"
-  },
-
-  systemPanel: {
-    background: "#07130d",
-    border: "1px solid rgba(255,255,255,0.10)",
-    borderRadius: "32px",
-    padding: "26px"
+    background: "#ffffff",
+    border: "1px solid #e5e7eb",
+    borderRadius: "24px",
+    padding: "24px",
+    marginBottom: "20px",
+    boxShadow: "0 16px 40px rgba(15,23,42,0.07)"
   },
 
   empty: {
-    color: "rgba(255,255,255,0.58)",
-    background: "rgba(255,255,255,0.06)",
+    color: "#64748b",
+    background: "#f9fafb",
     padding: "20px",
-    borderRadius: "18px"
+    borderRadius: "16px"
   },
 
   historyList: {
-    display: "flex",
-    flexDirection: "column",
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))",
     gap: "12px"
   },
 
   historyItem: {
-    background: "rgba(255,255,255,0.08)",
-    border: "1px solid rgba(255,255,255,0.10)",
+    background: "#f9fafb",
+    border: "1px solid #e5e7eb",
     borderRadius: "16px",
     padding: "14px",
     display: "grid",
     gap: "4px"
-  },
-
-  systemList: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "12px"
-  },
-
-  systemItem: {
-    background: "rgba(255,255,255,0.08)",
-    border: "1px solid rgba(255,255,255,0.10)",
-    borderRadius: "16px",
-    padding: "14px"
   }
 };
 
