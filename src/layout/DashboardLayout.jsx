@@ -18,7 +18,6 @@ import {
   FaClipboardList,
   FaBuilding,
   FaCog,
-  FaExchangeAlt,
   FaSignOutAlt,
   FaHardHat
 } from "react-icons/fa";
@@ -174,13 +173,6 @@ function DashboardLayout() {
               active={itemAtivo("/dashboard/areas-comuns")}
               icon={<FaDoorOpen />}
               label="Áreas comuns"
-            />
-
-            <MenuItem
-              to="/dashboard/movimentacoes"
-              active={itemAtivo("/dashboard/movimentacoes")}
-              icon={<FaExchangeAlt />}
-              label="Movimentações"
             />
           </MenuGroup>
 
