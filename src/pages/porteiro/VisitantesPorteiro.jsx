@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 
-import {
-  salvarMovimentacao
-} from "../../Services/movimentacaoService";
-
 function VisitantesPorteiro() {
-
   const STORAGE_KEY = "visitantes";
+  const STORAGE_AVISOS_SINDICO = "avisos_sindico";
+  const STORAGE_MOVIMENTACOES = "movimentacoes";
+  const STORAGE_RELATORIOS = "relatorios_operacionais";
+  const STORAGE_HISTORICO = "visitantes_historico";
 
   const estadoInicial = {
     nome: "",
@@ -16,140 +15,223 @@ function VisitantesPorteiro() {
     documento: ""
   };
 
-  const [visitantes, setVisitantes] =
-    useState([]);
-
-  const [form, setForm] =
-    useState(estadoInicial);
-
-  const [porteiro, setPorteiro] =
-    useState(null);
-
-  const [busca, setBusca] =
-    useState("");
-
-  const [filtroStatus, setFiltroStatus] =
-    useState("Todos");
+  const [visitantes, setVisitantes] = useState([]);
+  const [apartamentos, setApartamentos] = useState([]);
+  const [form, setForm] = useState(estadoInicial);
+  const [porteiro, setPorteiro] = useState(null);
+  const [busca, setBusca] = useState("");
+  const [filtroStatus, setFiltroStatus] = useState("Todos");
 
   useEffect(() => {
-
     carregarSessao();
-
     carregarVisitantes();
-
+    carregarApartamentos();
   }, []);
 
-  function carregarSessao() {
+  function lerStorage(chave) {
+    try {
+      const dados = localStorage.getItem(chave);
+      return dados ? JSON.parse(dados) : [];
+    } catch {
+      return [];
+    }
+  }
 
+  function salvarStorage(chave, dados) {
+    localStorage.setItem(chave, JSON.stringify(dados));
+  }
+
+  function carregarSessao() {
     const sessao =
       localStorage.getItem("sessaoPorteiro") ||
       sessionStorage.getItem("sessaoPorteiro");
 
     try {
-
-      const usuario =
-        sessao
-          ? JSON.parse(sessao)
-          : null;
-
+      const usuario = sessao ? JSON.parse(sessao) : null;
       setPorteiro(usuario);
-
     } catch {
-
       setPorteiro(null);
-
     }
-
   }
 
   function carregarVisitantes() {
+    setVisitantes(lerStorage(STORAGE_KEY));
+  }
 
-    const data =
-      JSON.parse(
-        localStorage.getItem(STORAGE_KEY)
-      ) || [];
+  function carregarApartamentos() {
+    const listaApartamentos = lerStorage("apartamentos");
+    const moradores = lerStorage("moradores");
 
-    setVisitantes(data);
+    const apartamentosDosMoradores = moradores
+      .map((m) => m.apartamento || m.apto)
+      .filter(Boolean);
 
+    const apartamentosCadastrados = listaApartamentos
+      .map((a) => a.numero || a.apartamento || a.apto)
+      .filter(Boolean);
+
+    const listaFinal = [
+      ...new Set([
+        ...apartamentosCadastrados,
+        ...apartamentosDosMoradores
+      ])
+    ].sort((a, b) => Number(a) - Number(b));
+
+    setApartamentos(listaFinal);
   }
 
   function limparFormulario() {
-
     setForm(estadoInicial);
+  }
 
+  function registrarAvisoSindico(acao, visitante) {
+    const avisos = lerStorage(STORAGE_AVISOS_SINDICO);
+
+    const novo = {
+      id: Date.now() + 1,
+      categoria: "Visitante",
+      origem: "Porteiro",
+      titulo: `Visitante ${acao} - ${visitante.nome}`,
+      descricao:
+        visitante.observacao ||
+        `Visitante ${visitante.nome} para o apartamento ${visitante.apartamento}`,
+      apartamento: visitante.apartamento,
+      morador: "",
+      responsavel: visitante.porteiro || "Porteiro",
+      status: visitante.status,
+      respostaSindico: "",
+      cienciaSindico: false,
+      data: visitante.data
+    };
+
+    salvarStorage(STORAGE_AVISOS_SINDICO, [
+      novo,
+      ...avisos
+    ]);
+  }
+
+  function registrarMovimentacao(acao, visitante) {
+    const movimentacoes = lerStorage(STORAGE_MOVIMENTACOES);
+
+    const nova = {
+      id: Date.now() + 2,
+      tipo: "Visitante",
+      acao,
+      origem: "Porteiro",
+      titulo: `Visitante ${visitante.nome}`,
+      apartamento: visitante.apartamento,
+      descricao: visitante.observacao,
+      status: visitante.status,
+      porteiro: visitante.porteiro || "Porteiro",
+      data: new Date().toLocaleDateString("pt-BR"),
+      hora: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      }),
+      timestamp: Date.now()
+    };
+
+    salvarStorage(STORAGE_MOVIMENTACOES, [
+      nova,
+      ...movimentacoes
+    ]);
+  }
+
+  function registrarRelatorio(acao, visitante) {
+    const relatorios = lerStorage(STORAGE_RELATORIOS);
+
+    const novo = {
+      id: Date.now() + 3,
+      tipo: "Visitante",
+      acao,
+      origem: "Porteiro",
+      titulo: `Visitante ${visitante.nome}`,
+      nome: visitante.nome,
+      apartamento: visitante.apartamento,
+      documento: visitante.documento,
+      tipoVisitante: visitante.tipoVisitante,
+      observacao: visitante.observacao,
+      status: visitante.status,
+      porteiro: visitante.porteiro || "Porteiro",
+      data: visitante.data,
+      horarioEntrada: visitante.horarioEntrada,
+      horarioSaida: visitante.horarioSaida || ""
+    };
+
+    salvarStorage(STORAGE_RELATORIOS, [
+      novo,
+      ...relatorios
+    ]);
+  }
+
+  function registrarHistorico(acao, visitante) {
+    const historico = lerStorage(STORAGE_HISTORICO);
+
+    const novo = {
+      id: Date.now() + 4,
+      visitanteId: visitante.id,
+      acao,
+      origem: "Porteiro",
+      nome: visitante.nome,
+      apartamento: visitante.apartamento,
+      documento: visitante.documento,
+      tipoVisitante: visitante.tipoVisitante,
+      observacao: visitante.observacao,
+      status: visitante.status,
+      porteiro: visitante.porteiro || "Porteiro",
+      data: visitante.data,
+      horarioEntrada: visitante.horarioEntrada,
+      horarioSaida: visitante.horarioSaida || "",
+      registradoEm: new Date().toLocaleString("pt-BR")
+    };
+
+    salvarStorage(STORAGE_HISTORICO, [
+      novo,
+      ...historico
+    ]);
+  }
+
+  function registrarFluxo(acao, visitante) {
+    registrarAvisoSindico(acao, visitante);
+    registrarMovimentacao(acao, visitante);
+    registrarRelatorio(acao, visitante);
+    registrarHistorico(acao, visitante);
   }
 
   function cadastrarVisitante() {
-
-    if (
-      !form.nome ||
-      !form.apartamento
-    ) {
-
-      alert(
-        "Preencha o nome do visitante e o apartamento"
-      );
-
+    if (!form.nome || !form.apartamento) {
+      alert("Preencha o nome do visitante e o apartamento");
       return;
-
     }
 
     if (
       form.tipoVisitante === "Prestador de serviço" &&
       !form.documento
     ) {
-
-      alert(
-        "Documento obrigatório para prestador de serviço"
-      );
-
+      alert("Documento obrigatório para prestador de serviço");
       return;
-
     }
 
     const agora = new Date();
 
     const novo = {
-
       id: Date.now(),
-
-      nome:
-        form.nome,
-
-      apartamento:
-        form.apartamento,
-
-      observacao:
-        form.observacao,
-
-      tipoVisitante:
-        form.tipoVisitante,
-
-      documento:
-        form.documento,
-
-      horarioEntrada:
-        agora.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit"
-        }),
-
+      nome: form.nome,
+      apartamento: form.apartamento,
+      observacao: form.observacao,
+      tipoVisitante: form.tipoVisitante,
+      documento: form.documento,
+      horarioEntrada: agora.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      }),
       horarioSaida: "",
-
-      data:
-        agora.toLocaleDateString(),
-
+      data: agora.toLocaleDateString("pt-BR"),
       status: "aguardando",
-
-      porteiro:
-        porteiro?.nome || "Porteiro",
-
-      porteiroUsuario:
-        porteiro?.usuario || "",
-
-      turno:
-        porteiro?.turno || "-"
-
+      cienciaSindico: false,
+      porteiro: porteiro?.nome || "Porteiro",
+      porteiroUsuario: porteiro?.usuario || "",
+      turno: porteiro?.turno || "-"
     };
 
     const atualizados = [
@@ -157,156 +239,75 @@ function VisitantesPorteiro() {
       ...visitantes
     ];
 
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(atualizados)
-    );
-
-    salvarMovimentacao({
-
-      id: Date.now(),
-
-      tipo: "visitante",
-
-      apartamento:
-        novo.apartamento,
-
-      mensagem:
-        `Visitante ${novo.nome} cadastrado para o AP ${novo.apartamento}`,
-
-      porteiro:
-        porteiro?.nome || "Porteiro",
-
-      data:
-        agora.toLocaleString()
-
-    });
-
+    salvarStorage(STORAGE_KEY, atualizados);
     setVisitantes(atualizados);
+
+    registrarFluxo("cadastro", novo);
 
     limparFormulario();
-
   }
 
-  function alterarStatus(
-    id,
-    novoStatus
-  ) {
-
+  function alterarStatus(id, novoStatus) {
     const agora = new Date();
 
+    let visitanteAtualizado = null;
+
     const atualizados = visitantes.map((v) => {
+      if (v.id !== id) return v;
 
-      if (v.id === id) {
+      visitanteAtualizado = {
+        ...v,
+        status: novoStatus
+      };
 
-        const atualizado = {
+      if (novoStatus === "saiu") {
+        visitanteAtualizado.horarioSaida =
+          agora.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit"
+          });
 
-          ...v,
-
-          status: novoStatus
-
-        };
-
-        if (novoStatus === "saiu") {
-
-          atualizado.horarioSaida =
-            agora.toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit"
-            });
-
-          atualizado.saidaEm =
-            agora.toLocaleString();
-
-        }
-
-        salvarMovimentacao({
-
-          id: Date.now(),
-
-          tipo: "visitante",
-
-          apartamento:
-            v.apartamento,
-
-          mensagem:
-            `Visitante ${v.nome} teve status alterado para ${novoStatus}`,
-
-          porteiro:
-            porteiro?.nome || "Porteiro",
-
-          data:
-            agora.toLocaleString()
-
-        });
-
-        return atualizado;
-
+        visitanteAtualizado.saidaEm =
+          agora.toLocaleString("pt-BR");
       }
 
-      return v;
-
+      return visitanteAtualizado;
     });
 
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(atualizados)
-    );
-
+    salvarStorage(STORAGE_KEY, atualizados);
     setVisitantes(atualizados);
 
+    if (visitanteAtualizado) {
+      registrarFluxo(`status_${novoStatus}`, visitanteAtualizado);
+    }
   }
 
   function excluirVisitante(id) {
-
-    const confirmar =
-      window.confirm(
-        "Deseja excluir este visitante?"
-      );
+    const confirmar = window.confirm(
+      "Deseja excluir este visitante?"
+    );
 
     if (!confirmar) return;
 
-    const visitante =
-      visitantes.find(
-        (v) => v.id === id
-      );
-
-    const atualizados =
-      visitantes.filter(
-        (v) => v.id !== id
-      );
-
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(atualizados)
+    const visitante = visitantes.find(
+      (v) => v.id === id
     );
 
-    salvarMovimentacao({
+    const atualizados = visitantes.filter(
+      (v) => v.id !== id
+    );
 
-      id: Date.now(),
-
-      tipo: "visitante",
-
-      apartamento:
-        visitante?.apartamento || "",
-
-      mensagem:
-        `Visitante ${visitante?.nome || ""} removido da portaria`,
-
-      porteiro:
-        porteiro?.nome || "Porteiro",
-
-      data:
-        new Date().toLocaleString()
-
-    });
-
+    salvarStorage(STORAGE_KEY, atualizados);
     setVisitantes(atualizados);
 
+    if (visitante) {
+      registrarHistorico("exclusao", visitante);
+      registrarMovimentacao("exclusao", visitante);
+      registrarRelatorio("exclusao", visitante);
+    }
   }
 
   function obterStatus(status) {
-
     if (status === "aguardando") {
       return {
         texto: "Aguardando",
@@ -344,70 +345,44 @@ function VisitantesPorteiro() {
       fundo: "#f3f4f6",
       cor: "#111827"
     };
-
   }
 
-  const visitantesFiltrados =
-    visitantes.filter((item) => {
+  const visitantesFiltrados = visitantes.filter((item) => {
+    const texto = busca.toLowerCase();
 
-      const texto =
-        busca.toLowerCase();
+    const correspondeBusca =
+      item.nome?.toLowerCase().includes(texto) ||
+      item.apartamento?.toLowerCase().includes(texto) ||
+      item.tipoVisitante?.toLowerCase().includes(texto) ||
+      item.documento?.toLowerCase().includes(texto);
 
-      const correspondeBusca =
-        item.nome
-          ?.toLowerCase()
-          .includes(texto) ||
-        item.apartamento
-          ?.toLowerCase()
-          .includes(texto) ||
-        item.tipoVisitante
-          ?.toLowerCase()
-          .includes(texto) ||
-        item.documento
-          ?.toLowerCase()
-          .includes(texto);
+    const correspondeStatus =
+      filtroStatus === "Todos" ||
+      item.status === filtroStatus;
 
-      const correspondeStatus =
-        filtroStatus === "Todos" ||
-        item.status === filtroStatus;
+    return correspondeBusca && correspondeStatus;
+  });
 
-      return (
-        correspondeBusca &&
-        correspondeStatus
-      );
+  const aguardando = visitantes.filter(
+    (v) => v.status === "aguardando"
+  ).length;
 
-    });
+  const liberados = visitantes.filter(
+    (v) => v.status === "liberado"
+  ).length;
 
-  const aguardando =
-    visitantes.filter(
-      (v) => v.status === "aguardando"
-    ).length;
+  const dentro = visitantes.filter(
+    (v) => v.status === "entrou"
+  ).length;
 
-  const liberados =
-    visitantes.filter(
-      (v) => v.status === "liberado"
-    ).length;
-
-  const dentro =
-    visitantes.filter(
-      (v) => v.status === "entrou"
-    ).length;
-
-  const saiu =
-    visitantes.filter(
-      (v) => v.status === "saiu"
-    ).length;
+  const saiu = visitantes.filter(
+    (v) => v.status === "saiu"
+  ).length;
 
   return (
-
     <div style={styles.container}>
-
-      {/* HERO */}
-
       <div style={styles.hero}>
-
         <div>
-
           <span style={styles.heroBadge}>
             🚶 Controle de acesso
           </span>
@@ -422,27 +397,20 @@ function VisitantesPorteiro() {
           </p>
 
           {porteiro && (
-
             <div style={styles.userLine}>
-
               <span style={styles.statusDot}></span>
 
               <span>
                 Porteiro responsável:{" "}
-
                 <strong>
                   {porteiro.nome}
                 </strong>
               </span>
-
             </div>
-
           )}
-
         </div>
 
         <div style={styles.heroPanel}>
-
           <p style={styles.heroLabel}>
             Dentro agora
           </p>
@@ -454,19 +422,12 @@ function VisitantesPorteiro() {
           <span style={styles.heroStatus}>
             Visitantes ativos
           </span>
-
         </div>
-
       </div>
 
-      {/* CARDS */}
-
       <div style={styles.cards}>
-
         <div style={styles.cardPrimary}>
-
           <div>
-
             <p style={styles.cardLabelLight}>
               Aguardando
             </p>
@@ -478,23 +439,19 @@ function VisitantesPorteiro() {
             <span style={styles.cardHintLight}>
               aguardando liberação
             </span>
-
           </div>
 
           <div style={styles.cardIconLight}>
             ⏳
           </div>
-
         </div>
 
         <div style={styles.card}>
-
           <div style={styles.cardIconBlue}>
             🔓
           </div>
 
           <div>
-
             <p style={styles.cardLabel}>
               Liberados
             </p>
@@ -502,19 +459,15 @@ function VisitantesPorteiro() {
             <h2 style={styles.cardNumberBlue}>
               {liberados}
             </h2>
-
           </div>
-
         </div>
 
         <div style={styles.card}>
-
           <div style={styles.cardIconGreen}>
             🚶
           </div>
 
           <div>
-
             <p style={styles.cardLabel}>
               Dentro
             </p>
@@ -522,19 +475,15 @@ function VisitantesPorteiro() {
             <h2 style={styles.cardNumberGreen}>
               {dentro}
             </h2>
-
           </div>
-
         </div>
 
         <div style={styles.card}>
-
           <div style={styles.cardIconDark}>
             ✅
           </div>
 
           <div>
-
             <p style={styles.cardLabel}>
               Saíram
             </p>
@@ -542,21 +491,13 @@ function VisitantesPorteiro() {
             <h2 style={styles.cardNumberDark}>
               {saiu}
             </h2>
-
           </div>
-
         </div>
-
       </div>
 
-      {/* FORM */}
-
       <div style={styles.formCard}>
-
         <div style={styles.sectionHeader}>
-
           <div>
-
             <h2 style={styles.sectionTitle}>
               Novo visitante
             </h2>
@@ -564,17 +505,14 @@ function VisitantesPorteiro() {
             <p style={styles.sectionSubtitle}>
               Preencha os dados para registrar uma nova entrada.
             </p>
-
           </div>
 
           <span style={styles.sectionBadge}>
             Registro rápido
           </span>
-
         </div>
 
         <div style={styles.formGrid}>
-
           <input
             placeholder="Nome do visitante"
             value={form.nome}
@@ -587,8 +525,7 @@ function VisitantesPorteiro() {
             style={styles.input}
           />
 
-          <input
-            placeholder="Apartamento"
+          <select
             value={form.apartamento}
             onChange={(e) =>
               setForm({
@@ -597,7 +534,17 @@ function VisitantesPorteiro() {
               })
             }
             style={styles.input}
-          />
+          >
+            <option value="">
+              Selecione o apartamento
+            </option>
+
+            {apartamentos.map((ap) => (
+              <option key={ap} value={ap}>
+                Apartamento {ap}
+              </option>
+            ))}
+          </select>
 
           <select
             value={form.tipoVisitante}
@@ -609,21 +556,13 @@ function VisitantesPorteiro() {
             }
             style={styles.input}
           >
-
-            <option>
-              Pessoa comum
-            </option>
-
-            <option>
-              Prestador de serviço
-            </option>
-
+            <option>Pessoa comum</option>
+            <option>Prestador de serviço</option>
           </select>
 
           <input
             placeholder={
-              form.tipoVisitante ===
-              "Prestador de serviço"
+              form.tipoVisitante === "Prestador de serviço"
                 ? "Documento obrigatório"
                 : "Documento opcional"
             }
@@ -636,7 +575,6 @@ function VisitantesPorteiro() {
             }
             style={styles.input}
           />
-
         </div>
 
         <textarea
@@ -655,21 +593,13 @@ function VisitantesPorteiro() {
           style={styles.button}
           onClick={cadastrarVisitante}
         >
-
           Cadastrar visitante
-
         </button>
-
       </div>
 
-      {/* LISTA */}
-
       <div style={styles.listCard}>
-
         <div style={styles.listHeader}>
-
           <div>
-
             <h2 style={styles.sectionTitle}>
               Registros de visitantes
             </h2>
@@ -677,11 +607,9 @@ function VisitantesPorteiro() {
             <p style={styles.sectionSubtitle}>
               Controle operacional de entradas e saídas.
             </p>
-
           </div>
 
           <div style={styles.filters}>
-
             <input
               placeholder="Buscar visitante..."
               value={busca}
@@ -698,31 +626,17 @@ function VisitantesPorteiro() {
               }
               style={styles.filter}
             >
-
               <option>Todos</option>
-              <option value="aguardando">
-                Aguardando
-              </option>
-              <option value="liberado">
-                Liberado
-              </option>
-              <option value="entrou">
-                Entrou
-              </option>
-              <option value="saiu">
-                Saiu
-              </option>
-
+              <option value="aguardando">Aguardando</option>
+              <option value="liberado">Liberado</option>
+              <option value="entrou">Entrou</option>
+              <option value="saiu">Saiu</option>
             </select>
-
           </div>
-
         </div>
 
         {visitantesFiltrados.length === 0 ? (
-
           <div style={styles.empty}>
-
             <div style={styles.emptyIcon}>
               📭
             </div>
@@ -734,29 +648,19 @@ function VisitantesPorteiro() {
             <p style={styles.emptyText}>
               Os registros aparecerão aqui conforme forem cadastrados.
             </p>
-
           </div>
-
         ) : (
-
           <div style={styles.grid}>
-
             {visitantesFiltrados.map((item) => {
-
-              const status =
-                obterStatus(item.status);
+              const status = obterStatus(item.status);
 
               return (
-
                 <div
                   key={item.id}
                   style={styles.visitorCard}
                 >
-
                   <div style={styles.cardTop}>
-
                     <div>
-
                       <span
                         style={{
                           ...styles.statusBadge,
@@ -770,17 +674,14 @@ function VisitantesPorteiro() {
                       <h3 style={styles.nome}>
                         {item.nome}
                       </h3>
-
                     </div>
 
                     <div style={styles.visitorIcon}>
                       🚶
                     </div>
-
                   </div>
 
                   <div style={styles.infoGrid}>
-
                     <div style={styles.infoItem}>
                       <span style={styles.infoLabel}>
                         Apartamento
@@ -820,23 +721,18 @@ function VisitantesPorteiro() {
                         {item.horarioSaida || "-"}
                       </strong>
                     </div>
-
                   </div>
 
                   {item.documento && (
-
                     <p style={styles.documento}>
                       Documento: {item.documento}
                     </p>
-
                   )}
 
                   {item.observacao && (
-
                     <p style={styles.obs}>
                       {item.observacao}
                     </p>
-
                   )}
 
                   <p style={styles.porteiroInfo}>
@@ -848,84 +744,53 @@ function VisitantesPorteiro() {
                   </p>
 
                   <div style={styles.actions}>
-
                     <button
                       style={styles.blue}
                       onClick={() =>
-                        alterarStatus(
-                          item.id,
-                          "liberado"
-                        )
+                        alterarStatus(item.id, "liberado")
                       }
                     >
-
                       Liberar
-
                     </button>
 
                     <button
                       style={styles.green}
                       onClick={() =>
-                        alterarStatus(
-                          item.id,
-                          "entrou"
-                        )
+                        alterarStatus(item.id, "entrou")
                       }
                     >
-
                       Entrada
-
                     </button>
 
                     <button
                       style={styles.gray}
                       onClick={() =>
-                        alterarStatus(
-                          item.id,
-                          "saiu"
-                        )
+                        alterarStatus(item.id, "saiu")
                       }
                     >
-
                       Saída
-
                     </button>
 
                     <button
                       style={styles.red}
                       onClick={() =>
-                        excluirVisitante(
-                          item.id
-                        )
+                        excluirVisitante(item.id)
                       }
                     >
-
                       Excluir
-
                     </button>
-
                   </div>
-
                 </div>
-
               );
-
             })}
-
           </div>
-
         )}
-
       </div>
-
     </div>
-
   );
-
 }
 
 const styles = {
-
   container: {
     width: "100%",
     fontFamily: "Arial",
@@ -1432,7 +1297,6 @@ const styles = {
     cursor: "pointer",
     fontWeight: "800"
   }
-
 };
 
 export default VisitantesPorteiro;

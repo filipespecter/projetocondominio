@@ -2,6 +2,10 @@ import { useState } from "react";
 
 function Visitantes() {
   const STORAGE_KEY = "visitantes";
+  const STORAGE_AVISOS_SINDICO = "avisos_sindico";
+  const STORAGE_MOVIMENTACOES = "movimentacoes";
+  const STORAGE_RELATORIOS = "relatorios_operacionais";
+  const STORAGE_HISTORICO = "visitantes_historico";
 
   const estadoInicialVisitante = {
     nome: "",
@@ -13,21 +17,17 @@ function Visitantes() {
     entrada: "",
     autorizado: false,
     bloqueado: false,
-    status: "Pendente",
-    tipo: "Visita"
+    status: "Aguardando",
+    tipo: "Visita",
+    cienciaSindico: true
   };
 
-  const [visitantes, setVisitantes] = useState(() => {
-    const dados = localStorage.getItem(STORAGE_KEY);
-    return dados ? JSON.parse(dados) : [];
-  });
+  const [visitantes, setVisitantes] = useState(() =>
+    lerStorage(STORAGE_KEY)
+  );
 
   const [moradores] = useState(() => {
-    const dados = localStorage.getItem("moradores");
-
-    if (!dados) return [];
-
-    const lista = JSON.parse(dados);
+    const lista = lerStorage("moradores");
 
     return lista.map((morador) => ({
       ...morador,
@@ -42,7 +42,35 @@ function Visitantes() {
   const [novoVisitante, setNovoVisitante] = useState(estadoInicialVisitante);
   const [editId, setEditId] = useState(null);
 
-  const visitantesFiltrados = visitantes.filter((v) => {
+  function lerStorage(chave) {
+    try {
+      const dados = localStorage.getItem(chave);
+      return dados ? JSON.parse(dados) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function salvarStorage(chave, dados) {
+    localStorage.setItem(chave, JSON.stringify(dados));
+  }
+
+  function normalizarStatus(status) {
+    if (status === "aguardando" || status === "Pendente") return "Aguardando";
+    if (status === "liberado" || status === "Autorizado") return "Autorizado";
+    if (status === "entrou" || status === "Em visita") return "Em Visita";
+    if (status === "saiu" || status === "Encerrado") return "Saiu";
+    if (status === "Bloqueado") return "Bloqueado";
+
+    return status || "Aguardando";
+  }
+
+  const visitantesNormalizados = visitantes.map((v) => ({
+    ...v,
+    status: normalizarStatus(v.status)
+  }));
+
+  const visitantesFiltrados = visitantesNormalizados.filter((v) => {
     const texto = busca.toLowerCase();
 
     const correspondeBusca =
@@ -51,54 +79,154 @@ function Visitantes() {
       v.apartamento?.toLowerCase().includes(texto) ||
       v.morador?.toLowerCase().includes(texto) ||
       v.tipo?.toLowerCase().includes(texto) ||
+      v.tipoVisitante?.toLowerCase().includes(texto) ||
       v.status?.toLowerCase().includes(texto);
 
     const correspondeStatus =
-      filtroStatus === "Todos" ||
-      v.status === filtroStatus;
+      filtroStatus === "Todos" || v.status === filtroStatus;
 
     return correspondeBusca && correspondeStatus;
   });
 
-  const pendentes = visitantes.filter(
-    (v) => v.status === "Pendente"
+  const pendentes = visitantesNormalizados.filter(
+    (v) => v.status === "Aguardando"
   );
 
-  const emVisita = visitantes.filter(
-    (v) => v.status === "Em visita"
+  const emVisita = visitantesNormalizados.filter(
+    (v) => v.status === "Em Visita"
   );
 
-  const autorizados = visitantes.filter(
+  const autorizados = visitantesNormalizados.filter(
     (v) => v.status === "Autorizado"
   );
 
-  const bloqueados = visitantes.filter(
+  const bloqueados = visitantesNormalizados.filter(
     (v) => v.status === "Bloqueado" || v.bloqueado === true
   );
 
-  const encerrados = visitantes.filter(
-    (v) => v.status === "Saiu" || v.status === "Encerrado"
+  const encerrados = visitantesNormalizados.filter(
+    (v) => v.status === "Saiu"
   );
 
-  function salvarHistorico(acao, visitante) {
-    const historico =
-      JSON.parse(localStorage.getItem("movimentacoes")) || [];
+  function registrarMovimentacao(acao, visitante) {
+    const movimentacoes = lerStorage(STORAGE_MOVIMENTACOES);
 
-    historico.unshift({
+    const nova = {
       id: Date.now(),
-      tipo: "visitante",
+      tipo: "Visitante",
       acao,
+      origem: "Síndico",
+      titulo: `Visitante ${visitante.nome}`,
       nome: visitante.nome,
       apartamento: visitante.apartamento,
-      data: new Date().toLocaleDateString(),
-      hora: new Date().toLocaleTimeString(),
+      status: visitante.status,
+      data: new Date().toLocaleDateString("pt-BR"),
+      hora: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      }),
       timestamp: Date.now()
-    });
+    };
 
-    localStorage.setItem(
-      "movimentacoes",
-      JSON.stringify(historico)
+    salvarStorage(STORAGE_MOVIMENTACOES, [nova, ...movimentacoes]);
+  }
+
+  function registrarRelatorio(acao, visitante) {
+    const relatorios = lerStorage(STORAGE_RELATORIOS);
+
+    const novo = {
+      id: Date.now() + 1,
+      tipo: "Visitante",
+      acao,
+      origem: "Síndico",
+      nome: visitante.nome,
+      documento: visitante.documento,
+      apartamento: visitante.apartamento,
+      morador: visitante.morador,
+      tipoVisitante: visitante.tipo || visitante.tipoVisitante || "Visita",
+      observacao: visitante.observacao,
+      status: visitante.status,
+      data: visitante.data || new Date().toLocaleDateString("pt-BR"),
+      entrada: visitante.entrada || visitante.horarioEntrada || "",
+      saida: visitante.saida || visitante.horarioSaida || ""
+    };
+
+    salvarStorage(STORAGE_RELATORIOS, [novo, ...relatorios]);
+  }
+
+  function registrarHistorico(acao, visitante) {
+    const historico = lerStorage(STORAGE_HISTORICO);
+
+    const novo = {
+      id: Date.now() + 2,
+      visitanteId: visitante.id,
+      acao,
+      origem: "Síndico",
+      nome: visitante.nome,
+      documento: visitante.documento,
+      apartamento: visitante.apartamento,
+      morador: visitante.morador,
+      tipoVisitante: visitante.tipo || visitante.tipoVisitante || "Visita",
+      observacao: visitante.observacao,
+      status: visitante.status,
+      data: visitante.data || new Date().toLocaleDateString("pt-BR"),
+      entrada: visitante.entrada || visitante.horarioEntrada || "",
+      saida: visitante.saida || visitante.horarioSaida || "",
+      registradoEm: new Date().toLocaleString("pt-BR")
+    };
+
+    salvarStorage(STORAGE_HISTORICO, [novo, ...historico]);
+  }
+
+  function registrarAvisoSindico(acao, visitante) {
+    const avisos = lerStorage(STORAGE_AVISOS_SINDICO);
+
+    const novo = {
+      id: Date.now() + 3,
+      categoria: "Visitante",
+      origem: "Síndico",
+      titulo: `Visitante ${acao} - ${visitante.nome}`,
+      descricao:
+        visitante.observacao ||
+        `Visitante ${visitante.nome} vinculado ao apartamento ${visitante.apartamento}`,
+      apartamento: visitante.apartamento,
+      morador: visitante.morador || "",
+      responsavel: "Síndico",
+      status: visitante.status,
+      respostaSindico: "",
+      cienciaSindico: true,
+      data: new Date().toLocaleDateString("pt-BR")
+    };
+
+    salvarStorage(STORAGE_AVISOS_SINDICO, [novo, ...avisos]);
+  }
+
+  function atualizarAvisoSindico(visitante) {
+    const avisos = lerStorage(STORAGE_AVISOS_SINDICO);
+
+    const atualizados = avisos.map((aviso) =>
+      aviso.categoria === "Visitante" &&
+      (
+        aviso.visitanteId === visitante.id ||
+        String(aviso.apartamento) === String(visitante.apartamento)
+      ) &&
+      aviso.titulo?.includes(visitante.nome)
+        ? {
+            ...aviso,
+            status: visitante.status,
+            cienciaSindico: true
+          }
+        : aviso
     );
+
+    salvarStorage(STORAGE_AVISOS_SINDICO, atualizados);
+  }
+
+  function registrarFluxo(acao, visitante) {
+    registrarMovimentacao(acao, visitante);
+    registrarRelatorio(acao, visitante);
+    registrarHistorico(acao, visitante);
+    registrarAvisoSindico(acao, visitante);
   }
 
   function salvarVisitante() {
@@ -114,7 +242,7 @@ function Visitantes() {
 
     const agora = new Date();
 
-    let statusFinal = "Pendente";
+    let statusFinal = "Aguardando";
 
     if (novoVisitante.bloqueado) {
       statusFinal = "Bloqueado";
@@ -125,12 +253,21 @@ function Visitantes() {
     const visitanteCompleto = {
       ...novoVisitante,
       status: statusFinal,
-      data: agora.toLocaleDateString(),
-      hora: agora.toLocaleTimeString(),
+      cienciaSindico: true,
+      data: agora.toLocaleDateString("pt-BR"),
+      hora: agora.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      }),
       timestamp: agora.getTime(),
       mes: agora.getMonth() + 1,
       ano: agora.getFullYear(),
-      entrada: novoVisitante.entrada || agora.toLocaleTimeString()
+      entrada:
+        novoVisitante.entrada ||
+        agora.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit"
+        })
     };
 
     let listaAtualizada = [];
@@ -145,7 +282,11 @@ function Visitantes() {
           : v
       );
 
-      salvarHistorico("edição", visitanteCompleto);
+      registrarFluxo("edição", {
+        ...visitanteCompleto,
+        id: editId
+      });
+
       setEditId(null);
     } else {
       const novo = {
@@ -153,20 +294,13 @@ function Visitantes() {
         ...visitanteCompleto
       };
 
-      listaAtualizada = [
-        novo,
-        ...visitantes
-      ];
+      listaAtualizada = [novo, ...visitantes];
 
-      salvarHistorico("cadastro", novo);
+      registrarFluxo("cadastro", novo);
     }
 
     setVisitantes(listaAtualizada);
-
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(listaAtualizada)
-    );
+    salvarStorage(STORAGE_KEY, listaAtualizada);
 
     setNovoVisitante(estadoInicialVisitante);
     setMostrarModal(false);
@@ -179,36 +313,28 @@ function Visitantes() {
 
     if (!confirmar) return;
 
-    const visitante = visitantes.find(
-      (v) => v.id === id
-    );
+    const visitante = visitantes.find((v) => v.id === id);
 
     if (visitante) {
-      salvarHistorico("exclusão", visitante);
+      registrarMovimentacao("exclusão", visitante);
+      registrarRelatorio("exclusão", visitante);
+      registrarHistorico("exclusão", visitante);
     }
 
-    const novaLista = visitantes.filter(
-      (v) => v.id !== id
-    );
+    const novaLista = visitantes.filter((v) => v.id !== id);
 
     setVisitantes(novaLista);
-
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(novaLista)
-    );
+    salvarStorage(STORAGE_KEY, novaLista);
   }
 
   function editarVisitante(v) {
     setNovoVisitante({
       ...estadoInicialVisitante,
       ...v,
+      status: normalizarStatus(v.status),
       moradorId:
         v.moradorId ||
-        obterMoradorIdPorNomeApartamento(
-          v.morador,
-          v.apartamento
-        )
+        obterMoradorIdPorNomeApartamento(v.morador, v.apartamento)
     });
 
     setEditId(v.id);
@@ -216,54 +342,67 @@ function Visitantes() {
   }
 
   function mudarStatus(id, status) {
-    const lista = visitantes.map((v) =>
-      v.id === id
-        ? {
-            ...v,
-            status,
-            autorizado:
-              status === "Autorizado" ||
-              status === "Em visita"
-                ? true
-                : v.autorizado,
-            bloqueado:
-              status === "Bloqueado"
-                ? true
-                : status === "Autorizado" || status === "Em visita"
-                  ? false
-                  : v.bloqueado,
-            saida:
-              status === "Saiu"
-                ? new Date().toLocaleTimeString()
-                : v.saida
-          }
-        : v
-    );
+    const agora = new Date();
 
-    const visitante = lista.find(
-      (v) => v.id === id
-    );
+    let visitanteAtualizado = null;
 
-    if (visitante) {
-      salvarHistorico(`status: ${status}`, visitante);
+    const lista = visitantes.map((v) => {
+      if (v.id !== id) return v;
+
+      visitanteAtualizado = {
+        ...v,
+        status,
+        statusSindico: status,
+        cienciaSindico: true,
+        autorizado:
+          status === "Autorizado" || status === "Em Visita"
+            ? true
+            : v.autorizado,
+        bloqueado:
+          status === "Bloqueado"
+            ? true
+            : status === "Autorizado" || status === "Em Visita"
+            ? false
+            : v.bloqueado,
+        saida:
+          status === "Saiu"
+            ? agora.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit"
+              })
+            : v.saida,
+        horarioSaida:
+          status === "Saiu"
+            ? agora.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit"
+              })
+            : v.horarioSaida,
+        saidaEm:
+          status === "Saiu"
+            ? agora.toLocaleString("pt-BR")
+            : v.saidaEm
+      };
+
+      return visitanteAtualizado;
+    });
+
+    if (visitanteAtualizado) {
+      registrarMovimentacao(`status: ${status}`, visitanteAtualizado);
+      registrarRelatorio(`status: ${status}`, visitanteAtualizado);
+      registrarHistorico(`status: ${status}`, visitanteAtualizado);
+      atualizarAvisoSindico(visitanteAtualizado);
     }
 
     setVisitantes(lista);
-
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(lista)
-    );
+    salvarStorage(STORAGE_KEY, lista);
   }
 
   function obterMoradorIdPorNomeApartamento(nome, apartamento) {
     const moradorEncontrado = moradores.find(
       (m) =>
         m.nome === nome &&
-        (
-          m.apto === apartamento ||
-          m.apartamento === apartamento
-        )
+        (m.apto === apartamento || m.apartamento === apartamento)
     );
 
     return moradorEncontrado ? moradorEncontrado.id : "";
@@ -290,15 +429,13 @@ function Visitantes() {
       moradorId: moradorSelecionado.id,
       morador: moradorSelecionado.nome,
       apartamento:
-        moradorSelecionado.apartamento ||
-        moradorSelecionado.apto ||
-        ""
+        moradorSelecionado.apartamento || moradorSelecionado.apto || ""
     });
   }
 
   function corStatus(status) {
     switch (status) {
-      case "Em visita":
+      case "Em Visita":
         return {
           bg: "#dcfce7",
           color: "#166534",
@@ -323,7 +460,6 @@ function Visitantes() {
         };
 
       case "Saiu":
-      case "Encerrado":
         return {
           bg: "#f3f4f6",
           color: "#374151",
@@ -357,7 +493,9 @@ function Visitantes() {
       return partes[0].charAt(0).toUpperCase();
     }
 
-    return `${partes[0].charAt(0)}${partes[partes.length - 1].charAt(0)}`.toUpperCase();
+    return `${partes[0].charAt(0)}${partes[
+      partes.length - 1
+    ].charAt(0)}`.toUpperCase();
   }
 
   function fecharModal() {
@@ -370,13 +508,9 @@ function Visitantes() {
     <div style={styles.container}>
       <section style={styles.hero}>
         <div style={styles.heroLeft}>
-          <span style={styles.heroBadge}>
-            🛂 Controle de acesso
-          </span>
+          <span style={styles.heroBadge}>🛂 Controle de acesso</span>
 
-          <h1 style={styles.title}>
-            Visitantes
-          </h1>
+          <h1 style={styles.title}>Visitantes</h1>
 
           <p style={styles.subtitle}>
             Monitore entradas, autorizações, bloqueios e saídas do condomínio.
@@ -435,9 +569,9 @@ function Visitantes() {
           style={styles.filter}
         >
           <option>Todos</option>
-          <option>Pendente</option>
+          <option>Aguardando</option>
           <option>Autorizado</option>
-          <option>Em visita</option>
+          <option>Em Visita</option>
           <option>Bloqueado</option>
           <option>Saiu</option>
         </select>
@@ -460,13 +594,9 @@ function Visitantes() {
       <section style={styles.accessPanel}>
         <div style={styles.panelHeader}>
           <div>
-            <span style={styles.panelLabel}>
-              Monitoramento
-            </span>
+            <span style={styles.panelLabel}>Monitoramento</span>
 
-            <h2 style={styles.panelTitle}>
-              Fluxo de visitantes
-            </h2>
+            <h2 style={styles.panelTitle}>Fluxo de visitantes</h2>
           </div>
 
           <span style={styles.resultBadge}>
@@ -476,13 +606,9 @@ function Visitantes() {
 
         {visitantesFiltrados.length === 0 ? (
           <div style={styles.empty}>
-            <div style={styles.emptyIcon}>
-              🛂
-            </div>
+            <div style={styles.emptyIcon}>🛂</div>
 
-            <h3 style={styles.emptyTitle}>
-              Nenhum visitante encontrado
-            </h3>
+            <h3 style={styles.emptyTitle}>Nenhum visitante encontrado</h3>
 
             <p style={styles.emptyText}>
               Registre visitantes para acompanhar entrada, autorização e saída.
@@ -514,18 +640,12 @@ function Visitantes() {
                 >
                   <div style={styles.cardHeader}>
                     <div style={styles.identityArea}>
-                      <div style={styles.avatar}>
-                        {iniciais(v.nome)}
-                      </div>
+                      <div style={styles.avatar}>{iniciais(v.nome)}</div>
 
                       <div>
-                        <h3 style={styles.visitorName}>
-                          {v.nome}
-                        </h3>
+                        <h3 style={styles.visitorName}>{v.nome}</h3>
 
-                        <p style={styles.document}>
-                          Doc: {v.documento}
-                        </p>
+                        <p style={styles.document}>Doc: {v.documento}</p>
                       </div>
                     </div>
 
@@ -542,12 +662,10 @@ function Visitantes() {
 
                   <div style={styles.typeLine}>
                     <span style={styles.typeIcon}>
-                      {tipoVisual(v.tipo)}
+                      {tipoVisual(v.tipo || v.tipoVisitante)}
                     </span>
 
-                    <strong>
-                      {v.tipo || "Visita"}
-                    </strong>
+                    <strong>{v.tipo || v.tipoVisitante || "Visita"}</strong>
                   </div>
 
                   <div style={styles.infoGrid}>
@@ -563,7 +681,9 @@ function Visitantes() {
 
                     <div style={styles.infoItem}>
                       <span>Entrada</span>
-                      <strong>{v.entrada || v.hora || "-"}</strong>
+                      <strong>
+                        {v.entrada || v.horarioEntrada || v.hora || "-"}
+                      </strong>
                     </div>
 
                     <div style={styles.infoItem}>
@@ -573,15 +693,13 @@ function Visitantes() {
                   </div>
 
                   {v.observacao && (
-                    <div style={styles.noteBox}>
-                      {v.observacao}
-                    </div>
+                    <div style={styles.noteBox}>{v.observacao}</div>
                   )}
 
                   <div style={styles.actionRow}>
                     <button
                       style={styles.enterBtn}
-                      onClick={() => mudarStatus(v.id, "Em visita")}
+                      onClick={() => mudarStatus(v.id, "Em Visita")}
                     >
                       Entrou
                     </button>
@@ -624,30 +742,21 @@ function Visitantes() {
                 </span>
 
                 <h2 style={styles.modalTitle}>
-                  {editId !== null
-                    ? "Editar visitante"
-                    : "Registrar visitante"}
+                  {editId !== null ? "Editar visitante" : "Registrar visitante"}
                 </h2>
               </div>
 
-              <button
-                style={styles.closeButton}
-                onClick={fecharModal}
-              >
+              <button style={styles.closeButton} onClick={fecharModal}>
                 ✕
               </button>
             </div>
 
             <div style={styles.modalSection}>
-              <h3 style={styles.modalSectionTitle}>
-                Dados do visitante
-              </h3>
+              <h3 style={styles.modalSectionTitle}>Dados do visitante</h3>
 
               <div style={styles.formGrid}>
                 <div style={styles.formRow}>
-                  <label style={styles.label}>
-                    Nome
-                  </label>
+                  <label style={styles.label}>Nome</label>
 
                   <input
                     placeholder="Nome do visitante"
@@ -663,9 +772,7 @@ function Visitantes() {
                 </div>
 
                 <div style={styles.formRow}>
-                  <label style={styles.label}>
-                    Documento
-                  </label>
+                  <label style={styles.label}>Documento</label>
 
                   <input
                     placeholder="Documento"
@@ -681,9 +788,7 @@ function Visitantes() {
                 </div>
 
                 <div style={styles.formRow}>
-                  <label style={styles.label}>
-                    Tipo
-                  </label>
+                  <label style={styles.label}>Tipo</label>
 
                   <select
                     value={novoVisitante.tipo}
@@ -703,9 +808,7 @@ function Visitantes() {
                 </div>
 
                 <div style={styles.formRow}>
-                  <label style={styles.label}>
-                    Hora de entrada
-                  </label>
+                  <label style={styles.label}>Hora de entrada</label>
 
                   <input
                     placeholder="Ex: 14:35"
@@ -723,15 +826,11 @@ function Visitantes() {
             </div>
 
             <div style={styles.modalSection}>
-              <h3 style={styles.modalSectionTitle}>
-                Responsável pela visita
-              </h3>
+              <h3 style={styles.modalSectionTitle}>Responsável pela visita</h3>
 
               <div style={styles.formGrid}>
                 <div style={styles.formRow}>
-                  <label style={styles.label}>
-                    Morador responsável
-                  </label>
+                  <label style={styles.label}>Morador responsável</label>
 
                   <select
                     value={
@@ -744,15 +843,10 @@ function Visitantes() {
                     onChange={(e) => selecionarMorador(e.target.value)}
                     style={styles.input}
                   >
-                    <option value="">
-                      Selecione o morador responsável
-                    </option>
+                    <option value="">Selecione o morador responsável</option>
 
                     {moradores.map((morador) => (
-                      <option
-                        key={morador.id}
-                        value={morador.id}
-                      >
+                      <option key={morador.id} value={morador.id}>
                         {morador.nome} - Apto{" "}
                         {morador.apartamento || morador.apto}
                       </option>
@@ -761,9 +855,7 @@ function Visitantes() {
                 </div>
 
                 <div style={styles.formRow}>
-                  <label style={styles.label}>
-                    Apartamento
-                  </label>
+                  <label style={styles.label}>Apartamento</label>
 
                   <input
                     placeholder="Apartamento"
@@ -776,9 +868,7 @@ function Visitantes() {
             </div>
 
             <div style={styles.modalSection}>
-              <h3 style={styles.modalSectionTitle}>
-                Controle de acesso
-              </h3>
+              <h3 style={styles.modalSectionTitle}>Controle de acesso</h3>
 
               <div style={styles.accessOptions}>
                 <label style={styles.optionCard}>
@@ -796,9 +886,7 @@ function Visitantes() {
                     }
                   />
 
-                  <span>
-                    ✅ Autorizado
-                  </span>
+                  <span>✅ Autorizado</span>
                 </label>
 
                 <label style={styles.optionCard}>
@@ -816,9 +904,7 @@ function Visitantes() {
                     }
                   />
 
-                  <span>
-                    ⛔ Bloqueado
-                  </span>
+                  <span>⛔ Bloqueado</span>
                 </label>
               </div>
 
@@ -836,17 +922,11 @@ function Visitantes() {
             </div>
 
             <div style={styles.modalButtons}>
-              <button
-                style={styles.saveBtn}
-                onClick={salvarVisitante}
-              >
+              <button style={styles.saveBtn} onClick={salvarVisitante}>
                 Salvar visitante
               </button>
 
-              <button
-                style={styles.cancelBtn}
-                onClick={fecharModal}
-              >
+              <button style={styles.cancelBtn} onClick={fecharModal}>
                 Cancelar
               </button>
             </div>
@@ -856,7 +936,6 @@ function Visitantes() {
     </div>
   );
 }
-
 const styles = {
   container: {
     width: "100%",

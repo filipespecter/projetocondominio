@@ -1,7 +1,15 @@
 import { useState } from "react";
 
 function Avisos() {
-  const STORAGE_KEY = "avisos";
+  const STORAGE_AVISOS = "avisos";
+  const STORAGE_CENTRAL = "avisos_sindico";
+  const STORAGE_SUGESTOES = "sugestoes_reclamacoes";
+  const STORAGE_OCORRENCIAS = "ocorrencias";
+  const STORAGE_VISITANTES = "visitantes";
+  const STORAGE_ENCOMENDAS = "encomendas";
+  const STORAGE_MOVIMENTACOES = "movimentacoes";
+  const STORAGE_RELATORIOS = "relatorios_operacionais";
+  const STORAGE_NOTIFICACOES_MORADOR = "notificacoesMorador";
 
   const estadoInicialAviso = {
     titulo: "",
@@ -10,16 +18,155 @@ function Avisos() {
     data: new Date().toLocaleDateString("pt-BR")
   };
 
-  const [avisos, setAvisos] = useState(() => {
-    const dados = localStorage.getItem(STORAGE_KEY);
-    return dados ? JSON.parse(dados) : [];
-  });
-
+  const [avisos, setAvisos] = useState(() => carregarCentral());
   const [mostrarModal, setMostrarModal] = useState(false);
   const [busca, setBusca] = useState("");
   const [filtroPrioridade, setFiltroPrioridade] = useState("Todas");
+  const [filtroCategoria, setFiltroCategoria] = useState("Todas");
   const [novoAviso, setNovoAviso] = useState(estadoInicialAviso);
   const [editId, setEditId] = useState(null);
+  const [respostaTexto, setRespostaTexto] = useState("");
+
+  function lerStorage(chave) {
+    try {
+      return JSON.parse(localStorage.getItem(chave)) || [];
+    } catch {
+      return [];
+    }
+  }
+
+  function salvarStorage(chave, dados) {
+    localStorage.setItem(chave, JSON.stringify(dados));
+  }
+
+  function carregarCentral() {
+    const avisosOficiais = lerStorage(STORAGE_AVISOS).map((item) => ({
+      ...item,
+      categoria: "Aviso",
+      origem: "Síndico",
+      status: item.status || "Publicado",
+      prioridade: item.prioridade || "Média",
+      responsavel: "Síndico",
+      cienciaSindico: true
+    }));
+
+    const centralManual = lerStorage(STORAGE_CENTRAL);
+
+    const sugestoes = lerStorage(STORAGE_SUGESTOES).map((item) => ({
+      ...item,
+      categoria: item.tipoRegistro || item.tipo || "Solicitação",
+      origem: "Morador",
+      status: item.status || "Novo",
+      prioridade: item.prioridade || "Média",
+      morador: item.moradorNome || item.morador || "",
+      responsavel: item.sindicoResponsavel || "",
+      cienciaSindico: item.lidaSindico || false
+    }));
+
+    const ocorrencias = lerStorage(STORAGE_OCORRENCIAS).map((item) => ({
+      ...item,
+      categoria: "Ocorrência",
+      origem: "Porteiro",
+      status: item.status || "Novo",
+      prioridade: item.prioridade || "Média",
+      responsavel: item.porteiroNome || "Porteiro",
+      cienciaSindico: item.lidaSindico || false
+    }));
+
+    const visitantes = lerStorage(STORAGE_VISITANTES).map((item) => ({
+      ...item,
+      id: item.id || Date.now(),
+      categoria: "Visitante",
+      origem: "Porteiro",
+      titulo: item.nome
+        ? `Visitante: ${item.nome}`
+        : "Registro de visitante",
+      descricao:
+        item.observacao ||
+        item.motivo ||
+        `Visitante registrado para o apartamento ${item.apartamento || "-"}`,
+      prioridade: "Média",
+      status: item.statusSindico || item.status || "Novo",
+      responsavel: item.porteiroNome || "Porteiro",
+      cienciaSindico: item.cienciaSindico || false,
+      data: item.data || item.dataEntrada || new Date().toLocaleDateString("pt-BR")
+    }));
+
+    const encomendas = lerStorage(STORAGE_ENCOMENDAS).map((item) => ({
+      ...item,
+      id: item.id || Date.now(),
+      categoria: "Encomenda",
+      origem: "Porteiro",
+      titulo: item.destinatario
+        ? `Encomenda para ${item.destinatario}`
+        : "Registro de encomenda",
+      descricao:
+        item.descricao ||
+        item.nome ||
+        `Encomenda registrada para o apartamento ${item.apartamento || "-"}`,
+      prioridade: "Baixa",
+      status: item.statusSindico || item.status || "Novo",
+      responsavel: item.porteiroNome || "Porteiro",
+      cienciaSindico: item.cienciaSindico || false,
+      data: item.data || new Date().toLocaleDateString("pt-BR")
+    }));
+
+    const lista = [
+      ...centralManual,
+      ...avisosOficiais,
+      ...sugestoes,
+      ...ocorrencias,
+      ...visitantes,
+      ...encomendas
+    ];
+
+    const semDuplicados = lista.filter(
+      (item, index, self) =>
+        index === self.findIndex((x) => String(x.id) === String(item.id))
+    );
+
+    return semDuplicados.sort((a, b) => Number(b.id) - Number(a.id));
+  }
+
+  function atualizarCentral() {
+    setAvisos(carregarCentral());
+  }
+
+  function registrarMovimentacao(tipo, origem, titulo) {
+    const movimentacoes = lerStorage(STORAGE_MOVIMENTACOES);
+
+    const nova = {
+      id: Date.now(),
+      tipo,
+      origem,
+      titulo,
+      data: new Date().toLocaleDateString("pt-BR"),
+      hora: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      })
+    };
+
+    salvarStorage(STORAGE_MOVIMENTACOES, [nova, ...movimentacoes]);
+  }
+
+  function registrarRelatorio(tipo, origem, titulo) {
+    const relatorios = lerStorage(STORAGE_RELATORIOS);
+
+    const novo = {
+      id: Date.now(),
+      tipo,
+      origem,
+      titulo,
+      data: new Date().toLocaleDateString("pt-BR"),
+      hora: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      })
+    };
+
+    salvarStorage(STORAGE_RELATORIOS, [novo, ...relatorios]);
+  }
 
   const avisosFiltrados = avisos.filter((a) => {
     const texto = busca.toLowerCase();
@@ -28,26 +175,23 @@ function Avisos() {
       a.titulo?.toLowerCase().includes(texto) ||
       a.descricao?.toLowerCase().includes(texto) ||
       a.prioridade?.toLowerCase().includes(texto) ||
+      a.status?.toLowerCase().includes(texto) ||
+      a.categoria?.toLowerCase().includes(texto) ||
+      a.origem?.toLowerCase().includes(texto) ||
       a.data?.toLowerCase().includes(texto);
 
     const correspondePrioridade =
-      filtroPrioridade === "Todas" ||
-      a.prioridade === filtroPrioridade;
+      filtroPrioridade === "Todas" || a.prioridade === filtroPrioridade;
 
-    return correspondeBusca && correspondePrioridade;
+    const correspondeCategoria =
+      filtroCategoria === "Todas" || a.categoria === filtroCategoria;
+
+    return correspondeBusca && correspondePrioridade && correspondeCategoria;
   });
 
-  const alta = avisos.filter(
-    (a) => a.prioridade === "Alta"
-  ).length;
-
-  const media = avisos.filter(
-    (a) => a.prioridade === "Média"
-  ).length;
-
-  const baixa = avisos.filter(
-    (a) => a.prioridade === "Baixa"
-  ).length;
+  const alta = avisos.filter((a) => a.prioridade === "Alta").length;
+  const media = avisos.filter((a) => a.prioridade === "Média").length;
+  const baixa = avisos.filter((a) => a.prioridade === "Baixa").length;
 
   function salvarAviso() {
     if (!novoAviso.titulo || !novoAviso.descricao) {
@@ -55,14 +199,20 @@ function Avisos() {
       return;
     }
 
+    const listaAvisos = lerStorage(STORAGE_AVISOS);
     let listaAtualizada = [];
 
     if (editId !== null) {
-      listaAtualizada = avisos.map((a) =>
+      listaAtualizada = listaAvisos.map((a) =>
         a.id === editId
           ? {
+              ...a,
               ...novoAviso,
-              id: editId
+              id: editId,
+              categoria: "Aviso",
+              origem: "Síndico",
+              status: "Publicado",
+              cienciaSindico: true
             }
           : a
       );
@@ -71,28 +221,36 @@ function Avisos() {
     } else {
       const novo = {
         id: Date.now(),
-        ...novoAviso,
+        categoria: "Aviso",
+        origem: "Síndico",
+        titulo: novoAviso.titulo,
+        descricao: novoAviso.descricao,
+        prioridade: novoAviso.prioridade,
+        status: "Publicado",
+        respostaSindico: "",
+        cienciaSindico: true,
         data: new Date().toLocaleDateString("pt-BR")
       };
 
-      listaAtualizada = [
-        novo,
-        ...avisos
-      ];
+      listaAtualizada = [novo, ...listaAvisos];
+
+      registrarMovimentacao("Aviso", "Síndico", novo.titulo);
+      registrarRelatorio("Aviso", "Síndico", novo.titulo);
     }
 
-    setAvisos(listaAtualizada);
-
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(listaAtualizada)
-    );
+    salvarStorage(STORAGE_AVISOS, listaAtualizada);
 
     setNovoAviso(estadoInicialAviso);
     setMostrarModal(false);
+    atualizarCentral();
   }
 
   function editarAviso(aviso) {
+    if (aviso.categoria !== "Aviso") {
+      alert("Apenas avisos oficiais podem ser editados por este botão.");
+      return;
+    }
+
     setNovoAviso({
       ...estadoInicialAviso,
       ...aviso
@@ -103,22 +261,187 @@ function Avisos() {
   }
 
   function excluirAviso(id) {
-    const confirmar = window.confirm(
-      "Deseja realmente excluir este aviso?"
-    );
+    const confirmar = window.confirm("Deseja realmente excluir este aviso?");
 
     if (!confirmar) return;
 
-    const lista = avisos.filter(
-      (a) => a.id !== id
-    );
+    const listaAvisos = lerStorage(STORAGE_AVISOS).filter((a) => a.id !== id);
 
-    setAvisos(lista);
+    salvarStorage(STORAGE_AVISOS, listaAvisos);
+    atualizarCentral();
+  }
 
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(lista)
-    );
+  function atualizarStatus(item, novoStatus) {
+    const agora = new Date();
+
+    if (item.categoria === "Sugestão" || item.categoria === "Reclamação") {
+      const lista = lerStorage(STORAGE_SUGESTOES).map((registro) =>
+        registro.id === item.id
+          ? {
+              ...registro,
+              status: novoStatus,
+              lidaSindico: true,
+              dataResolucao:
+                novoStatus === "Resolvido"
+                  ? agora.toLocaleDateString("pt-BR")
+                  : registro.dataResolucao,
+              horaResolucao:
+                novoStatus === "Resolvido"
+                  ? agora.toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit"
+                    })
+                  : registro.horaResolucao
+            }
+          : registro
+      );
+
+      salvarStorage(STORAGE_SUGESTOES, lista);
+    }
+
+    if (item.categoria === "Ocorrência") {
+      const lista = lerStorage(STORAGE_OCORRENCIAS).map((registro) =>
+        registro.id === item.id
+          ? {
+              ...registro,
+              status: novoStatus,
+              lidaSindico: true,
+              dataResolucao:
+                novoStatus === "Resolvido"
+                  ? agora.toLocaleDateString("pt-BR")
+                  : registro.dataResolucao,
+              horaResolucao:
+                novoStatus === "Resolvido"
+                  ? agora.toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit"
+                    })
+                  : registro.horaResolucao
+            }
+          : registro
+      );
+
+      salvarStorage(STORAGE_OCORRENCIAS, lista);
+    }
+
+    if (item.categoria === "Visitante") {
+      const lista = lerStorage(STORAGE_VISITANTES).map((registro) =>
+        registro.id === item.id
+          ? {
+              ...registro,
+              statusSindico: novoStatus,
+              cienciaSindico: true
+            }
+          : registro
+      );
+
+      salvarStorage(STORAGE_VISITANTES, lista);
+    }
+
+    if (item.categoria === "Encomenda") {
+      const lista = lerStorage(STORAGE_ENCOMENDAS).map((registro) =>
+        registro.id === item.id
+          ? {
+              ...registro,
+              statusSindico: novoStatus,
+              cienciaSindico: true
+            }
+          : registro
+      );
+
+      salvarStorage(STORAGE_ENCOMENDAS, lista);
+    }
+
+    registrarMovimentacao(item.categoria, "Síndico", `${item.titulo} - ${novoStatus}`);
+    registrarRelatorio(item.categoria, "Síndico", `${item.titulo} - ${novoStatus}`);
+
+    atualizarCentral();
+  }
+
+  function responderItem(item) {
+    if (!respostaTexto.trim()) {
+      alert("Digite uma resposta antes de salvar.");
+      return;
+    }
+
+    const agora = new Date();
+
+    const resposta = {
+      id: Date.now(),
+      texto: respostaTexto,
+      autor: "Síndico",
+      data: agora.toLocaleDateString("pt-BR"),
+      hora: agora.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      })
+    };
+
+    if (item.categoria === "Sugestão" || item.categoria === "Reclamação") {
+      const lista = lerStorage(STORAGE_SUGESTOES).map((registro) =>
+        registro.id === item.id
+          ? {
+              ...registro,
+              respostaSindico: respostaTexto,
+              respostasSindico: [...(registro.respostasSindico || []), resposta],
+              lidaSindico: true,
+              status:
+                registro.status === "Novo" || registro.status === "Ciente"
+                  ? "Em Tratamento"
+                  : registro.status,
+              dataResposta: agora.toLocaleString()
+            }
+          : registro
+      );
+
+      salvarStorage(STORAGE_SUGESTOES, lista);
+
+      const notificacoes = lerStorage(STORAGE_NOTIFICACOES_MORADOR);
+      const novaNotificacao = {
+        id: Date.now(),
+        tipo: item.categoria,
+        titulo: `Resposta do síndico: ${item.titulo}`,
+        descricao: respostaTexto,
+        apartamento: item.apartamento || "",
+        morador: item.morador || item.moradorNome || "",
+        lida: false,
+        data: agora.toLocaleDateString("pt-BR"),
+        hora: agora.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit"
+        })
+      };
+
+      salvarStorage(STORAGE_NOTIFICACOES_MORADOR, [
+        novaNotificacao,
+        ...notificacoes
+      ]);
+    }
+
+    if (item.categoria === "Ocorrência") {
+      const lista = lerStorage(STORAGE_OCORRENCIAS).map((registro) =>
+        registro.id === item.id
+          ? {
+              ...registro,
+              respostaSindico: respostaTexto,
+              respostasSindico: [...(registro.respostasSindico || []), resposta],
+              lidaSindico: true,
+              status:
+                registro.status === "Novo" || registro.status === "Ciente"
+                  ? "Em Tratamento"
+                  : registro.status
+            }
+          : registro
+      );
+
+      salvarStorage(STORAGE_OCORRENCIAS, lista);
+    }
+
+    registrarMovimentacao(item.categoria, "Síndico", `Resposta: ${item.titulo}`);
+    registrarRelatorio(item.categoria, "Síndico", `Resposta: ${item.titulo}`);
+
+    setRespostaTexto("");
+    atualizarCentral();
   }
 
   function fecharModal() {
@@ -130,12 +453,13 @@ function Avisos() {
   function corPrioridade(prioridade) {
     switch (prioridade) {
       case "Alta":
+      case "Urgente":
         return {
           background: "#fee2e2",
           color: "#b91c1c",
           border: "#fecaca",
           icon: "🚨",
-          label: "Alta prioridade"
+          label: prioridade === "Urgente" ? "Urgente" : "Alta prioridade"
         };
 
       case "Média":
@@ -167,20 +491,36 @@ function Avisos() {
     }
   }
 
+  function iconeCategoria(categoria) {
+    switch (categoria) {
+      case "Aviso":
+        return "📢";
+      case "Encomenda":
+        return "📦";
+      case "Ocorrência":
+        return "📘";
+      case "Visitante":
+        return "🧾";
+      case "Reclamação":
+        return "⚠️";
+      case "Sugestão":
+        return "💡";
+      default:
+        return "📌";
+    }
+  }
+
   return (
     <div style={styles.container}>
       <section style={styles.hero}>
         <div style={styles.heroLeft}>
-          <span style={styles.heroBadge}>
-            📢 Central de comunicação
-          </span>
+          <span style={styles.heroBadge}>📢 Central de comunicação</span>
 
-          <h1 style={styles.title}>
-            Avisos
-          </h1>
+          <h1 style={styles.title}>Avisos</h1>
 
           <p style={styles.subtitle}>
-            Publique comunicados, alertas e mensagens oficiais para os moradores.
+            Publique comunicados, acompanhe ocorrências, sugestões,
+            reclamações, encomendas e visitantes em uma única central.
           </p>
         </div>
 
@@ -223,7 +563,7 @@ function Avisos() {
           <span style={styles.searchIcon}>⌕</span>
 
           <input
-            placeholder="Buscar por título, descrição, data ou prioridade..."
+            placeholder="Buscar por título, descrição, data, status, categoria ou prioridade..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             style={styles.search}
@@ -239,11 +579,26 @@ function Avisos() {
           <option>Alta</option>
           <option>Média</option>
           <option>Baixa</option>
+          <option>Urgente</option>
+        </select>
+
+        <select
+          value={filtroCategoria}
+          onChange={(e) => setFiltroCategoria(e.target.value)}
+          style={styles.filter}
+        >
+          <option>Todas</option>
+          <option>Aviso</option>
+          <option>Encomenda</option>
+          <option>Ocorrência</option>
+          <option>Visitante</option>
+          <option>Reclamação</option>
+          <option>Sugestão</option>
         </select>
 
         <div style={styles.compactStats}>
           <span>
-            <b>{avisos.length}</b> avisos
+            <b>{avisos.length}</b> registros
           </span>
 
           <span>
@@ -255,13 +610,9 @@ function Avisos() {
       <section style={styles.communicationPanel}>
         <div style={styles.panelHeader}>
           <div>
-            <span style={styles.panelLabel}>
-              Mural oficial
-            </span>
+            <span style={styles.panelLabel}>Central operacional</span>
 
-            <h2 style={styles.panelTitle}>
-              Comunicados publicados
-            </h2>
+            <h2 style={styles.panelTitle}>Comunicações recebidas</h2>
           </div>
 
           <span style={styles.resultBadge}>
@@ -271,16 +622,13 @@ function Avisos() {
 
         {avisosFiltrados.length === 0 ? (
           <div style={styles.empty}>
-            <div style={styles.emptyIcon}>
-              📢
-            </div>
+            <div style={styles.emptyIcon}>📢</div>
 
-            <h3 style={styles.emptyTitle}>
-              Nenhum aviso cadastrado
-            </h3>
+            <h3 style={styles.emptyTitle}>Nenhum registro encontrado</h3>
 
             <p style={styles.emptyText}>
-              Publique comunicados para que apareçam no painel dos moradores.
+              Avisos, ocorrências, reclamações, sugestões, visitantes e
+              encomendas aparecerão aqui.
             </p>
 
             <button
@@ -301,7 +649,7 @@ function Avisos() {
 
               return (
                 <article
-                  key={aviso.id}
+                  key={`${aviso.categoria}-${aviso.id}`}
                   style={{
                     ...styles.noticeCard,
                     borderColor: prioridade.border
@@ -309,7 +657,7 @@ function Avisos() {
                 >
                   <div style={styles.cardTop}>
                     <div style={styles.noticeIcon}>
-                      {prioridade.icon}
+                      {iconeCategoria(aviso.categoria)}
                     </div>
 
                     <span
@@ -323,33 +671,84 @@ function Avisos() {
                     </span>
                   </div>
 
-                  <h3 style={styles.noticeTitle}>
-                    {aviso.titulo}
-                  </h3>
+                  <div style={styles.badgeRow}>
+                    <span style={styles.categoryTag}>{aviso.categoria}</span>
+                    <span style={styles.originTag}>{aviso.origem}</span>
+                    <span style={styles.statusTag}>{aviso.status}</span>
+                  </div>
 
-                  <p style={styles.noticeDescription}>
-                    {aviso.descricao}
-                  </p>
+                  <h3 style={styles.noticeTitle}>{aviso.titulo}</h3>
+
+                  <p style={styles.noticeDescription}>{aviso.descricao}</p>
 
                   <div style={styles.dateBox}>
-                    <span>Publicado em</span>
+                    <span>Registrado em</span>
                     <strong>{aviso.data}</strong>
                   </div>
 
-                  <div style={styles.actionRow}>
-                    <button
-                      style={styles.editButton}
-                      onClick={() => editarAviso(aviso)}
-                    >
-                      Editar
-                    </button>
+                  {(aviso.categoria === "Sugestão" ||
+                    aviso.categoria === "Reclamação" ||
+                    aviso.categoria === "Ocorrência") && (
+                    <div style={styles.responseArea}>
+                      <textarea
+                        placeholder="Resposta ou comentário do síndico..."
+                        value={respostaTexto}
+                        onChange={(e) => setRespostaTexto(e.target.value)}
+                        style={styles.responseTextarea}
+                      />
 
-                    <button
-                      style={styles.deleteButton}
-                      onClick={() => excluirAviso(aviso.id)}
-                    >
-                      Excluir
-                    </button>
+                      <button
+                        style={styles.editButton}
+                        onClick={() => responderItem(aviso)}
+                      >
+                        Responder
+                      </button>
+                    </div>
+                  )}
+
+                  <div style={styles.actionRow}>
+                    {aviso.categoria === "Aviso" ? (
+                      <>
+                        <button
+                          style={styles.editButton}
+                          onClick={() => editarAviso(aviso)}
+                        >
+                          Editar
+                        </button>
+
+                        <button
+                          style={styles.deleteButton}
+                          onClick={() => excluirAviso(aviso.id)}
+                        >
+                          Excluir
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          style={styles.editButton}
+                          onClick={() => atualizarStatus(aviso, "Ciente")}
+                        >
+                          Ciente
+                        </button>
+
+                        <button
+                          style={styles.editButton}
+                          onClick={() =>
+                            atualizarStatus(aviso, "Em Tratamento")
+                          }
+                        >
+                          Em tratamento
+                        </button>
+
+                        <button
+                          style={styles.editButton}
+                          onClick={() => atualizarStatus(aviso, "Resolvido")}
+                        >
+                          Resolver
+                        </button>
+                      </>
+                    )}
                   </div>
                 </article>
               );
@@ -372,24 +771,17 @@ function Avisos() {
                 </h2>
               </div>
 
-              <button
-                style={styles.closeButton}
-                onClick={fecharModal}
-              >
+              <button style={styles.closeButton} onClick={fecharModal}>
                 ✕
               </button>
             </div>
 
             <div style={styles.modalSection}>
-              <h3 style={styles.modalSectionTitle}>
-                Conteúdo do aviso
-              </h3>
+              <h3 style={styles.modalSectionTitle}>Conteúdo do aviso</h3>
 
               <div style={styles.formGrid}>
                 <div style={styles.formRowFull}>
-                  <label style={styles.label}>
-                    Título
-                  </label>
+                  <label style={styles.label}>Título</label>
 
                   <input
                     placeholder="Ex: Manutenção no elevador"
@@ -405,9 +797,7 @@ function Avisos() {
                 </div>
 
                 <div style={styles.formRowFull}>
-                  <label style={styles.label}>
-                    Descrição
-                  </label>
+                  <label style={styles.label}>Descrição</label>
 
                   <textarea
                     placeholder="Digite a mensagem do comunicado..."
@@ -423,9 +813,7 @@ function Avisos() {
                 </div>
 
                 <div style={styles.formRowFull}>
-                  <label style={styles.label}>
-                    Prioridade
-                  </label>
+                  <label style={styles.label}>Prioridade</label>
 
                   <select
                     value={novoAviso.prioridade}
@@ -446,17 +834,11 @@ function Avisos() {
             </div>
 
             <div style={styles.modalButtons}>
-              <button
-                style={styles.saveBtn}
-                onClick={salvarAviso}
-              >
+              <button style={styles.saveBtn} onClick={salvarAviso}>
                 Salvar aviso
               </button>
 
-              <button
-                style={styles.cancelBtn}
-                onClick={fecharModal}
-              >
+              <button style={styles.cancelBtn} onClick={fecharModal}>
                 Cancelar
               </button>
             </div>
@@ -475,8 +857,7 @@ const styles = {
   },
 
   hero: {
-    background:
-      "linear-gradient(135deg,#02140b,#064e3b 55%,#15803d)",
+    background: "linear-gradient(135deg,#02140b,#064e3b 55%,#15803d)",
     borderRadius: "36px",
     padding: "34px",
     color: "white",
@@ -674,8 +1055,7 @@ const styles = {
     width: "64px",
     height: "64px",
     borderRadius: "24px",
-    background:
-      "linear-gradient(135deg,#052e16,#16a34a)",
+    background: "linear-gradient(135deg,#052e16,#16a34a)",
     color: "white",
     display: "flex",
     alignItems: "center",
@@ -690,6 +1070,40 @@ const styles = {
     fontWeight: "900",
     fontSize: "12px",
     whiteSpace: "nowrap"
+  },
+
+  badgeRow: {
+    display: "flex",
+    gap: "8px",
+    flexWrap: "wrap",
+    marginBottom: "14px"
+  },
+
+  categoryTag: {
+    background: "#dbeafe",
+    color: "#1d4ed8",
+    padding: "7px 11px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "900"
+  },
+
+  originTag: {
+    background: "#f0fdf4",
+    color: "#166534",
+    padding: "7px 11px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "900"
+  },
+
+  statusTag: {
+    background: "#fef3c7",
+    color: "#92400e",
+    padding: "7px 11px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "900"
   },
 
   noticeTitle: {
@@ -714,9 +1128,26 @@ const styles = {
     padding: "13px"
   },
 
+  responseArea: {
+    marginTop: "14px",
+    display: "grid",
+    gap: "10px"
+  },
+
+  responseTextarea: {
+    padding: "13px",
+    borderRadius: "16px",
+    border: "1px solid #d1d5db",
+    resize: "vertical",
+    minHeight: "80px",
+    outline: "none",
+    fontFamily: "Arial",
+    background: "#f9fafb"
+  },
+
   actionRow: {
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
+    gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))",
     gap: "10px",
     marginTop: "18px"
   },
@@ -765,8 +1196,7 @@ const styles = {
   },
 
   emptyButton: {
-    background:
-      "linear-gradient(135deg,#064e3b,#16a34a)",
+    background: "linear-gradient(135deg,#064e3b,#16a34a)",
     color: "white",
     border: "none",
     padding: "13px 18px",
@@ -798,8 +1228,7 @@ const styles = {
   },
 
   modalTop: {
-    background:
-      "linear-gradient(135deg,#052e16,#166534)",
+    background: "linear-gradient(135deg,#052e16,#166534)",
     color: "white",
     borderRadius: "28px",
     padding: "26px",
@@ -892,8 +1321,7 @@ const styles = {
 
   saveBtn: {
     flex: 1,
-    background:
-      "linear-gradient(135deg,#064e3b,#16a34a)",
+    background: "linear-gradient(135deg,#064e3b,#16a34a)",
     color: "white",
     border: "none",
     padding: "14px",

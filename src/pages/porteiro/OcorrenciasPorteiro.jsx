@@ -2,6 +2,9 @@ import { useState } from "react";
 
 function OcorrenciasPorteiro() {
   const STORAGE_KEY = "ocorrencias";
+  const STORAGE_AVISOS_SINDICO = "avisos_sindico";
+  const STORAGE_MOVIMENTACOES = "movimentacoes";
+  const STORAGE_RELATORIOS = "relatorios_operacionais";
 
   const estadoInicial = {
     categoria: "",
@@ -12,8 +15,7 @@ function OcorrenciasPorteiro() {
   };
 
   const [ocorrencias, setOcorrencias] = useState(() => {
-    const dados = localStorage.getItem(STORAGE_KEY);
-    return dados ? JSON.parse(dados) : [];
+    return lerStorage(STORAGE_KEY);
   });
 
   const [novaOcorrencia, setNovaOcorrencia] =
@@ -21,6 +23,19 @@ function OcorrenciasPorteiro() {
 
   const [busca, setBusca] = useState("");
   const [abaAtiva, setAbaAtiva] = useState("encaminhadas");
+
+  function lerStorage(chave) {
+    try {
+      const dados = localStorage.getItem(chave);
+      return dados ? JSON.parse(dados) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function salvarStorage(chave, dados) {
+    localStorage.setItem(chave, JSON.stringify(dados));
+  }
 
   function obterPorteiroLogado() {
     const sessao =
@@ -38,6 +53,73 @@ function OcorrenciasPorteiro() {
 
   function limparFormulario() {
     setNovaOcorrencia(estadoInicial);
+  }
+
+  function registrarAvisoSindico(registro) {
+    const avisos = lerStorage(STORAGE_AVISOS_SINDICO);
+
+    const novoAviso = {
+      id: registro.id,
+      categoria: "Ocorrência",
+      origem: "Porteiro",
+      titulo: registro.titulo,
+      descricao: registro.descricao,
+      apartamento: registro.apartamento,
+      morador: "",
+      responsavel: registro.porteiroNome,
+      status: "Novo",
+      respostaSindico: "",
+      cienciaSindico: false,
+      data: registro.data
+    };
+
+    salvarStorage(STORAGE_AVISOS_SINDICO, [
+      novoAviso,
+      ...avisos
+    ]);
+  }
+
+  function registrarMovimentacao(registro) {
+    const movimentacoes = lerStorage(STORAGE_MOVIMENTACOES);
+
+    const novaMovimentacao = {
+      id: Date.now() + 1,
+      tipo: "Ocorrência",
+      origem: "Porteiro",
+      titulo: registro.titulo,
+      descricao: registro.descricao,
+      apartamento: registro.apartamento,
+      responsavel: registro.porteiroNome,
+      data: registro.data,
+      hora: registro.hora
+    };
+
+    salvarStorage(STORAGE_MOVIMENTACOES, [
+      novaMovimentacao,
+      ...movimentacoes
+    ]);
+  }
+
+  function registrarRelatorio(registro) {
+    const relatorios = lerStorage(STORAGE_RELATORIOS);
+
+    const novoRelatorio = {
+      id: Date.now() + 2,
+      tipo: "Ocorrência",
+      origem: "Porteiro",
+      titulo: registro.titulo,
+      descricao: registro.descricao,
+      apartamento: registro.apartamento,
+      responsavel: registro.porteiroNome,
+      status: registro.status,
+      data: registro.data,
+      hora: registro.hora
+    };
+
+    salvarStorage(STORAGE_RELATORIOS, [
+      novoRelatorio,
+      ...relatorios
+    ]);
   }
 
   function registrarOcorrencia() {
@@ -63,10 +145,10 @@ function OcorrenciasPorteiro() {
       apartamento: novaOcorrencia.apartamento,
       descricao: novaOcorrencia.descricao,
 
-      status: "Encaminhada ao síndico",
+      status: "Novo",
       etapa: "aguardando_sindico",
 
-      data: agora.toLocaleDateString(),
+      data: agora.toLocaleDateString("pt-BR"),
       hora: agora.toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit"
@@ -85,6 +167,7 @@ function OcorrenciasPorteiro() {
 
       observacoesPorteiro: [],
       respostasSindico: [],
+      respostaSindico: "",
       dataResolucao: "",
       horaResolucao: ""
     };
@@ -92,11 +175,11 @@ function OcorrenciasPorteiro() {
     const listaAtualizada = [nova, ...ocorrencias];
 
     setOcorrencias(listaAtualizada);
+    salvarStorage(STORAGE_KEY, listaAtualizada);
 
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(listaAtualizada)
-    );
+    registrarAvisoSindico(nova);
+    registrarMovimentacao(nova);
+    registrarRelatorio(nova);
 
     limparFormulario();
     setAbaAtiva("encaminhadas");
@@ -116,11 +199,13 @@ function OcorrenciasPorteiro() {
     );
 
     setOcorrencias(listaAtualizada);
+    salvarStorage(STORAGE_KEY, listaAtualizada);
 
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(listaAtualizada)
+    const avisos = lerStorage(STORAGE_AVISOS_SINDICO).filter(
+      (item) => item.id !== id
     );
+
+    salvarStorage(STORAGE_AVISOS_SINDICO, avisos);
   }
 
   function correspondeBusca(item) {
@@ -140,36 +225,36 @@ function OcorrenciasPorteiro() {
 
   const encaminhadas = ocorrencias.filter(
     (item) =>
-      item.status !== "Resolvida" &&
       item.status !== "Resolvido" &&
+      item.status !== "Resolvida" &&
       correspondeBusca(item)
   );
 
   const historico = ocorrencias.filter(
     (item) =>
-      (item.status === "Resolvida" ||
-        item.status === "Resolvido") &&
+      (item.status === "Resolvido" ||
+        item.status === "Resolvida") &&
       correspondeBusca(item)
   );
 
   const totalEncaminhadas = ocorrencias.filter(
     (item) =>
-      item.status !== "Resolvida" &&
-      item.status !== "Resolvido"
+      item.status !== "Resolvido" &&
+      item.status !== "Resolvida"
   ).length;
 
   const totalResolvidas = ocorrencias.filter(
     (item) =>
-      item.status === "Resolvida" ||
-      item.status === "Resolvido"
-  ).length;
-
-  const totalMoradores = ocorrencias.filter(
-    (item) => item.origem === "morador"
+      item.status === "Resolvido" ||
+      item.status === "Resolvida"
   ).length;
 
   const totalPorteiros = ocorrencias.filter(
     (item) => item.origem === "porteiro"
+  ).length;
+
+  const totalUrgentes = ocorrencias.filter(
+    (item) => item.prioridade === "Urgente"
   ).length;
 
   const listaExibida =
@@ -249,11 +334,11 @@ function OcorrenciasPorteiro() {
 
         <div style={styles.card}>
           <p style={styles.cardLabel}>
-            Vindas dos moradores
+            Prioridade urgente
           </p>
 
           <h2 style={styles.cardNumberBlue}>
-            {totalMoradores}
+            {totalUrgentes}
           </h2>
         </div>
       </div>
@@ -458,9 +543,7 @@ function OcorrenciasPorteiro() {
                       <div>
                         <div style={styles.badges}>
                           <span style={styles.originBadge}>
-                            {item.origem === "morador"
-                              ? "Morador"
-                              : "Porteiro"}
+                            Porteiro
                           </span>
 
                           <span style={styles.categoryBadge}>
@@ -491,8 +574,8 @@ function OcorrenciasPorteiro() {
                       <span
                         style={{
                           ...styles.statusBadge,
-                          ...(item.status === "Resolvida" ||
-                          item.status === "Resolvido"
+                          ...(item.status === "Resolvido" ||
+                          item.status === "Resolvida"
                             ? styles.statusResolved
                             : styles.statusForwarded)
                         }}
@@ -511,10 +594,7 @@ function OcorrenciasPorteiro() {
                       </span>
 
                       <span>
-                        👤{" "}
-                        {item.origem === "morador"
-                          ? item.moradorNome || "Morador"
-                          : item.porteiroNome || "Porteiro"}
+                        👤 {item.porteiroNome || "Porteiro"}
                       </span>
 
                       {item.apartamento && (
@@ -524,8 +604,8 @@ function OcorrenciasPorteiro() {
                       )}
                     </div>
 
-                    {item.status !== "Resolvida" &&
-                      item.status !== "Resolvido" && (
+                    {item.status !== "Resolvido" &&
+                      item.status !== "Resolvida" && (
                         <div style={styles.forwardBox}>
                           <strong>
                             Situação atual:
@@ -535,8 +615,8 @@ function OcorrenciasPorteiro() {
                         </div>
                       )}
 
-                    {(item.status === "Resolvida" ||
-                      item.status === "Resolvido") && (
+                    {(item.status === "Resolvido" ||
+                      item.status === "Resolvida") && (
                       <div style={styles.resolvedBox}>
                         <strong>
                           Resolvida pelo síndico.
@@ -554,9 +634,8 @@ function OcorrenciasPorteiro() {
                       </div>
                     )}
 
-                    {item.origem === "porteiro" &&
-                      item.status !== "Resolvida" &&
-                      item.status !== "Resolvido" && (
+                    {item.status !== "Resolvido" &&
+                      item.status !== "Resolvida" && (
                       <div style={styles.actions}>
                         <button
                           style={styles.deleteButton}

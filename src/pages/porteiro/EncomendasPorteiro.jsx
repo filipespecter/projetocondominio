@@ -2,90 +2,62 @@ import { useEffect, useState } from "react";
 
 import ApartmentGrid from "../../components/Porteiro/ApartmentGrid";
 
-import {
-  salvarMovimentacao
-} from "../../Services/movimentacaoService";
-
 function EncomendasPorteiro() {
+  const STORAGE_ENCOMENDAS = "encomendas";
+  const STORAGE_ESPERADAS = "encomendas_esperadas";
+  const STORAGE_AVISOS_SINDICO = "avisos_sindico";
+  const STORAGE_NOTIFICACOES = "notificacoesMorador";
+  const STORAGE_HISTORICO = "encomendas_historico";
+  const STORAGE_MOVIMENTACOES = "movimentacoes";
+  const STORAGE_RELATORIOS = "relatorios_operacionais";
 
-  const [esperadas, setEsperadas] =
-    useState([]);
-
-  const [encomendas, setEncomendas] =
-    useState([]);
-
-  const [porteiro, setPorteiro] =
-    useState(null);
-
-  /* =========================
-     CARREGAR DADOS
-  ========================= */
+  const [esperadas, setEsperadas] = useState([]);
+  const [encomendas, setEncomendas] = useState([]);
+  const [porteiro, setPorteiro] = useState(null);
 
   useEffect(() => {
-
     carregarSessao();
-
     carregarEsperadas();
-
     carregarEncomendas();
-
   }, []);
 
-  function carregarSessao() {
+  function lerStorage(chave) {
+    try {
+      const dados = localStorage.getItem(chave);
+      return dados ? JSON.parse(dados) : [];
+    } catch {
+      return [];
+    }
+  }
 
+  function salvarStorage(chave, dados) {
+    localStorage.setItem(chave, JSON.stringify(dados));
+  }
+
+  function carregarSessao() {
     const sessao =
       localStorage.getItem("sessaoPorteiro") ||
       sessionStorage.getItem("sessaoPorteiro");
 
     try {
-
-      const usuario =
-        sessao
-          ? JSON.parse(sessao)
-          : null;
-
+      const usuario = sessao ? JSON.parse(sessao) : null;
       setPorteiro(usuario);
-
     } catch {
-
       setPorteiro(null);
-
     }
-
   }
 
   function carregarEsperadas() {
-
-    const data =
-      JSON.parse(
-        localStorage.getItem(
-          "encomendas_esperadas"
-        )
-      ) || [];
-
-    setEsperadas(data);
-
+    setEsperadas(lerStorage(STORAGE_ESPERADAS));
   }
 
   function carregarEncomendas() {
-
-    const data =
-      JSON.parse(
-        localStorage.getItem(
-          "encomendas"
-        )
-      ) || [];
-
-    setEncomendas(data);
-
+    setEncomendas(lerStorage(STORAGE_ENCOMENDAS));
   }
 
   function atualizarTela() {
-
     carregarEncomendas();
-
     carregarEsperadas();
-
   }
 
   const pendentes = encomendas.filter(
@@ -97,147 +69,231 @@ function EncomendasPorteiro() {
   );
 
   const recebidasHoje = encomendas.filter((e) => {
-
     if (!e.dataRecebimento && !e.data) return false;
 
-    const hoje =
-      new Date().toLocaleDateString();
+    const hoje = new Date().toLocaleDateString("pt-BR");
 
     return (
       e.dataRecebimento === hoje ||
       e.data?.includes(hoje)
     );
-
   });
 
   const retiradasHoje = encomendas.filter((e) => {
-
     if (!e.retiradaEm) return false;
 
-    const hoje =
-      new Date().toLocaleDateString();
+    const hoje = new Date().toLocaleDateString("pt-BR");
 
     return e.retiradaEm.includes(hoje);
-
   });
 
-  /* =========================
-     CONFIRMAR RECEBIMENTO
-  ========================= */
+  function registrarAvisoSindico(encomenda) {
+    const avisos = lerStorage(STORAGE_AVISOS_SINDICO);
+
+    const novoAviso = {
+      id: encomenda.id,
+      categoria: "Encomenda",
+      origem: "Porteiro",
+      titulo: `Encomenda recebida - Apto ${encomenda.apartamento}`,
+      descricao: encomenda.descricao,
+      apartamento: encomenda.apartamento,
+      morador: encomenda.morador,
+      responsavel: encomenda.porteiroRecebimento,
+      status: "Novo",
+      respostaSindico: "",
+      cienciaSindico: false,
+      data: encomenda.dataRecebimento
+    };
+
+    salvarStorage(STORAGE_AVISOS_SINDICO, [
+      novoAviso,
+      ...avisos
+    ]);
+  }
+
+  function notificarMorador(encomenda) {
+    const notificacoes = lerStorage(STORAGE_NOTIFICACOES);
+
+    const novaNotificacao = {
+      id: Date.now() + 1,
+      tipo: "Encomenda",
+      titulo: "Encomenda recebida na portaria",
+      descricao: `Sua encomenda ${encomenda.tipo || ""} foi recebida e está aguardando retirada na portaria.`,
+      morador: encomenda.morador,
+      moradorId: encomenda.moradorId || null,
+      apartamento: encomenda.apartamento,
+      lida: false,
+      data: encomenda.dataRecebimento,
+      hora: encomenda.horaRecebimento
+    };
+
+    salvarStorage(STORAGE_NOTIFICACOES, [
+      novaNotificacao,
+      ...notificacoes
+    ]);
+  }
+
+  function registrarHistorico(encomenda, origemEsperada) {
+    const historico = lerStorage(STORAGE_HISTORICO);
+
+    const novoHistorico = {
+      id: Date.now() + 2,
+      encomendaId: encomenda.id,
+      encomendaEsperadaId: origemEsperada?.id || null,
+      acao: "recebimento_confirmado",
+      origem: "Porteiro",
+      morador: encomenda.morador,
+      moradorId: encomenda.moradorId || null,
+      apartamento: encomenda.apartamento,
+      descricao: encomenda.descricao,
+      tipo: encomenda.tipo,
+      codigo: encomenda.codigo,
+      transportadora: encomenda.transportadora,
+      status: encomenda.status,
+      porteiro: encomenda.porteiroRecebimento,
+      data: encomenda.dataRecebimento,
+      hora: encomenda.horaRecebimento
+    };
+
+    salvarStorage(STORAGE_HISTORICO, [
+      novoHistorico,
+      ...historico
+    ]);
+  }
+
+  function registrarMovimentacao(encomenda) {
+    const movimentacoes = lerStorage(STORAGE_MOVIMENTACOES);
+
+    const novaMovimentacao = {
+      id: Date.now() + 3,
+      tipo: "Encomenda",
+      acao: "recebimento_confirmado",
+      origem: "Porteiro",
+      titulo: `Encomenda recebida - Apto ${encomenda.apartamento}`,
+      apartamento: encomenda.apartamento,
+      morador: encomenda.morador,
+      moradorId: encomenda.moradorId || null,
+      descricao: encomenda.descricao,
+      porteiro: encomenda.porteiroRecebimento,
+      data: encomenda.dataRecebimento,
+      hora: encomenda.horaRecebimento,
+      timestamp: Date.now()
+    };
+
+    salvarStorage(STORAGE_MOVIMENTACOES, [
+      novaMovimentacao,
+      ...movimentacoes
+    ]);
+  }
+
+  function registrarRelatorio(encomenda) {
+    const relatorios = lerStorage(STORAGE_RELATORIOS);
+
+    const novoRelatorio = {
+      id: Date.now() + 4,
+      tipo: "Encomenda",
+      acao: "recebimento_confirmado",
+      origem: "Porteiro",
+      titulo: `Encomenda recebida - Apto ${encomenda.apartamento}`,
+      apartamento: encomenda.apartamento,
+      morador: encomenda.morador,
+      moradorId: encomenda.moradorId || null,
+      descricao: encomenda.descricao,
+      codigo: encomenda.codigo,
+      transportadora: encomenda.transportadora,
+      status: encomenda.status,
+      porteiro: encomenda.porteiroRecebimento,
+      data: encomenda.dataRecebimento,
+      hora: encomenda.horaRecebimento
+    };
+
+    salvarStorage(STORAGE_RELATORIOS, [
+      novoRelatorio,
+      ...relatorios
+    ]);
+  }
 
   function confirmarRecebimento(item) {
-
-    const todasEncomendas =
-      JSON.parse(
-        localStorage.getItem(
-          "encomendas"
-        )
-      ) || [];
-
+    const todasEncomendas = lerStorage(STORAGE_ENCOMENDAS);
     const agora = new Date();
 
-    const codigo =
-      `${item.apartamento || "AP"}-${Date.now()
-        .toString()
-        .slice(-4)}`;
+    const codigo = `${item.apartamento || "AP"}-${Date.now()
+      .toString()
+      .slice(-4)}`;
 
     const novaEncomenda = {
-
       id: Date.now(),
+
+      encomendaEsperadaId: item.id || null,
+
+      moradorId: item.moradorId || null,
 
       codigo,
 
-      apartamento:
-        item.apartamento || "N/A",
+      apartamento: item.apartamento || "N/A",
 
-      nome:
-        item.nome || item.morador || "Morador",
+      nome: item.nome || item.morador || "Morador",
 
-      morador:
-        item.morador || item.nome || "Morador",
+      morador: item.morador || item.nome || "Morador",
 
-      descricao:
-        item.descricao || item.tipo,
+      usuario: item.usuario || "",
 
-      tipo:
-        item.tipo || "Encomenda",
+      bloco: item.bloco || "",
+
+      descricao: item.descricao || item.tipo,
+
+      tipo: item.tipo || "Encomenda",
+
+      transportadora: item.transportadora || "Não informada",
 
       status: "pendente",
 
-      data:
-        agora.toLocaleString(),
+      data: agora.toLocaleString("pt-BR"),
 
-      dataRecebimento:
-        agora.toLocaleDateString(),
+      dataRecebimento: agora.toLocaleDateString("pt-BR"),
 
-      horaRecebimento:
-        agora.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit"
-        }),
+      horaRecebimento: agora.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      }),
 
-      porteiroRecebimento:
-        porteiro?.nome || "Porteiro",
+      porteiroRecebimento: porteiro?.nome || "Porteiro",
 
-      porteiroUsuario:
-        porteiro?.usuario || ""
+      porteiroUsuario: porteiro?.usuario || "",
 
+      notificadoMorador: true,
+
+      cienciaSindico: false
     };
 
     const atualizadas = [
-      ...todasEncomendas,
-      novaEncomenda
+      novaEncomenda,
+      ...todasEncomendas
     ];
 
-    localStorage.setItem(
-      "encomendas",
-      JSON.stringify(atualizadas)
+    salvarStorage(STORAGE_ENCOMENDAS, atualizadas);
+
+    const novasEsperadas = esperadas.filter(
+      (e) => e.id !== item.id
     );
 
-    const novasEsperadas =
-      esperadas.filter(
-        (e) => e.id !== item.id
-      );
+    salvarStorage(STORAGE_ESPERADAS, novasEsperadas);
 
-    localStorage.setItem(
-      "encomendas_esperadas",
-      JSON.stringify(novasEsperadas)
-    );
-
-    salvarMovimentacao({
-
-      id: Date.now(),
-
-      tipo: "encomenda_recebida",
-
-      apartamento:
-        novaEncomenda.apartamento,
-
-      mensagem:
-        `Encomenda esperada confirmada para o AP ${novaEncomenda.apartamento}`,
-
-      porteiro:
-        porteiro?.nome || "Porteiro",
-
-      data:
-        agora.toLocaleString()
-
-    });
+    registrarAvisoSindico(novaEncomenda);
+    notificarMorador(novaEncomenda);
+    registrarHistorico(novaEncomenda, item);
+    registrarMovimentacao(novaEncomenda);
+    registrarRelatorio(novaEncomenda);
 
     atualizarTela();
 
+    alert("Encomenda confirmada e morador notificado.");
   }
 
   return (
-
     <div style={styles.container}>
-
-      {/* HERO */}
-
       <div style={styles.hero}>
-
         <div>
-
           <span style={styles.heroBadge}>
             📦 Central logística
           </span>
@@ -252,9 +308,7 @@ function EncomendasPorteiro() {
           </p>
 
           {porteiro && (
-
             <div style={styles.userLine}>
-
               <span style={styles.statusDot}></span>
 
               <span>
@@ -263,15 +317,11 @@ function EncomendasPorteiro() {
                   {porteiro.nome}
                 </strong>
               </span>
-
             </div>
-
           )}
-
         </div>
 
         <div style={styles.heroPanel}>
-
           <p style={styles.heroLabel}>
             Hoje
           </p>
@@ -283,19 +333,12 @@ function EncomendasPorteiro() {
           <span style={styles.heroStatus}>
             Recebidas no plantão
           </span>
-
         </div>
-
       </div>
 
-      {/* CARDS */}
-
       <div style={styles.cardsGrid}>
-
         <div style={styles.cardPrimary}>
-
           <div>
-
             <p style={styles.cardLabelLight}>
               Pendentes
             </p>
@@ -307,23 +350,19 @@ function EncomendasPorteiro() {
             <span style={styles.cardHintLight}>
               aguardando retirada
             </span>
-
           </div>
 
           <div style={styles.cardIconLight}>
             📦
           </div>
-
         </div>
 
         <div style={styles.card}>
-
           <div style={styles.cardIconBlue}>
             📬
           </div>
 
           <div>
-
             <p style={styles.cardLabel}>
               Entregas esperadas
             </p>
@@ -331,19 +370,15 @@ function EncomendasPorteiro() {
             <h2 style={styles.cardNumberBlue}>
               {esperadas.length}
             </h2>
-
           </div>
-
         </div>
 
         <div style={styles.card}>
-
           <div style={styles.cardIconGreen}>
             ✅
           </div>
 
           <div>
-
             <p style={styles.cardLabel}>
               Retiradas
             </p>
@@ -351,19 +386,15 @@ function EncomendasPorteiro() {
             <h2 style={styles.cardNumberGreen}>
               {retiradas.length}
             </h2>
-
           </div>
-
         </div>
 
         <div style={styles.card}>
-
           <div style={styles.cardIconYellow}>
             🕒
           </div>
 
           <div>
-
             <p style={styles.cardLabel}>
               Retiradas hoje
             </p>
@@ -371,23 +402,14 @@ function EncomendasPorteiro() {
             <h2 style={styles.cardNumberYellow}>
               {retiradasHoje.length}
             </h2>
-
           </div>
-
         </div>
-
       </div>
 
-      {/* ENCOMENDAS ESPERADAS */}
-
       {esperadas.length > 0 && (
-
         <div style={styles.expectedSection}>
-
           <div style={styles.sectionHeader}>
-
             <div>
-
               <h2 style={styles.sectionTitle}>
                 Encomendas esperadas
               </h2>
@@ -395,28 +417,21 @@ function EncomendasPorteiro() {
               <p style={styles.sectionSubtitle}>
                 Entregas informadas previamente pelos moradores.
               </p>
-
             </div>
 
             <span style={styles.sectionBadge}>
               📬 {esperadas.length} aguardando
             </span>
-
           </div>
 
           <div style={styles.expectedGrid}>
-
             {esperadas.map((item) => (
-
               <div
                 key={item.id}
                 style={styles.expectedCard}
               >
-
                 <div style={styles.expectedTop}>
-
                   <div>
-
                     <span style={styles.expectedBadge}>
                       Aguardada
                     </span>
@@ -424,13 +439,11 @@ function EncomendasPorteiro() {
                     <h3 style={styles.expectedType}>
                       📦 {item.tipo || "Encomenda"}
                     </h3>
-
                   </div>
 
                   <div style={styles.expectedIcon}>
                     📬
                   </div>
-
                 </div>
 
                 <p style={styles.expectedDescription}>
@@ -439,7 +452,6 @@ function EncomendasPorteiro() {
                 </p>
 
                 <div style={styles.expectedMeta}>
-
                   <span>
                     🏠 Apto {item.apartamento || "N/A"}
                   </span>
@@ -450,12 +462,17 @@ function EncomendasPorteiro() {
                     </span>
                   )}
 
+                  {item.transportadora && (
+                    <span>
+                      🚚 {item.transportadora}
+                    </span>
+                  )}
+
                   {item.data && (
                     <span>
                       🕒 {item.data}
                     </span>
                   )}
-
                 </div>
 
                 <button
@@ -464,29 +481,17 @@ function EncomendasPorteiro() {
                     confirmarRecebimento(item)
                   }
                 >
-
                   Confirmar recebimento
-
                 </button>
-
               </div>
-
             ))}
-
           </div>
-
         </div>
-
       )}
 
-      {/* MAPA DE APARTAMENTOS */}
-
       <div style={styles.apartmentSection}>
-
         <div style={styles.sectionHeader}>
-
           <div>
-
             <h2 style={styles.sectionTitle}>
               Mapa de apartamentos
             </h2>
@@ -495,29 +500,20 @@ function EncomendasPorteiro() {
               Clique em um apartamento para registrar, retirar ou
               consultar encomendas.
             </p>
-
           </div>
 
           <span style={styles.sectionBadgeGreen}>
             🏢 Torre operacional
           </span>
-
         </div>
 
-        <ApartmentGrid
-          onRefresh={atualizarTela}
-        />
-
+        <ApartmentGrid onRefresh={atualizarTela} />
       </div>
-
     </div>
-
   );
-
 }
 
 const styles = {
-
   container: {
     width: "100%",
     fontFamily: "Arial",
@@ -867,7 +863,6 @@ const styles = {
     boxShadow:
       "0 12px 25px rgba(22,163,74,0.20)"
   }
-
 };
 
 export default EncomendasPorteiro;

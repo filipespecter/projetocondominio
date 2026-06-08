@@ -1,375 +1,420 @@
 import { useEffect, useState } from "react";
 
-import {
-  salvarMovimentacao
-} from "../../Services/movimentacaoService";
+function PackageModal({ apartamento, onClose }) {
+  const STORAGE_ENCOMENDAS = "encomendas";
+  const STORAGE_AVISOS_SINDICO = "avisos_sindico";
+  const STORAGE_NOTIFICACOES = "notificacoesMorador";
+  const STORAGE_HISTORICO = "encomendas_historico";
+  const STORAGE_MOVIMENTACOES = "movimentacoes";
+  const STORAGE_RELATORIOS = "relatorios_operacionais";
 
-function PackageModal({
-  apartamento,
-  onClose
-}) {
-
-  const [descricao, setDescricao] =
-    useState("");
-
-  const [tipo, setTipo] =
-    useState("");
-
-  const [transportadora, setTransportadora] =
-    useState("");
-
-  const [rastreio, setRastreio] =
-    useState("");
-
-  const [retiradoPor, setRetiradoPor] =
-    useState("");
-
-  const [encomendas, setEncomendas] =
-    useState([]);
-
-  const [morador, setMorador] =
-    useState(null);
-
-  const [porteiro, setPorteiro] =
-    useState(null);
-
-  const [abaAtiva, setAbaAtiva] =
-    useState("pendentes");
+  const [descricao, setDescricao] = useState("");
+  const [tipo, setTipo] = useState("");
+  const [transportadora, setTransportadora] = useState("");
+  const [rastreio, setRastreio] = useState("");
+  const [retiradoPor, setRetiradoPor] = useState("");
+  const [encomendas, setEncomendas] = useState([]);
+  const [morador, setMorador] = useState(null);
+  const [porteiro, setPorteiro] = useState(null);
+  const [abaAtiva, setAbaAtiva] = useState("pendentes");
 
   useEffect(() => {
-
     carregarSessao();
-
     carregarMorador();
-
     carregarEncomendas();
-
   }, []);
 
-  function carregarSessao() {
+  function lerStorage(chave) {
+    try {
+      const dados = localStorage.getItem(chave);
+      return dados ? JSON.parse(dados) : [];
+    } catch {
+      return [];
+    }
+  }
 
+  function salvarStorage(chave, dados) {
+    localStorage.setItem(chave, JSON.stringify(dados));
+  }
+
+  function carregarSessao() {
     const sessao =
       localStorage.getItem("sessaoPorteiro") ||
       sessionStorage.getItem("sessaoPorteiro");
 
     try {
-
-      const usuario =
-        sessao
-          ? JSON.parse(sessao)
-          : null;
-
+      const usuario = sessao ? JSON.parse(sessao) : null;
       setPorteiro(usuario);
-
     } catch {
-
       setPorteiro(null);
-
     }
-
   }
 
   function carregarMorador() {
+    const moradores = lerStorage("moradores");
 
-    const moradores =
-      JSON.parse(
-        localStorage.getItem("moradores")
-      ) || [];
-
-    const encontrado =
-      moradores.find(
-        (m) =>
-          String(m.apartamento) === String(apartamento) ||
-          String(m.apto) === String(apartamento)
-      );
+    const encontrado = moradores.find(
+      (m) =>
+        String(m.apartamento) === String(apartamento) ||
+        String(m.apto) === String(apartamento)
+    );
 
     setMorador(encontrado || null);
-
   }
 
   function carregarEncomendas() {
-
-    const data =
-      JSON.parse(
-        localStorage.getItem("encomendas")
-      ) || [];
+    const data = lerStorage(STORAGE_ENCOMENDAS);
 
     const filtradas = data.filter(
-      (e) =>
-        String(e.apartamento) === String(apartamento)
+      (e) => String(e.apartamento) === String(apartamento)
     );
 
-    filtradas.sort(
-      (a, b) => b.id - a.id
-    );
+    filtradas.sort((a, b) => b.id - a.id);
 
     setEncomendas(filtradas);
-
   }
 
   function limparFormulario() {
-
     setDescricao("");
-
     setTipo("");
-
     setTransportadora("");
-
     setRastreio("");
+  }
 
+  function registrarAvisoSindico(acao, encomenda) {
+    const avisos = lerStorage(STORAGE_AVISOS_SINDICO);
+
+    const novoAviso = {
+      id: Date.now() + 1,
+      categoria: "Encomenda",
+      origem: "Porteiro",
+      titulo:
+        acao === "retirada"
+          ? `Encomenda retirada - Apto ${encomenda.apartamento}`
+          : `Encomenda recebida - Apto ${encomenda.apartamento}`,
+      descricao:
+        acao === "retirada"
+          ? `Encomenda retirada por ${encomenda.retiradoPor || "não informado"}.`
+          : encomenda.descricao,
+      apartamento: encomenda.apartamento,
+      morador: encomenda.morador || encomenda.nome || "",
+      responsavel:
+        acao === "retirada"
+          ? encomenda.porteiroRetirada || "Porteiro"
+          : encomenda.porteiroRecebimento || "Porteiro",
+      status: acao === "retirada" ? "Resolvido" : "Novo",
+      respostaSindico: "",
+      cienciaSindico: false,
+      data:
+        acao === "retirada"
+          ? encomenda.dataRetirada || new Date().toLocaleDateString("pt-BR")
+          : encomenda.dataRecebimento || new Date().toLocaleDateString("pt-BR")
+    };
+
+    salvarStorage(STORAGE_AVISOS_SINDICO, [
+      novoAviso,
+      ...avisos
+    ]);
+  }
+
+  function notificarMorador(acao, encomenda) {
+    const notificacoes = lerStorage(STORAGE_NOTIFICACOES);
+
+    const novaNotificacao = {
+      id: Date.now() + 2,
+      tipo: "Encomenda",
+      titulo:
+        acao === "retirada"
+          ? "Encomenda retirada"
+          : "Encomenda recebida na portaria",
+      descricao:
+        acao === "retirada"
+          ? `Sua encomenda foi retirada por ${encomenda.retiradoPor || "não informado"}.`
+          : `Sua encomenda ${encomenda.tipo || ""} foi recebida e está aguardando retirada na portaria.`,
+      morador: encomenda.morador || encomenda.nome || "",
+      moradorId: encomenda.moradorId || null,
+      apartamento: encomenda.apartamento,
+      lida: false,
+      data:
+        acao === "retirada"
+          ? encomenda.dataRetirada || new Date().toLocaleDateString("pt-BR")
+          : encomenda.dataRecebimento || new Date().toLocaleDateString("pt-BR"),
+      hora:
+        acao === "retirada"
+          ? encomenda.horaRetirada || ""
+          : encomenda.horaRecebimento || ""
+    };
+
+    salvarStorage(STORAGE_NOTIFICACOES, [
+      novaNotificacao,
+      ...notificacoes
+    ]);
+  }
+
+  function registrarHistorico(acao, encomenda) {
+    const historico = lerStorage(STORAGE_HISTORICO);
+
+    const novoHistorico = {
+      id: Date.now() + 3,
+      encomendaId: encomenda.id,
+      acao,
+      origem: "Porteiro",
+      morador: encomenda.morador || encomenda.nome || "",
+      moradorId: encomenda.moradorId || null,
+      apartamento: encomenda.apartamento,
+      descricao: encomenda.descricao,
+      tipo: encomenda.tipo,
+      codigo: encomenda.codigo,
+      transportadora: encomenda.transportadora,
+      rastreio: encomenda.rastreio,
+      status: encomenda.status,
+      retiradoPor: encomenda.retiradoPor || "",
+      porteiro:
+        acao === "retirada"
+          ? encomenda.porteiroRetirada || "Porteiro"
+          : encomenda.porteiroRecebimento || "Porteiro",
+      data:
+        acao === "retirada"
+          ? encomenda.dataRetirada || new Date().toLocaleDateString("pt-BR")
+          : encomenda.dataRecebimento || new Date().toLocaleDateString("pt-BR"),
+      hora:
+        acao === "retirada"
+          ? encomenda.horaRetirada || ""
+          : encomenda.horaRecebimento || ""
+    };
+
+    salvarStorage(STORAGE_HISTORICO, [
+      novoHistorico,
+      ...historico
+    ]);
+  }
+
+  function registrarMovimentacao(acao, encomenda) {
+    const movimentacoes = lerStorage(STORAGE_MOVIMENTACOES);
+
+    const novaMovimentacao = {
+      id: Date.now() + 4,
+      tipo: "Encomenda",
+      acao,
+      origem: "Porteiro",
+      titulo:
+        acao === "retirada"
+          ? `Encomenda retirada - Apto ${encomenda.apartamento}`
+          : `Encomenda recebida - Apto ${encomenda.apartamento}`,
+      apartamento: encomenda.apartamento,
+      morador: encomenda.morador || encomenda.nome || "",
+      moradorId: encomenda.moradorId || null,
+      descricao: encomenda.descricao,
+      porteiro:
+        acao === "retirada"
+          ? encomenda.porteiroRetirada || "Porteiro"
+          : encomenda.porteiroRecebimento || "Porteiro",
+      data:
+        acao === "retirada"
+          ? encomenda.dataRetirada || new Date().toLocaleDateString("pt-BR")
+          : encomenda.dataRecebimento || new Date().toLocaleDateString("pt-BR"),
+      hora:
+        acao === "retirada"
+          ? encomenda.horaRetirada || ""
+          : encomenda.horaRecebimento || "",
+      timestamp: Date.now()
+    };
+
+    salvarStorage(STORAGE_MOVIMENTACOES, [
+      novaMovimentacao,
+      ...movimentacoes
+    ]);
+  }
+
+  function registrarRelatorio(acao, encomenda) {
+    const relatorios = lerStorage(STORAGE_RELATORIOS);
+
+    const novoRelatorio = {
+      id: Date.now() + 5,
+      tipo: "Encomenda",
+      acao,
+      origem: "Porteiro",
+      titulo:
+        acao === "retirada"
+          ? `Encomenda retirada - Apto ${encomenda.apartamento}`
+          : `Encomenda recebida - Apto ${encomenda.apartamento}`,
+      apartamento: encomenda.apartamento,
+      morador: encomenda.morador || encomenda.nome || "",
+      moradorId: encomenda.moradorId || null,
+      descricao: encomenda.descricao,
+      codigo: encomenda.codigo,
+      transportadora: encomenda.transportadora,
+      rastreio: encomenda.rastreio,
+      status: encomenda.status,
+      retiradoPor: encomenda.retiradoPor || "",
+      porteiro:
+        acao === "retirada"
+          ? encomenda.porteiroRetirada || "Porteiro"
+          : encomenda.porteiroRecebimento || "Porteiro",
+      data:
+        acao === "retirada"
+          ? encomenda.dataRetirada || new Date().toLocaleDateString("pt-BR")
+          : encomenda.dataRecebimento || new Date().toLocaleDateString("pt-BR"),
+      hora:
+        acao === "retirada"
+          ? encomenda.horaRetirada || ""
+          : encomenda.horaRecebimento || ""
+    };
+
+    salvarStorage(STORAGE_RELATORIOS, [
+      novoRelatorio,
+      ...relatorios
+    ]);
+  }
+
+  function registrarFluxo(acao, encomenda) {
+    registrarAvisoSindico(acao, encomenda);
+    notificarMorador(acao, encomenda);
+    registrarHistorico(acao, encomenda);
+    registrarMovimentacao(acao, encomenda);
+    registrarRelatorio(acao, encomenda);
   }
 
   function registrarEncomenda() {
-
     if (!descricao || !tipo) {
-
-      alert(
-        "Preencha o tipo e a descrição da encomenda"
-      );
-
+      alert("Preencha o tipo e a descrição da encomenda");
       return;
-
     }
 
-    const todas =
-      JSON.parse(
-        localStorage.getItem("encomendas")
-      ) || [];
-
+    const todas = lerStorage(STORAGE_ENCOMENDAS);
     const agora = new Date();
 
-    const codigo =
-      `${apartamento}-${Date.now()
-        .toString()
-        .slice(-5)}`;
+    const codigo = `${apartamento}-${Date.now()
+      .toString()
+      .slice(-5)}`;
 
     const nova = {
-
       id: Date.now(),
 
       codigo,
-
       apartamento,
 
-      moradorId:
-        morador?.id || null,
-
-      morador:
-        morador?.nome || "",
-
-      nome:
-        morador?.nome || "Morador",
+      moradorId: morador?.id || null,
+      morador: morador?.nome || "",
+      nome: morador?.nome || "Morador",
 
       tipo,
-
       descricao,
-
-      transportadora:
-        transportadora || "Não informada",
-
-      rastreio:
-        rastreio || "Não informado",
+      transportadora: transportadora || "Não informada",
+      rastreio: rastreio || "Não informado",
 
       status: "pendente",
 
-      data:
-        agora.toLocaleString(),
+      data: agora.toLocaleString("pt-BR"),
+      dataRecebimento: agora.toLocaleDateString("pt-BR"),
+      horaRecebimento: agora.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      }),
 
-      dataRecebimento:
-        agora.toLocaleDateString(),
+      porteiroRecebimento: porteiro?.nome || "Porteiro",
+      porteiroUsuario: porteiro?.usuario || "",
 
-      horaRecebimento:
-        agora.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit"
-        }),
-
-      porteiroRecebimento:
-        porteiro?.nome || "Porteiro",
-
-      porteiroUsuario:
-        porteiro?.usuario || ""
-
+      notificadoMorador: true,
+      cienciaSindico: false
     };
 
     const atualizadas = [
-      ...todas,
-      nova
+      nova,
+      ...todas
     ];
 
-    localStorage.setItem(
-      "encomendas",
-      JSON.stringify(atualizadas)
-    );
+    salvarStorage(STORAGE_ENCOMENDAS, atualizadas);
 
-    salvarMovimentacao({
-
-      id: Date.now(),
-
-      tipo: "encomenda_recebida",
-
-      apartamento,
-
-      mensagem:
-        `Nova encomenda registrada no AP ${apartamento}`,
-
-      porteiro:
-        porteiro?.nome || "Porteiro",
-
-      data:
-        agora.toLocaleString()
-
-    });
+    registrarFluxo("recebimento", nova);
 
     limparFormulario();
-
     carregarEncomendas();
-
     setAbaAtiva("pendentes");
 
+    alert("Encomenda registrada e morador notificado.");
   }
 
   function retirarEncomenda(id) {
-
     if (!retiradoPor.trim()) {
-
-      alert(
-        "Informe quem retirou a encomenda"
-      );
-
+      alert("Informe quem retirou a encomenda");
       return;
-
     }
 
-    const todas =
-      JSON.parse(
-        localStorage.getItem("encomendas")
-      ) || [];
-
+    const todas = lerStorage(STORAGE_ENCOMENDAS);
     const agora = new Date();
 
-    const atualizadas = todas.map((e) =>
+    let encomendaAtualizada = null;
 
-      e.id === id
+    const atualizadas = todas.map((e) => {
+      if (e.id !== id) return e;
 
-        ? {
+      encomendaAtualizada = {
+        ...e,
+        status: "retirada",
+        retiradoPor: retiradoPor.trim(),
+        retiradaEm: agora.toLocaleString("pt-BR"),
+        dataRetirada: agora.toLocaleDateString("pt-BR"),
+        horaRetirada: agora.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit"
+        }),
+        porteiroRetirada: porteiro?.nome || "Porteiro",
+        porteiroRetiradaUsuario: porteiro?.usuario || ""
+      };
 
-            ...e,
-
-            status: "retirada",
-
-            retiradoPor:
-              retiradoPor.trim(),
-
-            retiradaEm:
-              agora.toLocaleString(),
-
-            dataRetirada:
-              agora.toLocaleDateString(),
-
-            horaRetirada:
-              agora.toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit"
-              }),
-
-            porteiroRetirada:
-              porteiro?.nome || "Porteiro",
-
-            porteiroRetiradaUsuario:
-              porteiro?.usuario || ""
-
-          }
-
-        : e
-
-    );
-
-    localStorage.setItem(
-      "encomendas",
-      JSON.stringify(atualizadas)
-    );
-
-    salvarMovimentacao({
-
-      id: Date.now(),
-
-      tipo: "encomenda_retirada",
-
-      apartamento,
-
-      mensagem:
-        `Encomenda retirada no AP ${apartamento} por ${retiradoPor.trim()}`,
-
-      porteiro:
-        porteiro?.nome || "Porteiro",
-
-      data:
-        agora.toLocaleString()
-
+      return encomendaAtualizada;
     });
 
-    setRetiradoPor("");
+    salvarStorage(STORAGE_ENCOMENDAS, atualizadas);
 
+    if (encomendaAtualizada) {
+      registrarFluxo("retirada", encomendaAtualizada);
+    }
+
+    setRetiradoPor("");
     carregarEncomendas();
 
+    alert("Retirada registrada com sucesso.");
   }
 
   function excluirEncomenda(id) {
-
-    const confirmar =
-      window.confirm(
-        "Deseja excluir esta encomenda?"
-      );
+    const confirmar = window.confirm("Deseja excluir esta encomenda?");
 
     if (!confirmar) return;
 
-    const todas =
-      JSON.parse(
-        localStorage.getItem("encomendas")
-      ) || [];
+    const todas = lerStorage(STORAGE_ENCOMENDAS);
+    const encomenda = todas.find((e) => e.id === id);
 
-    const atualizadas =
-      todas.filter(
-        (e) => e.id !== id
-      );
+    const atualizadas = todas.filter((e) => e.id !== id);
 
-    localStorage.setItem(
-      "encomendas",
-      JSON.stringify(atualizadas)
-    );
+    salvarStorage(STORAGE_ENCOMENDAS, atualizadas);
+
+    if (encomenda) {
+      registrarHistorico("exclusao", encomenda);
+      registrarMovimentacao("exclusao", encomenda);
+      registrarRelatorio("exclusao", encomenda);
+    }
 
     carregarEncomendas();
-
   }
 
-  const pendentes =
-    encomendas.filter(
-      (item) => item.status === "pendente"
-    );
+  const pendentes = encomendas.filter(
+    (item) => item.status === "pendente"
+  );
 
-  const retiradas =
-    encomendas.filter(
-      (item) => item.status === "retirada"
-    );
+  const retiradas = encomendas.filter(
+    (item) => item.status === "retirada"
+  );
 
   const listaExibida =
-    abaAtiva === "pendentes"
-      ? pendentes
-      : retiradas;
+    abaAtiva === "pendentes" ? pendentes : retiradas;
 
   return (
-
     <div style={styles.overlay}>
-
       <div style={styles.modal}>
-
-        {/* HEADER */}
-
         <div style={styles.hero}>
-
           <div>
-
             <span style={styles.heroBadge}>
               📦 Gestão logística
             </span>
@@ -384,32 +429,24 @@ function PackageModal({
             </p>
 
             <div style={styles.ownerBox}>
-
               <span style={styles.ownerIcon}>
                 👤
               </span>
 
               <div>
-
                 <p style={styles.ownerLabel}>
                   Morador vinculado
                 </p>
 
                 <strong style={styles.ownerName}>
-                  {morador?.nome ||
-                    "Nenhum morador vinculado"}
+                  {morador?.nome || "Nenhum morador vinculado"}
                 </strong>
-
               </div>
-
             </div>
-
           </div>
 
           <div style={styles.heroStats}>
-
             <div style={styles.statBoxLight}>
-
               <p style={styles.statLabelLight}>
                 Pendentes
               </p>
@@ -417,11 +454,9 @@ function PackageModal({
               <h3 style={styles.statNumberLight}>
                 {pendentes.length}
               </h3>
-
             </div>
 
             <div style={styles.statBoxGlass}>
-
               <p style={styles.statLabelLight}>
                 Retiradas
               </p>
@@ -429,21 +464,13 @@ function PackageModal({
               <h3 style={styles.statNumberLight}>
                 {retiradas.length}
               </h3>
-
             </div>
-
           </div>
-
         </div>
 
-        {/* FORM */}
-
         <div style={styles.formCard}>
-
           <div style={styles.sectionHeader}>
-
             <div>
-
               <h3 style={styles.sectionTitle}>
                 Registrar nova encomenda
               </h3>
@@ -452,25 +479,19 @@ function PackageModal({
                 Ao registrar, a encomenda fica pendente
                 aguardando retirada.
               </p>
-
             </div>
 
             <span style={styles.sectionBadge}>
               Recebimento
             </span>
-
           </div>
 
           <div style={styles.formGrid}>
-
             <select
               value={tipo}
-              onChange={(e) =>
-                setTipo(e.target.value)
-              }
+              onChange={(e) => setTipo(e.target.value)}
               style={styles.input}
             >
-
               <option value="">
                 Tipo da encomenda
               </option>
@@ -498,35 +519,27 @@ function PackageModal({
               <option value="Outro">
                 Outro
               </option>
-
             </select>
 
             <input
               placeholder="Transportadora"
               value={transportadora}
-              onChange={(e) =>
-                setTransportadora(e.target.value)
-              }
+              onChange={(e) => setTransportadora(e.target.value)}
               style={styles.input}
             />
-
           </div>
 
           <input
             placeholder="Código de rastreio"
             value={rastreio}
-            onChange={(e) =>
-              setRastreio(e.target.value)
-            }
+            onChange={(e) => setRastreio(e.target.value)}
             style={styles.input}
           />
 
           <textarea
             placeholder="Descrição / observação da encomenda"
             value={descricao}
-            onChange={(e) =>
-              setDescricao(e.target.value)
-            }
+            onChange={(e) => setDescricao(e.target.value)}
             style={styles.textarea}
           />
 
@@ -534,27 +547,17 @@ function PackageModal({
             style={styles.primary}
             onClick={registrarEncomenda}
           >
-
             + Registrar encomenda
-
           </button>
-
         </div>
 
-        {/* ABAS */}
-
         <div style={styles.tabs}>
-
           <button
             style={{
               ...styles.tab,
-              ...(abaAtiva === "pendentes"
-                ? styles.tabActive
-                : {})
+              ...(abaAtiva === "pendentes" ? styles.tabActive : {})
             }}
-            onClick={() =>
-              setAbaAtiva("pendentes")
-            }
+            onClick={() => setAbaAtiva("pendentes")}
           >
             Pendentes
           </button>
@@ -562,27 +565,17 @@ function PackageModal({
           <button
             style={{
               ...styles.tab,
-              ...(abaAtiva === "retiradas"
-                ? styles.tabActive
-                : {})
+              ...(abaAtiva === "retiradas" ? styles.tabActive : {})
             }}
-            onClick={() =>
-              setAbaAtiva("retiradas")
-            }
+            onClick={() => setAbaAtiva("retiradas")}
           >
             Histórico de retiradas
           </button>
-
         </div>
 
-        {/* LISTA */}
-
         <div style={styles.list}>
-
           {listaExibida.length === 0 && (
-
             <div style={styles.empty}>
-
               <div style={styles.emptyIcon}>
                 📭
               </div>
@@ -594,22 +587,16 @@ function PackageModal({
               <p style={styles.emptyText}>
                 Os registros desta etapa aparecerão aqui.
               </p>
-
             </div>
-
           )}
 
           {listaExibida.map((item) => (
-
             <div
               key={item.id}
               style={styles.package}
             >
-
               <div style={styles.packageTop}>
-
                 <div>
-
                   <span
                     style={{
                       ...styles.status,
@@ -618,23 +605,19 @@ function PackageModal({
                         : styles.statusSuccess)
                     }}
                   >
-
                     {item.status === "pendente"
                       ? "Pendente"
                       : "Retirada"}
-
                   </span>
 
                   <h3 style={styles.packageTitle}>
                     📦 {item.tipo}
                   </h3>
-
                 </div>
 
                 <div style={styles.codeBox}>
                   {item.codigo}
                 </div>
-
               </div>
 
               <p style={styles.description}>
@@ -642,15 +625,13 @@ function PackageModal({
               </p>
 
               <div style={styles.infoGrid}>
-
                 <div style={styles.infoItem}>
                   <span style={styles.infoLabel}>
                     Transportadora
                   </span>
 
                   <strong>
-                    {item.transportadora ||
-                      "Não informada"}
+                    {item.transportadora || "Não informada"}
                   </strong>
                 </div>
 
@@ -660,8 +641,7 @@ function PackageModal({
                   </span>
 
                   <strong>
-                    {item.rastreio ||
-                      "Não informado"}
+                    {item.rastreio || "Não informado"}
                   </strong>
                 </div>
 
@@ -681,112 +661,73 @@ function PackageModal({
                   </span>
 
                   <strong>
-                    {item.porteiroRecebimento ||
-                      "Não informado"}
+                    {item.porteiroRecebimento || "Não informado"}
                   </strong>
                 </div>
-
               </div>
 
               {item.status === "pendente" && (
-
                 <div style={styles.withdrawBox}>
-
                   <input
                     placeholder="Nome de quem retirou"
                     value={retiradoPor}
-                    onChange={(e) =>
-                      setRetiradoPor(e.target.value)
-                    }
+                    onChange={(e) => setRetiradoPor(e.target.value)}
                     style={styles.withdrawInput}
                   />
 
                   <button
                     style={styles.success}
-                    onClick={() =>
-                      retirarEncomenda(item.id)
-                    }
+                    onClick={() => retirarEncomenda(item.id)}
                   >
-
                     Confirmar retirada
-
                   </button>
-
                 </div>
-
               )}
 
               {item.status === "retirada" && (
-
                 <div style={styles.retirada}>
-
                   ✅ Retirada por{" "}
-
                   <strong>
-                    {item.retiradoPor ||
-                      "Não informado"}
-                  </strong>
-
-                  {" "}em{" "}
-
+                    {item.retiradoPor || "Não informado"}
+                  </strong>{" "}
+                  em{" "}
                   <strong>
                     {item.retiradaEm}
                   </strong>
-
                 </div>
-
               )}
 
               <div style={styles.actions}>
-
                 <button
                   style={styles.delete}
-                  onClick={() =>
-                    excluirEncomenda(item.id)
-                  }
+                  onClick={() => excluirEncomenda(item.id)}
                 >
-
                   Excluir registro
-
                 </button>
-
               </div>
-
             </div>
-
           ))}
-
         </div>
-
-        {/* FOOTER */}
 
         <button
           style={styles.close}
           onClick={onClose}
         >
-
           Fechar painel
-
         </button>
-
       </div>
-
     </div>
-
   );
-
 }
 
 const styles = {
-
   overlay: {
     position: "fixed",
     top: 0,
     left: 0,
     width: "100%",
     height: "100%",
-    background:
-      "rgba(15,23,42,0.62)",
+    background: "rgba(15,23,42,0.62)",
     backdropFilter: "blur(8px)",
     display: "flex",
     justifyContent: "center",
@@ -803,14 +744,12 @@ const styles = {
     padding: "26px",
     maxHeight: "90vh",
     overflowY: "auto",
-    boxShadow:
-      "0 30px 80px rgba(0,0,0,0.28)",
+    boxShadow: "0 30px 80px rgba(0,0,0,0.28)",
     border: "1px solid rgba(255,255,255,0.45)"
   },
 
   hero: {
-    background:
-      "linear-gradient(135deg,#052e16,#14532d,#166534)",
+    background: "linear-gradient(135deg,#052e16,#14532d,#166534)",
     borderRadius: "28px",
     padding: "28px",
     color: "white",
@@ -917,8 +856,7 @@ const styles = {
     borderRadius: "26px",
     padding: "24px",
     marginBottom: "20px",
-    boxShadow:
-      "0 12px 35px rgba(15,23,42,0.08)",
+    boxShadow: "0 12px 35px rgba(15,23,42,0.08)",
     border: "1px solid #eef2f7"
   },
 
@@ -986,8 +924,7 @@ const styles = {
 
   primary: {
     width: "100%",
-    background:
-      "linear-gradient(135deg,#14532d,#16a34a)",
+    background: "linear-gradient(135deg,#14532d,#16a34a)",
     color: "white",
     border: "none",
     padding: "15px",
@@ -995,8 +932,7 @@ const styles = {
     cursor: "pointer",
     fontWeight: "800",
     fontSize: "15px",
-    boxShadow:
-      "0 12px 25px rgba(22,163,74,0.20)"
+    boxShadow: "0 12px 25px rgba(22,163,74,0.20)"
   },
 
   tabs: {
@@ -1022,8 +958,7 @@ const styles = {
   tabActive: {
     background: "white",
     color: "#14532d",
-    boxShadow:
-      "0 8px 20px rgba(15,23,42,0.08)"
+    boxShadow: "0 8px 20px rgba(15,23,42,0.08)"
   },
 
   list: {
@@ -1060,8 +995,7 @@ const styles = {
     background: "white",
     borderRadius: "24px",
     padding: "22px",
-    boxShadow:
-      "0 12px 35px rgba(15,23,42,0.07)",
+    boxShadow: "0 12px 35px rgba(15,23,42,0.07)",
     border: "1px solid #eef2f7"
   },
 
@@ -1152,8 +1086,7 @@ const styles = {
   },
 
   success: {
-    background:
-      "linear-gradient(135deg,#14532d,#16a34a)",
+    background: "linear-gradient(135deg,#14532d,#16a34a)",
     color: "white",
     border: "none",
     padding: "13px 16px",
@@ -1200,7 +1133,6 @@ const styles = {
     fontWeight: "800",
     fontSize: "15px"
   }
-
 };
 
 export default PackageModal;

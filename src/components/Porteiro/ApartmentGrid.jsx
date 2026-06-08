@@ -1,83 +1,50 @@
 import { useState, useEffect } from "react";
 import PackageModal from "./PackageModal";
 
-export default function ApartmentGrid({
-  onRefresh
-}) {
-
-  const apartamentos = [];
-
-  for (let andar = 1; andar <= 15; andar++) {
-
-    for (let ap = 1; ap <= 4; ap++) {
-
-      apartamentos.push(`${andar}0${ap}`);
-
-    }
-
-  }
-
-  const [selectedAp, setSelectedAp] =
-    useState(null);
-
-  const [encomendas, setEncomendas] =
-    useState([]);
-
-  const [esperadas, setEsperadas] =
-    useState([]);
-
-  const [moradores, setMoradores] =
-    useState([]);
-
-  const [ocorrencias, setOcorrencias] =
-    useState([]);
-
-  const [busca, setBusca] =
-    useState("");
-
-  const [filtro, setFiltro] =
-    useState("todos");
+export default function ApartmentGrid({ onRefresh }) {
+  const [selectedAp, setSelectedAp] = useState(null);
+  const [encomendas, setEncomendas] = useState([]);
+  const [esperadas, setEsperadas] = useState([]);
+  const [moradores, setMoradores] = useState([]);
+  const [ocorrencias, setOcorrencias] = useState([]);
+  const [busca, setBusca] = useState("");
+  const [filtro, setFiltro] = useState("todos");
 
   useEffect(() => {
-
     carregarDados();
 
+    const interval = setInterval(() => {
+      carregarDados();
+    }, 3000);
+
+    return () => clearInterval(interval);
   }, []);
 
-  function carregarDados() {
-
-    const dataEncomendas =
-      JSON.parse(
-        localStorage.getItem("encomendas")
-      ) || [];
-
-    const dataEsperadas =
-      JSON.parse(
-        localStorage.getItem("encomendas_esperadas")
-      ) || [];
-
-    const dataMoradores =
-      JSON.parse(
-        localStorage.getItem("moradores")
-      ) || [];
-
-    const dataOcorrencias =
-      JSON.parse(
-        localStorage.getItem("ocorrencias")
-      ) || [];
-
-    setEncomendas(dataEncomendas);
-
-    setEsperadas(dataEsperadas);
-
-    setMoradores(dataMoradores);
-
-    setOcorrencias(dataOcorrencias);
-
+  function lerStorage(chave) {
+    try {
+      const dados = localStorage.getItem(chave);
+      return dados ? JSON.parse(dados) : [];
+    } catch {
+      return [];
+    }
   }
 
-  function obterMorador(ap) {
+  function carregarDados() {
+    setEncomendas(lerStorage("encomendas"));
+    setEsperadas(lerStorage("encomendas_esperadas"));
+    setMoradores(lerStorage("moradores"));
+    setOcorrencias(lerStorage("ocorrencias"));
+  }
 
+  const apartamentos = [
+    ...new Set(
+      moradores
+        .map((m) => String(m.apartamento || m.apto || "").trim())
+        .filter(Boolean)
+    )
+  ].sort((a, b) => Number(a) - Number(b));
+
+  function obterMorador(ap) {
     const encontrado = moradores.find(
       (m) =>
         String(m.apartamento) === String(ap) ||
@@ -85,69 +52,43 @@ export default function ApartmentGrid({
     );
 
     return encontrado || null;
-
   }
 
   function contarPendentes(ap) {
-
     return encomendas.filter(
-
       (e) =>
-
         String(e.apartamento) === String(ap) &&
         e.status === "pendente"
-
     ).length;
-
   }
 
   function contarRetiradas(ap) {
-
     return encomendas.filter(
-
       (e) =>
-
         String(e.apartamento) === String(ap) &&
         e.status === "retirada"
-
     ).length;
-
   }
 
   function contarEsperadas(ap) {
-
     return esperadas.filter(
-
-      (e) =>
-        String(e.apartamento) === String(ap)
-
+      (e) => String(e.apartamento) === String(ap)
     ).length;
-
   }
 
   function contarOcorrencias(ap) {
-
     return ocorrencias.filter(
-
       (o) =>
         String(o.apartamento) === String(ap) &&
         o.status !== "Resolvida" &&
         o.status !== "Resolvido"
-
     ).length;
-
   }
 
   function definirStatus(ap) {
-
-    const pendentes =
-      contarPendentes(ap);
-
-    const esperadasAp =
-      contarEsperadas(ap);
-
-    const ocorrenciasAp =
-      contarOcorrencias(ap);
+    const pendentes = contarPendentes(ap);
+    const esperadasAp = contarEsperadas(ap);
+    const ocorrenciasAp = contarOcorrencias(ap);
 
     if (ocorrenciasAp > 0) {
       return {
@@ -186,251 +127,124 @@ export default function ApartmentGrid({
       borda: "#bbf7d0",
       destaque: "#16a34a"
     };
-
   }
 
-  const apartamentosFiltrados =
-    apartamentos.filter((ap) => {
+  const apartamentosFiltrados = apartamentos.filter((ap) => {
+    const pendentes = contarPendentes(ap);
+    const retiradas = contarRetiradas(ap);
+    const esperadasAp = contarEsperadas(ap);
+    const ocorrenciasAp = contarOcorrencias(ap);
+    const morador = obterMorador(ap);
+    const textoBusca = busca.toLowerCase();
 
-      const pendentes =
-        contarPendentes(ap);
+    const matchBusca =
+      ap.includes(textoBusca) ||
+      morador?.nome?.toLowerCase().includes(textoBusca);
 
-      const retiradas =
-        contarRetiradas(ap);
+    if (filtro === "pendentes") return pendentes > 0 && matchBusca;
+    if (filtro === "retiradas") return retiradas > 0 && matchBusca;
+    if (filtro === "esperadas") return esperadasAp > 0 && matchBusca;
+    if (filtro === "ocorrencias") return ocorrenciasAp > 0 && matchBusca;
 
-      const esperadasAp =
-        contarEsperadas(ap);
-
-      const ocorrenciasAp =
-        contarOcorrencias(ap);
-
-      const morador =
-        obterMorador(ap);
-
-      const textoBusca =
-        busca.toLowerCase();
-
-      const matchBusca =
-        ap.includes(textoBusca) ||
-        morador?.nome
-          ?.toLowerCase()
-          .includes(textoBusca);
-
-      if (filtro === "pendentes") {
-
-        return (
-          pendentes > 0 &&
-          matchBusca
-        );
-
-      }
-
-      if (filtro === "retiradas") {
-
-        return (
-          retiradas > 0 &&
-          matchBusca
-        );
-
-      }
-
-      if (filtro === "esperadas") {
-
-        return (
-          esperadasAp > 0 &&
-          matchBusca
-        );
-
-      }
-
-      if (filtro === "ocorrencias") {
-
-        return (
-          ocorrenciasAp > 0 &&
-          matchBusca
-        );
-
-      }
-
-      return matchBusca;
-
-    });
+    return matchBusca;
+  });
 
   const totalPendentes = apartamentos.reduce(
-    (total, ap) =>
-      total + contarPendentes(ap),
+    (total, ap) => total + contarPendentes(ap),
     0
   );
 
   const totalEsperadas = apartamentos.reduce(
-    (total, ap) =>
-      total + contarEsperadas(ap),
+    (total, ap) => total + contarEsperadas(ap),
     0
   );
 
   const totalOcorrencias = apartamentos.reduce(
-    (total, ap) =>
-      total + contarOcorrencias(ap),
+    (total, ap) => total + contarOcorrencias(ap),
     0
   );
 
   return (
-
     <>
-
-      {/* PAINEL */}
-
       <div style={styles.panel}>
-
         <div>
-
-          <h3 style={styles.panelTitle}>
-            Mapa operacional
-          </h3>
+          <h3 style={styles.panelTitle}>Mapa operacional</h3>
 
           <p style={styles.panelSubtitle}>
-            Visualize os apartamentos por encomendas,
+            Visualize os apartamentos cadastrados pelo síndico por encomendas,
             entregas esperadas, moradores e ocorrências.
           </p>
-
         </div>
 
         <div style={styles.panelStats}>
-
           <div style={styles.panelStat}>
-            <span style={styles.statIconYellow}>
-              📦
-            </span>
+            <span style={styles.statIconYellow}>📦</span>
 
             <div>
-              <p style={styles.statLabel}>
-                Pendentes
-              </p>
-
-              <strong style={styles.statNumber}>
-                {totalPendentes}
-              </strong>
+              <p style={styles.statLabel}>Pendentes</p>
+              <strong style={styles.statNumber}>{totalPendentes}</strong>
             </div>
           </div>
 
           <div style={styles.panelStat}>
-            <span style={styles.statIconBlue}>
-              📬
-            </span>
+            <span style={styles.statIconBlue}>📬</span>
 
             <div>
-              <p style={styles.statLabel}>
-                Esperadas
-              </p>
-
-              <strong style={styles.statNumber}>
-                {totalEsperadas}
-              </strong>
+              <p style={styles.statLabel}>Esperadas</p>
+              <strong style={styles.statNumber}>{totalEsperadas}</strong>
             </div>
           </div>
 
           <div style={styles.panelStat}>
-            <span style={styles.statIconRed}>
-              📘
-            </span>
+            <span style={styles.statIconRed}>📘</span>
 
             <div>
-              <p style={styles.statLabel}>
-                Ocorrências
-              </p>
-
-              <strong style={styles.statNumber}>
-                {totalOcorrencias}
-              </strong>
+              <p style={styles.statLabel}>Ocorrências</p>
+              <strong style={styles.statNumber}>{totalOcorrencias}</strong>
             </div>
           </div>
-
         </div>
-
       </div>
 
-      {/* FILTROS */}
-
       <div style={styles.topBar}>
-
         <input
           placeholder="Buscar apartamento ou morador..."
           value={busca}
-          onChange={(e) =>
-            setBusca(e.target.value)
-          }
+          onChange={(e) => setBusca(e.target.value)}
           style={styles.search}
         />
 
         <select
           value={filtro}
-          onChange={(e) =>
-            setFiltro(e.target.value)
-          }
+          onChange={(e) => setFiltro(e.target.value)}
           style={styles.select}
         >
-
-          <option value="todos">
-            Todos os apartamentos
-          </option>
-
-          <option value="pendentes">
-            Com encomendas pendentes
-          </option>
-
-          <option value="retiradas">
-            Com retiradas
-          </option>
-
-          <option value="esperadas">
-            Com entregas esperadas
-          </option>
-
-          <option value="ocorrencias">
-            Com ocorrências
-          </option>
-
+          <option value="todos">Todos os apartamentos</option>
+          <option value="pendentes">Com encomendas pendentes</option>
+          <option value="retiradas">Com retiradas</option>
+          <option value="esperadas">Com entregas esperadas</option>
+          <option value="ocorrencias">Com ocorrências</option>
         </select>
-
       </div>
 
-      {/* GRID */}
-
       <div style={styles.grid}>
-
         {apartamentosFiltrados.map((ap) => {
-
-          const pendentes =
-            contarPendentes(ap);
-
-          const retiradas =
-            contarRetiradas(ap);
-
-          const esperadasAp =
-            contarEsperadas(ap);
-
-          const ocorrenciasAp =
-            contarOcorrencias(ap);
-
-          const morador =
-            obterMorador(ap);
-
-          const status =
-            definirStatus(ap);
+          const pendentes = contarPendentes(ap);
+          const retiradas = contarRetiradas(ap);
+          const esperadasAp = contarEsperadas(ap);
+          const ocorrenciasAp = contarOcorrencias(ap);
+          const morador = obterMorador(ap);
+          const status = definirStatus(ap);
 
           return (
-
             <div
               key={ap}
               style={{
                 ...styles.card,
                 border: `1px solid ${status.borda}`
               }}
-              onClick={() =>
-                setSelectedAp(ap)
-              }
+              onClick={() => setSelectedAp(ap)}
             >
-
               <div
                 style={{
                   ...styles.cardGlow,
@@ -438,20 +252,10 @@ export default function ApartmentGrid({
                 }}
               ></div>
 
-              {/* HEADER CARD */}
-
               <div style={styles.cardHeader}>
-
                 <div>
-
-                  <p style={styles.apLabel}>
-                    Apartamento
-                  </p>
-
-                  <div style={styles.number}>
-                    {ap}
-                  </div>
-
+                  <p style={styles.apLabel}>Apartamento</p>
+                  <div style={styles.number}>{ap}</div>
                 </div>
 
                 <div
@@ -463,182 +267,99 @@ export default function ApartmentGrid({
                 >
                   {status.texto}
                 </div>
-
               </div>
-
-              {/* MORADOR */}
 
               <div style={styles.moradorBox}>
-
-                <span style={styles.moradorIcon}>
-                  👤
-                </span>
+                <span style={styles.moradorIcon}>👤</span>
 
                 <div>
-
-                  <p style={styles.moradorLabel}>
-                    Morador
-                  </p>
-
+                  <p style={styles.moradorLabel}>Morador</p>
                   <strong style={styles.moradorNome}>
-                    {morador?.nome ||
-                      "Não vinculado"}
+                    {morador?.nome || "Não vinculado"}
                   </strong>
-
                 </div>
-
               </div>
 
-              {/* MÉTRICAS */}
-
               <div style={styles.metrics}>
-
                 <div style={styles.metric}>
-
-                  <span style={styles.metricIconYellow}>
-                    📦
-                  </span>
+                  <span style={styles.metricIconYellow}>📦</span>
 
                   <div>
-                    <p style={styles.metricLabel}>
-                      Pendentes
-                    </p>
-
-                    <strong style={styles.metricNumber}>
-                      {pendentes}
-                    </strong>
+                    <p style={styles.metricLabel}>Pendentes</p>
+                    <strong style={styles.metricNumber}>{pendentes}</strong>
                   </div>
-
                 </div>
 
                 <div style={styles.metric}>
-
-                  <span style={styles.metricIconBlue}>
-                    📬
-                  </span>
+                  <span style={styles.metricIconBlue}>📬</span>
 
                   <div>
-                    <p style={styles.metricLabel}>
-                      Esperadas
-                    </p>
-
-                    <strong style={styles.metricNumber}>
-                      {esperadasAp}
-                    </strong>
+                    <p style={styles.metricLabel}>Esperadas</p>
+                    <strong style={styles.metricNumber}>{esperadasAp}</strong>
                   </div>
-
                 </div>
 
                 <div style={styles.metric}>
-
-                  <span style={styles.metricIconGreen}>
-                    ✅
-                  </span>
+                  <span style={styles.metricIconGreen}>✅</span>
 
                   <div>
-                    <p style={styles.metricLabel}>
-                      Retiradas
-                    </p>
-
-                    <strong style={styles.metricNumber}>
-                      {retiradas}
-                    </strong>
+                    <p style={styles.metricLabel}>Retiradas</p>
+                    <strong style={styles.metricNumber}>{retiradas}</strong>
                   </div>
-
                 </div>
 
                 <div style={styles.metric}>
-
-                  <span style={styles.metricIconRed}>
-                    📘
-                  </span>
+                  <span style={styles.metricIconRed}>📘</span>
 
                   <div>
-                    <p style={styles.metricLabel}>
-                      Ocorrências
-                    </p>
-
-                    <strong style={styles.metricNumber}>
-                      {ocorrenciasAp}
-                    </strong>
+                    <p style={styles.metricLabel}>Ocorrências</p>
+                    <strong style={styles.metricNumber}>{ocorrenciasAp}</strong>
                   </div>
-
                 </div>
-
               </div>
 
               <div style={styles.footer}>
-
-                <span style={styles.footerText}>
-                  Clique para gerenciar
-                </span>
-
-                <span style={styles.arrow}>
-                  →
-                </span>
-
+                <span style={styles.footerText}>Clique para gerenciar</span>
+                <span style={styles.arrow}>→</span>
               </div>
-
             </div>
-
           );
-
         })}
-
       </div>
 
       {apartamentosFiltrados.length === 0 && (
-
         <div style={styles.empty}>
+          <div style={styles.emptyIcon}>🔎</div>
 
-          <div style={styles.emptyIcon}>
-            🔎
-          </div>
-
-          <h3 style={styles.emptyTitle}>
-            Nenhum apartamento encontrado
-          </h3>
+          <h3 style={styles.emptyTitle}>Nenhum apartamento encontrado</h3>
 
           <p style={styles.emptyText}>
-            Ajuste a busca ou altere o filtro selecionado.
+            Cadastre apartamentos/moradores no painel do síndico ou ajuste a
+            busca/filtro selecionado.
           </p>
-
         </div>
-
       )}
 
-      {/* MODAL */}
-
       {selectedAp && (
-
         <PackageModal
           apartamento={selectedAp}
           onClose={() => {
-
             setSelectedAp(null);
-
             carregarDados();
 
             if (onRefresh) {
               onRefresh();
             }
-
           }}
         />
-
       )}
-
     </>
-
   );
-
 }
 
 const styles = {
-
   panel: {
-    background:
-      "linear-gradient(135deg,#ffffff,#f8fafc)",
+    background: "linear-gradient(135deg,#ffffff,#f8fafc)",
     border: "1px solid #eef2f7",
     borderRadius: "24px",
     padding: "24px",
@@ -753,8 +474,7 @@ const styles = {
 
   grid: {
     display: "grid",
-    gridTemplateColumns:
-      "repeat(auto-fit,minmax(260px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))",
     gap: "18px"
   },
 
@@ -766,8 +486,7 @@ const styles = {
     padding: "20px",
     cursor: "pointer",
     transition: "0.2s",
-    boxShadow:
-      "0 12px 35px rgba(15,23,42,0.07)",
+    boxShadow: "0 12px 35px rgba(15,23,42,0.07)",
     minHeight: "250px",
     display: "flex",
     flexDirection: "column",
@@ -965,5 +684,4 @@ const styles = {
     margin: "8px 0 0",
     color: "#6b7280"
   }
-
 };

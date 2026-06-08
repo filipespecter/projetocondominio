@@ -2,6 +2,11 @@ import { useState } from "react";
 
 function Encomendas() {
   const STORAGE_KEY = "encomendas";
+  const STORAGE_MOVIMENTACOES = "movimentacoes";
+  const STORAGE_RELATORIOS = "relatorios_operacionais";
+  const STORAGE_AVISOS_SINDICO = "avisos_sindico";
+  const STORAGE_NOTIFICACOES = "notificacoesMorador";
+  const STORAGE_HISTORICO = "encomendas_historico";
 
   const estadoInicialEncomenda = {
     morador: "",
@@ -12,17 +17,12 @@ function Encomendas() {
     status: "Recebido"
   };
 
-  const [encomendas, setEncomendas] = useState(() => {
-    const dados = localStorage.getItem(STORAGE_KEY);
-    return dados ? JSON.parse(dados) : [];
-  });
+  const [encomendas, setEncomendas] = useState(() =>
+    lerStorage(STORAGE_KEY)
+  );
 
   const [moradores] = useState(() => {
-    const dados = localStorage.getItem("moradores");
-
-    if (!dados) return [];
-
-    const lista = JSON.parse(dados);
+    const lista = lerStorage("moradores");
 
     return lista.map((morador) => ({
       ...morador,
@@ -36,6 +36,19 @@ function Encomendas() {
   const [filtroStatus, setFiltroStatus] = useState("Todos");
   const [novaEncomenda, setNovaEncomenda] = useState(estadoInicialEncomenda);
   const [editId, setEditId] = useState(null);
+
+  function lerStorage(chave) {
+    try {
+      const dados = localStorage.getItem(chave);
+      return dados ? JSON.parse(dados) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function salvarStorage(chave, dados) {
+    localStorage.setItem(chave, JSON.stringify(dados));
+  }
 
   const encomendasFiltradas = encomendas.filter((e) => {
     const texto = busca.toLowerCase();
@@ -76,7 +89,8 @@ function Encomendas() {
       setNovaEncomenda({
         ...novaEncomenda,
         morador: "",
-        apartamento: ""
+        apartamento: "",
+        moradorId: null
       });
 
       return;
@@ -84,6 +98,7 @@ function Encomendas() {
 
     setNovaEncomenda({
       ...novaEncomenda,
+      moradorId: moradorSelecionado.id,
       morador: moradorSelecionado.nome,
       apartamento:
         moradorSelecionado.apartamento ||
@@ -93,25 +108,152 @@ function Encomendas() {
   }
 
   function salvarMovimentacao(acao, encomenda) {
-    const historico =
-      JSON.parse(localStorage.getItem("movimentacoes")) || [];
+    const historico = lerStorage(STORAGE_MOVIMENTACOES);
 
-    historico.unshift({
+    const nova = {
       id: Date.now(),
-      tipo: "encomenda",
+      tipo: "Encomenda",
       acao,
+      origem: "Síndico",
+      titulo: encomenda.descricao,
       nome: encomenda.morador,
+      morador: encomenda.morador,
+      moradorId: encomenda.moradorId || null,
       apartamento: encomenda.apartamento || "",
       descricao: encomenda.descricao,
-      data: new Date().toLocaleDateString(),
-      hora: new Date().toLocaleTimeString(),
+      status: encomenda.status,
+      data: new Date().toLocaleDateString("pt-BR"),
+      hora: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      }),
       timestamp: Date.now()
-    });
+    };
 
-    localStorage.setItem(
-      "movimentacoes",
-      JSON.stringify(historico)
-    );
+    salvarStorage(STORAGE_MOVIMENTACOES, [
+      nova,
+      ...historico
+    ]);
+  }
+
+  function salvarRelatorio(acao, encomenda) {
+    const relatorios = lerStorage(STORAGE_RELATORIOS);
+
+    const novo = {
+      id: Date.now() + 1,
+      tipo: "Encomenda",
+      acao,
+      origem: "Síndico",
+      titulo: encomenda.descricao,
+      morador: encomenda.morador,
+      moradorId: encomenda.moradorId || null,
+      apartamento: encomenda.apartamento || "",
+      descricao: encomenda.descricao,
+      codigo: encomenda.codigo,
+      transportadora: encomenda.transportadora,
+      status: encomenda.status,
+      data: new Date().toLocaleDateString("pt-BR"),
+      hora: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      })
+    };
+
+    salvarStorage(STORAGE_RELATORIOS, [
+      novo,
+      ...relatorios
+    ]);
+  }
+
+  function salvarHistorico(acao, encomenda) {
+    const historico = lerStorage(STORAGE_HISTORICO);
+
+    const novo = {
+      id: Date.now() + 2,
+      encomendaId: encomenda.id,
+      acao,
+      origem: "Síndico",
+      morador: encomenda.morador,
+      moradorId: encomenda.moradorId || null,
+      apartamento: encomenda.apartamento || "",
+      descricao: encomenda.descricao,
+      codigo: encomenda.codigo,
+      transportadora: encomenda.transportadora,
+      status: encomenda.status,
+      data: new Date().toLocaleDateString("pt-BR"),
+      hora: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      })
+    };
+
+    salvarStorage(STORAGE_HISTORICO, [
+      novo,
+      ...historico
+    ]);
+  }
+
+  function salvarAvisoSindico(acao, encomenda) {
+    const avisos = lerStorage(STORAGE_AVISOS_SINDICO);
+
+    const novo = {
+      id: Date.now() + 3,
+      categoria: "Encomenda",
+      origem: "Síndico",
+      titulo: `Encomenda - ${acao}`,
+      descricao: encomenda.descricao,
+      apartamento: encomenda.apartamento || "",
+      morador: encomenda.morador || "",
+      responsavel: "Síndico",
+      status: encomenda.status || "Recebido",
+      respostaSindico: "",
+      cienciaSindico: true,
+      data: new Date().toLocaleDateString("pt-BR")
+    };
+
+    salvarStorage(STORAGE_AVISOS_SINDICO, [
+      novo,
+      ...avisos
+    ]);
+  }
+
+  function notificarMorador(acao, encomenda) {
+    const notificacoes = lerStorage(STORAGE_NOTIFICACOES);
+
+    const nova = {
+      id: Date.now() + 4,
+      tipo: "Encomenda",
+      titulo:
+        acao === "entrega"
+          ? "Sua encomenda foi entregue"
+          : "Nova atualização de encomenda",
+      descricao:
+        acao === "recebimento"
+          ? `Uma encomenda foi registrada para você: ${encomenda.descricao}.`
+          : `Status da encomenda atualizado para ${encomenda.status}.`,
+      morador: encomenda.morador || "",
+      moradorId: encomenda.moradorId || null,
+      apartamento: encomenda.apartamento || "",
+      lida: false,
+      data: new Date().toLocaleDateString("pt-BR"),
+      hora: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      })
+    };
+
+    salvarStorage(STORAGE_NOTIFICACOES, [
+      nova,
+      ...notificacoes
+    ]);
+  }
+
+  function registrarFluxo(acao, encomenda) {
+    salvarMovimentacao(acao, encomenda);
+    salvarRelatorio(acao, encomenda);
+    salvarHistorico(acao, encomenda);
+    salvarAvisoSindico(acao, encomenda);
+    notificarMorador(acao, encomenda);
   }
 
   function salvarEncomenda() {
@@ -132,21 +274,21 @@ function Encomendas() {
         id: editId,
         data:
           encomendaAntiga?.data ||
-          new Date().toLocaleString()
+          new Date().toLocaleString("pt-BR")
       };
 
       listaAtualizada = encomendas.map((e) =>
         e.id === editId ? atualizada : e
       );
 
-      salvarMovimentacao("edição", atualizada);
+      registrarFluxo("edição", atualizada);
 
       setEditId(null);
     } else {
       const nova = {
         id: Date.now(),
         ...novaEncomenda,
-        data: new Date().toLocaleString()
+        data: new Date().toLocaleString("pt-BR")
       };
 
       listaAtualizada = [
@@ -154,15 +296,11 @@ function Encomendas() {
         ...encomendas
       ];
 
-      salvarMovimentacao("recebimento", nova);
+      registrarFluxo("recebimento", nova);
     }
 
     setEncomendas(listaAtualizada);
-
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(listaAtualizada)
-    );
+    salvarStorage(STORAGE_KEY, listaAtualizada);
 
     setNovaEncomenda(estadoInicialEncomenda);
     setMostrarModal(false);
@@ -194,15 +332,11 @@ function Encomendas() {
     );
 
     if (encomenda) {
-      salvarMovimentacao("exclusão", encomenda);
+      registrarFluxo("exclusão", encomenda);
     }
 
     setEncomendas(lista);
-
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(lista)
-    );
+    salvarStorage(STORAGE_KEY, lista);
   }
 
   function alterarStatus(id, status) {
@@ -213,7 +347,7 @@ function Encomendas() {
             status,
             retiradaEm:
               status === "Entregue"
-                ? new Date().toLocaleString()
+                ? new Date().toLocaleString("pt-BR")
                 : e.retiradaEm
           }
         : e
@@ -224,15 +358,11 @@ function Encomendas() {
     );
 
     if (encomenda) {
-      salvarMovimentacao(`status: ${status}`, encomenda);
+      registrarFluxo(`status: ${status}`, encomenda);
     }
 
     setEncomendas(lista);
-
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(lista)
-    );
+    salvarStorage(STORAGE_KEY, lista);
   }
 
   function fecharModal() {

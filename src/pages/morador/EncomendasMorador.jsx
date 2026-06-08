@@ -1,34 +1,44 @@
 import { useEffect, useState } from "react";
 
 function EncomendasMorador() {
+  const STORAGE_ENCOMENDAS = "encomendas";
+  const STORAGE_ESPERADAS = "encomendas_esperadas";
+  const STORAGE_AVISOS_SINDICO = "avisos_sindico";
+  const STORAGE_MOVIMENTACOES = "movimentacoes";
+  const STORAGE_RELATORIOS = "relatorios_operacionais";
+
   const [morador, setMorador] = useState(null);
+  const [encomendas, setEncomendas] = useState(() =>
+    lerStorage(STORAGE_ENCOMENDAS)
+  );
+  const [esperadas, setEsperadas] = useState(() =>
+    lerStorage(STORAGE_ESPERADAS)
+  );
 
-  const [encomendas, setEncomendas] =
-    useState([]);
-
-  const [esperadas, setEsperadas] =
-    useState([]);
-
-  const [tipoEntrega, setTipoEntrega] =
-    useState("");
-
-  const [descricaoEntrega, setDescricaoEntrega] =
-    useState("");
-
-  const [transportadora, setTransportadora] =
-    useState("");
-
-  const [busca, setBusca] =
-    useState("");
-
-  const [filtroStatus, setFiltroStatus] =
-    useState("Todos");
+  const [tipoEntrega, setTipoEntrega] = useState("");
+  const [descricaoEntrega, setDescricaoEntrega] = useState("");
+  const [transportadora, setTransportadora] = useState("");
+  const [busca, setBusca] = useState("");
+  const [filtroStatus, setFiltroStatus] = useState("Todos");
 
   useEffect(() => {
     carregarSessao();
     carregarEncomendas();
     carregarEsperadas();
   }, []);
+
+  function lerStorage(chave) {
+    try {
+      const dados = localStorage.getItem(chave);
+      return dados ? JSON.parse(dados) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function salvarStorage(chave, dados) {
+    localStorage.setItem(chave, JSON.stringify(dados));
+  }
 
   function carregarSessao() {
     const sessao =
@@ -44,23 +54,11 @@ function EncomendasMorador() {
   }
 
   function carregarEncomendas() {
-    const data =
-      JSON.parse(
-        localStorage.getItem("encomendas")
-      ) || [];
-
-    setEncomendas(data);
+    setEncomendas(lerStorage(STORAGE_ENCOMENDAS));
   }
 
   function carregarEsperadas() {
-    const data =
-      JSON.parse(
-        localStorage.getItem(
-          "encomendas_esperadas"
-        )
-      ) || [];
-
-    setEsperadas(data);
+    setEsperadas(lerStorage(STORAGE_ESPERADAS));
   }
 
   function limparFormulario() {
@@ -69,52 +67,114 @@ function EncomendasMorador() {
     setTransportadora("");
   }
 
+  function registrarAvisoSindico(registro) {
+    const avisos = lerStorage(STORAGE_AVISOS_SINDICO);
+
+    const novoAviso = {
+      id: registro.id,
+      categoria: "Encomenda",
+      origem: "Morador",
+      titulo: `Encomenda esperada - ${registro.tipo}`,
+      descricao:
+        registro.descricao ||
+        `Morador informou que está aguardando uma entrega de ${registro.tipo}.`,
+      apartamento: registro.apartamento,
+      morador: registro.morador,
+      responsavel: registro.morador,
+      status: "Novo",
+      respostaSindico: "",
+      cienciaSindico: false,
+      data: registro.data
+    };
+
+    salvarStorage(STORAGE_AVISOS_SINDICO, [
+      novoAviso,
+      ...avisos
+    ]);
+  }
+
+  function registrarMovimentacao(registro) {
+    const movimentacoes = lerStorage(STORAGE_MOVIMENTACOES);
+
+    const novaMovimentacao = {
+      id: Date.now() + 1,
+      tipo: "Encomenda Esperada",
+      origem: "Morador",
+      titulo: `Entrega aguardada - ${registro.tipo}`,
+      descricao: registro.descricao,
+      apartamento: registro.apartamento,
+      morador: registro.morador,
+      transportadora: registro.transportadora,
+      data: registro.data,
+      hora: registro.hora
+    };
+
+    salvarStorage(STORAGE_MOVIMENTACOES, [
+      novaMovimentacao,
+      ...movimentacoes
+    ]);
+  }
+
+  function registrarRelatorio(registro) {
+    const relatorios = lerStorage(STORAGE_RELATORIOS);
+
+    const novoRelatorio = {
+      id: Date.now() + 2,
+      tipo: "Encomenda Esperada",
+      origem: "Morador",
+      titulo: `Entrega aguardada - ${registro.tipo}`,
+      descricao: registro.descricao,
+      apartamento: registro.apartamento,
+      morador: registro.morador,
+      transportadora: registro.transportadora,
+      status: registro.status,
+      data: registro.data,
+      hora: registro.hora
+    };
+
+    salvarStorage(STORAGE_RELATORIOS, [
+      novoRelatorio,
+      ...relatorios
+    ]);
+  }
+
   function registrarEsperada() {
     if (!tipoEntrega) {
       alert("Selecione o tipo da entrega");
       return;
     }
 
-    const todas =
-      JSON.parse(
-        localStorage.getItem(
-          "encomendas_esperadas"
-        )
-      ) || [];
+    const agora = new Date();
+    const todas = lerStorage(STORAGE_ESPERADAS);
 
     const nova = {
       id: Date.now(),
 
       moradorId: morador?.id || null,
+      morador: morador?.nome || "Morador",
+      nome: morador?.nome || "Morador",
+      usuario: morador?.usuario || "",
 
-      morador:
-        morador?.nome || "Morador",
+      apartamento: morador?.apartamento || "",
+      bloco: morador?.bloco || "",
 
-      nome:
-        morador?.nome || "Morador",
-
-      usuario:
-        morador?.usuario || "",
-
-      apartamento:
-        morador?.apartamento || "",
-
-      bloco:
-        morador?.bloco || "",
-
-      tipo:
-        tipoEntrega,
-
-      transportadora:
-        transportadora || "Não informada",
-
-      descricao:
-        descricaoEntrega,
+      tipo: tipoEntrega,
+      transportadora: transportadora || "Não informada",
+      descricao: descricaoEntrega,
 
       status: "aguardando",
+      etapa: "aguardando_portaria",
 
-      data:
-        new Date().toLocaleString()
+      data: agora.toLocaleString("pt-BR"),
+      dataRegistro: agora.toLocaleDateString("pt-BR"),
+      hora: agora.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      }),
+
+      recebidaPorteiro: false,
+      notificadoMorador: false,
+      cienciaSindico: false
     };
 
     const atualizadas = [
@@ -122,42 +182,43 @@ function EncomendasMorador() {
       ...todas
     ];
 
-    localStorage.setItem(
-      "encomendas_esperadas",
-      JSON.stringify(atualizadas)
-    );
-
+    salvarStorage(STORAGE_ESPERADAS, atualizadas);
     setEsperadas(atualizadas);
 
+    registrarAvisoSindico(nova);
+    registrarMovimentacao(nova);
+    registrarRelatorio(nova);
+
     limparFormulario();
+
+    alert("Aviso de entrega esperada enviado para a portaria");
   }
 
   function cancelarEsperada(id) {
-    const confirmar =
-      window.confirm(
-        "Deseja cancelar este aviso de entrega esperada?"
-      );
+    const confirmar = window.confirm(
+      "Deseja cancelar este aviso de entrega esperada?"
+    );
 
     if (!confirmar) return;
 
-    const atualizadas =
-      esperadas.filter(
-        (item) => item.id !== id
-      );
-
-    localStorage.setItem(
-      "encomendas_esperadas",
-      JSON.stringify(atualizadas)
+    const atualizadas = esperadas.filter(
+      (item) => item.id !== id
     );
 
+    salvarStorage(STORAGE_ESPERADAS, atualizadas);
     setEsperadas(atualizadas);
+
+    const avisosAtualizados = lerStorage(STORAGE_AVISOS_SINDICO).filter(
+      (item) => item.id !== id
+    );
+
+    salvarStorage(STORAGE_AVISOS_SINDICO, avisosAtualizados);
   }
 
   const encomendasMorador =
     encomendas.filter(
       (e) =>
-        String(e.apartamento) ===
-          String(morador?.apartamento) ||
+        String(e.apartamento) === String(morador?.apartamento) ||
         e.moradorId === morador?.id ||
         e.morador === morador?.nome ||
         e.nome === morador?.nome
@@ -166,8 +227,7 @@ function EncomendasMorador() {
   const esperadasMorador =
     esperadas.filter(
       (e) =>
-        String(e.apartamento) ===
-          String(morador?.apartamento) ||
+        String(e.apartamento) === String(morador?.apartamento) ||
         e.moradorId === morador?.id ||
         e.usuario === morador?.usuario ||
         e.morador === morador?.nome ||
@@ -176,34 +236,20 @@ function EncomendasMorador() {
 
   const encomendasFiltradas =
     encomendasMorador.filter((item) => {
-      const texto =
-        busca.toLowerCase();
+      const texto = busca.toLowerCase();
 
       const correspondeBusca =
-        item.tipo
-          ?.toLowerCase()
-          .includes(texto) ||
-        item.descricao
-          ?.toLowerCase()
-          .includes(texto) ||
-        item.codigo
-          ?.toLowerCase()
-          .includes(texto) ||
-        item.transportadora
-          ?.toLowerCase()
-          .includes(texto) ||
-        item.status
-          ?.toLowerCase()
-          .includes(texto);
+        item.tipo?.toLowerCase().includes(texto) ||
+        item.descricao?.toLowerCase().includes(texto) ||
+        item.codigo?.toLowerCase().includes(texto) ||
+        item.transportadora?.toLowerCase().includes(texto) ||
+        item.status?.toLowerCase().includes(texto);
 
       const correspondeStatus =
         filtroStatus === "Todos" ||
         item.status === filtroStatus;
 
-      return (
-        correspondeBusca &&
-        correspondeStatus
-      );
+      return correspondeBusca && correspondeStatus;
     });
 
   const pendentes =
@@ -218,8 +264,6 @@ function EncomendasMorador() {
 
   return (
     <div style={styles.container}>
-      {/* HERO */}
-
       <div style={styles.hero}>
         <div>
           <span style={styles.heroBadge}>
@@ -267,8 +311,6 @@ function EncomendasMorador() {
           </span>
         </div>
       </div>
-
-      {/* RESUMO */}
 
       <div style={styles.resumeGrid}>
         <div style={styles.cardPrimary}>
@@ -325,8 +367,6 @@ function EncomendasMorador() {
       </div>
 
       <div style={styles.mainGrid}>
-        {/* FORM */}
-
         <div style={styles.formCard}>
           <div style={styles.sectionHeader}>
             <div>
@@ -422,8 +462,6 @@ function EncomendasMorador() {
             a entrega sairá da lista de aguardadas e aparecerá como encomenda pendente.
           </p>
         </div>
-
-        {/* LISTA */}
 
         <div style={styles.listCard}>
           <div style={styles.listHeader}>

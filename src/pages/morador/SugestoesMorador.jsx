@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 
 function SugestoesMorador() {
-  const STORAGE_KEY = "ocorrencias";
+  const STORAGE_KEY = "sugestoes_reclamacoes";
+  const STORAGE_AVISOS_SINDICO = "avisos_sindico";
+  const STORAGE_MOVIMENTACOES = "movimentacoes";
+  const STORAGE_RELATORIOS = "relatorios_operacionais";
 
   const estadoInicial = {
     tipo: "Reclamação",
@@ -13,22 +16,31 @@ function SugestoesMorador() {
 
   const [morador, setMorador] = useState(null);
 
-  const [ocorrencias, setOcorrencias] =
-    useState([]);
+  const [ocorrencias, setOcorrencias] = useState(() => {
+    return lerStorage(STORAGE_KEY);
+  });
 
-  const [form, setForm] =
-    useState(estadoInicial);
-
-  const [busca, setBusca] =
-    useState("");
-
-  const [filtroStatus, setFiltroStatus] =
-    useState("Todos");
+  const [form, setForm] = useState(estadoInicial);
+  const [busca, setBusca] = useState("");
+  const [filtroStatus, setFiltroStatus] = useState("Todos");
 
   useEffect(() => {
     carregarSessao();
     carregarOcorrencias();
   }, []);
+
+  function lerStorage(chave) {
+    try {
+      const dados = localStorage.getItem(chave);
+      return dados ? JSON.parse(dados) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function salvarStorage(chave, dados) {
+    localStorage.setItem(chave, JSON.stringify(dados));
+  }
 
   function carregarSessao() {
     const sessao =
@@ -44,16 +56,79 @@ function SugestoesMorador() {
   }
 
   function carregarOcorrencias() {
-    const data =
-      JSON.parse(
-        localStorage.getItem(STORAGE_KEY)
-      ) || [];
-
+    const data = lerStorage(STORAGE_KEY);
     setOcorrencias(data);
   }
 
   function limparFormulario() {
     setForm(estadoInicial);
+  }
+
+  function registrarAvisoSindico(registro) {
+    const avisos = lerStorage(STORAGE_AVISOS_SINDICO);
+
+    const novoAviso = {
+      id: registro.id,
+      categoria: registro.tipoRegistro,
+      origem: "Morador",
+      titulo: registro.titulo,
+      descricao: registro.descricao,
+      apartamento: registro.apartamento,
+      morador: registro.moradorNome,
+      responsavel: registro.moradorNome,
+      status: "Novo",
+      respostaSindico: "",
+      cienciaSindico: false,
+      data: registro.data
+    };
+
+    salvarStorage(STORAGE_AVISOS_SINDICO, [
+      novoAviso,
+      ...avisos
+    ]);
+  }
+
+  function registrarMovimentacao(registro) {
+    const movimentacoes = lerStorage(STORAGE_MOVIMENTACOES);
+
+    const novaMovimentacao = {
+      id: Date.now() + 1,
+      tipo: registro.tipoRegistro,
+      origem: "Morador",
+      titulo: registro.titulo,
+      descricao: registro.descricao,
+      apartamento: registro.apartamento,
+      morador: registro.moradorNome,
+      data: registro.data,
+      hora: registro.hora
+    };
+
+    salvarStorage(STORAGE_MOVIMENTACOES, [
+      novaMovimentacao,
+      ...movimentacoes
+    ]);
+  }
+
+  function registrarRelatorio(registro) {
+    const relatorios = lerStorage(STORAGE_RELATORIOS);
+
+    const novoRelatorio = {
+      id: Date.now() + 2,
+      tipo: registro.tipoRegistro,
+      origem: "Morador",
+      titulo: registro.titulo,
+      descricao: registro.descricao,
+      apartamento: registro.apartamento,
+      morador: registro.moradorNome,
+      status: registro.status,
+      data: registro.data,
+      hora: registro.hora
+    };
+
+    salvarStorage(STORAGE_RELATORIOS, [
+      novoRelatorio,
+      ...relatorios
+    ]);
   }
 
   function enviarSolicitacao() {
@@ -80,15 +155,15 @@ function SugestoesMorador() {
       titulo: form.titulo,
       descricao: form.descricao,
 
-      status: "Encaminhada ao síndico",
+      status: "Novo",
       etapa: "aguardando_sindico",
 
-      data: agora.toLocaleDateString(),
+      data: agora.toLocaleDateString("pt-BR"),
       hora: agora.toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit"
       }),
-      dataCriacao: agora.toLocaleString(),
+      dataCriacao: agora.toLocaleString("pt-BR"),
 
       moradorId: morador?.id || null,
       moradorNome: morador?.nome || "Morador",
@@ -118,11 +193,11 @@ function SugestoesMorador() {
     ];
 
     setOcorrencias(listaAtualizada);
+    salvarStorage(STORAGE_KEY, listaAtualizada);
 
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(listaAtualizada)
-    );
+    registrarAvisoSindico(nova);
+    registrarMovimentacao(nova);
+    registrarRelatorio(nova);
 
     limparFormulario();
 
@@ -161,15 +236,15 @@ function SugestoesMorador() {
   const pendentes =
     minhasSolicitacoes.filter(
       (item) =>
-        item.status !== "Resolvida" &&
-        item.status !== "Resolvido"
+        item.status !== "Resolvido" &&
+        item.status !== "Resolvida"
     ).length;
 
   const resolvidas =
     minhasSolicitacoes.filter(
       (item) =>
-        item.status === "Resolvida" ||
-        item.status === "Resolvido"
+        item.status === "Resolvido" ||
+        item.status === "Resolvida"
     ).length;
 
   const reclamacoes =
@@ -198,16 +273,24 @@ function SugestoesMorador() {
       };
     }
 
-    if (status === "Em análise") {
+    if (status === "Em Tratamento") {
       return {
-        texto: "Em análise",
+        texto: "Em tratamento",
         fundo: "#dbeafe",
         cor: "#1d4ed8"
       };
     }
 
+    if (status === "Ciente") {
+      return {
+        texto: "Ciente",
+        fundo: "#fef3c7",
+        cor: "#92400e"
+      };
+    }
+
     return {
-      texto: "Encaminhada ao síndico",
+      texto: "Novo",
       fundo: "#fef3c7",
       cor: "#92400e"
     };
@@ -490,9 +573,10 @@ function SugestoesMorador() {
                 style={styles.filter}
               >
                 <option>Todos</option>
-                <option>Encaminhada ao síndico</option>
-                <option>Em análise</option>
-                <option>Resolvida</option>
+                <option>Novo</option>
+                <option>Ciente</option>
+                <option>Em Tratamento</option>
+                <option>Resolvido</option>
               </select>
             </div>
           </div>
