@@ -2,6 +2,9 @@ import { useState } from "react";
 
 function AreasComuns() {
   const STORAGE_KEY = "areasComuns";
+  const STORAGE_MOVIMENTACOES = "movimentacoes";
+  const STORAGE_RELATORIOS = "relatorios_operacionais";
+  const STORAGE_AVISOS_SINDICO = "avisos_sindico";
 
   const estadoInicialArea = {
     nome: "",
@@ -20,6 +23,102 @@ function AreasComuns() {
   const [filtroStatus, setFiltroStatus] = useState("Todos");
   const [novaArea, setNovaArea] = useState(estadoInicialArea);
   const [editId, setEditId] = useState(null);
+
+  function lerStorage(chave) {
+    try {
+      const dados = localStorage.getItem(chave);
+      return dados ? JSON.parse(dados) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function salvarStorage(chave, dados) {
+    localStorage.setItem(chave, JSON.stringify(dados));
+  }
+
+  function registrarMovimentacao(acao, area) {
+    const movimentacoes = lerStorage(STORAGE_MOVIMENTACOES);
+
+    const nova = {
+      id: Date.now(),
+      tipo: "Área Comum",
+      acao,
+      origem: "Síndico",
+      titulo: area.nome,
+      areaId: area.id,
+      status: area.status,
+      descricao: `Área comum ${area.nome} - ${acao}`,
+      data: new Date().toLocaleDateString("pt-BR"),
+      hora: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      }),
+      timestamp: Date.now(),
+      impactaBI: true,
+      origemModulo: "AreasComuns"
+    };
+
+    salvarStorage(STORAGE_MOVIMENTACOES, [nova, ...movimentacoes]);
+  }
+
+  function registrarRelatorio(acao, area) {
+    const relatorios = lerStorage(STORAGE_RELATORIOS);
+
+    const novo = {
+      id: Date.now() + 1,
+      tipo: "Área Comum",
+      acao,
+      origem: "Síndico",
+      titulo: area.nome,
+      areaId: area.id,
+      nome: area.nome,
+      capacidade: area.capacidade,
+      horario: area.horario,
+      status: area.status,
+      data: new Date().toLocaleDateString("pt-BR"),
+      hora: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      }),
+      impactaRelatorio: true,
+      origemModulo: "AreasComuns"
+    };
+
+    salvarStorage(STORAGE_RELATORIOS, [novo, ...relatorios]);
+  }
+
+  function registrarAvisoSindico(acao, area) {
+    const avisos = lerStorage(STORAGE_AVISOS_SINDICO);
+
+    const novo = {
+      id: Date.now() + 2,
+      categoria: "Aviso",
+      origem: "Síndico",
+      titulo: `Área comum ${acao} - ${area.nome}`,
+      descricao: `A área ${area.nome} foi ${acao}. Status atual: ${area.status}.`,
+      apartamento: "",
+      morador: "",
+      responsavel: "Síndico",
+      status: "Novo",
+      respostaSindico: "",
+      cienciaSindico: true,
+      data: new Date().toLocaleDateString("pt-BR"),
+      areaId: area.id,
+      impactaBI: true,
+      impactaRelatorio: true,
+      exibirNaCentral: true,
+      origemModulo: "AreasComuns"
+    };
+
+    salvarStorage(STORAGE_AVISOS_SINDICO, [novo, ...avisos]);
+  }
+
+  function registrarFluxo(acao, area) {
+    registrarMovimentacao(acao, area);
+    registrarRelatorio(acao, area);
+    registrarAvisoSindico(acao, area);
+  }
 
   const areasFiltradas = areas.filter((area) => {
     const texto = busca.toLowerCase();
@@ -67,36 +166,45 @@ function AreasComuns() {
     }
 
     let listaAtualizada = [];
+    let areaFinal = null;
 
     if (editId !== null) {
+      areaFinal = {
+        ...novaArea,
+        id: editId,
+        impactaBI: true,
+        impactaRelatorio: true,
+        origemModulo: "AreasComuns",
+        atualizadoEm: new Date().toLocaleString("pt-BR")
+      };
+
       listaAtualizada = areas.map((area) =>
-        area.id === editId
-          ? {
-              ...novaArea,
-              id: editId
-            }
-          : area
+        area.id === editId ? areaFinal : area
       );
 
+      registrarFluxo("editada", areaFinal);
       setEditId(null);
     } else {
-      const nova = {
+      areaFinal = {
         id: Date.now(),
-        ...novaArea
+        ...novaArea,
+        reservasAtivas: 0,
+        impactaBI: true,
+        impactaRelatorio: true,
+        origemModulo: "AreasComuns",
+        criadoEm: new Date().toLocaleString("pt-BR")
       };
 
       listaAtualizada = [
-        nova,
+        areaFinal,
         ...areas
       ];
+
+      registrarFluxo("cadastrada", areaFinal);
     }
 
     setAreas(listaAtualizada);
-
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(listaAtualizada)
-    );
+    salvarStorage(STORAGE_KEY, listaAtualizada);
 
     setNovaArea(estadoInicialArea);
     setMostrarModal(false);
@@ -119,34 +227,44 @@ function AreasComuns() {
 
     if (!confirmar) return;
 
+    const areaExcluida = areas.find((area) => area.id === id);
+
     const listaAtualizada = areas.filter(
       (area) => area.id !== id
     );
 
     setAreas(listaAtualizada);
+    salvarStorage(STORAGE_KEY, listaAtualizada);
 
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(listaAtualizada)
-    );
+    if (areaExcluida) {
+      registrarFluxo("excluída", areaExcluida);
+    }
   }
 
   function alterarStatus(id, status) {
-    const listaAtualizada = areas.map((area) =>
-      area.id === id
-        ? {
-            ...area,
-            status
-          }
-        : area
-    );
+    let areaAtualizada = null;
+
+    const listaAtualizada = areas.map((area) => {
+      if (area.id !== id) return area;
+
+      areaAtualizada = {
+        ...area,
+        status,
+        impactaBI: true,
+        impactaRelatorio: true,
+        origemModulo: "AreasComuns",
+        atualizadoEm: new Date().toLocaleString("pt-BR")
+      };
+
+      return areaAtualizada;
+    });
 
     setAreas(listaAtualizada);
+    salvarStorage(STORAGE_KEY, listaAtualizada);
 
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(listaAtualizada)
-    );
+    if (areaAtualizada) {
+      registrarFluxo(`status alterado para ${status}`, areaAtualizada);
+    }
   }
 
   function fecharModal() {
@@ -205,8 +323,7 @@ function AreasComuns() {
 
     return "🏢";
   }
-
-  return (
+    return (
     <div style={styles.container}>
       <section style={styles.hero}>
         <div style={styles.heroLeft}>

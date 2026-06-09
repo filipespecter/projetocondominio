@@ -21,7 +21,10 @@ function obterDataRegistro(item) {
     item.createdAt,
     item.dataCadastro,
     item.recebidoEm,
-    item.retiradoEm
+    item.retiradoEm,
+    item.registradoEm,
+    item.dataReserva,
+    item.canceladaEm
   ];
 
   const encontrada = possiveisDatas.find(Boolean);
@@ -62,10 +65,7 @@ function obterIntervalo(periodo = "geral", anterior = false) {
       const fimAnterior = new Date(inicio);
       fimAnterior.setHours(23, 59, 59, 999);
 
-      return {
-        inicio,
-        fim: fimAnterior
-      };
+      return { inicio, fim: fimAnterior };
     }
   }
 
@@ -82,10 +82,7 @@ function obterIntervalo(periodo = "geral", anterior = false) {
       inicioAnterior.setDate(inicioAnterior.getDate() - 7);
       inicioAnterior.setHours(0, 0, 0, 0);
 
-      return {
-        inicio: inicioAnterior,
-        fim: fimAnterior
-      };
+      return { inicio: inicioAnterior, fim: fimAnterior };
     }
   }
 
@@ -102,10 +99,7 @@ function obterIntervalo(periodo = "geral", anterior = false) {
       inicioAnterior.setDate(inicioAnterior.getDate() - 30);
       inicioAnterior.setHours(0, 0, 0, 0);
 
-      return {
-        inicio: inicioAnterior,
-        fim: fimAnterior
-      };
+      return { inicio: inicioAnterior, fim: fimAnterior };
     }
   }
 
@@ -121,10 +115,7 @@ function obterIntervalo(periodo = "geral", anterior = false) {
       fimAnterior.setDate(0);
       fimAnterior.setHours(23, 59, 59, 999);
 
-      return {
-        inicio: inicioAnterior,
-        fim: fimAnterior
-      };
+      return { inicio: inicioAnterior, fim: fimAnterior };
     }
   }
 
@@ -141,25 +132,17 @@ function obterIntervalo(periodo = "geral", anterior = false) {
       fimAnterior.setDate(0);
       fimAnterior.setHours(23, 59, 59, 999);
 
-      return {
-        inicio: inicioAnterior,
-        fim: fimAnterior
-      };
+      return { inicio: inicioAnterior, fim: fimAnterior };
     }
   }
 
-  return {
-    inicio,
-    fim
-  };
+  return { inicio, fim };
 }
 
 function filtrarPorIntervalo(lista, inicio, fim) {
   return lista.filter((item) => {
     const data = obterDataRegistro(item);
-
     if (!data) return false;
-
     return data >= inicio && data <= fim;
   });
 }
@@ -209,19 +192,51 @@ export function buscarDadosBI(periodo = "geral", anterior = false) {
   const dados = {
     moradores: lerStorage("moradores"),
     apartamentos: lerStorage("apartamentos"),
-    visitantes: lerStorage("visitantes"),
-    encomendas: lerStorage("encomendas"),
+    porteiros: lerStorage("porteiros"),
+
+    visitantes: [
+      ...lerStorage("visitantes"),
+      ...lerStorage("visitantes_historico")
+    ],
+
+    encomendas: [
+      ...lerStorage("encomendas"),
+      ...lerStorage("encomendas_historico"),
+      ...lerStorage("encomendas_esperadas")
+    ],
+
     reservas: lerStorage("reservas"),
+
     prestadores: [
       ...lerStorage("condominio_prestadores"),
       ...lerStorage("prestadores_particulares_v2")
     ],
+
     areasComuns: lerStorage("areasComuns"),
-    avisos: lerStorage("avisos"),
-    ocorrencias: lerStorage("ocorrencias"),
-    sugestoes: lerStorage("sugestoesMorador"),
-    operacional: lerStorage("operacional_condominio_v2"),
-    porteiros: lerStorage("porteiros")
+
+    avisos: [
+      ...lerStorage("avisos"),
+      ...lerStorage("avisos_sindico")
+    ],
+
+    notificacoesMorador: lerStorage("notificacoesMorador"),
+
+    ocorrencias: [
+      ...lerStorage("ocorrencias"),
+      ...lerStorage("historico_ocorrencias"),
+      ...lerStorage("livro_ocorrencias")
+    ],
+
+    sugestoes: [
+      ...lerStorage("sugestoesMorador"),
+      ...lerStorage("sugestoes_reclamacoes")
+    ],
+
+    operacional: [
+      ...lerStorage("operacional_condominio_v2"),
+      ...lerStorage("relatorios_operacionais"),
+      ...lerStorage("movimentacoes")
+    ]
   };
 
   return {
@@ -235,6 +250,11 @@ export function buscarDadosBI(periodo = "geral", anterior = false) {
     reservas: filtrarPorPeriodo(dados.reservas, periodo, anterior),
     prestadores: filtrarPorPeriodo(dados.prestadores, periodo, anterior),
     avisos: filtrarPorPeriodo(dados.avisos, periodo, anterior),
+    notificacoesMorador: filtrarPorPeriodo(
+      dados.notificacoesMorador,
+      periodo,
+      anterior
+    ),
     ocorrencias: filtrarPorPeriodo(dados.ocorrencias, periodo, anterior),
     sugestoes: filtrarPorPeriodo(dados.sugestoes, periodo, anterior),
     operacional: filtrarPorPeriodo(dados.operacional, periodo, anterior)
@@ -245,23 +265,25 @@ export function gerarIndicadoresBI(periodo = "geral", anterior = false) {
   const dados = buscarDadosBI(periodo, anterior);
 
   const visitantesAtivos = dados.visitantes.filter((v) => {
-    const status = normalizarTexto(v.status);
+    const status = normalizarTexto(v.status || v.statusSindico);
 
     return (
       status === "dentro" ||
       status === "ativo" ||
       status === "entrada" ||
-      status === "em visita"
+      status === "em visita" ||
+      status === "autorizado"
     );
   }).length;
 
   const encomendasPendentes = dados.encomendas.filter((e) => {
-    const status = normalizarTexto(e.status);
+    const status = normalizarTexto(e.status || e.statusSindico);
 
     return (
       status === "pendente" ||
       status === "aguardando" ||
-      status === "aguardando retirada"
+      status === "aguardando retirada" ||
+      status === "esperada"
     );
   }).length;
 
@@ -275,14 +297,62 @@ export function gerarIndicadoresBI(periodo = "geral", anterior = false) {
     );
   }).length;
 
+  const reservasPendentes = dados.reservas.filter((r) => {
+    const status = normalizarTexto(r.status);
+
+    return status === "pendente" || status === "em análise" || status === "em analise";
+  }).length;
+
   const ocorrenciasAbertas = dados.ocorrencias.filter((o) => {
     const status = normalizarTexto(o.status);
 
     return (
       status === "aberta" ||
       status === "pendente" ||
+      status === "encaminhada" ||
+      status === "em tratamento" ||
       status === "em análise" ||
-      status === "em analise"
+      status === "em analise" ||
+      status === "novo" ||
+      status === "ciente"
+    );
+  }).length;
+
+  const reclamacoes = dados.sugestoes.filter((s) => {
+    const tipo = normalizarTexto(s.tipoRegistro || s.tipo || s.categoria);
+    return tipo.includes("reclama");
+  });
+
+  const sugestoes = dados.sugestoes.filter((s) => {
+    const tipo = normalizarTexto(s.tipoRegistro || s.tipo || s.categoria);
+    return tipo.includes("sugest");
+  });
+
+  const reclamacoesAbertas = reclamacoes.filter((r) => {
+    const status = normalizarTexto(r.status);
+    return status !== "resolvido" && status !== "resolvida";
+  }).length;
+
+  const sugestoesAbertas = sugestoes.filter((s) => {
+    const status = normalizarTexto(s.status);
+    return status !== "resolvido" && status !== "resolvida";
+  }).length;
+
+  const sugestoesResolvidas = sugestoes.filter((s) => {
+    const status = normalizarTexto(s.status);
+    return status === "resolvido" || status === "resolvida";
+  }).length;
+
+  const pendenciasSindico = dados.avisos.filter((a) => {
+    const status = normalizarTexto(a.status);
+
+    return (
+      status === "novo" ||
+      status === "pendente" ||
+      status === "encaminhada" ||
+      status === "aguardando" ||
+      status === "ciente" ||
+      status === "em tratamento"
     );
   }).length;
 
@@ -299,15 +369,27 @@ export function gerarIndicadoresBI(periodo = "geral", anterior = false) {
 
     totalReservas: dados.reservas.length,
     totalReservasAtivas: reservasAtivas,
+    totalReservasPendentes: reservasPendentes,
 
     totalPrestadores: dados.prestadores.length,
     totalAreas: dados.areasComuns.length,
+
     totalAvisos: dados.avisos.length,
+    totalAvisosSindico: dados.avisos.length,
+    totalPendenciasSindico: pendenciasSindico,
+
+    totalNotificacoesMorador: dados.notificacoesMorador.length,
 
     totalOcorrencias: dados.ocorrencias.length,
     totalOcorrenciasAbertas: ocorrenciasAbertas,
 
-    totalSugestoes: dados.sugestoes.length,
+    totalSugestoes: sugestoes.length,
+    totalSugestoesAbertas: sugestoesAbertas,
+    totalSugestoesResolvidas: sugestoesResolvidas,
+
+    totalReclamacoes: reclamacoes.length,
+    totalReclamacoesAbertas: reclamacoesAbertas,
+
     totalOperacional: dados.operacional.length
   };
 }
@@ -318,7 +400,11 @@ export function calcularSaudeCondominio(periodo = "geral") {
   let pontuacao = 100;
 
   pontuacao -= indicadores.totalPendentes * 2;
+  pontuacao -= indicadores.totalReservasPendentes * 2;
   pontuacao -= indicadores.totalOcorrenciasAbertas * 5;
+  pontuacao -= indicadores.totalReclamacoesAbertas * 4;
+  pontuacao -= indicadores.totalSugestoesAbertas * 1;
+  pontuacao -= indicadores.totalPendenciasSindico * 1;
   pontuacao -= indicadores.totalVisitantesAtivos * 1;
 
   if (pontuacao < 0) pontuacao = 0;
@@ -360,7 +446,11 @@ export function gerarDistribuicaoGeral(periodo = "geral") {
     { nome: "Encomendas", total: indicadores.totalEncomendas },
     { nome: "Reservas", total: indicadores.totalReservas },
     { nome: "Prestadores", total: indicadores.totalPrestadores },
-    { nome: "Ocorrências", total: indicadores.totalOcorrencias }
+    { nome: "Ocorrências", total: indicadores.totalOcorrencias },
+    { nome: "Sugestões", total: indicadores.totalSugestoes },
+    { nome: "Reclamações", total: indicadores.totalReclamacoes },
+    { nome: "Avisos", total: indicadores.totalAvisosSindico },
+    { nome: "Operacional", total: indicadores.totalOperacional }
   ];
 }
 
@@ -370,8 +460,11 @@ export function gerarIndicadoresCriticos(periodo = "geral") {
   return [
     { nome: "Visitantes ativos", total: indicadores.totalVisitantesAtivos },
     { nome: "Encomendas pendentes", total: indicadores.totalPendentes },
-    { nome: "Reservas ativas", total: indicadores.totalReservasAtivas },
-    { nome: "Ocorrências abertas", total: indicadores.totalOcorrenciasAbertas }
+    { nome: "Reservas pendentes", total: indicadores.totalReservasPendentes },
+    { nome: "Ocorrências abertas", total: indicadores.totalOcorrenciasAbertas },
+    { nome: "Reclamações abertas", total: indicadores.totalReclamacoesAbertas },
+    { nome: "Sugestões abertas", total: indicadores.totalSugestoesAbertas },
+    { nome: "Pendências do síndico", total: indicadores.totalPendenciasSindico }
   ];
 }
 
@@ -387,7 +480,9 @@ export function gerarComparativosBI(periodo = "geral") {
       visitantes: { atual: 0, anterior: 0, variacao: calcularVariacao(0, 0) },
       encomendas: { atual: 0, anterior: 0, variacao: calcularVariacao(0, 0) },
       reservas: { atual: 0, anterior: 0, variacao: calcularVariacao(0, 0) },
-      ocorrencias: { atual: 0, anterior: 0, variacao: calcularVariacao(0, 0) }
+      ocorrencias: { atual: 0, anterior: 0, variacao: calcularVariacao(0, 0) },
+      sugestoes: { atual: 0, anterior: 0, variacao: calcularVariacao(0, 0) },
+      reclamacoes: { atual: 0, anterior: 0, variacao: calcularVariacao(0, 0) }
     };
   }
 
@@ -398,36 +493,39 @@ export function gerarComparativosBI(periodo = "geral") {
     visitantes: {
       atual: atual.totalVisitantes,
       anterior: anterior.totalVisitantes,
-      variacao: calcularVariacao(
-        atual.totalVisitantes,
-        anterior.totalVisitantes
-      )
+      variacao: calcularVariacao(atual.totalVisitantes, anterior.totalVisitantes)
     },
 
     encomendas: {
       atual: atual.totalEncomendas,
       anterior: anterior.totalEncomendas,
-      variacao: calcularVariacao(
-        atual.totalEncomendas,
-        anterior.totalEncomendas
-      )
+      variacao: calcularVariacao(atual.totalEncomendas, anterior.totalEncomendas)
     },
 
     reservas: {
       atual: atual.totalReservas,
       anterior: anterior.totalReservas,
-      variacao: calcularVariacao(
-        atual.totalReservas,
-        anterior.totalReservas
-      )
+      variacao: calcularVariacao(atual.totalReservas, anterior.totalReservas)
     },
 
     ocorrencias: {
       atual: atual.totalOcorrencias,
       anterior: anterior.totalOcorrencias,
+      variacao: calcularVariacao(atual.totalOcorrencias, anterior.totalOcorrencias)
+    },
+
+    sugestoes: {
+      atual: atual.totalSugestoes,
+      anterior: anterior.totalSugestoes,
+      variacao: calcularVariacao(atual.totalSugestoes, anterior.totalSugestoes)
+    },
+
+    reclamacoes: {
+      atual: atual.totalReclamacoes,
+      anterior: anterior.totalReclamacoes,
       variacao: calcularVariacao(
-        atual.totalOcorrencias,
-        anterior.totalOcorrencias
+        atual.totalReclamacoes,
+        anterior.totalReclamacoes
       )
     }
   };
@@ -456,6 +554,16 @@ export function gerarDadosComparativoGrafico(periodo = "geral") {
       nome: "Ocorrências",
       atual: comparativos.ocorrencias.atual,
       anterior: comparativos.ocorrencias.anterior
+    },
+    {
+      nome: "Sugestões",
+      atual: comparativos.sugestoes.atual,
+      anterior: comparativos.sugestoes.anterior
+    },
+    {
+      nome: "Reclamações",
+      atual: comparativos.reclamacoes.atual,
+      anterior: comparativos.reclamacoes.anterior
     }
   ];
 }
@@ -468,24 +576,19 @@ export function gerarResumoExecutivoBI(periodo = "geral") {
   const mensagens = [];
 
   if (periodo === "geral") {
-    mensagens.push(
-      "A visão geral mostra o acumulado completo do condomínio."
-    );
+    mensagens.push("A visão geral mostra o acumulado completo do condomínio.");
   } else {
     const variacoes = [
       comparativos.visitantes.variacao,
       comparativos.encomendas.variacao,
       comparativos.reservas.variacao,
-      comparativos.ocorrencias.variacao
+      comparativos.ocorrencias.variacao,
+      comparativos.sugestoes.variacao,
+      comparativos.reclamacoes.variacao
     ];
 
-    const subidas = variacoes.filter(
-      (v) => v.direcao === "subiu"
-    ).length;
-
-    const quedas = variacoes.filter(
-      (v) => v.direcao === "caiu"
-    ).length;
+    const subidas = variacoes.filter((v) => v.direcao === "subiu").length;
+    const quedas = variacoes.filter((v) => v.direcao === "caiu").length;
 
     if (subidas > quedas) {
       mensagens.push(
@@ -508,9 +611,21 @@ export function gerarResumoExecutivoBI(periodo = "geral") {
     );
   }
 
+  if (indicadores.totalReservasPendentes > 0) {
+    mensagens.push(
+      `${indicadores.totalReservasPendentes} reserva(s) aguardam análise.`
+    );
+  }
+
   if (indicadores.totalOcorrenciasAbertas > 0) {
     mensagens.push(
       `${indicadores.totalOcorrenciasAbertas} ocorrência(s) estão abertas e precisam de acompanhamento.`
+    );
+  }
+
+  if (indicadores.totalReclamacoesAbertas > 0) {
+    mensagens.push(
+      `${indicadores.totalReclamacoesAbertas} reclamação(ões) precisam de atenção.`
     );
   }
 
@@ -540,6 +655,12 @@ export function gerarInsightsBI(periodo = "geral") {
       titulo: "Comparativo de reservas",
       texto: `Reservas: ${comparativos.reservas.variacao.texto} em relação ao período anterior.`
     });
+
+    insights.push({
+      tipo: "tendência",
+      titulo: "Sugestões e reclamações",
+      texto: `Sugestões: ${comparativos.sugestoes.variacao.texto} | Reclamações: ${comparativos.reclamacoes.variacao.texto}.`
+    });
   }
 
   if (indicadores.totalPendentes > 0) {
@@ -550,11 +671,35 @@ export function gerarInsightsBI(periodo = "geral") {
     });
   }
 
+  if (indicadores.totalReservasPendentes > 0) {
+    insights.push({
+      tipo: "atenção",
+      titulo: "Reservas pendentes",
+      texto: `${indicadores.totalReservasPendentes} reserva(s) aguardam análise.`
+    });
+  }
+
   if (indicadores.totalOcorrenciasAbertas > 0) {
     insights.push({
       tipo: "crítico",
       titulo: "Ocorrências abertas",
       texto: `${indicadores.totalOcorrenciasAbertas} ocorrência(s) precisam de acompanhamento.`
+    });
+  }
+
+  if (indicadores.totalReclamacoesAbertas > 0) {
+    insights.push({
+      tipo: "crítico",
+      titulo: "Reclamações abertas",
+      texto: `${indicadores.totalReclamacoesAbertas} reclamação(ões) precisam de atenção.`
+    });
+  }
+
+  if (indicadores.totalSugestoesAbertas > 0) {
+    insights.push({
+      tipo: "gestão",
+      titulo: "Sugestões dos moradores",
+      texto: `${indicadores.totalSugestoesAbertas} sugestão(ões) estão abertas para análise.`
     });
   }
 
@@ -592,6 +737,9 @@ export function buscarAtividadesRecentes(periodo = "geral") {
     visitantes: dados.visitantes.slice(-4).reverse(),
     encomendas: dados.encomendas.slice(-4).reverse(),
     reservas: dados.reservas.slice(-4).reverse(),
-    ocorrencias: dados.ocorrencias.slice(-4).reverse()
+    ocorrencias: dados.ocorrencias.slice(-4).reverse(),
+    sugestoes: dados.sugestoes.slice(-4).reverse(),
+    avisos: dados.avisos.slice(-4).reverse(),
+    operacional: dados.operacional.slice(-4).reverse()
   };
 }

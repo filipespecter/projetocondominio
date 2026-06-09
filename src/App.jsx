@@ -1,9 +1,7 @@
 import AccessCard from "./components/AccessCard";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-import { FaUserShield } from "react-icons/fa";
-import { FaBuilding } from "react-icons/fa";
-import { FaUser } from "react-icons/fa";
+import { FaUserShield, FaBuilding, FaUser } from "react-icons/fa";
 
 import {
   BrowserRouter,
@@ -111,11 +109,7 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route
-            index
-            element={<Navigate to="/dashboard/sindico" replace />}
-          />
-
+          <Route index element={<Navigate to="/dashboard/sindico" replace />} />
           <Route path="sindico" element={<DashboardSindico />} />
           <Route path="apartamentos" element={<Apartamentos />} />
           <Route path="moradores" element={<Moradores />} />
@@ -128,6 +122,7 @@ function App() {
           <Route path="avisos" element={<Avisos />} />
           <Route path="relatorios" element={<Relatorios />} />
           <Route path="bi-analytics" element={<BIAnalytics />} />
+          <Route path="bi-monitor" element={<BIMonitor />} />
           <Route path="configuracoes" element={<Configuracoes />} />
           <Route path="prestadores" element={<Prestadores />} />
         </Route>

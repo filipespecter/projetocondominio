@@ -6,6 +6,7 @@ function VisitantesPorteiro() {
   const STORAGE_MOVIMENTACOES = "movimentacoes";
   const STORAGE_RELATORIOS = "relatorios_operacionais";
   const STORAGE_HISTORICO = "visitantes_historico";
+  const STORAGE_NOTIFICACOES_MORADOR = "notificacoesMorador";
 
   const estadoInicial = {
     nome: "",
@@ -84,11 +85,26 @@ function VisitantesPorteiro() {
     setForm(estadoInicial);
   }
 
+  function buscarMoradorPorApartamento(apartamento) {
+    const moradores = lerStorage("moradores");
+
+    return (
+      moradores.find(
+        (m) =>
+          String(m.apartamento || m.apto) === String(apartamento)
+      ) || {}
+    );
+  }
+
   function registrarAvisoSindico(acao, visitante) {
     const avisos = lerStorage(STORAGE_AVISOS_SINDICO);
+    const moradorResponsavel = buscarMoradorPorApartamento(
+      visitante.apartamento
+    );
 
     const novo = {
       id: Date.now() + 1,
+      visitanteId: visitante.id,
       categoria: "Visitante",
       origem: "Porteiro",
       titulo: `Visitante ${acao} - ${visitante.nome}`,
@@ -96,12 +112,16 @@ function VisitantesPorteiro() {
         visitante.observacao ||
         `Visitante ${visitante.nome} para o apartamento ${visitante.apartamento}`,
       apartamento: visitante.apartamento,
-      morador: "",
+      morador: moradorResponsavel.nome || visitante.morador || "",
       responsavel: visitante.porteiro || "Porteiro",
       status: visitante.status,
       respostaSindico: "",
       cienciaSindico: false,
-      data: visitante.data
+      data: visitante.data,
+      impactaBI: true,
+      impactaRelatorio: true,
+      exibirNaCentral: true,
+      origemModulo: "Visitantes"
     };
 
     salvarStorage(STORAGE_AVISOS_SINDICO, [
@@ -119,6 +139,7 @@ function VisitantesPorteiro() {
       acao,
       origem: "Porteiro",
       titulo: `Visitante ${visitante.nome}`,
+      visitanteId: visitante.id,
       apartamento: visitante.apartamento,
       descricao: visitante.observacao,
       status: visitante.status,
@@ -128,7 +149,9 @@ function VisitantesPorteiro() {
         hour: "2-digit",
         minute: "2-digit"
       }),
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      impactaBI: true,
+      origemModulo: "Visitantes"
     };
 
     salvarStorage(STORAGE_MOVIMENTACOES, [
@@ -146,6 +169,7 @@ function VisitantesPorteiro() {
       acao,
       origem: "Porteiro",
       titulo: `Visitante ${visitante.nome}`,
+      visitanteId: visitante.id,
       nome: visitante.nome,
       apartamento: visitante.apartamento,
       documento: visitante.documento,
@@ -155,7 +179,9 @@ function VisitantesPorteiro() {
       porteiro: visitante.porteiro || "Porteiro",
       data: visitante.data,
       horarioEntrada: visitante.horarioEntrada,
-      horarioSaida: visitante.horarioSaida || ""
+      horarioSaida: visitante.horarioSaida || "",
+      impactaRelatorio: true,
+      origemModulo: "Visitantes"
     };
 
     salvarStorage(STORAGE_RELATORIOS, [
@@ -182,7 +208,8 @@ function VisitantesPorteiro() {
       data: visitante.data,
       horarioEntrada: visitante.horarioEntrada,
       horarioSaida: visitante.horarioSaida || "",
-      registradoEm: new Date().toLocaleString("pt-BR")
+      registradoEm: new Date().toLocaleString("pt-BR"),
+      origemModulo: "Visitantes"
     };
 
     salvarStorage(STORAGE_HISTORICO, [
@@ -191,11 +218,55 @@ function VisitantesPorteiro() {
     ]);
   }
 
+  function registrarNotificacaoMorador(acao, visitante) {
+    const moradorResponsavel = buscarMoradorPorApartamento(
+      visitante.apartamento
+    );
+
+    if (!moradorResponsavel.nome) return;
+
+    const notificacoes = lerStorage(STORAGE_NOTIFICACOES_MORADOR);
+
+    const nova = {
+      id: Date.now() + 5,
+      categoria: "Visitante",
+      origem: "Porteiro",
+      titulo: `Atualização de visitante`,
+      descricao: `O visitante ${visitante.nome} está com status: ${visitante.status}`,
+      visitanteId: visitante.id,
+      apartamento: visitante.apartamento,
+      morador: moradorResponsavel.nome,
+      moradorId: moradorResponsavel.id || "",
+      status: visitante.status,
+      acao,
+      lida: false,
+      data: new Date().toLocaleDateString("pt-BR"),
+      hora: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      }),
+      origemModulo: "Visitantes"
+    };
+
+    salvarStorage(STORAGE_NOTIFICACOES_MORADOR, [
+      nova,
+      ...notificacoes
+    ]);
+  }
+
   function registrarFluxo(acao, visitante) {
     registrarAvisoSindico(acao, visitante);
     registrarMovimentacao(acao, visitante);
     registrarRelatorio(acao, visitante);
     registrarHistorico(acao, visitante);
+
+    if (
+      visitante.status === "Autorizado" ||
+      visitante.status === "Em Visita" ||
+      visitante.status === "Saiu"
+    ) {
+      registrarNotificacaoMorador(acao, visitante);
+    }
   }
 
   function cadastrarVisitante() {
@@ -213,11 +284,16 @@ function VisitantesPorteiro() {
     }
 
     const agora = new Date();
+    const moradorResponsavel = buscarMoradorPorApartamento(
+      form.apartamento
+    );
 
     const novo = {
       id: Date.now(),
       nome: form.nome,
       apartamento: form.apartamento,
+      morador: moradorResponsavel.nome || "",
+      moradorId: moradorResponsavel.id || "",
       observacao: form.observacao,
       tipoVisitante: form.tipoVisitante,
       documento: form.documento,
@@ -227,11 +303,15 @@ function VisitantesPorteiro() {
       }),
       horarioSaida: "",
       data: agora.toLocaleDateString("pt-BR"),
-      status: "aguardando",
+      status: "Aguardando",
       cienciaSindico: false,
       porteiro: porteiro?.nome || "Porteiro",
       porteiroUsuario: porteiro?.usuario || "",
-      turno: porteiro?.turno || "-"
+      turno: porteiro?.turno || "-",
+      impactaBI: true,
+      impactaRelatorio: true,
+      exibirNaCentral: true,
+      origemModulo: "Visitantes"
     };
 
     const atualizados = [
@@ -257,10 +337,26 @@ function VisitantesPorteiro() {
 
       visitanteAtualizado = {
         ...v,
-        status: novoStatus
+        status: novoStatus,
+        statusSindico: novoStatus,
+        cienciaSindico: true,
+        autorizado:
+          novoStatus === "Autorizado" || novoStatus === "Em Visita"
+            ? true
+            : v.autorizado,
+        bloqueado:
+          novoStatus === "Bloqueado"
+            ? true
+            : novoStatus === "Autorizado" || novoStatus === "Em Visita"
+            ? false
+            : v.bloqueado,
+        impactaBI: true,
+        impactaRelatorio: true,
+        exibirNaCentral: true,
+        origemModulo: "Visitantes"
       };
 
-      if (novoStatus === "saiu") {
+      if (novoStatus === "Saiu") {
         visitanteAtualizado.horarioSaida =
           agora.toLocaleTimeString([], {
             hour: "2-digit",
@@ -308,7 +404,7 @@ function VisitantesPorteiro() {
   }
 
   function obterStatus(status) {
-    if (status === "aguardando") {
+    if (status === "Aguardando") {
       return {
         texto: "Aguardando",
         fundo: "#fef3c7",
@@ -316,15 +412,15 @@ function VisitantesPorteiro() {
       };
     }
 
-    if (status === "liberado") {
+    if (status === "Autorizado") {
       return {
-        texto: "Liberado",
+        texto: "Autorizado",
         fundo: "#dbeafe",
         cor: "#1d4ed8"
       };
     }
 
-    if (status === "entrou") {
+    if (status === "Em Visita") {
       return {
         texto: "Dentro do condomínio",
         fundo: "#dcfce7",
@@ -332,11 +428,19 @@ function VisitantesPorteiro() {
       };
     }
 
-    if (status === "saiu") {
+    if (status === "Saiu") {
       return {
         texto: "Saiu",
         fundo: "#f3f4f6",
         cor: "#374151"
+      };
+    }
+
+    if (status === "Bloqueado") {
+      return {
+        texto: "Bloqueado",
+        fundo: "#fee2e2",
+        cor: "#b91c1c"
       };
     }
 
@@ -364,22 +468,21 @@ function VisitantesPorteiro() {
   });
 
   const aguardando = visitantes.filter(
-    (v) => v.status === "aguardando"
+    (v) => v.status === "Aguardando"
   ).length;
 
   const liberados = visitantes.filter(
-    (v) => v.status === "liberado"
+    (v) => v.status === "Autorizado"
   ).length;
 
   const dentro = visitantes.filter(
-    (v) => v.status === "entrou"
+    (v) => v.status === "Em Visita"
   ).length;
 
   const saiu = visitantes.filter(
-    (v) => v.status === "saiu"
+    (v) => v.status === "Saiu"
   ).length;
-
-  return (
+    return (
     <div style={styles.container}>
       <div style={styles.hero}>
         <div>
@@ -437,7 +540,7 @@ function VisitantesPorteiro() {
             </h2>
 
             <span style={styles.cardHintLight}>
-              aguardando liberação
+              aguardando autorização
             </span>
           </div>
 
@@ -453,7 +556,7 @@ function VisitantesPorteiro() {
 
           <div>
             <p style={styles.cardLabel}>
-              Liberados
+              Autorizados
             </p>
 
             <h2 style={styles.cardNumberBlue}>
@@ -627,10 +730,11 @@ function VisitantesPorteiro() {
               style={styles.filter}
             >
               <option>Todos</option>
-              <option value="aguardando">Aguardando</option>
-              <option value="liberado">Liberado</option>
-              <option value="entrou">Entrou</option>
-              <option value="saiu">Saiu</option>
+              <option value="Aguardando">Aguardando</option>
+              <option value="Autorizado">Autorizado</option>
+              <option value="Em Visita">Em Visita</option>
+              <option value="Saiu">Saiu</option>
+              <option value="Bloqueado">Bloqueado</option>
             </select>
           </div>
         </div>
@@ -694,6 +798,16 @@ function VisitantesPorteiro() {
 
                     <div style={styles.infoItem}>
                       <span style={styles.infoLabel}>
+                        Morador
+                      </span>
+
+                      <strong>
+                        {item.morador || "-"}
+                      </strong>
+                    </div>
+
+                    <div style={styles.infoItem}>
+                      <span style={styles.infoLabel}>
                         Tipo
                       </span>
 
@@ -747,16 +861,16 @@ function VisitantesPorteiro() {
                     <button
                       style={styles.blue}
                       onClick={() =>
-                        alterarStatus(item.id, "liberado")
+                        alterarStatus(item.id, "Autorizado")
                       }
                     >
-                      Liberar
+                      Autorizar
                     </button>
 
                     <button
                       style={styles.green}
                       onClick={() =>
-                        alterarStatus(item.id, "entrou")
+                        alterarStatus(item.id, "Em Visita")
                       }
                     >
                       Entrada
@@ -765,7 +879,7 @@ function VisitantesPorteiro() {
                     <button
                       style={styles.gray}
                       onClick={() =>
-                        alterarStatus(item.id, "saiu")
+                        alterarStatus(item.id, "Saiu")
                       }
                     >
                       Saída

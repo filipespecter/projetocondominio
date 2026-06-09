@@ -3,27 +3,33 @@ import { Navigate, useLocation } from "react-router-dom";
 function ProtectedRoute({ children, tipoPermitido }) {
   const location = useLocation();
 
-  function obterChaveSessao() {
+  function obterChavesSessao() {
     switch (tipoPermitido) {
       case "sindico":
-        return "sessaoSindico";
+        return ["sessaoSindico", "usuarioSindico"];
 
       case "porteiro":
-        return "sessaoPorteiro";
+        return ["sessaoPorteiro", "usuarioPorteiro"];
 
       case "morador":
-        return "sessaoMorador";
+        return ["sessaoMorador", "usuarioMorador"];
 
       default:
-        return "sessao";
+        return ["sessao"];
     }
   }
 
-  const chaveSessao = obterChaveSessao();
+  const chavesSessao = obterChavesSessao();
 
   const usuarioSalvo =
-    localStorage.getItem(chaveSessao) ||
-    sessionStorage.getItem(chaveSessao);
+    chavesSessao
+      .map((chave) => ({
+        chave,
+        valor:
+          localStorage.getItem(chave) ||
+          sessionStorage.getItem(chave)
+      }))
+      .find((item) => item.valor);
 
   if (!usuarioSalvo) {
     return (
@@ -38,10 +44,12 @@ function ProtectedRoute({ children, tipoPermitido }) {
   let usuarioLogado = null;
 
   try {
-    usuarioLogado = JSON.parse(usuarioSalvo);
+    usuarioLogado = JSON.parse(usuarioSalvo.valor);
   } catch {
-    localStorage.removeItem(chaveSessao);
-    sessionStorage.removeItem(chaveSessao);
+    chavesSessao.forEach((chave) => {
+      localStorage.removeItem(chave);
+      sessionStorage.removeItem(chave);
+    });
 
     return (
       <Navigate
@@ -51,7 +59,12 @@ function ProtectedRoute({ children, tipoPermitido }) {
     );
   }
 
-  if (usuarioLogado.tipo !== tipoPermitido) {
+  const tipoUsuario =
+    usuarioLogado.tipo ||
+    usuarioLogado.perfilTipo ||
+    usuarioLogado.perfilAcesso;
+
+  if (tipoUsuario && tipoUsuario !== tipoPermitido) {
     return (
       <Navigate
         to={`/login/${tipoPermitido}`}

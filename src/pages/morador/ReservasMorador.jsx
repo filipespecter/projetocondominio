@@ -2,23 +2,21 @@ import { useEffect, useState } from "react";
 
 function ReservasMorador() {
   const STORAGE_KEY = "reservas";
+  const STORAGE_AVISOS_SINDICO = "avisos_sindico";
+  const STORAGE_MOVIMENTACOES = "movimentacoes";
+  const STORAGE_RELATORIOS = "relatorios_operacionais";
+  const STORAGE_NOTIFICACOES = "notificacoesMorador";
 
   const [morador, setMorador] = useState(null);
-
   const [reservas, setReservas] = useState([]);
-
   const [areasComuns, setAreasComuns] = useState([]);
 
   const [area, setArea] = useState("");
-
   const [data, setData] = useState("");
-
   const [horario, setHorario] = useState("");
-
   const [observacao, setObservacao] = useState("");
 
   const [busca, setBusca] = useState("");
-
   const [filtroStatus, setFiltroStatus] = useState("Todos");
 
   useEffect(() => {
@@ -26,6 +24,19 @@ function ReservasMorador() {
     carregarAreasComuns();
     carregarReservas();
   }, []);
+
+  function lerStorage(chave) {
+    try {
+      const dados = localStorage.getItem(chave);
+      return dados ? JSON.parse(dados) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function salvarStorage(chave, dados) {
+    localStorage.setItem(chave, JSON.stringify(dados));
+  }
 
   function carregarSessao() {
     const sessao =
@@ -41,20 +52,17 @@ function ReservasMorador() {
   }
 
   function carregarAreasComuns() {
-    const dataStorage =
-      JSON.parse(
-        localStorage.getItem("areasComuns")
-      ) || [];
+    const dataStorage = lerStorage("areasComuns");
 
-    setAreasComuns(dataStorage);
+    const areasDisponiveis = dataStorage.filter(
+      (item) => item.status === "Disponível" || !item.status
+    );
+
+    setAreasComuns(areasDisponiveis);
   }
 
   function carregarReservas() {
-    const dataStorage =
-      JSON.parse(
-        localStorage.getItem(STORAGE_KEY)
-      ) || [];
-
+    const dataStorage = lerStorage(STORAGE_KEY);
     setReservas(dataStorage);
   }
 
@@ -65,36 +73,190 @@ function ReservasMorador() {
     setObservacao("");
   }
 
+  function buscarAreaSelecionada(nomeArea) {
+    return (
+      areasComuns.find(
+        (item) =>
+          item.nome === nomeArea ||
+          item.area === nomeArea ||
+          item.titulo === nomeArea
+      ) || {}
+    );
+  }
+
+  function registrarAvisoSindico(reserva) {
+    const avisos = lerStorage(STORAGE_AVISOS_SINDICO);
+
+    const novo = {
+      id: Date.now() + 1,
+      reservaId: reserva.id,
+      categoria: "Reserva",
+      origem: "Morador",
+      titulo: `Nova solicitação de reserva - ${reserva.area}`,
+      descricao:
+        reserva.observacao ||
+        `O morador ${reserva.moradorNome} solicitou reserva da área ${reserva.area}.`,
+      apartamento: reserva.apartamento,
+      morador: reserva.moradorNome,
+      responsavel: reserva.moradorNome,
+      status: reserva.status,
+      respostaSindico: "",
+      cienciaSindico: false,
+      data: reserva.data,
+      horario: reserva.horario,
+      impactaBI: true,
+      impactaRelatorio: true,
+      exibirNaCentral: true,
+      origemModulo: "Reservas"
+    };
+
+    salvarStorage(STORAGE_AVISOS_SINDICO, [
+      novo,
+      ...avisos
+    ]);
+  }
+
+  function registrarMovimentacao(acao, reserva) {
+    const movimentacoes = lerStorage(STORAGE_MOVIMENTACOES);
+
+    const nova = {
+      id: Date.now() + 2,
+      tipo: "Reserva",
+      acao,
+      origem: "Morador",
+      titulo: `Reserva ${reserva.area}`,
+      reservaId: reserva.id,
+      areaId: reserva.areaId,
+      area: reserva.area,
+      apartamento: reserva.apartamento,
+      morador: reserva.moradorNome,
+      status: reserva.status,
+      descricao:
+        reserva.observacao ||
+        `Solicitação de reserva da área ${reserva.area}`,
+      data: new Date().toLocaleDateString("pt-BR"),
+      hora: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      }),
+      timestamp: Date.now(),
+      impactaBI: true,
+      origemModulo: "Reservas"
+    };
+
+    salvarStorage(STORAGE_MOVIMENTACOES, [
+      nova,
+      ...movimentacoes
+    ]);
+  }
+
+  function registrarRelatorio(acao, reserva) {
+    const relatorios = lerStorage(STORAGE_RELATORIOS);
+
+    const novo = {
+      id: Date.now() + 3,
+      tipo: "Reserva",
+      acao,
+      origem: "Morador",
+      titulo: `Reserva ${reserva.area}`,
+      reservaId: reserva.id,
+      areaId: reserva.areaId,
+      area: reserva.area,
+      morador: reserva.moradorNome,
+      moradorId: reserva.moradorId,
+      apartamento: reserva.apartamento,
+      bloco: reserva.bloco,
+      dataReserva: reserva.data,
+      horario: reserva.horario,
+      observacao: reserva.observacao,
+      status: reserva.status,
+      criadoEm: reserva.criadoEm,
+      data: new Date().toLocaleDateString("pt-BR"),
+      hora: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      }),
+      impactaRelatorio: true,
+      origemModulo: "Reservas"
+    };
+
+    salvarStorage(STORAGE_RELATORIOS, [
+      novo,
+      ...relatorios
+    ]);
+  }
+
+  function registrarNotificacaoMorador(acao, reserva) {
+    const notificacoes = lerStorage(STORAGE_NOTIFICACOES);
+
+    const nova = {
+      id: Date.now() + 4,
+      categoria: "Reserva",
+      origem: "Morador",
+      titulo: "Solicitação de reserva enviada",
+      descricao: `Sua reserva da área ${reserva.area} foi enviada para análise do síndico.`,
+      reservaId: reserva.id,
+      moradorId: reserva.moradorId,
+      morador: reserva.moradorNome,
+      apartamento: reserva.apartamento,
+      area: reserva.area,
+      status: reserva.status,
+      acao,
+      lida: false,
+      data: new Date().toLocaleDateString("pt-BR"),
+      hora: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      }),
+      origemModulo: "Reservas"
+    };
+
+    salvarStorage(STORAGE_NOTIFICACOES, [
+      nova,
+      ...notificacoes
+    ]);
+  }
+
+  function registrarFluxoReserva(acao, reserva) {
+    registrarAvisoSindico(reserva);
+    registrarMovimentacao(acao, reserva);
+    registrarRelatorio(acao, reserva);
+    registrarNotificacaoMorador(acao, reserva);
+  }
+
   function solicitarReserva() {
     if (!area || !data || !horario) {
       alert("Preencha área, data e horário");
       return;
     }
 
+    const areaSelecionada = buscarAreaSelecionada(area);
+
     const nova = {
       id: Date.now(),
 
       area,
+      areaId: areaSelecionada.id || null,
 
       data,
-
       horario,
-
       observacao,
 
-      status: "pendente",
+      status: "Pendente",
 
-      criadoEm: new Date().toLocaleString(),
+      criadoEm: new Date().toLocaleString("pt-BR"),
 
       moradorId: morador?.id || null,
-
       moradorNome: morador?.nome || "Morador",
-
       moradorUsuario: morador?.usuario || "",
 
       apartamento: morador?.apartamento || "",
+      bloco: morador?.bloco || "",
 
-      bloco: morador?.bloco || ""
+      impactaBI: true,
+      impactaRelatorio: true,
+      exibirNaCentral: true,
+      origemModulo: "Reservas"
     };
 
     const atualizadas = [
@@ -102,12 +264,10 @@ function ReservasMorador() {
       ...reservas
     ];
 
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(atualizadas)
-    );
-
+    salvarStorage(STORAGE_KEY, atualizadas);
     setReservas(atualizadas);
+
+    registrarFluxoReserva("solicitada", nova);
 
     limparFormulario();
   }
@@ -120,17 +280,31 @@ function ReservasMorador() {
 
     if (!confirmar) return;
 
+    let reservaCancelada = null;
+
     const atualizadas =
-      reservas.filter(
-        (r) => r.id !== id
-      );
+      reservas.map((r) => {
+        if (r.id !== id) return r;
 
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(atualizadas)
-    );
+        reservaCancelada = {
+          ...r,
+          status: "Cancelada",
+          canceladaEm: new Date().toLocaleString("pt-BR"),
+          impactaBI: true,
+          impactaRelatorio: true,
+          exibirNaCentral: true,
+          origemModulo: "Reservas"
+        };
 
+        return reservaCancelada;
+      });
+
+    salvarStorage(STORAGE_KEY, atualizadas);
     setReservas(atualizadas);
+
+    if (reservaCancelada) {
+      registrarFluxoReserva("cancelada", reservaCancelada);
+    }
   }
 
   function obterStatus(status) {
@@ -209,17 +383,8 @@ function ReservasMorador() {
       (r) => obterStatus(r.status).texto === "Recusada"
     ).length;
 
-  const opcoesAreas =
-    areasComuns.length > 0
-      ? areasComuns
-      : [
-          { id: 1, nome: "Salão de Festas" },
-          { id: 2, nome: "Churrasqueira" },
-          { id: 3, nome: "Piscina" },
-          { id: 4, nome: "Quadra" }
-        ];
-
-  return (
+  const opcoesAreas = areasComuns;
+    return (
     <div style={styles.container}>
       {/* HERO */}
 
@@ -386,6 +551,12 @@ function ReservasMorador() {
             ))}
           </select>
 
+          {opcoesAreas.length === 0 && (
+            <p style={styles.formHint}>
+              Nenhuma área comum disponível no momento.
+            </p>
+          )}
+
           <label style={styles.label}>
             Data
           </label>
@@ -428,6 +599,7 @@ function ReservasMorador() {
           <button
             style={styles.button}
             onClick={solicitarReserva}
+            disabled={opcoesAreas.length === 0}
           >
             Solicitar reserva
           </button>
@@ -578,7 +750,6 @@ function ReservasMorador() {
     </div>
   );
 }
-
 const styles = {
   container: {
     width: "100%",

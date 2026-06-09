@@ -853,11 +853,12 @@ const styles = {
   container: {
     width: "100%",
     fontFamily: "Arial",
-    color: "#111827"
+    color: "#f8fafc"
   },
 
   hero: {
-    background: "linear-gradient(135deg,#02140b,#064e3b 55%,#15803d)",
+    background:
+      "radial-gradient(circle at top right,rgba(212,175,55,0.22),transparent 30%), linear-gradient(135deg,#050505,#0b0f0c 35%,#1b4332 72%,#2d6a4f)",
     borderRadius: "36px",
     padding: "34px",
     color: "white",
@@ -865,19 +866,18 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "center",
     gap: "28px",
-    boxShadow: "0 26px 70px rgba(6,78,59,0.30)",
+    border: "1px solid rgba(212,175,55,0.28)",
+    boxShadow: "0 28px 75px rgba(0,0,0,0.42)",
     marginBottom: "24px"
   },
 
-  heroLeft: {
-    maxWidth: "680px"
-  },
+  heroLeft: { maxWidth: "680px" },
 
   heroBadge: {
     display: "inline-block",
-    background: "rgba(255,255,255,0.13)",
-    border: "1px solid rgba(255,255,255,0.14)",
-    color: "#dcfce7",
+    background: "rgba(212,175,55,0.16)",
+    border: "1px solid rgba(212,175,55,0.35)",
+    color: "#f4d35e",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -888,12 +888,13 @@ const styles = {
   title: {
     margin: 0,
     fontSize: "44px",
-    letterSpacing: "-1px"
+    letterSpacing: "-1px",
+    color: "#ffffff"
   },
 
   subtitle: {
     margin: "10px 0 0",
-    color: "rgba(255,255,255,0.76)",
+    color: "rgba(248,250,252,0.74)",
     lineHeight: "1.55"
   },
 
@@ -906,17 +907,20 @@ const styles = {
   noticeBoard: {
     display: "flex",
     gap: "10px",
-    background: "rgba(255,255,255,0.10)",
-    border: "1px solid rgba(255,255,255,0.14)",
+    background: "rgba(0,0,0,0.28)",
+    border: "1px solid rgba(212,175,55,0.22)",
     padding: "12px",
-    borderRadius: "24px"
+    borderRadius: "24px",
+    backdropFilter: "blur(12px)"
   },
 
   noticeItem: {
     width: "84px",
     height: "76px",
     borderRadius: "18px",
-    background: "rgba(255,255,255,0.11)",
+    background: "rgba(255,255,255,0.07)",
+    border: "1px solid rgba(212,175,55,0.16)",
+    color: "#f8fafc",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
@@ -925,32 +929,33 @@ const styles = {
   },
 
   heroButton: {
-    background: "#dcfce7",
-    color: "#166534",
+    background: "linear-gradient(135deg,#d4af37,#f4d35e)",
+    color: "#0b0f0c",
     border: "none",
     padding: "15px 20px",
     borderRadius: "17px",
     cursor: "pointer",
     fontWeight: "900",
-    whiteSpace: "nowrap"
+    whiteSpace: "nowrap",
+    boxShadow: "0 14px 30px rgba(212,175,55,0.24)"
   },
 
   controlStrip: {
-    background: "white",
-    border: "1px solid #e5e7eb",
+    background: "linear-gradient(135deg,#0b0f0c,#111827)",
+    border: "1px solid rgba(212,175,55,0.22)",
     borderRadius: "28px",
     padding: "18px",
     marginBottom: "24px",
     display: "flex",
     alignItems: "center",
     gap: "14px",
-    boxShadow: "0 14px 35px rgba(15,23,42,0.06)"
+    boxShadow: "0 18px 45px rgba(0,0,0,0.28)"
   },
 
   searchWrap: {
     flex: 1,
-    background: "#f8fafc",
-    border: "1px solid #d1d5db",
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(212,175,55,0.20)",
     borderRadius: "18px",
     display: "flex",
     alignItems: "center",
@@ -958,7 +963,7 @@ const styles = {
   },
 
   searchIcon: {
-    color: "#166534",
+    color: "#f4d35e",
     fontSize: "20px",
     marginRight: "8px"
   },
@@ -969,16 +974,18 @@ const styles = {
     border: "none",
     outline: "none",
     background: "transparent",
-    fontSize: "14px"
+    fontSize: "14px",
+    color: "#f8fafc"
   },
 
   filter: {
     width: "150px",
     padding: "15px",
     borderRadius: "18px",
-    border: "1px solid #d1d5db",
+    border: "1px solid rgba(212,175,55,0.22)",
     outline: "none",
-    background: "#f8fafc"
+    background: "#111827",
+    color: "#f8fafc"
   },
 
   compactStats: {
@@ -986,15 +993,16 @@ const styles = {
     gap: "10px",
     flexWrap: "wrap",
     fontSize: "12px",
-    color: "#374151"
+    color: "#f4d35e"
   },
 
   communicationPanel: {
-    background: "white",
-    border: "1px solid #eef2f7",
+    background:
+      "radial-gradient(circle at top right,rgba(212,175,55,0.10),transparent 28%), linear-gradient(180deg,#111827,#0b0f0c)",
+    border: "1px solid rgba(212,175,55,0.22)",
     borderRadius: "34px",
     padding: "28px",
-    boxShadow: "0 18px 55px rgba(15,23,42,0.08)"
+    boxShadow: "0 22px 60px rgba(0,0,0,0.35)"
   },
 
   panelHeader: {
@@ -1005,8 +1013,9 @@ const styles = {
   },
 
   panelLabel: {
-    background: "#dcfce7",
-    color: "#166534",
+    background: "rgba(212,175,55,0.16)",
+    color: "#f4d35e",
+    border: "1px solid rgba(212,175,55,0.32)",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "11px",
@@ -1015,14 +1024,14 @@ const styles = {
 
   panelTitle: {
     margin: "12px 0 0",
-    color: "#052e16",
+    color: "#ffffff",
     fontSize: "28px"
   },
 
   resultBadge: {
-    background: "#f0fdf4",
-    color: "#166534",
-    border: "1px solid #bbf7d0",
+    background: "rgba(45,106,79,0.45)",
+    color: "#dcfce7",
+    border: "1px solid rgba(212,175,55,0.24)",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1036,11 +1045,13 @@ const styles = {
   },
 
   noticeCard: {
-    background: "linear-gradient(180deg,#ffffff,#f8fafc)",
+    background:
+      "linear-gradient(180deg,rgba(17,24,39,0.98),rgba(5,5,5,0.98))",
     borderRadius: "30px",
     padding: "22px",
-    boxShadow: "0 15px 38px rgba(15,23,42,0.06)",
-    border: "1px solid #eef2f7"
+    boxShadow: "0 18px 45px rgba(0,0,0,0.35)",
+    border: "1px solid rgba(212,175,55,0.20)",
+    color: "#f8fafc"
   },
 
   cardTop: {
@@ -1055,13 +1066,13 @@ const styles = {
     width: "64px",
     height: "64px",
     borderRadius: "24px",
-    background: "linear-gradient(135deg,#052e16,#16a34a)",
-    color: "white",
+    background: "linear-gradient(135deg,#d4af37,#f4d35e)",
+    color: "#0b0f0c",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "28px",
-    boxShadow: "0 14px 26px rgba(22,163,74,0.22)"
+    boxShadow: "0 14px 28px rgba(212,175,55,0.24)"
   },
 
   priorityBadge: {
@@ -1080,8 +1091,8 @@ const styles = {
   },
 
   categoryTag: {
-    background: "#dbeafe",
-    color: "#1d4ed8",
+    background: "linear-gradient(135deg,#d4af37,#f4d35e)",
+    color: "#0b0f0c",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1089,8 +1100,9 @@ const styles = {
   },
 
   originTag: {
-    background: "#f0fdf4",
-    color: "#166534",
+    background: "rgba(45,106,79,0.70)",
+    color: "#dcfce7",
+    border: "1px solid rgba(64,145,108,0.45)",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1098,8 +1110,9 @@ const styles = {
   },
 
   statusTag: {
-    background: "#fef3c7",
-    color: "#92400e",
+    background: "rgba(212,175,55,0.13)",
+    color: "#f4d35e",
+    border: "1px solid rgba(212,175,55,0.28)",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1108,22 +1121,22 @@ const styles = {
 
   noticeTitle: {
     margin: "0 0 10px",
-    color: "#111827",
+    color: "#ffffff",
     fontSize: "22px"
   },
 
   noticeDescription: {
     margin: 0,
-    color: "#4b5563",
+    color: "rgba(248,250,252,0.72)",
     lineHeight: "1.55",
     minHeight: "70px"
   },
 
   dateBox: {
     marginTop: "16px",
-    background: "#f0fdf4",
-    border: "1px solid #bbf7d0",
-    color: "#166534",
+    background: "rgba(45,106,79,0.35)",
+    border: "1px solid rgba(212,175,55,0.22)",
+    color: "#dcfce7",
     borderRadius: "17px",
     padding: "13px"
   },
@@ -1137,12 +1150,13 @@ const styles = {
   responseTextarea: {
     padding: "13px",
     borderRadius: "16px",
-    border: "1px solid #d1d5db",
+    border: "1px solid rgba(212,175,55,0.22)",
     resize: "vertical",
     minHeight: "80px",
     outline: "none",
     fontFamily: "Arial",
-    background: "#f9fafb"
+    background: "#0b0f0c",
+    color: "#f8fafc"
   },
 
   actionRow: {
@@ -1153,9 +1167,9 @@ const styles = {
   },
 
   editButton: {
-    background: "#dcfce7",
-    color: "#166534",
-    border: "none",
+    background: "linear-gradient(135deg,#1b4332,#2d6a4f)",
+    color: "#f8fafc",
+    border: "1px solid rgba(212,175,55,0.22)",
     padding: "12px",
     borderRadius: "15px",
     cursor: "pointer",
@@ -1163,9 +1177,9 @@ const styles = {
   },
 
   deleteButton: {
-    background: "#fee2e2",
-    color: "#dc2626",
-    border: "none",
+    background: "rgba(127,29,29,0.75)",
+    color: "#fee2e2",
+    border: "1px solid rgba(248,113,113,0.25)",
     padding: "12px",
     borderRadius: "15px",
     cursor: "pointer",
@@ -1173,11 +1187,12 @@ const styles = {
   },
 
   empty: {
-    background: "#f8fafc",
-    border: "1px dashed #d1d5db",
+    background: "rgba(255,255,255,0.05)",
+    border: "1px dashed rgba(212,175,55,0.28)",
     borderRadius: "26px",
     padding: "48px",
-    textAlign: "center"
+    textAlign: "center",
+    color: "#f8fafc"
   },
 
   emptyIcon: {
@@ -1187,17 +1202,17 @@ const styles = {
 
   emptyTitle: {
     margin: 0,
-    color: "#111827"
+    color: "#ffffff"
   },
 
   emptyText: {
     margin: "8px 0 18px",
-    color: "#6b7280"
+    color: "rgba(248,250,252,0.68)"
   },
 
   emptyButton: {
-    background: "linear-gradient(135deg,#064e3b,#16a34a)",
-    color: "white",
+    background: "linear-gradient(135deg,#d4af37,#f4d35e)",
+    color: "#0b0f0c",
     border: "none",
     padding: "13px 18px",
     borderRadius: "15px",
@@ -1208,8 +1223,8 @@ const styles = {
   modalBg: {
     position: "fixed",
     inset: 0,
-    background: "rgba(15,23,42,0.62)",
-    backdropFilter: "blur(8px)",
+    background: "rgba(0,0,0,0.72)",
+    backdropFilter: "blur(10px)",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
@@ -1221,24 +1236,28 @@ const styles = {
     width: "680px",
     maxHeight: "90vh",
     overflowY: "auto",
-    background: "#f8fafc",
+    background: "linear-gradient(180deg,#111827,#0b0f0c)",
     padding: "26px",
     borderRadius: "36px",
-    boxShadow: "0 30px 80px rgba(0,0,0,0.28)"
+    border: "1px solid rgba(212,175,55,0.25)",
+    boxShadow: "0 30px 90px rgba(0,0,0,0.55)"
   },
 
   modalTop: {
-    background: "linear-gradient(135deg,#052e16,#166534)",
+    background: "linear-gradient(135deg,#050505,#1b4332)",
     color: "white",
     borderRadius: "28px",
     padding: "26px",
     display: "flex",
     justifyContent: "space-between",
-    marginBottom: "20px"
+    marginBottom: "20px",
+    borderBottom: "3px solid #d4af37"
   },
 
   modalBadge: {
-    background: "rgba(255,255,255,0.14)",
+    background: "rgba(212,175,55,0.16)",
+    color: "#f4d35e",
+    border: "1px solid rgba(212,175,55,0.32)",
     padding: "8px 12px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1254,16 +1273,16 @@ const styles = {
     width: "42px",
     height: "42px",
     borderRadius: "15px",
-    border: "none",
-    background: "rgba(255,255,255,0.14)",
+    border: "1px solid rgba(212,175,55,0.25)",
+    background: "rgba(255,255,255,0.08)",
     color: "white",
     cursor: "pointer",
     fontWeight: "900"
   },
 
   modalSection: {
-    background: "white",
-    border: "1px solid #eef2f7",
+    background: "rgba(255,255,255,0.05)",
+    border: "1px solid rgba(212,175,55,0.18)",
     borderRadius: "26px",
     padding: "20px",
     marginBottom: "15px"
@@ -1271,7 +1290,7 @@ const styles = {
 
   modalSectionTitle: {
     margin: "0 0 16px",
-    color: "#052e16"
+    color: "#f4d35e"
   },
 
   formGrid: {
@@ -1287,7 +1306,7 @@ const styles = {
   },
 
   label: {
-    color: "#374151",
+    color: "#f8fafc",
     fontSize: "13px",
     fontWeight: "900"
   },
@@ -1295,21 +1314,23 @@ const styles = {
   input: {
     padding: "15px",
     borderRadius: "16px",
-    border: "1px solid #d1d5db",
+    border: "1px solid rgba(212,175,55,0.22)",
     outline: "none",
     fontSize: "14px",
-    background: "#f9fafb"
+    background: "#0b0f0c",
+    color: "#f8fafc"
   },
 
   textarea: {
     padding: "15px",
     borderRadius: "16px",
-    border: "1px solid #d1d5db",
+    border: "1px solid rgba(212,175,55,0.22)",
     resize: "vertical",
     minHeight: "140px",
     outline: "none",
     fontSize: "14px",
-    background: "#f9fafb",
+    background: "#0b0f0c",
+    color: "#f8fafc",
     fontFamily: "Arial"
   },
 
@@ -1321,8 +1342,8 @@ const styles = {
 
   saveBtn: {
     flex: 1,
-    background: "linear-gradient(135deg,#064e3b,#16a34a)",
-    color: "white",
+    background: "linear-gradient(135deg,#d4af37,#f4d35e)",
+    color: "#0b0f0c",
     border: "none",
     padding: "14px",
     borderRadius: "17px",
@@ -1332,9 +1353,9 @@ const styles = {
 
   cancelBtn: {
     flex: 1,
-    background: "#f3f4f6",
-    color: "#374151",
-    border: "none",
+    background: "#111827",
+    color: "#f8fafc",
+    border: "1px solid rgba(212,175,55,0.20)",
     padding: "14px",
     borderRadius: "17px",
     cursor: "pointer",

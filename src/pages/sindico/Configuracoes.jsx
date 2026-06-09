@@ -21,7 +21,36 @@ function Configuracoes() {
     formatoData: "pt-BR",
     notificacoes: true,
     confirmacaoExclusao: true,
-    backupAutomatico: false
+    backupAutomatico: false,
+
+    notificarReserva: true,
+    notificarEncomenda: true,
+    notificarOcorrencia: true,
+    notificarVisitante: true,
+    notificarSugestao: true,
+    notificarReclamacao: true
+  });
+
+  const [whatsappConfig, setWhatsappConfig] = useState({
+    ativo: false,
+    provider: "Evolution",
+    token: "",
+    numeroEmpresa: "",
+    webhook: ""
+  });
+
+  const [biConfig, setBiConfig] = useState({
+    periodoPadrao: "30dias",
+    exportacaoAutomatica: false,
+    retencaoHistorico: "12 meses",
+    dashboardExecutivo: true
+  });
+
+  const [segurancaConfig, setSegurancaConfig] = useState({
+    jwtAtivo: false,
+    tempoSessao: 60,
+    refreshToken: true,
+    loginPorPerfil: true
   });
 
   const usuarioLogado =
@@ -65,16 +94,52 @@ function Configuracoes() {
     }
   }
 
+  function carregarObjeto(chave, fallback) {
+    try {
+      const valor = localStorage.getItem(chave);
+      return valor ? JSON.parse(valor) : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
   function carregarTudo() {
-    const dadosConfig = localStorage.getItem("configuracoes");
-    const dadosPreferencias = localStorage.getItem("preferenciasSistema");
+    const dadosConfig = carregarObjeto("configuracoes", null);
+    const dadosPreferencias = carregarObjeto("preferenciasSistema", null);
+    const dadosWhatsapp = carregarObjeto("whatsappConfig", null);
+    const dadosBI = carregarObjeto("biConfig", null);
+    const dadosSeguranca = carregarObjeto("segurancaConfig", null);
 
     if (dadosConfig) {
-      setConfig(JSON.parse(dadosConfig));
+      setConfig(dadosConfig);
     }
 
     if (dadosPreferencias) {
-      setPreferencias(JSON.parse(dadosPreferencias));
+      setPreferencias((prev) => ({
+        ...prev,
+        ...dadosPreferencias
+      }));
+    }
+
+    if (dadosWhatsapp) {
+      setWhatsappConfig((prev) => ({
+        ...prev,
+        ...dadosWhatsapp
+      }));
+    }
+
+    if (dadosBI) {
+      setBiConfig((prev) => ({
+        ...prev,
+        ...dadosBI
+      }));
+    }
+
+    if (dadosSeguranca) {
+      setSegurancaConfig((prev) => ({
+        ...prev,
+        ...dadosSeguranca
+      }));
     }
 
     let usuarios =
@@ -140,6 +205,21 @@ function Configuracoes() {
   function salvarPreferencias() {
     localStorage.setItem("preferenciasSistema", JSON.stringify(preferencias));
     feedback("Preferências salvas com sucesso.");
+  }
+
+  function salvarWhatsapp() {
+    localStorage.setItem("whatsappConfig", JSON.stringify(whatsappConfig));
+    feedback("Configurações de WhatsApp salvas com sucesso.");
+  }
+
+  function salvarBI() {
+    localStorage.setItem("biConfig", JSON.stringify(biConfig));
+    feedback("Configurações do BI salvas com sucesso.");
+  }
+
+  function salvarSeguranca() {
+    localStorage.setItem("segurancaConfig", JSON.stringify(segurancaConfig));
+    feedback("Configurações de segurança salvas com sucesso.");
   }
 
   function salvarUsuarios(lista) {
@@ -338,21 +418,49 @@ function Configuracoes() {
     const chaves = [
       "configuracoes",
       "preferenciasSistema",
+      "whatsappConfig",
+      "biConfig",
+      "segurancaConfig",
+
       "usuariosSindico",
+      "usuarioSindico",
+      "sessaoSindico",
+      "usuarioPorteiro",
+      "sessaoPorteiro",
+      "usuarioMorador",
+      "sessaoMorador",
+
       "moradores",
       "apartamentos",
       "porteiros",
       "visitantes",
+      "visitantes_historico",
+
       "encomendas",
+      "encomendas_esperadas",
+      "encomendas_historico",
+
       "reservas",
       "areasComuns",
+
       "avisos",
+      "avisos_sindico",
+      "notificacoesMorador",
+
+      "ocorrencias",
+      "historico_ocorrencias",
+      "livro_ocorrencias",
+
+      "sugestoesMorador",
+      "sugestoes_reclamacoes",
+
+      "movimentacoes",
+      "relatorios_operacionais",
+      "historico_relatorios_greencondo",
+
       "condominio_prestadores",
       "prestadores_particulares_v2",
-      "operacional_condominio_v2",
-      "ocorrencias",
-      "sugestoesMorador",
-      "historico_relatorios_greencondo"
+      "operacional_condominio_v2"
     ];
 
     const dados = {};
@@ -363,7 +471,8 @@ function Configuracoes() {
 
     const backup = {
       sistema: preferencias.nomeSistema || "GreenCondo",
-      tipo: "backup-configuracoes",
+      tipo: "backup-completo-greencondo",
+      versao: "front-localstorage-v1",
       geradoEm: new Date().toISOString(),
       dados
     };
@@ -386,7 +495,7 @@ function Configuracoes() {
       new Date().toLocaleString("pt-BR")
     );
 
-    feedback("Backup gerado com sucesso.");
+    feedback("Backup completo gerado com sucesso.");
   }
 
   function restaurarBackup(event) {
@@ -420,17 +529,23 @@ function Configuracoes() {
           localStorage.setItem(chave, JSON.stringify(conteudo.dados[chave]));
         });
 
+        localStorage.setItem(
+          "ultimoBackupInfinity",
+          new Date().toLocaleString("pt-BR")
+        );
+
         carregarTudo();
-        feedback("Backup restaurado com sucesso.");
+        feedback("Backup restaurado com sucesso. Recarregue o sistema se necessário.");
       } catch {
         alert("Erro ao restaurar backup.");
       }
     };
 
     leitor.readAsText(arquivo);
-  }
 
-  return (
+    event.target.value = "";
+  }
+    return (
     <div style={styles.container}>
       <section style={styles.hero}>
         <div>
@@ -439,8 +554,8 @@ function Configuracoes() {
           <h1 style={styles.title}>Configurações</h1>
 
           <p style={styles.subtitle}>
-            Gerencie dados do condomínio, usuários, segurança, backup e
-            preferências gerais do sistema.
+            Gerencie dados do condomínio, usuários, segurança, backup,
+            integrações, BI e preferências gerais do sistema.
           </p>
         </div>
 
@@ -468,6 +583,8 @@ function Configuracoes() {
           { id: "usuarios", label: "👥 Usuários" },
           { id: "seguranca", label: "🔐 Segurança" },
           { id: "backup", label: "💾 Backup" },
+          { id: "whatsapp", label: "📲 WhatsApp" },
+          { id: "bi", label: "📊 BI" },
           { id: "preferencias", label: "🎛️ Preferências" }
         ].map((aba) => (
           <button
@@ -712,8 +829,16 @@ function Configuracoes() {
           <div style={styles.panelHeader}>
             <div>
               <span style={styles.panelBadgeGold}>Segurança e senhas</span>
-              <h2 style={styles.panelTitle}>Credenciais do Síndico Mestre</h2>
+              <h2 style={styles.panelTitle}>Credenciais e autenticação</h2>
             </div>
+
+            <button
+              style={styles.primaryButton}
+              onClick={salvarSeguranca}
+              disabled={!isMestre}
+            >
+              Salvar segurança
+            </button>
           </div>
 
           {usandoPadrao ? (
@@ -769,6 +894,55 @@ function Configuracoes() {
                 disabled={!isMestre}
               />
             </Campo>
+
+            <Campo label="JWT ativo no backend">
+              <select
+                value={segurancaConfig.jwtAtivo ? "Sim" : "Não"}
+                onChange={(e) =>
+                  setSegurancaConfig({
+                    ...segurancaConfig,
+                    jwtAtivo: e.target.value === "Sim"
+                  })
+                }
+                style={styles.input}
+                disabled={!isMestre}
+              >
+                <option>Não</option>
+                <option>Sim</option>
+              </select>
+            </Campo>
+
+            <Campo label="Tempo de sessão em minutos">
+              <input
+                type="number"
+                value={segurancaConfig.tempoSessao}
+                onChange={(e) =>
+                  setSegurancaConfig({
+                    ...segurancaConfig,
+                    tempoSessao: Number(e.target.value)
+                  })
+                }
+                style={styles.input}
+                disabled={!isMestre}
+              />
+            </Campo>
+
+            <Campo label="Refresh token futuro">
+              <select
+                value={segurancaConfig.refreshToken ? "Ativo" : "Inativo"}
+                onChange={(e) =>
+                  setSegurancaConfig({
+                    ...segurancaConfig,
+                    refreshToken: e.target.value === "Ativo"
+                  })
+                }
+                style={styles.input}
+                disabled={!isMestre}
+              >
+                <option>Ativo</option>
+                <option>Inativo</option>
+              </select>
+            </Campo>
           </div>
 
           <button
@@ -793,12 +967,17 @@ function Configuracoes() {
           <div style={styles.infoGrid}>
             <InfoCard title="Último backup" value={ultimoBackup} />
             <InfoCard title="Permissão" value={isMestre ? "Liberado" : "Restrito"} />
+            <InfoCard title="Tipo" value="Backup completo" />
           </div>
 
           <div style={styles.backupGrid}>
             <div style={styles.backupCard}>
-              <h3>💾 Gerar Backup</h3>
-              <p>Baixe um arquivo JSON com os principais dados do sistema.</p>
+              <h3>💾 Gerar Backup Completo</h3>
+              <p>
+                Baixe um arquivo JSON com configurações, usuários,
+                avisos, reservas, visitantes, encomendas, BI,
+                relatórios, notificações e históricos.
+              </p>
 
               <button
                 style={styles.primaryButton}
@@ -811,7 +990,10 @@ function Configuracoes() {
 
             <div style={styles.backupCardGold}>
               <h3>♻️ Restaurar Backup</h3>
-              <p>Restaure dados a partir de um arquivo gerado anteriormente.</p>
+              <p>
+                Restaure dados a partir de um arquivo gerado anteriormente.
+                Esta ação sobrescreve os dados atuais.
+              </p>
 
               <label style={styles.restoreButton}>
                 Selecionar arquivo
@@ -824,6 +1006,190 @@ function Configuracoes() {
                 />
               </label>
             </div>
+          </div>
+        </section>
+      )}
+
+      {abaAtiva === "whatsapp" && (
+        <section style={styles.panel}>
+          <div style={styles.panelHeader}>
+            <div>
+              <span style={styles.panelBadgeGold}>Integração futura</span>
+              <h2 style={styles.panelTitle}>WhatsApp Business</h2>
+            </div>
+
+            <button style={styles.primaryButton} onClick={salvarWhatsapp}>
+              Salvar WhatsApp
+            </button>
+          </div>
+
+          <div style={styles.warningBox}>
+            Esta área prepara o front para integração futura com API de WhatsApp.
+            O envio real só funcionará após conexão com backend.
+          </div>
+
+          <div style={styles.formGrid}>
+            <Campo label="Integração ativa">
+              <select
+                value={whatsappConfig.ativo ? "Sim" : "Não"}
+                onChange={(e) =>
+                  setWhatsappConfig({
+                    ...whatsappConfig,
+                    ativo: e.target.value === "Sim"
+                  })
+                }
+                style={styles.input}
+              >
+                <option>Não</option>
+                <option>Sim</option>
+              </select>
+            </Campo>
+
+            <Campo label="Provider">
+              <select
+                value={whatsappConfig.provider}
+                onChange={(e) =>
+                  setWhatsappConfig({
+                    ...whatsappConfig,
+                    provider: e.target.value
+                  })
+                }
+                style={styles.input}
+              >
+                <option>Evolution</option>
+                <option>Meta Cloud API</option>
+                <option>Z-API</option>
+                <option>Outro</option>
+              </select>
+            </Campo>
+
+            <Campo label="Número da empresa">
+              <input
+                value={whatsappConfig.numeroEmpresa}
+                onChange={(e) =>
+                  setWhatsappConfig({
+                    ...whatsappConfig,
+                    numeroEmpresa: e.target.value
+                  })
+                }
+                style={styles.input}
+              />
+            </Campo>
+
+            <Campo label="Token / API Key">
+              <input
+                value={whatsappConfig.token}
+                onChange={(e) =>
+                  setWhatsappConfig({
+                    ...whatsappConfig,
+                    token: e.target.value
+                  })
+                }
+                style={styles.input}
+              />
+            </Campo>
+
+            <div style={styles.groupFull}>
+              <label style={styles.label}>Webhook</label>
+
+              <input
+                value={whatsappConfig.webhook}
+                onChange={(e) =>
+                  setWhatsappConfig({
+                    ...whatsappConfig,
+                    webhook: e.target.value
+                  })
+                }
+                style={styles.input}
+              />
+            </div>
+          </div>
+        </section>
+      )}
+            {abaAtiva === "bi" && (
+        <section style={styles.panel}>
+          <div style={styles.panelHeader}>
+            <div>
+              <span style={styles.panelBadge}>BI Analytics</span>
+              <h2 style={styles.panelTitle}>Configurações do BI</h2>
+            </div>
+
+            <button style={styles.primaryButton} onClick={salvarBI}>
+              Salvar BI
+            </button>
+          </div>
+
+          <div style={styles.formGrid}>
+            <Campo label="Período padrão">
+              <select
+                value={biConfig.periodoPadrao}
+                onChange={(e) =>
+                  setBiConfig({
+                    ...biConfig,
+                    periodoPadrao: e.target.value
+                  })
+                }
+                style={styles.input}
+              >
+                <option value="geral">Geral</option>
+                <option value="hoje">Hoje</option>
+                <option value="7dias">7 dias</option>
+                <option value="30dias">30 dias</option>
+                <option value="mes">Mês</option>
+                <option value="ano">Ano</option>
+              </select>
+            </Campo>
+
+            <Campo label="Retenção de histórico">
+              <select
+                value={biConfig.retencaoHistorico}
+                onChange={(e) =>
+                  setBiConfig({
+                    ...biConfig,
+                    retencaoHistorico: e.target.value
+                  })
+                }
+                style={styles.input}
+              >
+                <option>3 meses</option>
+                <option>6 meses</option>
+                <option>12 meses</option>
+                <option>24 meses</option>
+                <option>Permanente</option>
+              </select>
+            </Campo>
+
+            <Campo label="Dashboard executivo">
+              <select
+                value={biConfig.dashboardExecutivo ? "Ativo" : "Inativo"}
+                onChange={(e) =>
+                  setBiConfig({
+                    ...biConfig,
+                    dashboardExecutivo: e.target.value === "Ativo"
+                  })
+                }
+                style={styles.input}
+              >
+                <option>Ativo</option>
+                <option>Inativo</option>
+              </select>
+            </Campo>
+
+            <Campo label="Exportação automática">
+              <select
+                value={biConfig.exportacaoAutomatica ? "Ativa" : "Inativa"}
+                onChange={(e) =>
+                  setBiConfig({
+                    ...biConfig,
+                    exportacaoAutomatica: e.target.value === "Ativa"
+                  })
+                }
+                style={styles.input}
+              >
+                <option>Inativa</option>
+                <option>Ativa</option>
+              </select>
+            </Campo>
           </div>
         </section>
       )}
@@ -887,11 +1253,56 @@ function Configuracoes() {
 
           <div style={styles.preferenceGrid}>
             <ToggleCard
-              title="Notificações"
-              description="Preparado para alertas futuros do sistema."
+              title="Notificações gerais"
+              description="Ativa alertas internos do sistema."
               checked={preferencias.notificacoes}
               onChange={(valor) =>
                 setPreferencias({ ...preferencias, notificacoes: valor })
+              }
+            />
+
+            <ToggleCard
+              title="Notificar reservas"
+              description="Registra alertas sobre reservas dos moradores."
+              checked={preferencias.notificarReserva}
+              onChange={(valor) =>
+                setPreferencias({ ...preferencias, notificarReserva: valor })
+              }
+            />
+
+            <ToggleCard
+              title="Notificar encomendas"
+              description="Prepara avisos de encomendas para sistema e WhatsApp."
+              checked={preferencias.notificarEncomenda}
+              onChange={(valor) =>
+                setPreferencias({ ...preferencias, notificarEncomenda: valor })
+              }
+            />
+
+            <ToggleCard
+              title="Notificar ocorrências"
+              description="Alertas de ocorrências registradas pela portaria."
+              checked={preferencias.notificarOcorrencia}
+              onChange={(valor) =>
+                setPreferencias({ ...preferencias, notificarOcorrencia: valor })
+              }
+            />
+
+            <ToggleCard
+              title="Notificar visitantes"
+              description="Alertas sobre entrada, autorização e saída de visitantes."
+              checked={preferencias.notificarVisitante}
+              onChange={(valor) =>
+                setPreferencias({ ...preferencias, notificarVisitante: valor })
+              }
+            />
+
+            <ToggleCard
+              title="Notificar sugestões"
+              description="Alertas de sugestões e reclamações enviadas por moradores."
+              checked={preferencias.notificarSugestao}
+              onChange={(valor) =>
+                setPreferencias({ ...preferencias, notificarSugestao: valor })
               }
             />
 
@@ -953,6 +1364,7 @@ function ToggleCard({ title, description, checked, onChange }) {
     </label>
   );
 }
+
 const styles = {
   container: {
     width: "100%",

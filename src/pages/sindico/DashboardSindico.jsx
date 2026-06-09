@@ -17,7 +17,10 @@ function DashboardSindico() {
     avisos: 0,
     areasComuns: 0,
     ocorrencias: 0,
-    movimentacoes: 0
+    movimentacoes: 0,
+    sugestoes: 0,
+    reclamacoes: 0,
+    notificacoes: 0
   });
 
   const [atividades, setAtividades] = useState([]);
@@ -37,57 +40,119 @@ function DashboardSindico() {
     };
   }, []);
 
+  function lerStorage(chave) {
+    try {
+      return JSON.parse(localStorage.getItem(chave)) || [];
+    } catch {
+      return [];
+    }
+  }
+
+  function normalizarTexto(valor) {
+    return String(valor || "").trim().toLowerCase();
+  }
+
   function carregarDados() {
-    const moradores =
-      JSON.parse(localStorage.getItem("moradores")) || [];
+    const moradores = lerStorage("moradores");
+    const apartamentos = lerStorage("apartamentos");
+    const porteiros = lerStorage("porteiros");
 
-    const apartamentos =
-      JSON.parse(localStorage.getItem("apartamentos")) || [];
+    const prestadores = [
+      ...lerStorage("condominio_prestadores"),
+      ...lerStorage("prestadores_particulares_v2")
+    ];
 
-    const porteiros =
-      JSON.parse(localStorage.getItem("porteiros")) || [];
+    const encomendas = [
+      ...lerStorage("encomendas"),
+      ...lerStorage("encomendas_historico"),
+      ...lerStorage("encomendas_esperadas")
+    ];
 
-    const prestadores =
-      JSON.parse(localStorage.getItem("condominio_prestadores")) || [];
+    const visitantes = [
+      ...lerStorage("visitantes"),
+      ...lerStorage("visitantes_historico")
+    ];
 
-    const encomendas =
-      JSON.parse(localStorage.getItem("encomendas")) || [];
+    const reservas = lerStorage("reservas");
 
-    const visitantes =
-      JSON.parse(localStorage.getItem("visitantes")) || [];
+    const avisos = [
+      ...lerStorage("avisos"),
+      ...lerStorage("avisos_sindico")
+    ];
 
-    const reservas =
-      JSON.parse(localStorage.getItem("reservas")) || [];
+    const notificacoesMorador = lerStorage("notificacoesMorador");
 
-    const avisos =
-      JSON.parse(localStorage.getItem("avisos")) || [];
+    const areasComuns = lerStorage("areasComuns");
 
-    const areasComuns =
-      JSON.parse(localStorage.getItem("areasComuns")) || [];
+    const ocorrencias = [
+      ...lerStorage("ocorrencias"),
+      ...lerStorage("historico_ocorrencias"),
+      ...lerStorage("livro_ocorrencias")
+    ];
 
-    const ocorrencias =
-      JSON.parse(localStorage.getItem("ocorrencias")) || [];
+    const sugestoesReclamacoes = [
+      ...lerStorage("sugestoesMorador"),
+      ...lerStorage("sugestoes_reclamacoes")
+    ];
 
-    const movimentacoes =
-      JSON.parse(localStorage.getItem("movimentacoes")) || [];
+    const movimentacoes = [
+      ...lerStorage("movimentacoes"),
+      ...lerStorage("relatorios_operacionais")
+    ];
 
-    const encomendasPendentes = encomendas.filter(
-      (e) =>
-        e.status === "pendente" ||
-        e.status === "Pendente"
-    );
+    const encomendasPendentes = encomendas.filter((e) => {
+      const status = normalizarTexto(e.status || e.statusSindico);
 
-    const reservasPendentes = reservas.filter(
-      (r) =>
-        r.status === "pendente" ||
-        r.status === "Pendente"
-    );
+      return (
+        status === "pendente" ||
+        status === "aguardando" ||
+        status === "aguardando retirada" ||
+        status === "esperada"
+      );
+    });
 
-    const ocorrenciasPendentes = ocorrencias.filter(
-      (o) =>
-        o.status !== "Resolvida" &&
-        o.status !== "Resolvido"
-    );
+    const reservasPendentes = reservas.filter((r) => {
+      const status = normalizarTexto(r.status);
+
+      return (
+        status === "pendente" ||
+        status === "em análise" ||
+        status === "em analise"
+      );
+    });
+
+    const ocorrenciasPendentes = ocorrencias.filter((o) => {
+      const status = normalizarTexto(o.status);
+
+      return (
+        status !== "resolvida" &&
+        status !== "resolvido" &&
+        status !== "finalizada" &&
+        status !== "finalizado"
+      );
+    });
+
+    const sugestoesAbertas = sugestoesReclamacoes.filter((item) => {
+      const tipo = normalizarTexto(item.tipoRegistro || item.tipo || item.categoria);
+      const status = normalizarTexto(item.status);
+
+      return (
+        tipo.includes("sugest") &&
+        status !== "resolvido" &&
+        status !== "resolvida"
+      );
+    });
+
+    const reclamacoesAbertas = sugestoesReclamacoes.filter((item) => {
+      const tipo = normalizarTexto(item.tipoRegistro || item.tipo || item.categoria);
+      const status = normalizarTexto(item.status);
+
+      return (
+        tipo.includes("reclama") &&
+        status !== "resolvido" &&
+        status !== "resolvida"
+      );
+    });
 
     setDados({
       moradores: moradores.length,
@@ -100,26 +165,31 @@ function DashboardSindico() {
       avisos: avisos.length,
       areasComuns: areasComuns.length,
       ocorrencias: ocorrenciasPendentes.length,
-      movimentacoes: movimentacoes.length
+      movimentacoes: movimentacoes.length,
+      sugestoes: sugestoesAbertas.length,
+      reclamacoes: reclamacoesAbertas.length,
+      notificacoes: notificacoesMorador.length
     });
 
     const historico = [
       ...ocorrencias.slice(-4).map((o) => ({
         icon: "💬",
-        titulo: o.titulo || "Ocorrência registrada",
+        titulo: o.titulo || o.tipo || "Ocorrência registrada",
         texto:
           o.origem === "morador"
-            ? `Solicitação do morador ${o.moradorNome || ""}`
+            ? `Solicitação do morador ${o.moradorNome || o.morador || ""}`
             : "Ocorrência registrada pela portaria",
-        tempo: `${o.data || ""} ${o.hora || ""}`,
+        tempo: `${o.data || o.criadoEm || ""} ${o.hora || ""}`,
         tipo: "Ocorrência"
       })),
 
       ...encomendas.slice(-4).map((e) => ({
         icon: "📦",
-        titulo: "Encomenda recebida",
-        texto: `Apartamento ${e.apartamento || "N/A"}`,
-        tempo: e.data || "Agora",
+        titulo: e.status === "esperada" || e.status === "Esperada"
+          ? "Encomenda esperada"
+          : "Encomenda registrada",
+        texto: `Apartamento ${e.apartamento || e.apto || "N/A"}`,
+        tempo: e.data || e.criadoEm || e.recebidoEm || "Agora",
         tipo: "Encomenda"
       })),
 
@@ -135,8 +205,20 @@ function DashboardSindico() {
         icon: "👤",
         titulo: "Visitante registrado",
         texto: v.nome || "Visitante",
-        tempo: v.horarioEntrada || v.hora || "Agora",
+        tempo: v.horarioEntrada || v.hora || v.data || "Agora",
         tipo: "Visitante"
+      })),
+
+      ...sugestoesReclamacoes.slice(-4).map((s) => ({
+        icon: normalizarTexto(s.tipoRegistro || s.tipo || s.categoria).includes("reclama")
+          ? "⚠️"
+          : "💡",
+        titulo: s.titulo || s.tipoRegistro || s.tipo || "Solicitação do morador",
+        texto: s.descricao || s.mensagem || s.observacao || "Registro enviado pelo morador",
+        tempo: s.data || s.criadoEm || "Agora",
+        tipo: normalizarTexto(s.tipoRegistro || s.tipo || s.categoria).includes("reclama")
+          ? "Reclamação"
+          : "Sugestão"
       }))
     ];
 
@@ -147,7 +229,9 @@ function DashboardSindico() {
     dados.encomendas +
     dados.visitantes +
     dados.reservas +
-    dados.ocorrencias;
+    dados.ocorrencias +
+    dados.sugestoes +
+    dados.reclamacoes;
 
   const maxGrafico = Math.max(
     dados.moradores,
@@ -158,6 +242,9 @@ function DashboardSindico() {
     dados.visitantes,
     dados.reservas,
     dados.ocorrencias,
+    dados.sugestoes,
+    dados.reclamacoes,
+    dados.movimentacoes,
     1
   );
 
@@ -169,13 +256,9 @@ function DashboardSindico() {
     <div style={styles.container}>
       <div style={styles.hero}>
         <div>
-          <span style={styles.heroBadge}>
-            👑 Central de comando
-          </span>
+          <span style={styles.heroBadge}>👑 Central de comando</span>
 
-          <h1 style={styles.title}>
-            Gestão Premium do Condomínio
-          </h1>
+          <h1 style={styles.title}>Gestão Premium do Condomínio</h1>
 
           <p style={styles.subtitle}>
             Visão executiva com indicadores reais, módulos integrados
@@ -189,17 +272,11 @@ function DashboardSindico() {
         </div>
 
         <div style={styles.heroPanel}>
-          <p style={styles.heroLabel}>
-            Operações ativas
-          </p>
+          <p style={styles.heroLabel}>Operações ativas</p>
 
-          <h3 style={styles.heroNumber}>
-            {totalOperacao}
-          </h3>
+          <h3 style={styles.heroNumber}>{totalOperacao}</h3>
 
-          <span style={styles.heroStatus}>
-            tempo real
-          </span>
+          <span style={styles.heroStatus}>tempo real</span>
         </div>
       </div>
 
@@ -209,6 +286,7 @@ function DashboardSindico() {
           onClick={() => navigate("/dashboard/moradores")}
         >
           <span style={styles.quickIconLight}>👥</span>
+
           <div>
             <strong>Moradores</strong>
             <p>Gerenciar cadastros</p>
@@ -220,6 +298,7 @@ function DashboardSindico() {
           onClick={() => navigate("/dashboard/apartamentos")}
         >
           <span style={styles.quickIcon}>🏢</span>
+
           <div>
             <strong>Apartamentos</strong>
             <p>Unidades cadastradas</p>
@@ -231,9 +310,10 @@ function DashboardSindico() {
           onClick={() => navigate("/dashboard/avisos")}
         >
           <span style={styles.quickIcon}>📢</span>
+
           <div>
             <strong>Avisos</strong>
-            <p>Comunicação oficial</p>
+            <p>Central do síndico</p>
           </div>
         </button>
 
@@ -242,6 +322,7 @@ function DashboardSindico() {
           onClick={() => setMostrarManual(true)}
         >
           <span style={styles.quickIcon}>📘</span>
+
           <div>
             <strong>Guia rápido</strong>
             <p>Manual de uso</p>
@@ -252,22 +333,14 @@ function DashboardSindico() {
       <div style={styles.cards}>
         <div style={styles.cardPrimary}>
           <div>
-            <p style={styles.cardLabelLight}>
-              Moradores cadastrados
-            </p>
+            <p style={styles.cardLabelLight}>Moradores cadastrados</p>
 
-            <h2 style={styles.cardNumberLight}>
-              {dados.moradores}
-            </h2>
+            <h2 style={styles.cardNumberLight}>{dados.moradores}</h2>
 
-            <span style={styles.cardHintLight}>
-              base residencial
-            </span>
+            <span style={styles.cardHintLight}>base residencial</span>
           </div>
 
-          <div style={styles.cardIconLight}>
-            👥
-          </div>
+          <div style={styles.cardIconLight}>👥</div>
         </div>
 
         <KpiCard icon="🏢" label="Apartamentos" value={dados.apartamentos} color="#166534" bg="#dcfce7" />
@@ -277,9 +350,11 @@ function DashboardSindico() {
         <KpiCard icon="👤" label="Visitantes" value={dados.visitantes} color="#4338ca" bg="#e0e7ff" />
         <KpiCard icon="📅" label="Reservas pendentes" value={dados.reservas} color="#be123c" bg="#ffe4e6" />
         <KpiCard icon="💬" label="Ocorrências abertas" value={dados.ocorrencias} color="#dc2626" bg="#fee2e2" />
+        <KpiCard icon="💡" label="Sugestões abertas" value={dados.sugestoes} color="#166534" bg="#dcfce7" />
+        <KpiCard icon="⚠️" label="Reclamações abertas" value={dados.reclamacoes} color="#b91c1c" bg="#fee2e2" />
+        <KpiCard icon="📢" label="Central do síndico" value={dados.avisos} color="#92400e" bg="#fef3c7" />
       </div>
-
-      <div style={styles.middleGrid}>
+            <div style={styles.middleGrid}>
         <div style={styles.chartCard}>
           <div style={styles.sectionHeader}>
             <div>
@@ -306,6 +381,9 @@ function DashboardSindico() {
             <ChartBar label="Visitantes" value={dados.visitantes} width={larguraGrafico(dados.visitantes)} icon="👤" />
             <ChartBar label="Reservas" value={dados.reservas} width={larguraGrafico(dados.reservas)} icon="📅" />
             <ChartBar label="Ocorrências" value={dados.ocorrencias} width={larguraGrafico(dados.ocorrencias)} icon="💬" />
+            <ChartBar label="Sugestões" value={dados.sugestoes} width={larguraGrafico(dados.sugestoes)} icon="💡" />
+            <ChartBar label="Reclamações" value={dados.reclamacoes} width={larguraGrafico(dados.reclamacoes)} icon="⚠️" />
+            <ChartBar label="Movimentações" value={dados.movimentacoes} width={larguraGrafico(dados.movimentacoes)} icon="📈" />
           </div>
         </div>
 
@@ -323,6 +401,8 @@ function DashboardSindico() {
             <PriorityItem icon="📅" label="Reservas pendentes" value={dados.reservas} alert={dados.reservas > 0} />
             <PriorityItem icon="📦" label="Encomendas pendentes" value={dados.encomendas} alert={dados.encomendas > 0} />
             <PriorityItem icon="👤" label="Visitantes registrados" value={dados.visitantes} alert={dados.visitantes > 0} />
+            <PriorityItem icon="💡" label="Sugestões abertas" value={dados.sugestoes} alert={dados.sugestoes > 0} />
+            <PriorityItem icon="⚠️" label="Reclamações abertas" value={dados.reclamacoes} alert={dados.reclamacoes > 0} />
           </div>
 
           <button
@@ -426,8 +506,8 @@ function DashboardSindico() {
               <ManualItem number="02" title="Cadastre moradores" text="Vincule cada morador ao apartamento correto para liberar integração com encomendas, visitantes e login do morador." />
               <ManualItem number="03" title="Cadastre porteiros" text="Os porteiros terão login próprio para registrar visitantes, encomendas e ocorrências." />
               <ManualItem number="04" title="Crie áreas comuns" text="As áreas cadastradas aparecem no módulo de reservas dos moradores." />
-              <ManualItem number="05" title="Publique avisos" text="Os comunicados aparecem automaticamente no painel dos moradores." />
-              <ManualItem number="06" title="Acompanhe operações" text="Reservas, ocorrências, visitantes e encomendas aparecem no dashboard conforme forem gerados." />
+              <ManualItem number="05" title="Publique avisos" text="Os comunicados e registros da central aparecem no painel do síndico e alimentam relatórios e BI." />
+              <ManualItem number="06" title="Acompanhe operações" text="Reservas, ocorrências, visitantes, reclamações e encomendas aparecem no dashboard conforme forem gerados." />
             </div>
           </div>
         </div>

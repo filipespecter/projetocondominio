@@ -7,15 +7,33 @@ function Relatorios() {
     moradores: "moradores",
     apartamentos: "apartamentos",
     porteiros: "porteiros",
+
     visitantes: "visitantes",
+    visitantesHistorico: "visitantes_historico",
+
     encomendas: "encomendas",
+    encomendasHistorico: "encomendas_historico",
+    encomendasEsperadas: "encomendas_esperadas",
+
     reservas: "reservas",
     areasComuns: "areasComuns",
+
     avisos: "avisos",
+    avisosSindico: "avisos_sindico",
+    notificacoesMorador: "notificacoesMorador",
+
     prestadores: "condominio_prestadores",
     prestadoresParticulares: "prestadores_particulares_v2",
+
     ocorrencias: "ocorrencias",
+    historicoOcorrencias: "historico_ocorrencias",
+
     sugestoes: "sugestoesMorador",
+    sugestoesReclamacoes: "sugestoes_reclamacoes",
+
+    movimentacoes: "movimentacoes",
+    relatoriosOperacionais: "relatorios_operacionais",
+
     historico: "historico_relatorios_greencondo"
   };
 
@@ -25,6 +43,7 @@ function Relatorios() {
   const [assinatura, setAssinatura] = useState("Síndico / Administração");
   const [observacoes, setObservacoes] = useState("");
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState("");
+
   const [historico, setHistorico] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem(STORAGE_KEYS.historico)) || [];
@@ -42,7 +61,8 @@ function Relatorios() {
     incluirOcorrencias: false,
     incluirPrestadores: false,
     incluirAvisos: false,
-    incluirAreas: false
+    incluirAreas: false,
+    incluirOperacional: false
   });
 
   useEffect(() => {
@@ -62,17 +82,46 @@ function Relatorios() {
       moradores: lerStorage(STORAGE_KEYS.moradores),
       apartamentos: lerStorage(STORAGE_KEYS.apartamentos),
       porteiros: lerStorage(STORAGE_KEYS.porteiros),
-      visitantes: lerStorage(STORAGE_KEYS.visitantes),
-      encomendas: lerStorage(STORAGE_KEYS.encomendas),
+
+      visitantes: [
+        ...lerStorage(STORAGE_KEYS.visitantes),
+        ...lerStorage(STORAGE_KEYS.visitantesHistorico)
+      ],
+
+      encomendas: [
+        ...lerStorage(STORAGE_KEYS.encomendas),
+        ...lerStorage(STORAGE_KEYS.encomendasHistorico),
+        ...lerStorage(STORAGE_KEYS.encomendasEsperadas)
+      ],
+
       reservas: lerStorage(STORAGE_KEYS.reservas),
       areasComuns: lerStorage(STORAGE_KEYS.areasComuns),
-      avisos: lerStorage(STORAGE_KEYS.avisos),
+
+      avisos: [
+        ...lerStorage(STORAGE_KEYS.avisos),
+        ...lerStorage(STORAGE_KEYS.avisosSindico),
+        ...lerStorage(STORAGE_KEYS.notificacoesMorador)
+      ],
+
       prestadores: [
         ...lerStorage(STORAGE_KEYS.prestadores),
         ...lerStorage(STORAGE_KEYS.prestadoresParticulares)
       ],
-      ocorrencias: lerStorage(STORAGE_KEYS.ocorrencias),
-      sugestoes: lerStorage(STORAGE_KEYS.sugestoes)
+
+      ocorrencias: [
+        ...lerStorage(STORAGE_KEYS.ocorrencias),
+        ...lerStorage(STORAGE_KEYS.historicoOcorrencias)
+      ],
+
+      sugestoes: [
+        ...lerStorage(STORAGE_KEYS.sugestoes),
+        ...lerStorage(STORAGE_KEYS.sugestoesReclamacoes)
+      ],
+
+      movimentacoes: [
+        ...lerStorage(STORAGE_KEYS.movimentacoes),
+        ...lerStorage(STORAGE_KEYS.relatoriosOperacionais)
+      ]
     });
 
     setUltimaAtualizacao(new Date().toLocaleString("pt-BR"));
@@ -89,7 +138,9 @@ function Relatorios() {
       item.recebidoEm,
       item.retiradoEm,
       item.dataReserva,
-      item.dataVisita
+      item.dataVisita,
+      item.registradoEm,
+      item.canceladaEm
     ].find(Boolean);
 
     if (!valor) return null;
@@ -157,7 +208,7 @@ function Relatorios() {
       id: "encomendas",
       nome: "Encomendas",
       icon: "📦",
-      descricao: "Pacotes pendentes e retirados."
+      descricao: "Pacotes pendentes, esperados e retirados."
     },
     {
       id: "reservas",
@@ -181,13 +232,19 @@ function Relatorios() {
       id: "comunicacao",
       nome: "Comunicação",
       icon: "📢",
-      descricao: "Avisos e comunicados enviados."
+      descricao: "Avisos, notificações e central do síndico."
     },
     {
       id: "areas",
       nome: "Áreas Comuns",
       icon: "🏊",
       descricao: "Estruturas e utilização."
+    },
+    {
+      id: "operacional",
+      nome: "Operacional",
+      icon: "📈",
+      descricao: "Movimentações e registros operacionais."
     },
     {
       id: "personalizado",
@@ -244,7 +301,7 @@ function Relatorios() {
           normalizarLinha(item.nome),
           normalizarLinha(item.apartamento || item.apto),
           normalizarLinha(item.morador || item.responsavel),
-          normalizarLinha(item.status),
+          normalizarLinha(item.status || item.statusSindico),
           normalizarLinha(item.data || item.dataEntrada || item.criadoEm)
         ])
       };
@@ -257,8 +314,8 @@ function Relatorios() {
         linhas: lista.map((item) => [
           normalizarLinha(item.nome || item.destinatario || item.morador),
           normalizarLinha(item.apartamento || item.apto),
-          normalizarLinha(item.status),
-          normalizarLinha(item.data || item.recebidoEm),
+          normalizarLinha(item.status || item.statusSindico),
+          normalizarLinha(item.data || item.recebidoEm || item.criadoEm),
           normalizarLinha(item.descricao || item.tipo || item.observacao)
         ])
       };
@@ -269,7 +326,7 @@ function Relatorios() {
         titulo: "Reservas",
         colunas: ["Morador", "Apartamento", "Área", "Status", "Data"],
         linhas: lista.map((item) => [
-          normalizarLinha(item.morador || item.nome),
+          normalizarLinha(item.morador || item.moradorNome || item.nome),
           normalizarLinha(item.apartamento || item.apto),
           normalizarLinha(item.area || item.areaComum),
           normalizarLinha(item.status),
@@ -283,11 +340,11 @@ function Relatorios() {
         titulo: "Ocorrências",
         colunas: ["Título", "Responsável", "Status", "Data", "Descrição"],
         linhas: lista.map((item) => [
-          normalizarLinha(item.titulo || item.tipo),
-          normalizarLinha(item.responsavel || item.criadoPor),
+          normalizarLinha(item.titulo || item.tipo || item.categoria),
+          normalizarLinha(item.responsavel || item.criadoPor || item.porteiroNome),
           normalizarLinha(item.status),
-          normalizarLinha(item.data || item.criadoEm),
-          normalizarLinha(item.descricao || item.observacao)
+          normalizarLinha(item.data || item.criadoEm || item.registradoEm),
+          normalizarLinha(item.descricao || item.observacao || item.relato)
         ])
       };
     }
@@ -311,13 +368,13 @@ function Relatorios() {
 
       return {
         titulo: "Comunicação",
-        colunas: ["Título", "Prioridade", "Destino", "Data", "Mensagem"],
+        colunas: ["Título", "Categoria", "Origem", "Status", "Data"],
         linhas: listaAvisos.map((item) => [
           normalizarLinha(item.titulo),
-          normalizarLinha(item.prioridade),
-          normalizarLinha(item.destino || item.publico || "Todos"),
-          normalizarLinha(item.data || item.criadoEm),
-          normalizarLinha(item.mensagem || item.descricao)
+          normalizarLinha(item.categoria || item.tipo),
+          normalizarLinha(item.origem || item.responsavel),
+          normalizarLinha(item.status),
+          normalizarLinha(item.data || item.criadoEm)
         ])
       };
     }
@@ -346,6 +403,20 @@ function Relatorios() {
       };
     }
 
+    if (modulo === "operacional") {
+      return {
+        titulo: "Operacional",
+        colunas: ["Tipo", "Ação", "Origem", "Status", "Data"],
+        linhas: lista.map((item) => [
+          normalizarLinha(item.tipo),
+          normalizarLinha(item.acao || item.titulo || item.descricao),
+          normalizarLinha(item.origem || item.origemModulo || item.usuario),
+          normalizarLinha(item.status),
+          normalizarLinha(item.data || item.criadoEm || item.registradoEm)
+        ])
+      };
+    }
+
     return {
       titulo: "Dados",
       colunas: ["Nome", "Status", "Data"],
@@ -365,6 +436,8 @@ function Relatorios() {
     const ocorrencias = filtrarPeriodo(dados.ocorrencias || []);
     const prestadores = filtrarPeriodo(dados.prestadores || []);
     const avisos = filtrarPeriodo(dados.avisos || []);
+    const sugestoes = filtrarPeriodo(dados.sugestoes || []);
+    const movimentacoes = filtrarPeriodo(dados.movimentacoes || []);
     const areas = dados.areasComuns || [];
 
     if (tipoRelatorio === "executivo") {
@@ -378,8 +451,10 @@ function Relatorios() {
           `Encomendas no período: ${encomendas.length}`,
           `Reservas no período: ${reservas.length}`,
           `Ocorrências no período: ${ocorrencias.length}`,
+          `Sugestões/Reclamações no período: ${sugestoes.length}`,
           `Prestadores no período: ${prestadores.length}`,
-          `Avisos no período: ${avisos.length}`,
+          `Comunicações no período: ${avisos.length}`,
+          `Movimentações operacionais no período: ${movimentacoes.length}`,
           `Áreas comuns cadastradas: ${areas.length}`
         ],
         tabelas: [
@@ -392,8 +467,10 @@ function Relatorios() {
               ["Encomendas", encomendas.length],
               ["Reservas", reservas.length],
               ["Ocorrências", ocorrencias.length],
+              ["Sugestões/Reclamações", sugestoes.length],
               ["Prestadores", prestadores.length],
               ["Comunicação", avisos.length],
+              ["Operacional", movimentacoes.length],
               ["Áreas Comuns", areas.length]
             ]
           }
@@ -434,6 +511,10 @@ function Relatorios() {
 
       if (relatorioPersonalizado.incluirAreas) {
         tabelas.push(montarTabelaModulo("areas"));
+      }
+
+      if (relatorioPersonalizado.incluirOperacional) {
+        tabelas.push(montarTabelaModulo("operacional"));
       }
 
       return {
@@ -484,13 +565,9 @@ function Relatorios() {
 
     setHistorico(atualizado);
 
-    localStorage.setItem(
-      STORAGE_KEYS.historico,
-      JSON.stringify(atualizado)
-    );
+    localStorage.setItem(STORAGE_KEYS.historico, JSON.stringify(atualizado));
   }
-
-  function gerarPDF() {
+    function gerarPDF() {
     const doc = new jsPDF();
     const dataGeracao = new Date().toLocaleString("pt-BR");
 
@@ -813,6 +890,14 @@ function Relatorios() {
                   atualizarPersonalizado("incluirAreas", valor)
                 }
               />
+
+              <CheckOption
+                label="Operacional"
+                checked={relatorioPersonalizado.incluirOperacional}
+                onChange={(valor) =>
+                  atualizarPersonalizado("incluirOperacional", valor)
+                }
+              />
             </div>
           )}
 
@@ -911,10 +996,7 @@ function Relatorios() {
                   <tbody>
                     {tabela.linhas.length === 0 ? (
                       <tr>
-                        <td
-                          colSpan={tabela.colunas.length}
-                          style={styles.td}
-                        >
+                        <td colSpan={tabela.colunas.length} style={styles.td}>
                           Sem registros para o período selecionado.
                         </td>
                       </tr>

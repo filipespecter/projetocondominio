@@ -18,7 +18,6 @@ import {
   FaClipboardList,
   FaBuilding,
   FaCog,
-  FaExchangeAlt,
   FaSignOutAlt,
   FaHardHat
 } from "react-icons/fa";
@@ -66,14 +65,10 @@ function DashboardLayout() {
       <aside style={styles.sidebar}>
         <div>
           <div style={styles.logoContainer}>
-            <div style={styles.logoIcon}>
-              🏢
-            </div>
+            <div style={styles.logoIcon}>🏢</div>
 
             <div>
-              <h2 style={styles.logo}>
-                Condomínio
-              </h2>
+              <h2 style={styles.logo}>Condomínio</h2>
 
               <p style={styles.logoSub}>
                 Painel Executivo
@@ -175,13 +170,6 @@ function DashboardLayout() {
               icon={<FaDoorOpen />}
               label="Áreas comuns"
             />
-
-            <MenuItem
-              to="/dashboard/movimentacoes"
-              active={itemAtivo("/dashboard/movimentacoes")}
-              icon={<FaExchangeAlt />}
-              label="Movimentações"
-            />
           </MenuGroup>
 
           <MenuGroup title="ANÁLISE E GESTÃO">
@@ -226,10 +214,7 @@ function DashboardLayout() {
             </p>
           </div>
 
-          <button
-            style={styles.logoutButton}
-            onClick={sair}
-          >
+          <button style={styles.logoutButton} onClick={sair}>
             <FaSignOutAlt />
             Encerrar sessão
           </button>
