@@ -277,6 +277,20 @@ function BIAnalytics() {
               anterior={comparativos.ocorrencias?.anterior || 0}
               variacao={comparativos.ocorrencias?.variacao}
             />
+
+            <CompareCard
+              title="Sugestões"
+              atual={comparativos.sugestoes?.atual || 0}
+              anterior={comparativos.sugestoes?.anterior || 0}
+              variacao={comparativos.sugestoes?.variacao}
+            />
+
+            <CompareCard
+              title="Reclamações"
+              atual={comparativos.reclamacoes?.atual || 0}
+              anterior={comparativos.reclamacoes?.anterior || 0}
+              variacao={comparativos.reclamacoes?.variacao}
+            />
           </section>
 
           <section style={styles.indicatorsGrid}>
@@ -321,13 +335,40 @@ function BIAnalytics() {
               value={indicadores.totalOcorrencias || 0}
               detail={`${indicadores.totalOcorrenciasAbertas || 0} abertas`}
             />
+
+            <IndicatorCard
+              icon="💡"
+              title="Sugestões"
+              value={indicadores.totalSugestoes || 0}
+              detail={`${indicadores.totalSugestoesResolvidas || 0} resolvidas`}
+            />
+
+            <IndicatorCard
+              icon="⚠️"
+              title="Reclamações"
+              value={indicadores.totalReclamacoes || 0}
+              detail={`${indicadores.totalReclamacoesAbertas || 0} abertas`}
+            />
+
+            <IndicatorCard
+              icon="📢"
+              title="Central Síndico"
+              value={indicadores.totalAvisosSindico || 0}
+              detail={`${indicadores.totalPendenciasSindico || 0} pendências`}
+            />
+
+            <IndicatorCard
+              icon="🔔"
+              title="Notificações"
+              value={indicadores.totalNotificacoesMorador || 0}
+              detail="Moradores"
+            />
           </section>
+
           <div style={styles.extraGrid}>
             <HeatMap dados={distribuicao} />
 
-            <TrendAnalysis
-              comparativos={comparativos}
-            />
+            <TrendAnalysis comparativos={comparativos} />
           </div>
 
           <section style={styles.commandCenterGrid}>
@@ -399,6 +440,21 @@ function BIAnalytics() {
                 />
 
                 <MiniMetric
+                  label="Reclamações abertas"
+                  value={indicadores.totalReclamacoesAbertas || 0}
+                />
+
+                <MiniMetric
+                  label="Sugestões abertas"
+                  value={indicadores.totalSugestoesAbertas || 0}
+                />
+
+                <MiniMetric
+                  label="Pendências do síndico"
+                  value={indicadores.totalPendenciasSindico || 0}
+                />
+
+                <MiniMetric
                   label="Visitantes ativos"
                   value={indicadores.totalVisitantesAtivos || 0}
                 />
@@ -437,6 +493,34 @@ function BIAnalytics() {
           </div>
 
           <div style={styles.insightsPanel}>
+            <PanelHeader
+              badge="Central do Síndico"
+              title="Pendências Administrativas"
+              gold
+            />
+
+            <div style={styles.centralBox}>
+              <MiniMetric
+                label="Registros na Central"
+                value={indicadores.totalAvisosSindico || 0}
+              />
+
+              <MiniMetric
+                label="Pendências do síndico"
+                value={indicadores.totalPendenciasSindico || 0}
+              />
+
+              <MiniMetric
+                label="Reclamações abertas"
+                value={indicadores.totalReclamacoesAbertas || 0}
+              />
+
+              <MiniMetric
+                label="Sugestões abertas"
+                value={indicadores.totalSugestoesAbertas || 0}
+              />
+            </div>
+
             <PanelHeader
               badge="Insights"
               title="Leitura inteligente"
@@ -481,6 +565,7 @@ const styles = {
     padding: "4px",
     boxSizing: "border-box"
   },
+
   extraGrid: {
     display: "grid",
     gridTemplateColumns:
@@ -488,6 +573,7 @@ const styles = {
     gap: "22px",
     marginBottom: "22px"
   },
+
   hero: {
     position: "relative",
     overflow: "hidden",
@@ -785,6 +871,12 @@ const styles = {
     borderRadius: "32px",
     padding: "26px",
     color: "white"
+  },
+
+  centralBox: {
+    display: "grid",
+    gap: "10px",
+    marginBottom: "22px"
   },
 
   insightsList: {

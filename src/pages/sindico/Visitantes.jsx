@@ -117,6 +117,7 @@ function Visitantes() {
       acao,
       origem: "Síndico",
       titulo: `Visitante ${visitante.nome}`,
+      visitanteId: visitante.id,
       nome: visitante.nome,
       apartamento: visitante.apartamento,
       status: visitante.status,
@@ -125,7 +126,9 @@ function Visitantes() {
         hour: "2-digit",
         minute: "2-digit"
       }),
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      impactaBI: true,
+      origemModulo: "Visitantes"
     };
 
     salvarStorage(STORAGE_MOVIMENTACOES, [nova, ...movimentacoes]);
@@ -139,6 +142,7 @@ function Visitantes() {
       tipo: "Visitante",
       acao,
       origem: "Síndico",
+      visitanteId: visitante.id,
       nome: visitante.nome,
       documento: visitante.documento,
       apartamento: visitante.apartamento,
@@ -148,7 +152,9 @@ function Visitantes() {
       status: visitante.status,
       data: visitante.data || new Date().toLocaleDateString("pt-BR"),
       entrada: visitante.entrada || visitante.horarioEntrada || "",
-      saida: visitante.saida || visitante.horarioSaida || ""
+      saida: visitante.saida || visitante.horarioSaida || "",
+      impactaRelatorio: true,
+      origemModulo: "Visitantes"
     };
 
     salvarStorage(STORAGE_RELATORIOS, [novo, ...relatorios]);
@@ -172,7 +178,8 @@ function Visitantes() {
       data: visitante.data || new Date().toLocaleDateString("pt-BR"),
       entrada: visitante.entrada || visitante.horarioEntrada || "",
       saida: visitante.saida || visitante.horarioSaida || "",
-      registradoEm: new Date().toLocaleString("pt-BR")
+      registradoEm: new Date().toLocaleString("pt-BR"),
+      origemModulo: "Visitantes"
     };
 
     salvarStorage(STORAGE_HISTORICO, [novo, ...historico]);
@@ -183,6 +190,7 @@ function Visitantes() {
 
     const novo = {
       id: Date.now() + 3,
+      visitanteId: visitante.id,
       categoria: "Visitante",
       origem: "Síndico",
       titulo: `Visitante ${acao} - ${visitante.nome}`,
@@ -195,7 +203,11 @@ function Visitantes() {
       status: visitante.status,
       respostaSindico: "",
       cienciaSindico: true,
-      data: new Date().toLocaleDateString("pt-BR")
+      data: new Date().toLocaleDateString("pt-BR"),
+      impactaBI: true,
+      impactaRelatorio: true,
+      exibirNaCentral: true,
+      origemModulo: "Visitantes"
     };
 
     salvarStorage(STORAGE_AVISOS_SINDICO, [novo, ...avisos]);
@@ -213,8 +225,14 @@ function Visitantes() {
       aviso.titulo?.includes(visitante.nome)
         ? {
             ...aviso,
+            visitanteId: visitante.id,
             status: visitante.status,
-            cienciaSindico: true
+            cienciaSindico: true,
+            dataAtualizacao: new Date().toLocaleString("pt-BR"),
+            impactaBI: true,
+            impactaRelatorio: true,
+            exibirNaCentral: true,
+            origemModulo: "Visitantes"
           }
         : aviso
     );
@@ -267,7 +285,11 @@ function Visitantes() {
         agora.toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit"
-        })
+        }),
+      impactaBI: true,
+      impactaRelatorio: true,
+      exibirNaCentral: true,
+      origemModulo: "Visitantes"
     };
 
     let listaAtualizada = [];
@@ -381,7 +403,11 @@ function Visitantes() {
         saidaEm:
           status === "Saiu"
             ? agora.toLocaleString("pt-BR")
-            : v.saidaEm
+            : v.saidaEm,
+        impactaBI: true,
+        impactaRelatorio: true,
+        exibirNaCentral: true,
+        origemModulo: "Visitantes"
       };
 
       return visitanteAtualizado;
@@ -698,6 +724,13 @@ function Visitantes() {
 
                   <div style={styles.actionRow}>
                     <button
+                      style={styles.authorizeBtn}
+                      onClick={() => mudarStatus(v.id, "Autorizado")}
+                    >
+                      Autorizar
+                    </button>
+
+                    <button
                       style={styles.enterBtn}
                       onClick={() => mudarStatus(v.id, "Em Visita")}
                     >
@@ -709,13 +742,6 @@ function Visitantes() {
                       onClick={() => mudarStatus(v.id, "Saiu")}
                     >
                       Saiu
-                    </button>
-
-                    <button
-                      style={styles.editBtn}
-                      onClick={() => editarVisitante(v)}
-                    >
-                      Editar
                     </button>
 
                     <button
@@ -1226,6 +1252,16 @@ const styles = {
     marginTop: "18px"
   },
 
+  authorizeBtn: {
+    background: "#dbeafe",
+    color: "#1d4ed8",
+    border: "none",
+    padding: "11px",
+    borderRadius: "13px",
+    cursor: "pointer",
+    fontWeight: "900"
+  },
+
   enterBtn: {
     background: "#dcfce7",
     color: "#166534",
@@ -1239,16 +1275,6 @@ const styles = {
   exitBtn: {
     background: "#f3f4f6",
     color: "#374151",
-    border: "none",
-    padding: "11px",
-    borderRadius: "13px",
-    cursor: "pointer",
-    fontWeight: "900"
-  },
-
-  editBtn: {
-    background: "#dbeafe",
-    color: "#1d4ed8",
     border: "none",
     padding: "11px",
     borderRadius: "13px",

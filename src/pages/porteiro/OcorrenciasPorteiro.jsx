@@ -18,9 +18,7 @@ function OcorrenciasPorteiro() {
     return lerStorage(STORAGE_KEY);
   });
 
-  const [novaOcorrencia, setNovaOcorrencia] =
-    useState(estadoInicial);
-
+  const [novaOcorrencia, setNovaOcorrencia] = useState(estadoInicial);
   const [busca, setBusca] = useState("");
   const [abaAtiva, setAbaAtiva] = useState("encaminhadas");
 
@@ -67,10 +65,14 @@ function OcorrenciasPorteiro() {
       apartamento: registro.apartamento,
       morador: "",
       responsavel: registro.porteiroNome,
-      status: "Novo",
+      status: registro.status,
       respostaSindico: "",
       cienciaSindico: false,
-      data: registro.data
+      data: registro.data,
+      origemModulo: "LivroOcorrencias",
+      impactaBI: true,
+      impactaRelatorio: true,
+      exibirNaCentral: true
     };
 
     salvarStorage(STORAGE_AVISOS_SINDICO, [
@@ -90,8 +92,11 @@ function OcorrenciasPorteiro() {
       descricao: registro.descricao,
       apartamento: registro.apartamento,
       responsavel: registro.porteiroNome,
+      status: registro.status,
       data: registro.data,
-      hora: registro.hora
+      hora: registro.hora,
+      origemModulo: "LivroOcorrencias",
+      impactaBI: true
     };
 
     salvarStorage(STORAGE_MOVIMENTACOES, [
@@ -112,8 +117,12 @@ function OcorrenciasPorteiro() {
       apartamento: registro.apartamento,
       responsavel: registro.porteiroNome,
       status: registro.status,
+      prioridade: registro.prioridade,
+      categoria: registro.categoria,
       data: registro.data,
-      hora: registro.hora
+      hora: registro.hora,
+      origemModulo: "LivroOcorrencias",
+      impactaRelatorio: true
     };
 
     salvarStorage(STORAGE_RELATORIOS, [
@@ -138,6 +147,7 @@ function OcorrenciasPorteiro() {
     const nova = {
       id: Date.now(),
       origem: "porteiro",
+      origemModulo: "LivroOcorrencias",
       tipoRegistro: "Ocorrência",
       categoria: novaOcorrencia.categoria,
       prioridade: novaOcorrencia.prioridade,
@@ -145,8 +155,12 @@ function OcorrenciasPorteiro() {
       apartamento: novaOcorrencia.apartamento,
       descricao: novaOcorrencia.descricao,
 
-      status: "Novo",
-      etapa: "aguardando_sindico",
+      status: "Encaminhada",
+      etapa: "encaminhada_ao_sindico",
+
+      impactaBI: true,
+      impactaRelatorio: true,
+      exibirNaCentral: true,
 
       data: agora.toLocaleDateString("pt-BR"),
       hora: agora.toLocaleTimeString([], {
@@ -172,7 +186,10 @@ function OcorrenciasPorteiro() {
       horaResolucao: ""
     };
 
-    const listaAtualizada = [nova, ...ocorrencias];
+    const listaAtualizada = [
+      nova,
+      ...ocorrencias
+    ];
 
     setOcorrencias(listaAtualizada);
     salvarStorage(STORAGE_KEY, listaAtualizada);
@@ -610,8 +627,7 @@ function OcorrenciasPorteiro() {
                           <strong>
                             Situação atual:
                           </strong>{" "}
-                          encaminhada ao síndico e aguardando
-                          resolução.
+                          encaminhada ao síndico e aguardando resolução.
                         </div>
                       )}
 
