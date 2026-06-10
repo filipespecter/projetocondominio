@@ -249,6 +249,17 @@ function Login() {
         return;
       }
 
+      const porteirosAtualizados = porteiros.map((p) =>
+        p.id === encontrado.id
+          ? {
+              ...p,
+              ultimoLogin: new Date().toISOString()
+            }
+          : p
+      );
+
+      localStorage.setItem("porteiros", JSON.stringify(porteirosAtualizados));
+
       salvarSessao({
         tipo: "porteiro",
         id: encontrado.id,
@@ -256,6 +267,7 @@ function Login() {
         usuario: encontrado.usuario,
         telefone: encontrado.telefone,
         turno: encontrado.turno,
+        codigoPorteiro: encontrado.codigoPorteiro || "",
         status: encontrado.status || "Ativo",
         loginEm: new Date().toISOString()
       });
@@ -284,18 +296,46 @@ function Login() {
         return;
       }
 
+      const moradoresAtualizados = moradores.map((m) =>
+        m.id === encontrado.id
+          ? {
+              ...m,
+              ultimoLogin: new Date().toISOString()
+            }
+          : m
+      );
+
+      localStorage.setItem("moradores", JSON.stringify(moradoresAtualizados));
+
+      const apartamentoMorador =
+        encontrado.apartamento ||
+        encontrado.apto ||
+        "";
+
       salvarSessao({
         tipo: "morador",
         id: encontrado.id,
         nome: encontrado.nome,
         usuario: encontrado.usuario,
-        apartamento:
-          encontrado.apartamento ||
-          encontrado.apto ||
-          "",
+        apartamento: apartamentoMorador,
+        apto: apartamentoMorador,
+        apartamentoId: encontrado.apartamentoId || null,
         bloco: encontrado.bloco || "",
         telefone: encontrado.telefone || "",
         email: encontrado.email || "",
+        tipoMorador: encontrado.tipoMorador || "Morador",
+        moradorPrincipal: Boolean(encontrado.moradorPrincipal),
+        perfilMorador:
+          encontrado.perfilMorador ||
+          (encontrado.moradorPrincipal ? "principal" : "dependente"),
+        permissoesMorador:
+          encontrado.permissoesMorador || {
+            podeReservar: Boolean(encontrado.moradorPrincipal),
+            podeAbrirSugestao: true,
+            podeVisualizarEncomendas: true
+          },
+        condominioId: encontrado.condominioId || null,
+        nomeCondominio: encontrado.nomeCondominio || "",
         status: encontrado.status || "Ativo",
         loginEm: new Date().toISOString()
       });

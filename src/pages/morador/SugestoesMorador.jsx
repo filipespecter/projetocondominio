@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { registrarAuditoria } from "../../Services/auditoriaService";
+import { criarNotificacao } from "../../Services/notificacaoService";
 
 function SugestoesMorador() {
   const STORAGE_KEY = "sugestoes_reclamacoes";
@@ -64,6 +66,46 @@ function SugestoesMorador() {
     setForm(estadoInicial);
   }
 
+  function pertenceAoApartamento(item) {
+    const apartamentoMorador = morador?.apartamento || morador?.apto || "";
+    const apartamentoIdMorador = morador?.apartamentoId || null;
+
+    return (
+      String(item.apartamento || item.apto || "") === String(apartamentoMorador) ||
+      (
+        apartamentoIdMorador &&
+        String(item.apartamentoId || "") === String(apartamentoIdMorador)
+      )
+    );
+  }
+
+  function registrarAuditoriaSolicitacao(acao, registro, antes = null) {
+    registrarAuditoria({
+      acao,
+      modulo: "Sugestões/Reclamações Morador",
+      detalhes: `${registro?.tipoRegistro || "Solicitação"} • ${registro?.titulo || ""}`,
+      antes,
+      depois: registro,
+      referenciaId: registro?.id || null
+    });
+  }
+
+  function criarNotificacaoSolicitacao(registro) {
+    criarNotificacao({
+      titulo:
+        registro.prioridade === "Urgente"
+          ? "Solicitação urgente do morador"
+          : "Nova solicitação do morador",
+      mensagem: `${registro.moradorNome} enviou: ${registro.titulo}`,
+      tipo: registro.tipoRegistro,
+      origem: "Morador",
+      perfilDestino: "sindico",
+      moduloOrigem: "SugestoesMorador",
+      referenciaId: registro.id,
+      prioridade: registro.prioridade === "Urgente" ? "alta" : "normal"
+    });
+  }
+
   function registrarAvisoSindico(registro) {
     const avisos = lerStorage(STORAGE_AVISOS_SINDICO);
 
@@ -74,6 +116,7 @@ function SugestoesMorador() {
       titulo: registro.titulo,
       descricao: registro.descricao,
       apartamento: registro.apartamento,
+      apartamentoId: registro.apartamentoId || null,
       morador: registro.moradorNome,
       responsavel: registro.moradorNome,
       status: "Novo",
@@ -132,6 +175,11 @@ function SugestoesMorador() {
   }
 
   function enviarSolicitacao() {
+    if (!morador) {
+      alert("Sessão do morador não encontrada.");
+      return;
+    }
+
     if (
       !form.tipo ||
       !form.categoria ||
@@ -139,6 +187,16 @@ function SugestoesMorador() {
       !form.descricao
     ) {
       alert("Preencha todos os campos obrigatórios");
+      return;
+    }
+
+    if (form.titulo.trim().length < 4) {
+      alert("Informe um título com pelo menos 4 caracteres.");
+      return;
+    }
+
+    if (form.descricao.trim().length < 10) {
+      alert("Descreva melhor a solicitação com pelo menos 10 caracteres.");
       return;
     }
 
@@ -152,8 +210,8 @@ function SugestoesMorador() {
       tipo: form.tipo,
       categoria: form.categoria,
       prioridade: form.prioridade,
-      titulo: form.titulo,
-      descricao: form.descricao,
+      titulo: form.titulo.trim(),
+      descricao: form.descricao.trim(),
 
       status: "Novo",
       etapa: "aguardando_sindico",
@@ -168,8 +226,15 @@ function SugestoesMorador() {
       moradorId: morador?.id || null,
       moradorNome: morador?.nome || "Morador",
       moradorUsuario: morador?.usuario || "",
-      apartamento: morador?.apartamento || "",
+      apartamento: morador?.apartamento || morador?.apto || "",
+      apto: morador?.apartamento || morador?.apto || "",
+      apartamentoId: morador?.apartamentoId || null,
       bloco: morador?.bloco || "",
+      tipoMorador: morador?.tipoMorador || "Morador",
+      moradorPrincipal: Boolean(morador?.moradorPrincipal),
+      perfilMorador: morador?.perfilMorador || "dependente",
+      condominioId: morador?.condominioId || null,
+      nomeCondominio: morador?.nomeCondominio || "",
 
       porteiroId: null,
       porteiroNome: "",
@@ -184,7 +249,12 @@ function SugestoesMorador() {
       sindicoResponsavel: "",
       dataResposta: "",
       dataResolucao: "",
-      horaResolucao: ""
+      horaResolucao: "",
+      origemModulo: "SugestoesMorador",
+      impactaBI: true,
+      impactaRelatorio: true,
+      criadoEm: agora.toISOString(),
+      atualizadoEm: agora.toISOString()
     };
 
     const listaAtualizada = [
@@ -198,6 +268,8 @@ function SugestoesMorador() {
     registrarAvisoSindico(nova);
     registrarMovimentacao(nova);
     registrarRelatorio(nova);
+    registrarAuditoriaSolicitacao("Enviou solicitação", nova);
+    criarNotificacaoSolicitacao(nova);
 
     limparFormulario();
 
@@ -211,7 +283,7 @@ function SugestoesMorador() {
         (
           item.moradorId === morador?.id ||
           item.moradorUsuario === morador?.usuario ||
-          item.apartamento === morador?.apartamento
+          pertenceAoApartamento(item)
         );
 
       if (!mesmoMorador) return false;
@@ -323,7 +395,11 @@ function SugestoesMorador() {
               </span>
 
               <span style={styles.apBadge}>
-                Apto {morador.apartamento || "-"}
+                Apto {morador.apartamento || morador.apto || "-"}
+              </span>
+
+              <span style={styles.apBadge}>
+                {morador.moradorPrincipal ? "Principal" : "Dependente"}
               </span>
             </div>
           )}
@@ -503,6 +579,7 @@ function SugestoesMorador() {
           </label>
 
           <input
+            minLength="4"
             placeholder="Ex: Barulho após as 22h"
             value={form.titulo}
             onChange={(e) =>
@@ -519,6 +596,7 @@ function SugestoesMorador() {
           </label>
 
           <textarea
+            minLength="10"
             placeholder="Descreva sua solicitação com detalhes..."
             value={form.descricao}
             onChange={(e) =>

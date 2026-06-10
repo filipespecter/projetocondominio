@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { registrarAuditoria } from "../../Services/auditoriaService";
+import { criarNotificacao } from "../../Services/notificacaoService";
 
 function Encomendas() {
   const STORAGE_KEY = "encomendas";
@@ -10,16 +12,30 @@ function Encomendas() {
 
   const estadoInicialEncomenda = {
     morador: "",
+    moradorId: null,
     apartamento: "",
     descricao: "",
     codigo: "",
+    codigoInterno: "",
     transportadora: "",
-    status: "Recebido"
+    status: "Recebido",
+    condominioId: null,
+    nomeCondominio: "",
+    criadoPor: "",
+    porteiroId: null,
+    porteiroNome: ""
   };
 
-  const [encomendas, setEncomendas] = useState(() =>
-    lerStorage(STORAGE_KEY)
-  );
+  const [encomendas, setEncomendas] = useState(() => {
+    const lista = lerStorage(STORAGE_KEY);
+
+    return lista.map((item, index) => ({
+      ...item,
+      codigoInterno: item.codigoInterno || gerarCodigoEncomenda(index + 1),
+      moradorId: item.moradorId || null,
+      status: item.status || "Recebido"
+    }));
+  });
 
   const [moradores] = useState(() => {
     const lista = lerStorage("moradores");
@@ -50,6 +66,149 @@ function Encomendas() {
     localStorage.setItem(chave, JSON.stringify(dados));
   }
 
+
+  function limparCodigo(valor) {
+    return String(valor || "").replace(/[^\w.-]/g, "").toUpperCase();
+  }
+
+  function gerarCodigoEncomenda(numero) {
+    return `ENC-${String(numero).padStart(6, "0")}`;
+  }
+
+  function proximoCodigoEncomenda() {
+    const numeros = encomendas
+      .map((item) => Number(String(item.codigoInterno || "").replace(/\D/g, "")))
+      .filter((numero) => !isNaN(numero));
+
+    const proximo =
+      numeros.length > 0
+        ? Math.max(...numeros) + 1
+        : encomendas.length + 1;
+
+    return gerarCodigoEncomenda(proximo);
+  }
+
+  function obterPerfilCondominio() {
+    try {
+      const perfil =
+        JSON.parse(localStorage.getItem("perfil_condominio")) ||
+        JSON.parse(localStorage.getItem("configuracoes")) ||
+        {};
+
+      return {
+        condominioId: perfil.id || perfil.condominioId || null,
+        nomeCondominio: perfil.nomeCondominio || ""
+      };
+    } catch {
+      return {
+        condominioId: null,
+        nomeCondominio: ""
+      };
+    }
+  }
+
+  function obterUsuarioAtual() {
+    try {
+      return (
+        JSON.parse(localStorage.getItem("usuarioSindico")) ||
+        JSON.parse(sessionStorage.getItem("usuarioSindico")) ||
+        JSON.parse(localStorage.getItem("usuarioPorteiro")) ||
+        JSON.parse(sessionStorage.getItem("usuarioPorteiro")) ||
+        {}
+      );
+    } catch {
+      return {};
+    }
+  }
+
+  function registrarAuditoriaEncomenda({
+    acao,
+    detalhes,
+    antes = null,
+    depois = null,
+    referenciaId = null
+  }) {
+    registrarAuditoria({
+      acao,
+      modulo: "Encomendas",
+      detalhes,
+      antes,
+      depois,
+      referenciaId
+    });
+  }
+
+  function criarNotificacaoEncomenda({
+    titulo,
+    mensagem,
+    referenciaId = null,
+    prioridade = "normal",
+    perfilDestino = "sindico"
+  }) {
+    criarNotificacao({
+      titulo,
+      mensagem,
+      tipo: "Encomendas",
+      origem: "Encomendas",
+      perfilDestino,
+      moduloOrigem: "Encomendas",
+      referenciaId,
+      prioridade
+    });
+  }
+
+  function validarEncomenda() {
+    const descricao = String(novaEncomenda.descricao || "").trim();
+    const transportadora = String(novaEncomenda.transportadora || "").trim();
+    const codigo = String(novaEncomenda.codigo || "").trim();
+
+    if (!novaEncomenda.morador) {
+      alert("Selecione o morador destinatário.");
+      return false;
+    }
+
+    if (!novaEncomenda.apartamento) {
+      alert("O apartamento do destinatário é obrigatório.");
+      return false;
+    }
+
+    if (descricao.length < 3) {
+      alert("Informe uma descrição válida para a encomenda.");
+      return false;
+    }
+
+    if (transportadora.length < 2) {
+      alert("Informe a transportadora ou origem da encomenda.");
+      return false;
+    }
+
+    if (codigo) {
+      const codigoNormalizado = limparCodigo(codigo);
+
+      const duplicada = encomendas.find((item) => {
+        const statusAtual = item.status || "Recebido";
+
+        return (
+          limparCodigo(item.codigo) === codigoNormalizado &&
+          item.id !== editId &&
+          statusAtual !== "Entregue"
+        );
+      });
+
+      if (duplicada) {
+        alert("Já existe uma encomenda pendente com este código de rastreio.");
+        return false;
+      }
+    }
+
+    if (!novaEncomenda.status) {
+      alert("Selecione o status da encomenda.");
+      return false;
+    }
+
+    return true;
+  }
+
   const encomendasFiltradas = encomendas.filter((e) => {
     const texto = busca.toLowerCase();
 
@@ -58,6 +217,7 @@ function Encomendas() {
       e.apartamento?.toLowerCase().includes(texto) ||
       e.descricao?.toLowerCase().includes(texto) ||
       e.codigo?.toLowerCase().includes(texto) ||
+      e.codigoInterno?.toLowerCase().includes(texto) ||
       e.transportadora?.toLowerCase().includes(texto) ||
       e.status?.toLowerCase().includes(texto);
 
@@ -150,6 +310,7 @@ function Encomendas() {
       apartamento: encomenda.apartamento || "",
       descricao: encomenda.descricao,
       codigo: encomenda.codigo,
+      codigoInterno: encomenda.codigoInterno,
       transportadora: encomenda.transportadora,
       status: encomenda.status,
       data: new Date().toLocaleDateString("pt-BR"),
@@ -178,6 +339,7 @@ function Encomendas() {
       apartamento: encomenda.apartamento || "",
       descricao: encomenda.descricao,
       codigo: encomenda.codigo,
+      codigoInterno: encomenda.codigoInterno,
       transportadora: encomenda.transportadora,
       status: encomenda.status,
       data: new Date().toLocaleDateString("pt-BR"),
@@ -248,19 +410,70 @@ function Encomendas() {
     ]);
   }
 
-  function registrarFluxo(acao, encomenda) {
+  function registrarFluxo(acao, encomenda, antes = null) {
     salvarMovimentacao(acao, encomenda);
     salvarRelatorio(acao, encomenda);
     salvarHistorico(acao, encomenda);
     salvarAvisoSindico(acao, encomenda);
     notificarMorador(acao, encomenda);
+
+    registrarAuditoriaEncomenda({
+      acao: `Encomenda - ${acao}`,
+      detalhes: `${encomenda.codigoInterno || encomenda.codigo || "Sem código"} • ${encomenda.morador} • Apto ${encomenda.apartamento}`,
+      antes,
+      depois: encomenda,
+      referenciaId: encomenda.id
+    });
+
+    if (
+      acao === "recebimento" ||
+      acao === "exclusão" ||
+      acao === "status: Entregue" ||
+      acao === "status: Atrasado"
+    ) {
+      criarNotificacaoEncomenda({
+        titulo:
+          acao === "recebimento"
+            ? "Nova encomenda registrada"
+            : acao === "status: Entregue"
+            ? "Encomenda entregue"
+            : acao === "status: Atrasado"
+            ? "Encomenda atrasada"
+            : "Encomenda removida",
+        mensagem: `${encomenda.morador} • Apto ${encomenda.apartamento} • ${encomenda.descricao}`,
+        referenciaId: encomenda.id,
+        prioridade:
+          acao === "status: Atrasado" || acao === "exclusão"
+            ? "alta"
+            : "normal"
+      });
+    }
   }
 
   function salvarEncomenda() {
-    if (!novaEncomenda.morador || !novaEncomenda.descricao) {
-      alert("Preencha morador e descrição da encomenda");
+    if (!validarEncomenda()) {
       return;
     }
+
+    const perfilCondominio = obterPerfilCondominio();
+    const usuarioAtual = obterUsuarioAtual();
+
+    const encomendaFormatada = {
+      ...novaEncomenda,
+      morador: String(novaEncomenda.morador || "").trim(),
+      apartamento: String(novaEncomenda.apartamento || "").trim(),
+      descricao: String(novaEncomenda.descricao || "").trim(),
+      codigo: limparCodigo(novaEncomenda.codigo),
+      codigoInterno: novaEncomenda.codigoInterno || proximoCodigoEncomenda(),
+      transportadora: String(novaEncomenda.transportadora || "").trim(),
+      status: novaEncomenda.status || "Recebido",
+      condominioId: perfilCondominio.condominioId,
+      nomeCondominio: perfilCondominio.nomeCondominio,
+      criadoPor: usuarioAtual.nome || usuarioAtual.usuario || "Sistema",
+      porteiroId: usuarioAtual.tipo === "porteiro" ? usuarioAtual.id || null : novaEncomenda.porteiroId || null,
+      porteiroNome: usuarioAtual.tipo === "porteiro" ? usuarioAtual.nome || usuarioAtual.usuario || "" : novaEncomenda.porteiroNome || "",
+      atualizadoEm: new Date().toISOString()
+    };
 
     let listaAtualizada = [];
 
@@ -270,7 +483,7 @@ function Encomendas() {
       );
 
       const atualizada = {
-        ...novaEncomenda,
+        ...encomendaFormatada,
         id: editId,
         data:
           encomendaAntiga?.data ||
@@ -281,14 +494,15 @@ function Encomendas() {
         e.id === editId ? atualizada : e
       );
 
-      registrarFluxo("edição", atualizada);
+      registrarFluxo("edição", atualizada, encomendaAntiga);
 
       setEditId(null);
     } else {
       const nova = {
         id: Date.now(),
-        ...novaEncomenda,
-        data: new Date().toLocaleString("pt-BR")
+        ...encomendaFormatada,
+        data: new Date().toLocaleString("pt-BR"),
+        criadoEm: new Date().toISOString()
       };
 
       listaAtualizada = [
@@ -340,11 +554,14 @@ function Encomendas() {
   }
 
   function alterarStatus(id, status) {
+    const encomendaAntes = encomendas.find((e) => e.id === id);
+
     const lista = encomendas.map((e) =>
       e.id === id
         ? {
             ...e,
             status,
+            atualizadoEm: new Date().toISOString(),
             retiradaEm:
               status === "Entregue"
                 ? new Date().toLocaleString("pt-BR")
@@ -358,7 +575,7 @@ function Encomendas() {
     );
 
     if (encomenda) {
-      registrarFluxo(`status: ${status}`, encomenda);
+      registrarFluxo(`status: ${status}`, encomenda, encomendaAntes);
     }
 
     setEncomendas(lista);
@@ -576,7 +793,8 @@ function Encomendas() {
                         </h3>
 
                         <p style={styles.packageCode}>
-                          Código: {e.codigo || "Não informado"}
+                          Código: {e.codigoInterno || "Sem código interno"}{" "}
+                          {e.codigo ? `• Rastreio: ${e.codigo}` : ""}
                         </p>
                       </div>
                     </div>
@@ -698,9 +916,11 @@ function Encomendas() {
                   {moradores.length > 0 ? (
                     <select
                       value={
+                        novaEncomenda.moradorId ||
                         moradores.find(
                           (m) => m.nome === novaEncomenda.morador
-                        )?.id || ""
+                        )?.id ||
+                        ""
                       }
                       onChange={(e) => selecionarMorador(e.target.value)}
                       style={styles.input}
@@ -767,6 +987,7 @@ function Encomendas() {
                   </label>
 
                   <input
+                    minLength="3"
                     placeholder="Ex: Amazon - Caixa média"
                     value={novaEncomenda.descricao}
                     onChange={(e) =>
@@ -790,7 +1011,7 @@ function Encomendas() {
                     onChange={(e) =>
                       setNovaEncomenda({
                         ...novaEncomenda,
-                        codigo: e.target.value
+                        codigo: limparCodigo(e.target.value)
                       })
                     }
                     style={styles.input}
@@ -803,6 +1024,7 @@ function Encomendas() {
                   </label>
 
                   <input
+                    minLength="2"
                     placeholder="Ex: Correios, Amazon, Jadlog..."
                     value={novaEncomenda.transportadora}
                     onChange={(e) =>

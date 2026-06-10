@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { registrarAuditoria } from "../../Services/auditoriaService";
+import { criarNotificacao } from "../../Services/notificacaoService";
 
 function ReservasMorador() {
   const STORAGE_KEY = "reservas";
@@ -84,6 +86,67 @@ function ReservasMorador() {
     );
   }
 
+  function pertenceAoApartamento(item) {
+    const apartamentoMorador = morador?.apartamento || morador?.apto || "";
+    const apartamentoIdMorador = morador?.apartamentoId || null;
+
+    return (
+      String(item.apartamento || item.apto || "") === String(apartamentoMorador) ||
+      (
+        apartamentoIdMorador &&
+        String(item.apartamentoId || "") === String(apartamentoIdMorador)
+      )
+    );
+  }
+
+  function possuiPermissaoReserva() {
+    if (!morador) return false;
+
+    if (morador.permissoesMorador?.podeReservar === false) {
+      return false;
+    }
+
+    return true;
+  }
+
+  function registrarAuditoriaReserva(acao, reserva, antes = null) {
+    registrarAuditoria({
+      acao,
+      modulo: "Reservas Morador",
+      detalhes: `${reserva?.area || "Reserva"} • Apto ${reserva?.apartamento || "-"}`,
+      antes,
+      depois: reserva,
+      referenciaId: reserva?.id || null
+    });
+  }
+
+  function criarNotificacaoReservaSindico(reserva, titulo, mensagem, prioridade = "normal") {
+    criarNotificacao({
+      titulo,
+      mensagem,
+      tipo: "Reservas",
+      origem: "Morador",
+      perfilDestino: "sindico",
+      moduloOrigem: "ReservasMorador",
+      referenciaId: reserva?.id || null,
+      prioridade
+    });
+  }
+
+  function existeConflitoReserva(areaSelecionada, dataSelecionada, horarioSelecionado) {
+    return reservas.some((item) => {
+      const status = String(item.status || "").toLowerCase();
+
+      return (
+        item.area === areaSelecionada &&
+        item.data === dataSelecionada &&
+        item.horario === horarioSelecionado &&
+        status !== "recusada" &&
+        status !== "cancelada"
+      );
+    });
+  }
+
   function registrarAvisoSindico(reserva) {
     const avisos = lerStorage(STORAGE_AVISOS_SINDICO);
 
@@ -97,6 +160,7 @@ function ReservasMorador() {
         reserva.observacao ||
         `O morador ${reserva.moradorNome} solicitou reserva da área ${reserva.area}.`,
       apartamento: reserva.apartamento,
+      apartamentoId: reserva.apartamentoId || null,
       morador: reserva.moradorNome,
       responsavel: reserva.moradorNome,
       status: reserva.status,
@@ -107,7 +171,8 @@ function ReservasMorador() {
       impactaBI: true,
       impactaRelatorio: true,
       exibirNaCentral: true,
-      origemModulo: "Reservas"
+      origemModulo: "Reservas",
+      atualizadoEm: new Date().toISOString()
     };
 
     salvarStorage(STORAGE_AVISOS_SINDICO, [
@@ -199,6 +264,7 @@ function ReservasMorador() {
       moradorId: reserva.moradorId,
       morador: reserva.moradorNome,
       apartamento: reserva.apartamento,
+      apartamentoId: reserva.apartamentoId || null,
       area: reserva.area,
       status: reserva.status,
       acao,
@@ -225,8 +291,30 @@ function ReservasMorador() {
   }
 
   function solicitarReserva() {
+    if (!morador) {
+      alert("Sessão do morador não encontrada.");
+      return;
+    }
+
+    if (!possuiPermissaoReserva()) {
+      alert("Seu perfil está como dependente. A permissão para reserva pode ser liberada pelo condomínio.");
+      return;
+    }
+
     if (!area || !data || !horario) {
       alert("Preencha área, data e horário");
+      return;
+    }
+
+    const dataSelecionada = new Date(`${data}T${horario}`);
+
+    if (!isNaN(dataSelecionada.getTime()) && dataSelecionada < new Date()) {
+      alert("Não é permitido solicitar reserva em data ou horário passado.");
+      return;
+    }
+
+    if (existeConflitoReserva(area, data, horario)) {
+      alert("Já existe uma reserva ativa para esta área, data e horário.");
       return;
     }
 
@@ -250,8 +338,15 @@ function ReservasMorador() {
       moradorNome: morador?.nome || "Morador",
       moradorUsuario: morador?.usuario || "",
 
-      apartamento: morador?.apartamento || "",
+      apartamento: morador?.apartamento || morador?.apto || "",
+      apto: morador?.apartamento || morador?.apto || "",
+      apartamentoId: morador?.apartamentoId || null,
       bloco: morador?.bloco || "",
+      tipoMorador: morador?.tipoMorador || "Morador",
+      moradorPrincipal: Boolean(morador?.moradorPrincipal),
+      perfilMorador: morador?.perfilMorador || "dependente",
+      condominioId: morador?.condominioId || null,
+      nomeCondominio: morador?.nomeCondominio || "",
 
       impactaBI: true,
       impactaRelatorio: true,
@@ -268,6 +363,12 @@ function ReservasMorador() {
     setReservas(atualizadas);
 
     registrarFluxoReserva("solicitada", nova);
+    registrarAuditoriaReserva("Solicitou reserva", nova);
+    criarNotificacaoReservaSindico(
+      nova,
+      "Nova solicitação de reserva",
+      `${nova.moradorNome} solicitou reserva da área ${nova.area}.`
+    );
 
     limparFormulario();
   }
@@ -597,7 +698,14 @@ function ReservasMorador() {
           />
 
           <button
-            style={styles.button}
+            style={{
+              ...styles.button,
+              ...(
+                !possuiPermissaoReserva() || opcoesAreas.length === 0
+                  ? styles.disabledButton
+                  : {}
+              )
+            }}
             onClick={solicitarReserva}
             disabled={opcoesAreas.length === 0}
           >
@@ -605,7 +713,9 @@ function ReservasMorador() {
           </button>
 
           <p style={styles.formHint}>
-            Sua reserva ficará pendente até a análise do síndico.
+            {possuiPermissaoReserva()
+              ? "Sua reserva ficará pendente até a análise do síndico."
+              : "Seu perfil está como dependente. A permissão de reserva pode ser liberada pelo condomínio."}
           </p>
         </div>
 
@@ -1063,6 +1173,11 @@ const styles = {
     resize: "vertical",
     fontFamily: "Arial",
     lineHeight: "1.5"
+  },
+
+  disabledButton: {
+    opacity: 0.65,
+    cursor: "not-allowed"
   },
 
   button: {

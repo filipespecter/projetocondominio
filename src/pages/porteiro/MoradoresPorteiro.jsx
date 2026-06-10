@@ -81,6 +81,12 @@ function MoradoresPorteiro() {
           .includes(texto) ||
         item.email
           ?.toLowerCase()
+          .includes(texto) ||
+        item.tipoMorador
+          ?.toLowerCase()
+          .includes(texto) ||
+        item.perfilMorador
+          ?.toLowerCase()
           .includes(texto);
 
       const statusAtual =
@@ -108,6 +114,12 @@ function MoradoresPorteiro() {
       (m) =>
         obterStatus(m.status).texto === "Inativo"
     ).length;
+
+  const moradoresPrincipais =
+    moradores.filter((m) => m.moradorPrincipal).length;
+
+  const dependentes =
+    moradores.filter((m) => !m.moradorPrincipal).length;
 
   const apartamentosVinculados =
     new Set(
@@ -370,6 +382,26 @@ function MoradoresPorteiro() {
 
                       <strong>
                         {item.telefone || "-"}
+                      </strong>
+                    </div>
+
+                    <div style={styles.infoItem}>
+                      <span style={styles.infoLabel}>
+                        Tipo
+                      </span>
+
+                      <strong>
+                        {item.tipoMorador || "Morador"}
+                      </strong>
+                    </div>
+
+                    <div style={styles.infoItem}>
+                      <span style={styles.infoLabel}>
+                        Perfil
+                      </span>
+
+                      <strong>
+                        {item.moradorPrincipal ? "Principal" : "Dependente"}
                       </strong>
                     </div>
 

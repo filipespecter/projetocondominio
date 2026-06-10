@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { registrarAuditoria } from "../../Services/auditoriaService";
+import { criarNotificacao } from "../../Services/notificacaoService";
 
 function Avisos() {
   const STORAGE_AVISOS = "avisos";
@@ -168,6 +170,30 @@ function Avisos() {
     salvarStorage(STORAGE_RELATORIOS, [novo, ...relatorios]);
   }
 
+  function registrarAuditoriaAvisos({ acao, modulo, detalhes = "", antes = null, depois = null, referenciaId = null }) {
+    registrarAuditoria({
+      acao,
+      modulo,
+      detalhes,
+      antes,
+      depois,
+      referenciaId
+    });
+  }
+
+  function criarNotificacaoGlobal({ titulo, mensagem, tipo = "Avisos", perfilDestino = "sindico", referenciaId = null, prioridade = "normal" }) {
+    criarNotificacao({
+      titulo,
+      mensagem,
+      tipo,
+      origem: "Avisos",
+      perfilDestino,
+      moduloOrigem: "Avisos",
+      referenciaId,
+      prioridade
+    });
+  }
+
   const avisosFiltrados = avisos.filter((a) => {
     const texto = busca.toLowerCase();
 
@@ -217,6 +243,24 @@ function Avisos() {
           : a
       );
 
+      const avisoEditado = listaAtualizada.find((a) => a.id === editId);
+
+      registrarAuditoriaAvisos({
+        acao: "Editou aviso oficial",
+        modulo: "Avisos",
+        detalhes: novoAviso.titulo,
+        depois: avisoEditado,
+        referenciaId: editId
+      });
+
+      criarNotificacaoGlobal({
+        titulo: "Aviso oficial atualizado",
+        mensagem: novoAviso.titulo,
+        tipo: "Aviso",
+        perfilDestino: "morador",
+        referenciaId: editId
+      });
+
       setEditId(null);
     } else {
       const novo = {
@@ -236,6 +280,23 @@ function Avisos() {
 
       registrarMovimentacao("Aviso", "Síndico", novo.titulo);
       registrarRelatorio("Aviso", "Síndico", novo.titulo);
+
+      registrarAuditoriaAvisos({
+        acao: "Publicou aviso oficial",
+        modulo: "Avisos",
+        detalhes: novo.titulo,
+        depois: novo,
+        referenciaId: novo.id
+      });
+
+      criarNotificacaoGlobal({
+        titulo: novo.titulo,
+        mensagem: novo.descricao,
+        tipo: "Aviso",
+        perfilDestino: "morador",
+        referenciaId: novo.id,
+        prioridade: novo.prioridade === "Alta" ? "alta" : "normal"
+      });
     }
 
     salvarStorage(STORAGE_AVISOS, listaAtualizada);
@@ -265,9 +326,19 @@ function Avisos() {
 
     if (!confirmar) return;
 
+    const avisoAntes = lerStorage(STORAGE_AVISOS).find((a) => a.id === id);
     const listaAvisos = lerStorage(STORAGE_AVISOS).filter((a) => a.id !== id);
 
     salvarStorage(STORAGE_AVISOS, listaAvisos);
+
+    registrarAuditoriaAvisos({
+      acao: "Excluiu aviso oficial",
+      modulo: "Avisos",
+      detalhes: avisoAntes?.titulo || "Aviso excluído",
+      antes: avisoAntes,
+      referenciaId: id
+    });
+
     atualizarCentral();
   }
 
@@ -350,6 +421,29 @@ function Avisos() {
       );
 
       salvarStorage(STORAGE_ENCOMENDAS, lista);
+    }
+
+    registrarAuditoriaAvisos({
+      acao: "Alterou status na central",
+      modulo: item.categoria,
+      detalhes: `${item.titulo} - ${novoStatus}`,
+      antes: item,
+      depois: { ...item, status: novoStatus },
+      referenciaId: item.id
+    });
+
+    if (item.categoria !== "Notificação") {
+      criarNotificacaoGlobal({
+        titulo: item.titulo,
+        mensagem: `Status alterado para ${novoStatus}`,
+        tipo: item.categoria,
+        perfilDestino:
+          item.categoria === "Sugestão" || item.categoria === "Reclamação"
+            ? "morador"
+            : "sindico",
+        referenciaId: item.id,
+        prioridade: novoStatus === "Resolvido" ? "baixa" : "normal"
+      });
     }
 
     registrarMovimentacao(item.categoria, "Síndico", `${item.titulo} - ${novoStatus}`);
@@ -439,6 +533,22 @@ function Avisos() {
 
     registrarMovimentacao(item.categoria, "Síndico", `Resposta: ${item.titulo}`);
     registrarRelatorio(item.categoria, "Síndico", `Resposta: ${item.titulo}`);
+
+    registrarAuditoriaAvisos({
+      acao: "Respondeu item da central",
+      modulo: item.categoria,
+      detalhes: item.titulo,
+      depois: resposta,
+      referenciaId: item.id
+    });
+
+    criarNotificacaoGlobal({
+      titulo: `Resposta do síndico: ${item.titulo}`,
+      mensagem: respostaTexto,
+      tipo: item.categoria,
+      perfilDestino: item.categoria === "Ocorrência" ? "sindico" : "morador",
+      referenciaId: item.id
+    });
 
     setRespostaTexto("");
     atualizarCentral();
@@ -853,21 +963,21 @@ const styles = {
   container: {
     width: "100%",
     fontFamily: "Arial",
-    color: "#f8fafc"
+    color: "#111827"
   },
 
   hero: {
     background:
-      "radial-gradient(circle at top right,rgba(212,175,55,0.22),transparent 30%), linear-gradient(135deg,#050505,#0b0f0c 35%,#1b4332 72%,#2d6a4f)",
+      "radial-gradient(circle at top right,rgba(250,204,21,0.24),transparent 30%), linear-gradient(135deg,#f7fee7,#ecfccb 45%,#ffffff)",
     borderRadius: "36px",
     padding: "34px",
-    color: "white",
+    color: "#111827",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
     gap: "28px",
-    border: "1px solid rgba(212,175,55,0.28)",
-    boxShadow: "0 28px 75px rgba(0,0,0,0.42)",
+    border: "1px solid #d9f99d",
+    boxShadow: "0 24px 60px rgba(101,163,13,0.16)",
     marginBottom: "24px"
   },
 
@@ -875,9 +985,9 @@ const styles = {
 
   heroBadge: {
     display: "inline-block",
-    background: "rgba(212,175,55,0.16)",
-    border: "1px solid rgba(212,175,55,0.35)",
-    color: "#f4d35e",
+    background: "#fef9c3",
+    border: "1px solid #fde68a",
+    color: "#854d0e",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -889,12 +999,12 @@ const styles = {
     margin: 0,
     fontSize: "44px",
     letterSpacing: "-1px",
-    color: "#ffffff"
+    color: "#365314"
   },
 
   subtitle: {
     margin: "10px 0 0",
-    color: "rgba(248,250,252,0.74)",
+    color: "#4b5563",
     lineHeight: "1.55"
   },
 
@@ -907,20 +1017,21 @@ const styles = {
   noticeBoard: {
     display: "flex",
     gap: "10px",
-    background: "rgba(0,0,0,0.28)",
-    border: "1px solid rgba(212,175,55,0.22)",
+    background: "rgba(255,255,255,0.76)",
+    border: "1px solid #d9f99d",
     padding: "12px",
     borderRadius: "24px",
-    backdropFilter: "blur(12px)"
+    backdropFilter: "blur(12px)",
+    boxShadow: "0 14px 30px rgba(101,163,13,0.12)"
   },
 
   noticeItem: {
     width: "84px",
     height: "76px",
     borderRadius: "18px",
-    background: "rgba(255,255,255,0.07)",
-    border: "1px solid rgba(212,175,55,0.16)",
-    color: "#f8fafc",
+    background: "#ffffff",
+    border: "1px solid #ecfccb",
+    color: "#365314",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
@@ -929,33 +1040,33 @@ const styles = {
   },
 
   heroButton: {
-    background: "linear-gradient(135deg,#d4af37,#f4d35e)",
-    color: "#0b0f0c",
+    background: "linear-gradient(135deg,#d9f99d,#facc15)",
+    color: "#365314",
     border: "none",
     padding: "15px 20px",
     borderRadius: "17px",
     cursor: "pointer",
     fontWeight: "900",
     whiteSpace: "nowrap",
-    boxShadow: "0 14px 30px rgba(212,175,55,0.24)"
+    boxShadow: "0 14px 30px rgba(250,204,21,0.28)"
   },
 
   controlStrip: {
-    background: "linear-gradient(135deg,#0b0f0c,#111827)",
-    border: "1px solid rgba(212,175,55,0.22)",
+    background: "#ffffff",
+    border: "1px solid #d9f99d",
     borderRadius: "28px",
     padding: "18px",
     marginBottom: "24px",
     display: "flex",
     alignItems: "center",
     gap: "14px",
-    boxShadow: "0 18px 45px rgba(0,0,0,0.28)"
+    boxShadow: "0 18px 45px rgba(101,163,13,0.10)"
   },
 
   searchWrap: {
     flex: 1,
-    background: "rgba(255,255,255,0.06)",
-    border: "1px solid rgba(212,175,55,0.20)",
+    background: "#f7fee7",
+    border: "1px solid #d9f99d",
     borderRadius: "18px",
     display: "flex",
     alignItems: "center",
@@ -963,7 +1074,7 @@ const styles = {
   },
 
   searchIcon: {
-    color: "#f4d35e",
+    color: "#65a30d",
     fontSize: "20px",
     marginRight: "8px"
   },
@@ -975,17 +1086,18 @@ const styles = {
     outline: "none",
     background: "transparent",
     fontSize: "14px",
-    color: "#f8fafc"
+    color: "#111827"
   },
 
   filter: {
     width: "150px",
     padding: "15px",
     borderRadius: "18px",
-    border: "1px solid rgba(212,175,55,0.22)",
+    border: "1px solid #d9f99d",
     outline: "none",
-    background: "#111827",
-    color: "#f8fafc"
+    background: "#ffffff",
+    color: "#365314",
+    fontWeight: "800"
   },
 
   compactStats: {
@@ -993,16 +1105,16 @@ const styles = {
     gap: "10px",
     flexWrap: "wrap",
     fontSize: "12px",
-    color: "#f4d35e"
+    color: "#65a30d"
   },
 
   communicationPanel: {
     background:
-      "radial-gradient(circle at top right,rgba(212,175,55,0.10),transparent 28%), linear-gradient(180deg,#111827,#0b0f0c)",
-    border: "1px solid rgba(212,175,55,0.22)",
+      "radial-gradient(circle at top right,rgba(250,204,21,0.13),transparent 28%), linear-gradient(180deg,#ffffff,#f7fee7)",
+    border: "1px solid #d9f99d",
     borderRadius: "34px",
     padding: "28px",
-    boxShadow: "0 22px 60px rgba(0,0,0,0.35)"
+    boxShadow: "0 22px 60px rgba(101,163,13,0.13)"
   },
 
   panelHeader: {
@@ -1013,9 +1125,9 @@ const styles = {
   },
 
   panelLabel: {
-    background: "rgba(212,175,55,0.16)",
-    color: "#f4d35e",
-    border: "1px solid rgba(212,175,55,0.32)",
+    background: "#fef9c3",
+    color: "#854d0e",
+    border: "1px solid #fde68a",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "11px",
@@ -1024,14 +1136,14 @@ const styles = {
 
   panelTitle: {
     margin: "12px 0 0",
-    color: "#ffffff",
+    color: "#365314",
     fontSize: "28px"
   },
 
   resultBadge: {
-    background: "rgba(45,106,79,0.45)",
-    color: "#dcfce7",
-    border: "1px solid rgba(212,175,55,0.24)",
+    background: "#ecfccb",
+    color: "#365314",
+    border: "1px solid #bef264",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1045,13 +1157,12 @@ const styles = {
   },
 
   noticeCard: {
-    background:
-      "linear-gradient(180deg,rgba(17,24,39,0.98),rgba(5,5,5,0.98))",
+    background: "linear-gradient(180deg,#ffffff,#fafff0)",
     borderRadius: "30px",
     padding: "22px",
-    boxShadow: "0 18px 45px rgba(0,0,0,0.35)",
-    border: "1px solid rgba(212,175,55,0.20)",
-    color: "#f8fafc"
+    boxShadow: "0 18px 45px rgba(101,163,13,0.13)",
+    border: "1px solid #d9f99d",
+    color: "#111827"
   },
 
   cardTop: {
@@ -1066,13 +1177,13 @@ const styles = {
     width: "64px",
     height: "64px",
     borderRadius: "24px",
-    background: "linear-gradient(135deg,#d4af37,#f4d35e)",
-    color: "#0b0f0c",
+    background: "linear-gradient(135deg,#d9f99d,#facc15)",
+    color: "#365314",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "28px",
-    boxShadow: "0 14px 28px rgba(212,175,55,0.24)"
+    boxShadow: "0 14px 28px rgba(250,204,21,0.22)"
   },
 
   priorityBadge: {
@@ -1091,8 +1202,8 @@ const styles = {
   },
 
   categoryTag: {
-    background: "linear-gradient(135deg,#d4af37,#f4d35e)",
-    color: "#0b0f0c",
+    background: "linear-gradient(135deg,#d9f99d,#facc15)",
+    color: "#365314",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1100,9 +1211,9 @@ const styles = {
   },
 
   originTag: {
-    background: "rgba(45,106,79,0.70)",
-    color: "#dcfce7",
-    border: "1px solid rgba(64,145,108,0.45)",
+    background: "#ecfccb",
+    color: "#365314",
+    border: "1px solid #bef264",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1110,9 +1221,9 @@ const styles = {
   },
 
   statusTag: {
-    background: "rgba(212,175,55,0.13)",
-    color: "#f4d35e",
-    border: "1px solid rgba(212,175,55,0.28)",
+    background: "#fef9c3",
+    color: "#854d0e",
+    border: "1px solid #fde68a",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1121,22 +1232,22 @@ const styles = {
 
   noticeTitle: {
     margin: "0 0 10px",
-    color: "#ffffff",
+    color: "#365314",
     fontSize: "22px"
   },
 
   noticeDescription: {
     margin: 0,
-    color: "rgba(248,250,252,0.72)",
+    color: "#4b5563",
     lineHeight: "1.55",
     minHeight: "70px"
   },
 
   dateBox: {
     marginTop: "16px",
-    background: "rgba(45,106,79,0.35)",
-    border: "1px solid rgba(212,175,55,0.22)",
-    color: "#dcfce7",
+    background: "#f7fee7",
+    border: "1px solid #d9f99d",
+    color: "#365314",
     borderRadius: "17px",
     padding: "13px"
   },
@@ -1150,13 +1261,13 @@ const styles = {
   responseTextarea: {
     padding: "13px",
     borderRadius: "16px",
-    border: "1px solid rgba(212,175,55,0.22)",
+    border: "1px solid #d9f99d",
     resize: "vertical",
     minHeight: "80px",
     outline: "none",
     fontFamily: "Arial",
-    background: "#0b0f0c",
-    color: "#f8fafc"
+    background: "#ffffff",
+    color: "#111827"
   },
 
   actionRow: {
@@ -1167,9 +1278,9 @@ const styles = {
   },
 
   editButton: {
-    background: "linear-gradient(135deg,#1b4332,#2d6a4f)",
-    color: "#f8fafc",
-    border: "1px solid rgba(212,175,55,0.22)",
+    background: "linear-gradient(135deg,#84cc16,#65a30d)",
+    color: "#ffffff",
+    border: "1px solid #bef264",
     padding: "12px",
     borderRadius: "15px",
     cursor: "pointer",
@@ -1177,9 +1288,9 @@ const styles = {
   },
 
   deleteButton: {
-    background: "rgba(127,29,29,0.75)",
-    color: "#fee2e2",
-    border: "1px solid rgba(248,113,113,0.25)",
+    background: "#fee2e2",
+    color: "#b91c1c",
+    border: "1px solid #fecaca",
     padding: "12px",
     borderRadius: "15px",
     cursor: "pointer",
@@ -1187,12 +1298,12 @@ const styles = {
   },
 
   empty: {
-    background: "rgba(255,255,255,0.05)",
-    border: "1px dashed rgba(212,175,55,0.28)",
+    background: "#ffffff",
+    border: "1px dashed #bef264",
     borderRadius: "26px",
     padding: "48px",
     textAlign: "center",
-    color: "#f8fafc"
+    color: "#365314"
   },
 
   emptyIcon: {
@@ -1202,17 +1313,17 @@ const styles = {
 
   emptyTitle: {
     margin: 0,
-    color: "#ffffff"
+    color: "#365314"
   },
 
   emptyText: {
     margin: "8px 0 18px",
-    color: "rgba(248,250,252,0.68)"
+    color: "#6b7280"
   },
 
   emptyButton: {
-    background: "linear-gradient(135deg,#d4af37,#f4d35e)",
-    color: "#0b0f0c",
+    background: "linear-gradient(135deg,#d9f99d,#facc15)",
+    color: "#365314",
     border: "none",
     padding: "13px 18px",
     borderRadius: "15px",
@@ -1223,7 +1334,7 @@ const styles = {
   modalBg: {
     position: "fixed",
     inset: 0,
-    background: "rgba(0,0,0,0.72)",
+    background: "rgba(15,23,42,0.42)",
     backdropFilter: "blur(10px)",
     display: "flex",
     justifyContent: "center",
@@ -1236,28 +1347,28 @@ const styles = {
     width: "680px",
     maxHeight: "90vh",
     overflowY: "auto",
-    background: "linear-gradient(180deg,#111827,#0b0f0c)",
+    background: "linear-gradient(180deg,#ffffff,#f7fee7)",
     padding: "26px",
     borderRadius: "36px",
-    border: "1px solid rgba(212,175,55,0.25)",
-    boxShadow: "0 30px 90px rgba(0,0,0,0.55)"
+    border: "1px solid #d9f99d",
+    boxShadow: "0 30px 90px rgba(101,163,13,0.24)"
   },
 
   modalTop: {
-    background: "linear-gradient(135deg,#050505,#1b4332)",
-    color: "white",
+    background: "linear-gradient(135deg,#ecfccb,#ffffff)",
+    color: "#365314",
     borderRadius: "28px",
     padding: "26px",
     display: "flex",
     justifyContent: "space-between",
     marginBottom: "20px",
-    borderBottom: "3px solid #d4af37"
+    borderBottom: "3px solid #facc15"
   },
 
   modalBadge: {
-    background: "rgba(212,175,55,0.16)",
-    color: "#f4d35e",
-    border: "1px solid rgba(212,175,55,0.32)",
+    background: "#fef9c3",
+    color: "#854d0e",
+    border: "1px solid #fde68a",
     padding: "8px 12px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1273,16 +1384,16 @@ const styles = {
     width: "42px",
     height: "42px",
     borderRadius: "15px",
-    border: "1px solid rgba(212,175,55,0.25)",
-    background: "rgba(255,255,255,0.08)",
-    color: "white",
+    border: "1px solid #d9f99d",
+    background: "#ffffff",
+    color: "#365314",
     cursor: "pointer",
     fontWeight: "900"
   },
 
   modalSection: {
-    background: "rgba(255,255,255,0.05)",
-    border: "1px solid rgba(212,175,55,0.18)",
+    background: "#ffffff",
+    border: "1px solid #d9f99d",
     borderRadius: "26px",
     padding: "20px",
     marginBottom: "15px"
@@ -1290,7 +1401,7 @@ const styles = {
 
   modalSectionTitle: {
     margin: "0 0 16px",
-    color: "#f4d35e"
+    color: "#365314"
   },
 
   formGrid: {
@@ -1306,7 +1417,7 @@ const styles = {
   },
 
   label: {
-    color: "#f8fafc",
+    color: "#365314",
     fontSize: "13px",
     fontWeight: "900"
   },
@@ -1314,23 +1425,23 @@ const styles = {
   input: {
     padding: "15px",
     borderRadius: "16px",
-    border: "1px solid rgba(212,175,55,0.22)",
+    border: "1px solid #d9f99d",
     outline: "none",
     fontSize: "14px",
-    background: "#0b0f0c",
-    color: "#f8fafc"
+    background: "#ffffff",
+    color: "#111827"
   },
 
   textarea: {
     padding: "15px",
     borderRadius: "16px",
-    border: "1px solid rgba(212,175,55,0.22)",
+    border: "1px solid #d9f99d",
     resize: "vertical",
     minHeight: "140px",
     outline: "none",
     fontSize: "14px",
-    background: "#0b0f0c",
-    color: "#f8fafc",
+    background: "#ffffff",
+    color: "#111827",
     fontFamily: "Arial"
   },
 
@@ -1342,8 +1453,8 @@ const styles = {
 
   saveBtn: {
     flex: 1,
-    background: "linear-gradient(135deg,#d4af37,#f4d35e)",
-    color: "#0b0f0c",
+    background: "linear-gradient(135deg,#84cc16,#facc15)",
+    color: "#365314",
     border: "none",
     padding: "14px",
     borderRadius: "17px",
@@ -1353,9 +1464,9 @@ const styles = {
 
   cancelBtn: {
     flex: 1,
-    background: "#111827",
-    color: "#f8fafc",
-    border: "1px solid rgba(212,175,55,0.20)",
+    background: "#ffffff",
+    color: "#365314",
+    border: "1px solid #d9f99d",
     padding: "14px",
     borderRadius: "17px",
     cursor: "pointer",

@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { registrarAuditoria } from "../../Services/auditoriaService";
+import { criarNotificacao } from "../../Services/notificacaoService";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -33,6 +35,10 @@ function Relatorios() {
 
     movimentacoes: "movimentacoes",
     relatoriosOperacionais: "relatorios_operacionais",
+    auditoria: "auditoria_logs",
+    auditoriaSistema: "auditoriaSistema",
+    configuracoes: "configuracoes",
+    perfilCondominio: "perfil_condominio",
 
     historico: "historico_relatorios_greencondo"
   };
@@ -62,7 +68,8 @@ function Relatorios() {
     incluirPrestadores: false,
     incluirAvisos: false,
     incluirAreas: false,
-    incluirOperacional: false
+    incluirOperacional: false,
+    incluirAuditoria: false
   });
 
   useEffect(() => {
@@ -75,6 +82,75 @@ function Relatorios() {
     } catch {
       return [];
     }
+  }
+
+  function lerObjeto(chave) {
+    try {
+      return JSON.parse(localStorage.getItem(chave)) || null;
+    } catch {
+      return null;
+    }
+  }
+
+  function obterUsuarioAtual() {
+    try {
+      return (
+        JSON.parse(localStorage.getItem("usuarioSindico")) ||
+        JSON.parse(sessionStorage.getItem("usuarioSindico")) ||
+        {}
+      );
+    } catch {
+      return {};
+    }
+  }
+
+  function obterPerfilCondominio() {
+    const perfil =
+      lerObjeto(STORAGE_KEYS.perfilCondominio) ||
+      lerObjeto(STORAGE_KEYS.configuracoes) ||
+      {};
+
+    return {
+      condominioId: perfil.id || perfil.condominioId || null,
+      nomeCondominio:
+        perfil.nomeCondominio ||
+        perfil.nome ||
+        "Condomínio não configurado",
+      cnpj: perfil.cnpj || "",
+      endereco: perfil.endereco || "",
+      sindico: perfil.sindico || "",
+      telefone: perfil.telefone || "",
+      email: perfil.email || ""
+    };
+  }
+
+  function registrarAuditoriaRelatorio(acao, detalhes = "") {
+    registrarAuditoria({
+      acao,
+      modulo: "Relatórios",
+      detalhes,
+      referenciaId: Date.now()
+    });
+  }
+
+  function criarNotificacaoRelatorio(tipo) {
+    if (tipoRelatorio !== "executivo" && tipoRelatorio !== "personalizado") {
+      return;
+    }
+
+    criarNotificacao({
+      titulo:
+        tipoRelatorio === "executivo"
+          ? "Relatório executivo gerado"
+          : "Relatório personalizado gerado",
+      mensagem: `${preview.titulo} foi exportado em ${tipo}.`,
+      tipo: "Relatórios",
+      origem: "Relatórios",
+      perfilDestino: "sindico",
+      moduloOrigem: "Relatorios",
+      referenciaId: Date.now(),
+      prioridade: "normal"
+    });
   }
 
   function carregarDados() {
@@ -121,7 +197,17 @@ function Relatorios() {
       movimentacoes: [
         ...lerStorage(STORAGE_KEYS.movimentacoes),
         ...lerStorage(STORAGE_KEYS.relatoriosOperacionais)
-      ]
+      ],
+
+      auditoria: [
+        ...lerStorage(STORAGE_KEYS.auditoria),
+        ...lerStorage(STORAGE_KEYS.auditoriaSistema)
+      ],
+
+      configuracoes:
+        lerObjeto(STORAGE_KEYS.perfilCondominio) ||
+        lerObjeto(STORAGE_KEYS.configuracoes) ||
+        {}
     });
 
     setUltimaAtualizacao(new Date().toLocaleString("pt-BR"));
@@ -247,6 +333,12 @@ function Relatorios() {
       descricao: "Movimentações e registros operacionais."
     },
     {
+      id: "auditoria",
+      nome: "Auditoria",
+      icon: "🧾",
+      descricao: "Ações registradas no sistema."
+    },
+    {
       id: "personalizado",
       nome: "Personalizado",
       icon: "📝",
@@ -282,10 +374,11 @@ function Relatorios() {
     if (modulo === "moradores") {
       return {
         titulo: "Moradores",
-        colunas: ["Nome", "Apartamento", "Telefone", "E-mail", "Status"],
+        colunas: ["Nome", "Apartamento", "Tipo", "Telefone", "E-mail", "Status"],
         linhas: lista.map((item) => [
           normalizarLinha(item.nome),
           normalizarLinha(item.apartamento || item.apto),
+          normalizarLinha(item.tipoMorador || "Morador"),
           normalizarLinha(item.telefone),
           normalizarLinha(item.email),
           normalizarLinha(item.status || "Ativo")
@@ -310,8 +403,9 @@ function Relatorios() {
     if (modulo === "encomendas") {
       return {
         titulo: "Encomendas",
-        colunas: ["Destinatário", "Apartamento", "Status", "Data", "Descrição"],
+        colunas: ["Código", "Destinatário", "Apartamento", "Status", "Data", "Descrição"],
         linhas: lista.map((item) => [
+          normalizarLinha(item.codigoInterno || item.codigo),
           normalizarLinha(item.nome || item.destinatario || item.morador),
           normalizarLinha(item.apartamento || item.apto),
           normalizarLinha(item.status || item.statusSindico),
@@ -338,13 +432,14 @@ function Relatorios() {
     if (modulo === "ocorrencias") {
       return {
         titulo: "Ocorrências",
-        colunas: ["Título", "Responsável", "Status", "Data", "Descrição"],
+        colunas: ["Título", "Categoria", "Prioridade", "Responsável", "Status", "Data"],
         linhas: lista.map((item) => [
           normalizarLinha(item.titulo || item.tipo || item.categoria),
+          normalizarLinha(item.categoria),
+          normalizarLinha(item.prioridade),
           normalizarLinha(item.responsavel || item.criadoPor || item.porteiroNome),
           normalizarLinha(item.status),
-          normalizarLinha(item.data || item.criadoEm || item.registradoEm),
-          normalizarLinha(item.descricao || item.observacao || item.relato)
+          normalizarLinha(item.data || item.criadoEm || item.registradoEm)
         ])
       };
     }
@@ -395,7 +490,7 @@ function Relatorios() {
           return [
             normalizarLinha(item.nome),
             normalizarLinha(item.status),
-            normalizarLinha(item.capacidade),
+            normalizarLinha(item.capacidade || "Opcional"),
             normalizarLinha(item.regras || item.descricao),
             totalReservas
           ];
@@ -417,6 +512,20 @@ function Relatorios() {
       };
     }
 
+    if (modulo === "auditoria") {
+      return {
+        titulo: "Auditoria",
+        colunas: ["Módulo", "Ação", "Usuário", "Data", "Detalhes"],
+        linhas: lista.map((item) => [
+          normalizarLinha(item.modulo),
+          normalizarLinha(item.acao),
+          normalizarLinha(item.usuario || item.usuarioNome || item.criadoPor),
+          normalizarLinha(item.data || item.criadoEm || item.registradoEm),
+          normalizarLinha(item.detalhes || item.descricao)
+        ])
+      };
+    }
+
     return {
       titulo: "Dados",
       colunas: ["Nome", "Status", "Data"],
@@ -426,6 +535,34 @@ function Relatorios() {
         normalizarLinha(item.data || item.criadoEm)
       ])
     };
+  }
+
+  function contarPorCampo(lista, campo, limite = 5) {
+    const mapa = {};
+
+    lista.forEach((item) => {
+      const chave = item[campo] || "Não informado";
+      mapa[chave] = (mapa[chave] || 0) + 1;
+    });
+
+    return Object.entries(mapa)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limite)
+      .map(([nome, total]) => [nome, total]);
+  }
+
+  function contarAreasReservadas(reservas, limite = 5) {
+    const mapa = {};
+
+    reservas.forEach((item) => {
+      const chave = item.area || item.areaComum || "Não informado";
+      mapa[chave] = (mapa[chave] || 0) + 1;
+    });
+
+    return Object.entries(mapa)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limite)
+      .map(([nome, total]) => [nome, total]);
   }
 
   function gerarPreview() {
@@ -438,7 +575,35 @@ function Relatorios() {
     const avisos = filtrarPeriodo(dados.avisos || []);
     const sugestoes = filtrarPeriodo(dados.sugestoes || []);
     const movimentacoes = filtrarPeriodo(dados.movimentacoes || []);
+    const auditoria = filtrarPeriodo(dados.auditoria || []);
     const areas = dados.areasComuns || [];
+
+    const moradoresAtivos = moradores.filter(
+      (m) => m.status !== "Inativo" && m.status !== "Bloqueado"
+    );
+
+    const apartamentosOcupados = (dados.apartamentos || []).filter(
+      (a) => a.status === "Ocupado" || a.morador || a.moradoresNomes?.length > 0
+    );
+
+    const reservasAprovadas = reservas.filter((r) => r.status === "aprovada");
+    const reservasPendentes = reservas.filter((r) => r.status === "pendente");
+
+    const ocorrenciasAbertas = ocorrencias.filter(
+      (o) => o.status !== "Resolvido" && o.status !== "Resolvida"
+    );
+
+    const ocorrenciasResolvidas = ocorrencias.filter(
+      (o) => o.status === "Resolvido" || o.status === "Resolvida"
+    );
+
+    const visitantesLiberados = visitantes.filter(
+      (v) => v.status === "Autorizado" || v.status === "Em Visita"
+    );
+
+    const encomendasPendentes = encomendas.filter(
+      (e) => e.status === "Recebido" || e.status === "Atrasado"
+    );
 
     if (tipoRelatorio === "executivo") {
       return {
@@ -447,13 +612,18 @@ function Relatorios() {
           "Documento administrativo com visão geral dos principais módulos do condomínio.",
         resumo: [
           `Total de moradores cadastrados: ${moradores.length}`,
-          `Visitantes no período: ${visitantes.length}`,
-          `Encomendas no período: ${encomendas.length}`,
-          `Reservas no período: ${reservas.length}`,
-          `Ocorrências no período: ${ocorrencias.length}`,
+          `Moradores ativos: ${moradoresAtivos.length}`,
+          `Apartamentos ocupados: ${apartamentosOcupados.length}`,
+          `Visitantes liberados/no condomínio: ${visitantesLiberados.length}`,
+          `Encomendas pendentes: ${encomendasPendentes.length}`,
+          `Reservas aprovadas: ${reservasAprovadas.length}`,
+          `Reservas pendentes: ${reservasPendentes.length}`,
+          `Ocorrências abertas: ${ocorrenciasAbertas.length}`,
+          `Ocorrências resolvidas: ${ocorrenciasResolvidas.length}`,
           `Sugestões/Reclamações no período: ${sugestoes.length}`,
           `Prestadores no período: ${prestadores.length}`,
           `Comunicações no período: ${avisos.length}`,
+          `Auditorias no período: ${auditoria.length}`,
           `Movimentações operacionais no período: ${movimentacoes.length}`,
           `Áreas comuns cadastradas: ${areas.length}`
         ],
@@ -463,16 +633,41 @@ function Relatorios() {
             colunas: ["Módulo", "Quantidade"],
             linhas: [
               ["Moradores", moradores.length],
-              ["Visitantes", visitantes.length],
-              ["Encomendas", encomendas.length],
-              ["Reservas", reservas.length],
-              ["Ocorrências", ocorrencias.length],
+              ["Moradores ativos", moradoresAtivos.length],
+              ["Apartamentos ocupados", apartamentosOcupados.length],
+              ["Visitantes liberados", visitantesLiberados.length],
+              ["Encomendas pendentes", encomendasPendentes.length],
+              ["Reservas aprovadas", reservasAprovadas.length],
+              ["Reservas pendentes", reservasPendentes.length],
+              ["Ocorrências abertas", ocorrenciasAbertas.length],
+              ["Ocorrências resolvidas", ocorrenciasResolvidas.length],
               ["Sugestões/Reclamações", sugestoes.length],
               ["Prestadores", prestadores.length],
               ["Comunicação", avisos.length],
+              ["Auditoria", auditoria.length],
               ["Operacional", movimentacoes.length],
               ["Áreas Comuns", areas.length]
             ]
+          },
+          {
+            titulo: "Top 5 áreas mais reservadas",
+            colunas: ["Área", "Reservas"],
+            linhas: contarAreasReservadas(reservas)
+          },
+          {
+            titulo: "Top 5 moradores com mais reservas",
+            colunas: ["Morador", "Reservas"],
+            linhas: contarPorCampo(reservas, "morador")
+          },
+          {
+            titulo: "Ocorrências por categoria",
+            colunas: ["Categoria", "Total"],
+            linhas: contarPorCampo(ocorrencias, "categoria")
+          },
+          {
+            titulo: "Movimentações por tipo",
+            colunas: ["Tipo", "Total"],
+            linhas: contarPorCampo(movimentacoes, "tipo")
           }
         ]
       };
@@ -517,6 +712,10 @@ function Relatorios() {
         tabelas.push(montarTabelaModulo("operacional"));
       }
 
+      if (relatorioPersonalizado.incluirAuditoria) {
+        tabelas.push(montarTabelaModulo("auditoria"));
+      }
+
       return {
         titulo: relatorioPersonalizado.titulo || "Relatório Personalizado",
         descricao:
@@ -553,12 +752,22 @@ function Relatorios() {
   }
 
   function salvarHistorico(tipo) {
+    const usuarioAtual = obterUsuarioAtual();
+    const perfilCondominio = obterPerfilCondominio();
+
     const novo = {
       id: Date.now(),
       tipo,
       relatorio: preview.titulo,
       periodo: nomePeriodo(),
-      data: new Date().toLocaleString("pt-BR")
+      data: new Date().toLocaleString("pt-BR"),
+      usuario: usuarioAtual.nome || usuarioAtual.usuario || "Síndico",
+      perfil: usuarioAtual.perfil || usuarioAtual.perfilAdmin || "sindico",
+      usuarioId: usuarioAtual.id || null,
+      geradoPor: usuarioAtual.nome || usuarioAtual.usuario || "Síndico",
+      condominioId: perfilCondominio.condominioId,
+      nomeCondominio: perfilCondominio.nomeCondominio,
+      createdAt: new Date().toISOString()
     };
 
     const atualizado = [novo, ...historico].slice(0, 10);
@@ -570,6 +779,7 @@ function Relatorios() {
     function gerarPDF() {
     const doc = new jsPDF();
     const dataGeracao = new Date().toLocaleString("pt-BR");
+    const perfilCondominio = obterPerfilCondominio();
 
     doc.setFillColor(22, 163, 74);
     doc.rect(0, 0, 210, 38, "F");
@@ -579,7 +789,7 @@ function Relatorios() {
     doc.text("GreenCondo", 14, 17);
 
     doc.setFontSize(10);
-    doc.text("Central de Relatórios Condominiais", 14, 27);
+    doc.text(perfilCondominio.nomeCondominio || "Central de Relatórios Condominiais", 14, 27);
 
     doc.setTextColor(20, 83, 45);
     doc.setFontSize(15);
@@ -589,9 +799,10 @@ function Relatorios() {
     doc.setFontSize(10);
     doc.text(`Período: ${nomePeriodo()}`, 14, 58);
     doc.text(`Gerado em: ${dataGeracao}`, 14, 65);
+    doc.text(`Condomínio: ${perfilCondominio.nomeCondominio}`, 14, 72);
 
     autoTable(doc, {
-      startY: 76,
+      startY: 82,
       head: [["Resumo"]],
       body: preview.resumo.map((item) => [item]),
       headStyles: {
@@ -670,6 +881,8 @@ function Relatorios() {
     doc.text("Relatório gerado automaticamente pelo GreenCondo.", 14, 287);
 
     salvarHistorico("PDF");
+    registrarAuditoriaRelatorio("Gerou PDF", `${preview.titulo} • ${nomePeriodo()}`);
+    criarNotificacaoRelatorio("PDF");
 
     doc.save(
       `${preview.titulo
@@ -684,7 +897,10 @@ function Relatorios() {
 
     linhas.push(["Relatório", preview.titulo]);
     linhas.push(["Período", nomePeriodo()]);
+    const perfilCondominio = obterPerfilCondominio();
+
     linhas.push(["Gerado em", new Date().toLocaleString("pt-BR")]);
+    linhas.push(["Condomínio", perfilCondominio.nomeCondominio]);
     linhas.push([]);
 
     preview.resumo.forEach((item) => {
@@ -726,6 +942,8 @@ function Relatorios() {
     URL.revokeObjectURL(url);
 
     salvarHistorico("CSV");
+    registrarAuditoriaRelatorio("Gerou CSV", `${preview.titulo} • ${nomePeriodo()}`);
+    criarNotificacaoRelatorio("CSV");
   }
 
   function atualizarPersonalizado(campo, valor) {
@@ -898,6 +1116,14 @@ function Relatorios() {
                   atualizarPersonalizado("incluirOperacional", valor)
                 }
               />
+
+              <CheckOption
+                label="Auditoria"
+                checked={relatorioPersonalizado.incluirAuditoria}
+                onChange={(valor) =>
+                  atualizarPersonalizado("incluirAuditoria", valor)
+                }
+              />
             </div>
           )}
 
@@ -1053,6 +1279,7 @@ function Relatorios() {
                 <span>{item.tipo}</span>
                 <strong>{item.relatorio}</strong>
                 <small>{item.periodo}</small>
+                <small>{item.geradoPor || item.usuario || "Síndico"}</small>
                 <small>{item.data}</small>
               </div>
             ))}

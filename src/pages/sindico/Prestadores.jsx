@@ -1,10 +1,14 @@
 import { useState } from "react";
+import { registrarAuditoria } from "../../Services/auditoriaService";
+import { criarNotificacao } from "../../Services/notificacaoService";
 
 function Prestadores() {
   const STORAGE_KEYS = {
     prestadores: "condominio_prestadores",
     particulares: "prestadores_particulares_v2",
-    operacional: "operacional_condominio_v2"
+    operacional: "operacional_condominio_v2",
+    movimentacoes: "movimentacoes",
+    relatorios: "relatorios_operacionais"
   };
 
   const estadoInicialPrestador = {
@@ -22,7 +26,15 @@ function Prestadores() {
     dataSaida: "",
     horaSaida: "",
     observacao: "",
-    status: "Pendente"
+    condominioId: null,
+    nomeCondominio: "",
+    criadoPor: "",
+    status: "Pendente",
+    moradorId: null,
+    condominioId: null,
+    nomeCondominio: "",
+    criadoPor: "",
+    atualizadoPor: ""
   };
 
   const estadoInicialOperacional = {
@@ -33,7 +45,10 @@ function Prestadores() {
     leituraAtual: "",
     consumo: "",
     poco: "Desligado",
-    observacao: ""
+    observacao: "",
+    condominioId: null,
+    nomeCondominio: "",
+    criadoPor: ""
   };
 
   const [abaAtiva, setAbaAtiva] = useState("condominio");
@@ -55,6 +70,16 @@ function Prestadores() {
 
   const [areasComuns] = useState(() => {
     const dados = localStorage.getItem("areasComuns");
+    return dados ? JSON.parse(dados) : [];
+  });
+
+  const [moradores] = useState(() => {
+    const dados = localStorage.getItem("moradores");
+    return dados ? JSON.parse(dados) : [];
+  });
+
+  const [apartamentos] = useState(() => {
+    const dados = localStorage.getItem("apartamentos");
     return dados ? JSON.parse(dados) : [];
   });
 
@@ -91,6 +116,263 @@ function Prestadores() {
   const finalizados = [...prestadores, ...particulares].filter(
     (p) => p.status === "Finalizado"
   ).length;
+
+  function lerStorage(chave) {
+    try {
+      return JSON.parse(localStorage.getItem(chave)) || [];
+    } catch {
+      return [];
+    }
+  }
+
+  function salvarStorage(chave, dados) {
+    localStorage.setItem(chave, JSON.stringify(dados));
+  }
+
+  function limparNumeros(valor) {
+    return String(valor || "").replace(/\D/g, "");
+  }
+
+  function obterPerfilCondominio() {
+    try {
+      const perfil =
+        JSON.parse(localStorage.getItem("perfil_condominio")) ||
+        JSON.parse(localStorage.getItem("configuracoes")) ||
+        {};
+
+      return {
+        condominioId: perfil.id || perfil.condominioId || null,
+        nomeCondominio:
+          perfil.nomeCondominio ||
+          perfil.nome ||
+          "Condomínio não configurado"
+      };
+    } catch {
+      return {
+        condominioId: null,
+        nomeCondominio: "Condomínio não configurado"
+      };
+    }
+  }
+
+  function obterUsuarioAtual() {
+    try {
+      return (
+        JSON.parse(localStorage.getItem("usuarioSindico")) ||
+        JSON.parse(sessionStorage.getItem("usuarioSindico")) ||
+        JSON.parse(localStorage.getItem("usuarioPorteiro")) ||
+        JSON.parse(sessionStorage.getItem("usuarioPorteiro")) ||
+        {}
+      );
+    } catch {
+      return {};
+    }
+  }
+
+  function validarCPF(cpf) {
+    const numeros = limparNumeros(cpf);
+
+    if (!numeros) return true;
+    if (numeros.length !== 11) return false;
+    if (/^(\d)\1+$/.test(numeros)) return false;
+
+    let soma = 0;
+
+    for (let i = 0; i < 9; i++) {
+      soma += Number(numeros[i]) * (10 - i);
+    }
+
+    let digito = 11 - (soma % 11);
+    if (digito >= 10) digito = 0;
+
+    if (digito !== Number(numeros[9])) return false;
+
+    soma = 0;
+
+    for (let i = 0; i < 10; i++) {
+      soma += Number(numeros[i]) * (11 - i);
+    }
+
+    digito = 11 - (soma % 11);
+    if (digito >= 10) digito = 0;
+
+    return digito === Number(numeros[10]);
+  }
+
+  function registrarAuditoriaPrestador({
+    acao,
+    detalhes,
+    antes = null,
+    depois = null,
+    referenciaId = null
+  }) {
+    registrarAuditoria({
+      acao,
+      modulo: "Prestadores",
+      detalhes,
+      antes,
+      depois,
+      referenciaId
+    });
+  }
+
+  function criarNotificacaoPrestador({
+    titulo,
+    mensagem,
+    referenciaId = null,
+    prioridade = "normal"
+  }) {
+    criarNotificacao({
+      titulo,
+      mensagem,
+      tipo: "Prestadores",
+      origem: "Prestadores",
+      perfilDestino: "sindico",
+      moduloOrigem: "Prestadores",
+      referenciaId,
+      prioridade
+    });
+  }
+
+  function registrarMovimentacaoPrestador(acao, prestador) {
+    const movimentacoes = lerStorage(STORAGE_KEYS.movimentacoes);
+
+    const nova = {
+      id: Date.now(),
+      tipo: "Prestador",
+      acao,
+      origem: "Síndico",
+      titulo: `${acao}: ${prestador?.nome || "Prestador"}`,
+      descricao: `${prestador?.servico || "-"} • ${prestador?.tipoServico || "-"}`,
+      status: prestador?.status || "",
+      apartamento: prestador?.apartamento || "",
+      responsavel: prestador?.responsavel || "",
+      areaRelacionada: prestador?.areaRelacionada || "",
+      data: new Date().toLocaleDateString("pt-BR"),
+      hora: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      }),
+      criadoEm: new Date().toISOString(),
+      origemModulo: "Prestadores",
+      impactaBI: true,
+      impactaRelatorio: true
+    };
+
+    salvarStorage(STORAGE_KEYS.movimentacoes, [nova, ...movimentacoes]);
+
+    const relatorios = lerStorage(STORAGE_KEYS.relatorios);
+    salvarStorage(STORAGE_KEYS.relatorios, [nova, ...relatorios]);
+  }
+
+  function registrarMovimentacaoOperacional(acao, registro) {
+    const movimentacoes = lerStorage(STORAGE_KEYS.movimentacoes);
+
+    const nova = {
+      id: Date.now(),
+      tipo: "Operacional",
+      acao,
+      origem: "Prestadores",
+      titulo: `Operacional / COMPESA - ${acao}`,
+      descricao: `Poço: ${registro?.poco || "-"} • Consumo: ${registro?.consumo || "0"} m³`,
+      status: registro?.poco || "",
+      responsavel: registro?.porteiro || "",
+      data: registro?.data || new Date().toLocaleDateString("pt-BR"),
+      hora: registro?.horario || new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      }),
+      criadoEm: new Date().toISOString(),
+      origemModulo: "Prestadores",
+      impactaBI: true,
+      impactaRelatorio: true
+    };
+
+    salvarStorage(STORAGE_KEYS.movimentacoes, [nova, ...movimentacoes]);
+
+    const relatorios = lerStorage(STORAGE_KEYS.relatorios);
+    salvarStorage(STORAGE_KEYS.relatorios, [nova, ...relatorios]);
+  }
+
+  function validarPrestador() {
+    const nome = String(novoPrestador.nome || "").trim();
+    const telefone = limparNumeros(novoPrestador.telefone);
+    const servico = String(novoPrestador.servico || "").trim();
+
+    if (nome.length < 3) {
+      alert("Informe o nome do prestador com pelo menos 3 caracteres.");
+      return false;
+    }
+
+    if (telefone.length < 10 || telefone.length > 11) {
+      alert("Informe um telefone válido com DDD.");
+      return false;
+    }
+
+    if (novoPrestador.cpf && !validarCPF(novoPrestador.cpf)) {
+      alert("Informe um CPF válido ou deixe o campo em branco.");
+      return false;
+    }
+
+    if (servico.length < 3) {
+      alert("Informe o serviço executado.");
+      return false;
+    }
+
+    if (!novoPrestador.dataEntrada) {
+      alert("Informe a data de entrada.");
+      return false;
+    }
+
+    if (!novoPrestador.horaEntrada) {
+      alert("Informe a hora de entrada.");
+      return false;
+    }
+
+    if (abaAtiva === "particular") {
+      if (!novoPrestador.apartamento) {
+        alert("Informe ou selecione o apartamento.");
+        return false;
+      }
+
+      if (!novoPrestador.responsavel) {
+        alert("Informe ou selecione o morador responsável.");
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  function selecionarMoradorResponsavel(moradorId) {
+    const morador = moradores.find(
+      (item) => String(item.id) === String(moradorId)
+    );
+
+    if (!morador) return;
+
+    setNovoPrestador({
+      ...novoPrestador,
+      moradorId: morador.id,
+      responsavel: morador.nome,
+      apartamento: morador.apartamento || morador.apto || ""
+    });
+  }
+
+  function selecionarApartamento(valor) {
+    setNovoPrestador({
+      ...novoPrestador,
+      apartamento: valor,
+      responsavel: "",
+      moradorId: null
+    });
+  }
+
+  const moradoresDoApartamento = moradores.filter((morador) => {
+    const aptoMorador = morador.apartamento || morador.apto || "";
+    return String(aptoMorador) === String(novoPrestador.apartamento);
+  });
+
 
   function formatarTelefone(valor) {
     valor = valor.replace(/\D/g, "").slice(0, 11);
@@ -155,10 +437,15 @@ function Prestadores() {
 
     if (!confirmar) return;
 
+    const listaBase = abaAtiva === "condominio" ? prestadores : particulares;
+    const prestadorExcluido = listaBase.find((item) => item.id === id);
+
     if (abaAtiva === "condominio") {
       const listaAtualizada = prestadores.filter(
         (item) => item.id !== id
       );
+
+      prestadorDepois = listaAtualizada.find((item) => item.id === id);
 
       setPrestadores(listaAtualizada);
 
@@ -171,6 +458,8 @@ function Prestadores() {
         (item) => item.id !== id
       );
 
+      prestadorDepois = listaAtualizada.find((item) => item.id === id);
+
       setParticulares(listaAtualizada);
 
       localStorage.setItem(
@@ -178,23 +467,52 @@ function Prestadores() {
         JSON.stringify(listaAtualizada)
       );
     }
+
+    if (prestadorExcluido) {
+      registrarAuditoriaPrestador({
+        acao: "Excluiu prestador",
+        detalhes: `${prestadorExcluido.nome} • ${prestadorExcluido.servico}`,
+        antes: prestadorExcluido,
+        referenciaId: id
+      });
+
+      criarNotificacaoPrestador({
+        titulo: "Prestador removido",
+        mensagem: `${prestadorExcluido.nome} foi removido do cadastro.`,
+        referenciaId: id,
+        prioridade: "alta"
+      });
+
+      registrarMovimentacaoPrestador("Excluiu prestador", prestadorExcluido);
+    }
   }
 
   function salvarPrestador() {
-    if (
-      !novoPrestador.nome ||
-      !novoPrestador.telefone ||
-      !novoPrestador.servico
-    ) {
-      alert("Preencha os campos obrigatórios.");
+    if (!validarPrestador()) {
       return;
     }
 
+    const perfilCondominio = obterPerfilCondominio();
+    const usuarioAtual = obterUsuarioAtual();
+
     const dados = {
-      ...novoPrestador
+      ...novoPrestador,
+      nome: String(novoPrestador.nome || "").trim(),
+      empresa: String(novoPrestador.empresa || "").trim(),
+      telefone: formatarTelefone(novoPrestador.telefone),
+      cpf: novoPrestador.cpf ? formatarCPF(novoPrestador.cpf) : "",
+      servico: String(novoPrestador.servico || "").trim(),
+      condominioId: perfilCondominio.condominioId,
+      nomeCondominio: perfilCondominio.nomeCondominio,
+      atualizadoPor: usuarioAtual.nome || usuarioAtual.usuario || "Sistema",
+      atualizadoEm: new Date().toLocaleString("pt-BR"),
+      updatedAt: new Date().toISOString()
     };
 
     if (editId !== null) {
+      const listaBase = abaAtiva === "condominio" ? prestadores : particulares;
+      const prestadorAntes = listaBase.find((item) => item.id === editId);
+
       dados.id = editId;
 
       if (abaAtiva === "condominio") {
@@ -220,8 +538,21 @@ function Prestadores() {
           JSON.stringify(listaAtualizada)
         );
       }
+
+      registrarAuditoriaPrestador({
+        acao: "Editou prestador",
+        detalhes: `${dados.nome} • ${dados.servico}`,
+        antes: prestadorAntes,
+        depois: dados,
+        referenciaId: editId
+      });
+
+      registrarMovimentacaoPrestador("Editou prestador", dados);
     } else {
       dados.id = Date.now();
+      dados.criadoPor = usuarioAtual.nome || usuarioAtual.usuario || "Sistema";
+      dados.criadoEm = new Date().toLocaleString("pt-BR");
+      dados.createdAt = new Date().toISOString();
 
       if (abaAtiva === "condominio") {
         const listaAtualizada = [
@@ -248,6 +579,21 @@ function Prestadores() {
           JSON.stringify(listaAtualizada)
         );
       }
+
+      registrarAuditoriaPrestador({
+        acao: "Cadastrou prestador",
+        detalhes: `${dados.nome} • ${dados.servico}`,
+        depois: dados,
+        referenciaId: dados.id
+      });
+
+      criarNotificacaoPrestador({
+        titulo: "Novo prestador cadastrado",
+        mensagem: `${dados.nome} foi cadastrado para ${dados.servico}.`,
+        referenciaId: dados.id
+      });
+
+      registrarMovimentacaoPrestador("Cadastrou prestador", dados);
     }
 
     setNovoPrestador(estadoInicialPrestador);
@@ -256,12 +602,18 @@ function Prestadores() {
   }
 
   function alterarStatusPrestador(id, status) {
+    const listaBase = abaAtiva === "condominio" ? prestadores : particulares;
+    const prestadorAntes = listaBase.find((item) => item.id === id);
+    let prestadorDepois = null;
+
     if (abaAtiva === "condominio") {
       const listaAtualizada = prestadores.map((item) =>
         item.id === id
           ? {
               ...item,
-              status
+              status,
+              atualizadoEm: new Date().toLocaleString("pt-BR"),
+              updatedAt: new Date().toISOString()
             }
           : item
       );
@@ -277,7 +629,9 @@ function Prestadores() {
         item.id === id
           ? {
               ...item,
-              status
+              status,
+              atualizadoEm: new Date().toLocaleString("pt-BR"),
+              updatedAt: new Date().toISOString()
             }
           : item
       );
@@ -288,6 +642,36 @@ function Prestadores() {
         STORAGE_KEYS.particulares,
         JSON.stringify(listaAtualizada)
       );
+    }
+
+    if (prestadorDepois) {
+      registrarAuditoriaPrestador({
+        acao: `Alterou status do prestador para ${status}`,
+        detalhes: `${prestadorDepois.nome} • ${prestadorDepois.servico}`,
+        antes: prestadorAntes,
+        depois: prestadorDepois,
+        referenciaId: id
+      });
+
+      if (
+        status === "Finalizado" ||
+        status === "Aguardando liberação" ||
+        status === "Em execução"
+      ) {
+        criarNotificacaoPrestador({
+          titulo:
+            status === "Finalizado"
+              ? "Prestador finalizado"
+              : status === "Aguardando liberação"
+              ? "Prestador aguardando liberação"
+              : "Prestador em execução",
+          mensagem: `${prestadorDepois.nome} • ${prestadorDepois.servico}`,
+          referenciaId: id,
+          prioridade: status === "Aguardando liberação" ? "alta" : "normal"
+        });
+      }
+
+      registrarMovimentacaoPrestador(`Status alterado para ${status}`, prestadorDepois);
     }
   }
 
@@ -317,10 +701,18 @@ function Prestadores() {
         novoOperacional.leituraAtual
       );
 
+    const perfilCondominio = obterPerfilCondominio();
+    const usuarioAtual = obterUsuarioAtual();
+
     const novo = {
       id: Date.now(),
       ...novoOperacional,
-      consumo: consumoCalculado
+      consumo: consumoCalculado,
+      condominioId: perfilCondominio.condominioId,
+      nomeCondominio: perfilCondominio.nomeCondominio,
+      criadoPor: usuarioAtual.nome || usuarioAtual.usuario || "Sistema",
+      criadoEm: new Date().toLocaleString("pt-BR"),
+      createdAt: new Date().toISOString()
     };
 
     const listaAtualizada = [
@@ -335,6 +727,15 @@ function Prestadores() {
       JSON.stringify(listaAtualizada)
     );
 
+    registrarAuditoriaPrestador({
+      acao: "Criou registro operacional",
+      detalhes: `COMPESA / Poço • ${novo.poco} • Consumo ${novo.consumo || "0"} m³`,
+      depois: novo,
+      referenciaId: novo.id
+    });
+
+    registrarMovimentacaoOperacional("Criou registro operacional", novo);
+
     setNovoOperacional(estadoInicialOperacional);
   }
 
@@ -344,6 +745,8 @@ function Prestadores() {
     );
 
     if (!confirmar) return;
+
+    const operacionalExcluido = operacional.find((item) => item.id === id);
 
     const listaAtualizada = operacional.filter(
       (item) => item.id !== id
@@ -355,6 +758,17 @@ function Prestadores() {
       STORAGE_KEYS.operacional,
       JSON.stringify(listaAtualizada)
     );
+
+    if (operacionalExcluido) {
+      registrarAuditoriaPrestador({
+        acao: "Excluiu registro operacional",
+        detalhes: `COMPESA / Poço • ${operacionalExcluido.poco}`,
+        antes: operacionalExcluido,
+        referenciaId: id
+      });
+
+      registrarMovimentacaoOperacional("Excluiu registro operacional", operacionalExcluido);
+    }
   }
 
   function corStatus(status) {
@@ -1049,6 +1463,7 @@ function Prestadores() {
                   <label style={styles.label}>Nome completo</label>
 
                   <input
+                    minLength="3"
                     placeholder="Nome completo"
                     value={novoPrestador.nome}
                     onChange={(e) =>
@@ -1081,6 +1496,8 @@ function Prestadores() {
                   <label style={styles.label}>Telefone</label>
 
                   <input
+                    inputMode="numeric"
+                    maxLength="15"
                     placeholder="Telefone"
                     value={novoPrestador.telefone}
                     onChange={(e) =>
@@ -1097,6 +1514,8 @@ function Prestadores() {
                   <label style={styles.label}>CPF</label>
 
                   <input
+                    inputMode="numeric"
+                    maxLength="14"
                     placeholder="CPF"
                     value={novoPrestador.cpf}
                     onChange={(e) =>
@@ -1121,6 +1540,7 @@ function Prestadores() {
                   <label style={styles.label}>Serviço executado</label>
 
                   <input
+                    minLength="3"
                     placeholder="Ex: Manutenção elétrica"
                     value={novoPrestador.servico}
                     onChange={(e) =>
@@ -1226,33 +1646,68 @@ function Prestadores() {
                   <div style={styles.formRow}>
                     <label style={styles.label}>Apartamento</label>
 
-                    <input
-                      placeholder="Apartamento"
-                      value={novoPrestador.apartamento}
-                      onChange={(e) =>
-                        setNovoPrestador({
-                          ...novoPrestador,
-                          apartamento: e.target.value
-                        })
-                      }
-                      style={styles.input}
-                    />
+                    {apartamentos.length > 0 ? (
+                      <select
+                        value={novoPrestador.apartamento}
+                        onChange={(e) => selecionarApartamento(e.target.value)}
+                        style={styles.input}
+                      >
+                        <option value="">Selecione um apartamento</option>
+
+                        {apartamentos.map((ap) => (
+                          <option key={ap.id} value={ap.numero}>
+                            Bloco {ap.bloco || "-"} - Apto {ap.numero}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        placeholder="Apartamento"
+                        value={novoPrestador.apartamento}
+                        onChange={(e) =>
+                          setNovoPrestador({
+                            ...novoPrestador,
+                            apartamento: e.target.value
+                          })
+                        }
+                        style={styles.input}
+                      />
+                    )}
                   </div>
 
                   <div style={styles.formRow}>
                     <label style={styles.label}>Morador responsável</label>
 
-                    <input
-                      placeholder="Morador responsável"
-                      value={novoPrestador.responsavel}
-                      onChange={(e) =>
-                        setNovoPrestador({
-                          ...novoPrestador,
-                          responsavel: e.target.value
-                        })
-                      }
-                      style={styles.input}
-                    />
+                    {moradoresDoApartamento.length > 0 ? (
+                      <select
+                        value={novoPrestador.moradorId || ""}
+                        onChange={(e) =>
+                          selecionarMoradorResponsavel(e.target.value)
+                        }
+                        style={styles.input}
+                      >
+                        <option value="">Selecione o morador</option>
+
+                        {moradoresDoApartamento.map((morador) => (
+                          <option key={morador.id} value={morador.id}>
+                            {morador.nome} - {morador.tipoMorador || "Morador"}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        placeholder="Morador responsável"
+                        value={novoPrestador.responsavel}
+                        onChange={(e) =>
+                          setNovoPrestador({
+                            ...novoPrestador,
+                            responsavel: e.target.value,
+                            moradorId: null
+                          })
+                        }
+                        style={styles.input}
+                      />
+                    )}
                   </div>
                 </div>
               </div>

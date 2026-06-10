@@ -1,7 +1,10 @@
 import { useState } from "react";
+import { registrarAuditoria } from "../../Services/auditoriaService";
+import { criarNotificacao } from "../../Services/notificacaoService";
 
 function Moradores() {
   const STORAGE_KEY = "moradores";
+  const STORAGE_MOVIMENTACOES = "movimentacoes";
 
   const estadoInicialMorador = {
     id: null,
@@ -12,7 +15,18 @@ function Moradores() {
     email: "",
     usuario: "",
     senha: "",
-    status: "Ativo"
+    status: "Ativo",
+    tipoMorador: "Proprietário",
+    moradorPrincipal: false,
+    perfilMorador: "principal",
+    apartamentoId: null,
+    permissoesMorador: {
+      podeReservar: true,
+      podeAbrirSugestao: true,
+      podeVisualizarEncomendas: true
+    },
+    condominioId: null,
+    nomeCondominio: ""
   };
 
   const [moradores, setMoradores] = useState(() => {
@@ -25,7 +39,17 @@ function Moradores() {
     return lista.map((morador) => ({
       ...morador,
       apto: morador.apto || morador.apartamento || "",
-      apartamento: morador.apartamento || morador.apto || ""
+      apartamento: morador.apartamento || morador.apto || "",
+      tipoMorador: morador.tipoMorador || "Proprietário",
+      moradorPrincipal: Boolean(morador.moradorPrincipal),
+      perfilMorador: morador.perfilMorador || (morador.moradorPrincipal ? "principal" : "dependente"),
+      apartamentoId: morador.apartamentoId || null,
+      permissoesMorador: morador.permissoesMorador || {
+        podeReservar: morador.moradorPrincipal !== false,
+        podeAbrirSugestao: true,
+        podeVisualizarEncomendas: true
+      },
+      status: morador.status || "Ativo"
     }));
   });
 
@@ -50,6 +74,7 @@ function Moradores() {
       morador.telefone?.toLowerCase().includes(texto) ||
       morador.email?.toLowerCase().includes(texto) ||
       morador.usuario?.toLowerCase().includes(texto) ||
+      morador.tipoMorador?.toLowerCase().includes(texto) ||
       morador.status?.toLowerCase().includes(texto);
 
     const correspondeStatus =
@@ -67,6 +92,18 @@ function Moradores() {
     (m) => m.status === "Inativo"
   ).length;
 
+  const totalBloqueados = moradores.filter(
+    (m) => m.status === "Bloqueado"
+  ).length;
+
+  const totalPrincipais = moradores.filter(
+    (m) => m.moradorPrincipal
+  ).length;
+
+  const totalDependentes = moradores.filter(
+    (m) => !m.moradorPrincipal
+  ).length;
+
   const apartamentosVinculados = new Set(
     moradores
       .map((m) => m.apto || m.apartamento)
@@ -76,26 +113,230 @@ function Moradores() {
   const apartamentosDisponiveisParaSelect = apartamentos.map((ap) => ({
     id: ap.id,
     label: `Bloco ${ap.bloco} - Apto ${ap.numero}`,
-    value: ap.numero
+    value: ap.numero,
+    bloco: ap.bloco,
+    numero: ap.numero
   }));
 
+  function lerStorage(chave) {
+    try {
+      return JSON.parse(localStorage.getItem(chave)) || [];
+    } catch {
+      return [];
+    }
+  }
+
+  function salvarStorage(chave, dados) {
+    localStorage.setItem(chave, JSON.stringify(dados));
+  }
+
+  function obterPerfilCondominio() {
+    try {
+      const perfil =
+        JSON.parse(localStorage.getItem("perfil_condominio")) ||
+        JSON.parse(localStorage.getItem("configuracoes")) ||
+        {};
+
+      return {
+        condominioId: perfil.id || perfil.condominioId || null,
+        nomeCondominio: perfil.nomeCondominio || ""
+      };
+    } catch {
+      return {
+        condominioId: null,
+        nomeCondominio: ""
+      };
+    }
+  }
+
+  function buscarApartamentoPorNumero(numero) {
+    return apartamentos.find(
+      (ap) => String(ap.numero) === String(numero)
+    );
+  }
+
+  function atualizarVinculosApartamento(listaMoradoresAtualizada) {
+    const apartamentosAtuais = lerStorage("apartamentos");
+
+    const apartamentosAtualizados = apartamentosAtuais.map((ap) => {
+      const vinculados = listaMoradoresAtualizada.filter(
+        (morador) =>
+          String(morador.apartamento || morador.apto || "") ===
+          String(ap.numero || "")
+      );
+
+      const principal = vinculados.find((morador) => morador.moradorPrincipal);
+
+      return {
+        ...ap,
+        moradoresIds: vinculados.map((morador) => morador.id),
+        moradoresNomes: vinculados.map((morador) => morador.nome),
+        morador: principal?.nome || vinculados[0]?.nome || "",
+        status: vinculados.length > 0 ? "Ocupado" : ap.status
+      };
+    });
+
+    salvarStorage("apartamentos", apartamentosAtualizados);
+  }
+
+  function definirPermissoesMorador(moradorPrincipal, tipoMorador) {
+    const dependente = tipoMorador === "Dependente" || !moradorPrincipal;
+
+    return {
+      podeReservar: !dependente || moradorPrincipal,
+      podeAbrirSugestao: true,
+      podeVisualizarEncomendas: true
+    };
+  }
+
+  function registrarMovimentacaoMorador(acao, morador) {
+    const movimentacoes = lerStorage(STORAGE_MOVIMENTACOES);
+
+    const nova = {
+      id: Date.now(),
+      tipo: "Morador",
+      origem: "Síndico",
+      titulo: `${acao}: ${morador?.nome || "Morador"}`,
+      descricao: `Apartamento ${morador?.apto || morador?.apartamento || "-"}`,
+      status: morador?.status || "Ativo",
+      data: new Date().toLocaleDateString("pt-BR"),
+      hora: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      }),
+      criadoEm: new Date().toISOString()
+    };
+
+    salvarStorage(STORAGE_MOVIMENTACOES, [nova, ...movimentacoes]);
+  }
+
+  function registrarAuditoriaMorador({
+    acao,
+    detalhes,
+    antes = null,
+    depois = null,
+    referenciaId = null
+  }) {
+    registrarAuditoria({
+      acao,
+      modulo: "Moradores",
+      detalhes,
+      antes,
+      depois,
+      referenciaId
+    });
+  }
+
+  function criarNotificacaoMorador({
+    titulo,
+    mensagem,
+    referenciaId = null,
+    prioridade = "normal"
+  }) {
+    criarNotificacao({
+      titulo,
+      mensagem,
+      tipo: "Moradores",
+      origem: "Moradores",
+      perfilDestino: "sindico",
+      moduloOrigem: "Moradores",
+      referenciaId,
+      prioridade
+    });
+  }
+
+  function limparTelefone(valor) {
+    return String(valor || "").replace(/\D/g, "");
+  }
+
+  function validarEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim());
+  }
+
+  function validarMorador() {
+    const nome = String(novoMorador.nome || "").trim();
+    const apartamento = String(novoMorador.apto || "").trim();
+    const telefone = limparTelefone(novoMorador.telefone);
+    const email = String(novoMorador.email || "").trim();
+    const usuario = String(novoMorador.usuario || "").trim();
+    const senha = String(novoMorador.senha || "").trim();
+
+    if (nome.length < 3) {
+      alert("Informe um nome válido com pelo menos 3 caracteres.");
+      return false;
+    }
+
+    if (!apartamento) {
+      alert("Selecione ou informe o apartamento do morador.");
+      return false;
+    }
+
+    if (telefone.length < 10 || telefone.length > 11) {
+      alert("Informe um telefone válido com DDD. Use apenas números.");
+      return false;
+    }
+
+    if (!validarEmail(email)) {
+      alert("Informe um e-mail válido. Exemplo: morador@email.com");
+      return false;
+    }
+
+    if (usuario.length < 4) {
+      alert("O usuário de login deve ter pelo menos 4 caracteres.");
+      return false;
+    }
+
+    if (/\s/.test(usuario)) {
+      alert("O usuário de login não pode conter espaços.");
+      return false;
+    }
+
+    if (senha.length < 4) {
+      alert("A senha deve ter pelo menos 4 caracteres.");
+      return false;
+    }
+
+    if (!novoMorador.tipoMorador) {
+      alert("Selecione o tipo de morador.");
+      return false;
+    }
+
+    if (!novoMorador.status) {
+      alert("Selecione o status do morador.");
+      return false;
+    }
+
+    if (novoMorador.moradorPrincipal) {
+      const principalExistente = moradores.find(
+        (m) =>
+          String(m.apto || m.apartamento || "") === String(apartamento) &&
+          m.moradorPrincipal &&
+          m.id !== editId
+      );
+
+      if (principalExistente) {
+        alert("Este apartamento já possui um morador principal.");
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+
   function selecionarApartamento(valor) {
+    const apartamentoSelecionado = buscarApartamentoPorNumero(valor);
+
     setNovoMorador({
       ...novoMorador,
       apto: valor,
-      apartamento: valor
+      apartamento: valor,
+      apartamentoId: apartamentoSelecionado?.id || null
     });
   }
 
   function salvarMorador() {
-    if (
-      !novoMorador.nome ||
-      !novoMorador.apto ||
-      !novoMorador.telefone ||
-      !novoMorador.usuario ||
-      !novoMorador.senha
-    ) {
-      alert("Preencha todos os campos obrigatórios");
+    if (!validarMorador()) {
       return;
     }
 
@@ -111,15 +352,38 @@ function Moradores() {
       return;
     }
 
+    const perfilCondominio = obterPerfilCondominio();
+    const apartamentoSelecionado = buscarApartamentoPorNumero(novoMorador.apto);
+    const moradorPrincipal = Boolean(novoMorador.moradorPrincipal);
+
     const moradorFormatado = {
       ...novoMorador,
-      apto: novoMorador.apto,
-      apartamento: novoMorador.apto
+      nome: String(novoMorador.nome || "").trim(),
+      apto: String(novoMorador.apto || "").trim(),
+      apartamento: String(novoMorador.apto || "").trim(),
+      apartamentoId: apartamentoSelecionado?.id || novoMorador.apartamentoId || null,
+      telefone: limparTelefone(novoMorador.telefone),
+      email: String(novoMorador.email || "").trim().toLowerCase(),
+      usuario: String(novoMorador.usuario || "").trim(),
+      senha: String(novoMorador.senha || "").trim(),
+      tipoMorador: novoMorador.tipoMorador || "Proprietário",
+      moradorPrincipal,
+      perfilMorador: moradorPrincipal ? "principal" : "dependente",
+      permissoesMorador: definirPermissoesMorador(
+        moradorPrincipal,
+        novoMorador.tipoMorador
+      ),
+      status: novoMorador.status || "Ativo",
+      condominioId: perfilCondominio.condominioId,
+      nomeCondominio: perfilCondominio.nomeCondominio,
+      atualizadoEm: new Date().toISOString()
     };
 
     let listaAtualizada = [];
 
     if (editId !== null) {
+      const moradorAntes = moradores.find((morador) => morador.id === editId);
+
       listaAtualizada = moradores.map((morador) =>
         morador.id === editId
           ? {
@@ -129,17 +393,51 @@ function Moradores() {
           : morador
       );
 
+      const moradorDepois = listaAtualizada.find((morador) => morador.id === editId);
+
+      registrarAuditoriaMorador({
+        acao: "Editou morador",
+        detalhes: `${moradorFormatado.nome} - Apto ${moradorFormatado.apto}`,
+        antes: moradorAntes,
+        depois: moradorDepois,
+        referenciaId: editId
+      });
+
+      criarNotificacaoMorador({
+        titulo: "Morador atualizado",
+        mensagem: `${moradorFormatado.nome} teve o cadastro atualizado.`,
+        referenciaId: editId
+      });
+
+      registrarMovimentacaoMorador("Editou morador", moradorDepois);
+
       setEditId(null);
     } else {
       const novo = {
         ...moradorFormatado,
-        id: Date.now()
+        id: Date.now(),
+        criadoEm: new Date().toISOString()
       };
 
       listaAtualizada = [
         ...moradores,
         novo
       ];
+
+      registrarAuditoriaMorador({
+        acao: "Cadastrou morador",
+        detalhes: `${novo.nome} - Apto ${novo.apto}`,
+        depois: novo,
+        referenciaId: novo.id
+      });
+
+      criarNotificacaoMorador({
+        titulo: "Novo morador cadastrado",
+        mensagem: `${novo.nome} foi vinculado ao apartamento ${novo.apto}.`,
+        referenciaId: novo.id
+      });
+
+      registrarMovimentacaoMorador("Cadastrou morador", novo);
     }
 
     setMoradores(listaAtualizada);
@@ -148,6 +446,8 @@ function Moradores() {
       STORAGE_KEY,
       JSON.stringify(listaAtualizada)
     );
+
+    atualizarVinculosApartamento(listaAtualizada);
 
     setNovoMorador(estadoInicialMorador);
     setMostrarModal(false);
@@ -160,6 +460,10 @@ function Moradores() {
 
     if (!confirmar) return;
 
+    const moradorExcluido = moradores.find(
+      (morador) => morador.id === id
+    );
+
     const listaAtualizada = moradores.filter(
       (morador) => morador.id !== id
     );
@@ -170,6 +474,24 @@ function Moradores() {
       STORAGE_KEY,
       JSON.stringify(listaAtualizada)
     );
+
+    atualizarVinculosApartamento(listaAtualizada);
+
+    registrarAuditoriaMorador({
+      acao: "Excluiu morador",
+      detalhes: `${moradorExcluido?.nome || "Morador"} - Apto ${moradorExcluido?.apto || moradorExcluido?.apartamento || "-"}`,
+      antes: moradorExcluido,
+      referenciaId: id
+    });
+
+    criarNotificacaoMorador({
+      titulo: "Morador removido",
+      mensagem: `${moradorExcluido?.nome || "Um morador"} foi removido do cadastro.`,
+      referenciaId: id,
+      prioridade: "alta"
+    });
+
+    registrarMovimentacaoMorador("Excluiu morador", moradorExcluido);
   }
 
   function editarMorador(morador) {
@@ -177,7 +499,17 @@ function Moradores() {
       ...estadoInicialMorador,
       ...morador,
       apto: morador.apto || morador.apartamento || "",
-      apartamento: morador.apartamento || morador.apto || ""
+      apartamento: morador.apartamento || morador.apto || "",
+      tipoMorador: morador.tipoMorador || "Proprietário",
+      moradorPrincipal: Boolean(morador.moradorPrincipal),
+      perfilMorador: morador.perfilMorador || (morador.moradorPrincipal ? "principal" : "dependente"),
+      apartamentoId: morador.apartamentoId || null,
+      permissoesMorador: morador.permissoesMorador || {
+        podeReservar: morador.moradorPrincipal !== false,
+        podeAbrirSugestao: true,
+        podeVisualizarEncomendas: true
+      },
+      status: morador.status || "Ativo"
     });
 
     setEditId(morador.id);
@@ -196,6 +528,14 @@ function Moradores() {
         background: "#dcfce7",
         color: "#166534",
         border: "#bbf7d0"
+      };
+    }
+
+    if (status === "Bloqueado") {
+      return {
+        background: "#fef3c7",
+        color: "#92400e",
+        border: "#fde68a"
       };
     }
 
@@ -247,7 +587,7 @@ function Moradores() {
           <span style={styles.searchIcon}>⌕</span>
 
           <input
-            placeholder="Buscar por nome, apartamento, telefone, e-mail ou usuário..."
+            placeholder="Buscar por nome, apartamento, telefone, e-mail, usuário ou tipo..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             style={styles.search}
@@ -262,6 +602,7 @@ function Moradores() {
           <option>Todos</option>
           <option>Ativo</option>
           <option>Inativo</option>
+          <option>Bloqueado</option>
         </select>
 
         <div style={styles.inlineNumbers}>
@@ -274,7 +615,19 @@ function Moradores() {
           </span>
 
           <span>
+            <b>{totalBloqueados}</b> bloqueados
+          </span>
+
+          <span>
             <b>{apartamentosVinculados}</b> aptos
+          </span>
+
+          <span>
+            <b>{totalPrincipais}</b> principais
+          </span>
+
+          <span>
+            <b>{totalDependentes}</b> dependentes
           </span>
         </div>
       </section>
@@ -375,6 +728,20 @@ function Moradores() {
                     </div>
 
                     <div style={styles.dataPill}>
+                      <span>Tipo</span>
+                      <strong>
+                        {morador.tipoMorador || "Proprietário"}
+                      </strong>
+                    </div>
+
+                    <div style={styles.dataPill}>
+                      <span>Perfil</span>
+                      <strong>
+                        {morador.moradorPrincipal ? "Principal" : "Dependente"}
+                      </strong>
+                    </div>
+
+                    <div style={styles.dataPill}>
                       <span>Telefone</span>
                       <strong>{morador.telefone || "-"}</strong>
                     </div>
@@ -438,6 +805,7 @@ function Moradores() {
                 </label>
 
                 <input
+                  minLength="3"
                   placeholder="Ex: João Silva"
                   value={novoMorador.nome}
                   onChange={(e) =>
@@ -478,13 +846,15 @@ function Moradores() {
                   </select>
                 ) : (
                   <input
+                    inputMode="numeric"
                     placeholder="Ex: 101"
                     value={novoMorador.apto}
                     onChange={(e) =>
                       setNovoMorador({
                         ...novoMorador,
                         apto: e.target.value,
-                        apartamento: e.target.value
+                        apartamento: e.target.value,
+                        apartamentoId: null
                       })
                     }
                     style={styles.input}
@@ -494,16 +864,63 @@ function Moradores() {
 
               <div style={styles.formRow}>
                 <label style={styles.label}>
+                  Tipo de morador
+                </label>
+
+                <select
+                  value={novoMorador.tipoMorador}
+                  onChange={(e) =>
+                    setNovoMorador({
+                      ...novoMorador,
+                      tipoMorador: e.target.value
+                    })
+                  }
+                  style={styles.input}
+                >
+                  <option>Proprietário</option>
+                  <option>Inquilino</option>
+                  <option>Dependente</option>
+                  <option>Cônjuge</option>
+                </select>
+              </div>
+
+              <div style={styles.formRow}>
+                <label style={styles.label}>
+                  Morador principal
+                </label>
+
+                <select
+                  value={novoMorador.moradorPrincipal ? "Sim" : "Não"}
+                  onChange={(e) => {
+                    const principal = e.target.value === "Sim";
+
+                    setNovoMorador({
+                      ...novoMorador,
+                      moradorPrincipal: principal,
+                      perfilMorador: principal ? "principal" : "dependente"
+                    });
+                  }}
+                  style={styles.input}
+                >
+                  <option>Não</option>
+                  <option>Sim</option>
+                </select>
+              </div>
+
+              <div style={styles.formRow}>
+                <label style={styles.label}>
                   Telefone
                 </label>
 
                 <input
-                  placeholder="Ex: (81) 99999-9999"
+                  inputMode="numeric"
+                  maxLength="11"
+                  placeholder="Ex: 81999999999"
                   value={novoMorador.telefone}
                   onChange={(e) =>
                     setNovoMorador({
                       ...novoMorador,
-                      telefone: e.target.value
+                      telefone: limparTelefone(e.target.value)
                     })
                   }
                   style={styles.input}
@@ -516,6 +933,8 @@ function Moradores() {
                 </label>
 
                 <input
+                  type="email"
+                  required
                   placeholder="Ex: morador@email.com"
                   value={novoMorador.email}
                   onChange={(e) =>
@@ -534,12 +953,13 @@ function Moradores() {
                 </label>
 
                 <input
+                  minLength="4"
                   placeholder="Ex: joao101"
                   value={novoMorador.usuario}
                   onChange={(e) =>
                     setNovoMorador({
                       ...novoMorador,
-                      usuario: e.target.value
+                      usuario: e.target.value.replace(/\s/g, "")
                     })
                   }
                   style={styles.input}
@@ -553,6 +973,7 @@ function Moradores() {
 
                 <input
                   type="password"
+                  minLength="4"
                   placeholder="Senha de acesso"
                   value={novoMorador.senha}
                   onChange={(e) =>
@@ -582,6 +1003,7 @@ function Moradores() {
                 >
                   <option>Ativo</option>
                   <option>Inativo</option>
+                  <option>Bloqueado</option>
                 </select>
               </div>
             </div>

@@ -10,7 +10,8 @@ import {
   gerarResumoExecutivoBI,
   gerarRankingModulos,
   buscarAtividadesRecentes,
-  gerarComparativosBI
+  gerarComparativosBI,
+  gerarRankingsPremiumBI
 } from "../../Services/biService";
 
 import DynamicCharts from "../../components/BI/DynamicCharts";
@@ -35,6 +36,7 @@ function BIMonitor() {
   const [resumo, setResumo] = useState([]);
   const [ranking, setRanking] = useState([]);
   const [atividades, setAtividades] = useState({});
+  const [rankingsPremium, setRankingsPremium] = useState({});
 
   useEffect(() => {
     carregarDados();
@@ -78,6 +80,7 @@ function BIMonitor() {
     setResumo(gerarResumoExecutivoBI("geral"));
     setRanking(gerarRankingModulos("geral"));
     setAtividades(buscarAtividadesRecentes("geral"));
+    setRankingsPremium(gerarRankingsPremiumBI("geral"));
     setUltimaAtualizacao(new Date().toLocaleTimeString("pt-BR"));
   }
 
@@ -205,7 +208,7 @@ function BIMonitor() {
             <KpiCard
               label="Moradores"
               value={indicadores.totalMoradores}
-              detail="Base residencial"
+              detail={`${indicadores.totalMoradoresPrincipais || 0} principais`}
             />
 
             <KpiCard
@@ -224,6 +227,18 @@ function BIMonitor() {
               label="Reservas"
               value={indicadores.totalReservas}
               detail={`${indicadores.totalReservasAtivas || 0} ativas`}
+            />
+
+            <KpiCard
+              label="Prestadores"
+              value={indicadores.totalPrestadores}
+              detail={`${indicadores.totalPrestadoresExecucao || 0} em execução`}
+            />
+
+            <KpiCard
+              label="Auditoria"
+              value={indicadores.totalAuditorias}
+              detail="logs do sistema"
             />
 
             <KpiCard
@@ -341,6 +356,8 @@ function BIMonitor() {
           </main>
 
           <section style={styles.analyticsGrid}>
+            <RankingMonitor title="Top áreas" dados={rankingsPremium.areasMaisReservadas || []} />
+            <RankingMonitor title="Apartamentos com visitantes" dados={rankingsPremium.apartamentosComMaisVisitantes || []} />
             <HeatMap dados={distribuicao} />
 
             <TrendAnalysis comparativos={comparativos} />
@@ -406,6 +423,25 @@ function BIMonitor() {
   );
 }
 
+function RankingMonitor({ title, dados }) {
+  return (
+    <div style={styles.rankingMonitor}>
+      <span style={styles.panelBadgeGold}>{title}</span>
+
+      {dados.length === 0 ? (
+        <p style={styles.rankingEmpty}>Sem dados suficientes.</p>
+      ) : (
+        dados.slice(0, 5).map((item, index) => (
+          <div key={index} style={styles.rankingItem}>
+            <span>{index + 1}. {item.nome}</span>
+            <strong>{item.total}</strong>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
 function KpiCard({ label, value, detail, danger }) {
   return (
     <div
@@ -453,6 +489,26 @@ const styles = {
     background:
       "linear-gradient(90deg,transparent,#7cff4a,transparent)",
     boxShadow: "0 0 22px rgba(124,255,74,0.85)"
+  },
+
+  rankingMonitor: {
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: "22px",
+    padding: "18px"
+  },
+
+  rankingItem: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: "12px",
+    padding: "10px 0",
+    borderBottom: "1px solid rgba(255,255,255,0.08)",
+    color: "rgba(255,255,255,0.76)"
+  },
+
+  rankingEmpty: {
+    color: "rgba(255,255,255,0.50)"
   },
 
   header: {

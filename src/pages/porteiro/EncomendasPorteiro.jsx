@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { registrarAuditoria } from "../../Services/auditoriaService";
+import { criarNotificacao } from "../../Services/notificacaoService";
 
 import ApartmentGrid from "../../components/Porteiro/ApartmentGrid";
 
@@ -52,7 +54,38 @@ function EncomendasPorteiro() {
   }
 
   function carregarEncomendas() {
-    setEncomendas(lerStorage(STORAGE_ENCOMENDAS));
+    const lista = lerStorage(STORAGE_ENCOMENDAS);
+
+    setEncomendas(
+      lista.map((item) => ({
+        ...item,
+        status: item.status || "pendente"
+      }))
+    );
+  }
+
+  function registrarAuditoriaEncomenda(acao, encomenda, antes = null) {
+    registrarAuditoria({
+      acao,
+      modulo: "Encomendas Porteiro",
+      detalhes: `${encomenda?.tipo || "Encomenda"} • Apto ${encomenda?.apartamento || "-"}`,
+      antes,
+      depois: encomenda,
+      referenciaId: encomenda?.id || null
+    });
+  }
+
+  function criarNotificacaoSindico(encomenda, titulo, mensagem, prioridade = "normal") {
+    criarNotificacao({
+      titulo,
+      mensagem,
+      tipo: "Encomendas",
+      origem: "Porteiro",
+      perfilDestino: "sindico",
+      moduloOrigem: "EncomendasPorteiro",
+      referenciaId: encomenda?.id || null,
+      prioridade
+    });
   }
 
   function atualizarTela() {
@@ -60,13 +93,27 @@ function EncomendasPorteiro() {
     carregarEsperadas();
   }
 
-  const pendentes = encomendas.filter(
-    (e) => e.status === "pendente"
-  );
+  const pendentes = encomendas.filter((e) => {
+    const status = String(e.status || "").toLowerCase();
 
-  const retiradas = encomendas.filter(
-    (e) => e.status === "retirada"
-  );
+    return (
+      status === "pendente" ||
+      status === "recebido" ||
+      status === "aguardando" ||
+      status === "aguardando retirada" ||
+      status === "atrasado"
+    );
+  });
+
+  const retiradas = encomendas.filter((e) => {
+    const status = String(e.status || "").toLowerCase();
+
+    return (
+      status === "retirada" ||
+      status === "retirado" ||
+      status === "entregue"
+    );
+  });
 
   const recebidasHoje = encomendas.filter((e) => {
     if (!e.dataRecebimento && !e.data) return false;
@@ -97,6 +144,7 @@ function EncomendasPorteiro() {
       titulo: `Encomenda recebida - Apto ${encomenda.apartamento}`,
       descricao: encomenda.descricao,
       apartamento: encomenda.apartamento,
+      apartamentoId: encomenda.apartamentoId || null,
       morador: encomenda.morador,
       responsavel: encomenda.porteiroRecebimento,
       status: "Novo",
@@ -122,6 +170,7 @@ function EncomendasPorteiro() {
       morador: encomenda.morador,
       moradorId: encomenda.moradorId || null,
       apartamento: encomenda.apartamento,
+      apartamentoId: encomenda.apartamentoId || null,
       lida: false,
       data: encomenda.dataRecebimento,
       hora: encomenda.horaRecebimento
@@ -145,6 +194,7 @@ function EncomendasPorteiro() {
       morador: encomenda.morador,
       moradorId: encomenda.moradorId || null,
       apartamento: encomenda.apartamento,
+      apartamentoId: encomenda.apartamentoId || null,
       descricao: encomenda.descricao,
       tipo: encomenda.tipo,
       codigo: encomenda.codigo,
@@ -231,6 +281,8 @@ function EncomendasPorteiro() {
       codigo,
 
       apartamento: item.apartamento || "N/A",
+      apto: item.apartamento || "N/A",
+      apartamentoId: item.apartamentoId || null,
 
       nome: item.nome || item.morador || "Morador",
 
@@ -246,7 +298,7 @@ function EncomendasPorteiro() {
 
       transportadora: item.transportadora || "Não informada",
 
-      status: "pendente",
+      status: "recebido",
 
       data: agora.toLocaleString("pt-BR"),
 
@@ -263,7 +315,12 @@ function EncomendasPorteiro() {
 
       notificadoMorador: true,
 
-      cienciaSindico: false
+      cienciaSindico: false,
+      condominioId: item.condominioId || null,
+      nomeCondominio: item.nomeCondominio || "",
+      criadoEm: agora.toISOString(),
+      atualizadoEm: agora.toISOString(),
+      origemModulo: "EncomendasPorteiro"
     };
 
     const atualizadas = [
@@ -284,6 +341,12 @@ function EncomendasPorteiro() {
     registrarHistorico(novaEncomenda, item);
     registrarMovimentacao(novaEncomenda);
     registrarRelatorio(novaEncomenda);
+    registrarAuditoriaEncomenda("Confirmou recebimento de encomenda", novaEncomenda, item);
+    criarNotificacaoSindico(
+      novaEncomenda,
+      "Encomenda recebida pela portaria",
+      `A portaria recebeu uma encomenda para o apto ${novaEncomenda.apartamento}.`
+    );
 
     atualizarTela();
 

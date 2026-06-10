@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { registrarAuditoria } from "../../Services/auditoriaService";
+import { criarNotificacao } from "../../Services/notificacaoService";
 
 function AreasComuns() {
   const STORAGE_KEY = "areasComuns";
@@ -10,12 +12,24 @@ function AreasComuns() {
     nome: "",
     capacidade: "",
     horario: "",
-    status: "Disponível"
+    status: "Disponível",
+    condominioId: null,
+    nomeCondominio: "",
+    criadoPor: ""
   };
 
   const [areas, setAreas] = useState(() => {
     const dados = localStorage.getItem(STORAGE_KEY);
-    return dados ? JSON.parse(dados) : [];
+
+    if (!dados) return [];
+
+    const lista = JSON.parse(dados);
+
+    return lista.map((area) => ({
+      ...area,
+      capacidade: area.capacidade || "",
+      status: area.status || "Disponível"
+    }));
   });
 
   const [mostrarModal, setMostrarModal] = useState(false);
@@ -35,6 +49,104 @@ function AreasComuns() {
 
   function salvarStorage(chave, dados) {
     localStorage.setItem(chave, JSON.stringify(dados));
+  }
+
+  function limparCapacidade(valor) {
+    return String(valor || "").replace(/\D/g, "");
+  }
+
+  function obterPerfilCondominio() {
+    try {
+      const perfil =
+        JSON.parse(localStorage.getItem("perfil_condominio")) ||
+        JSON.parse(localStorage.getItem("configuracoes")) ||
+        {};
+
+      return {
+        condominioId: perfil.id || perfil.condominioId || null,
+        nomeCondominio: perfil.nomeCondominio || ""
+      };
+    } catch {
+      return {
+        condominioId: null,
+        nomeCondominio: ""
+      };
+    }
+  }
+
+  function obterUsuarioAtual() {
+    try {
+      return (
+        JSON.parse(localStorage.getItem("usuarioSindico")) ||
+        JSON.parse(sessionStorage.getItem("usuarioSindico")) ||
+        {}
+      );
+    } catch {
+      return {};
+    }
+  }
+
+  function registrarAuditoriaArea({
+    acao,
+    detalhes,
+    antes = null,
+    depois = null,
+    referenciaId = null
+  }) {
+    registrarAuditoria({
+      acao,
+      modulo: "Áreas Comuns",
+      detalhes,
+      antes,
+      depois,
+      referenciaId
+    });
+  }
+
+  function criarNotificacaoArea({
+    titulo,
+    mensagem,
+    referenciaId = null,
+    prioridade = "normal"
+  }) {
+    criarNotificacao({
+      titulo,
+      mensagem,
+      tipo: "Áreas Comuns",
+      origem: "Áreas Comuns",
+      perfilDestino: "sindico",
+      moduloOrigem: "AreasComuns",
+      referenciaId,
+      prioridade
+    });
+  }
+
+  function validarArea() {
+    const nome = String(novaArea.nome || "").trim();
+    const horario = String(novaArea.horario || "").trim();
+    const capacidade = String(novaArea.capacidade || "").trim();
+
+    if (nome.length < 3) {
+      alert("Informe um nome válido para a área comum.");
+      return false;
+    }
+
+    if (capacidade && limparCapacidade(capacidade).length === 0) {
+      alert("A capacidade deve conter apenas números ou ficar em branco.");
+      return false;
+    }
+
+    if (!horario) {
+      alert("Informe o horário de funcionamento.");
+      return false;
+    }
+
+    if (!novaArea.status) {
+      alert("Selecione o status da área.");
+      return false;
+    }
+
+    return true;
   }
 
   function registrarMovimentacao(acao, area) {
@@ -114,10 +226,33 @@ function AreasComuns() {
     salvarStorage(STORAGE_AVISOS_SINDICO, [novo, ...avisos]);
   }
 
-  function registrarFluxo(acao, area) {
+  function registrarFluxo(acao, area, antes = null) {
     registrarMovimentacao(acao, area);
     registrarRelatorio(acao, area);
-    registrarAvisoSindico(acao, area);
+
+    registrarAuditoriaArea({
+      acao: `Área comum - ${acao}`,
+      detalhes: `${area.nome} • Status: ${area.status}`,
+      antes,
+      depois: area,
+      referenciaId: area.id
+    });
+
+    if (
+      acao === "status alterado para Manutenção" ||
+      acao === "status alterado para Disponível"
+    ) {
+      criarNotificacaoArea({
+        titulo:
+          acao === "status alterado para Manutenção"
+            ? "Área em manutenção"
+            : "Área liberada",
+        mensagem: `${area.nome} agora está com status ${area.status}.`,
+        referenciaId: area.id,
+        prioridade:
+          acao === "status alterado para Manutenção" ? "alta" : "normal"
+      });
+    }
   }
 
   const areasFiltradas = areas.filter((area) => {
@@ -149,8 +284,7 @@ function AreasComuns() {
   );
 
   function salvarArea() {
-    if (!novaArea.nome || !novaArea.capacidade || !novaArea.horario) {
-      alert("Preencha todos os campos");
+    if (!validarArea()) {
       return;
     }
 
@@ -165,34 +299,52 @@ function AreasComuns() {
       return;
     }
 
+    const perfilCondominio = obterPerfilCondominio();
+    const usuarioAtual = obterUsuarioAtual();
+
+    const areaFormatada = {
+      ...novaArea,
+      nome: String(novaArea.nome || "").trim(),
+      capacidade: limparCapacidade(novaArea.capacidade),
+      horario: String(novaArea.horario || "").trim(),
+      status: novaArea.status || "Disponível",
+      condominioId: perfilCondominio.condominioId,
+      nomeCondominio: perfilCondominio.nomeCondominio,
+      criadoPor: usuarioAtual.nome || usuarioAtual.usuario || "Administrador"
+    };
+
     let listaAtualizada = [];
     let areaFinal = null;
 
     if (editId !== null) {
+      const areaAntes = areas.find((area) => area.id === editId);
+
       areaFinal = {
-        ...novaArea,
+        ...areaFormatada,
         id: editId,
         impactaBI: true,
         impactaRelatorio: true,
         origemModulo: "AreasComuns",
-        atualizadoEm: new Date().toLocaleString("pt-BR")
+        atualizadoEm: new Date().toLocaleString("pt-BR"),
+        atualizadoEmISO: new Date().toISOString()
       };
 
       listaAtualizada = areas.map((area) =>
         area.id === editId ? areaFinal : area
       );
 
-      registrarFluxo("editada", areaFinal);
+      registrarFluxo("editada", areaFinal, areaAntes);
       setEditId(null);
     } else {
       areaFinal = {
         id: Date.now(),
-        ...novaArea,
+        ...areaFormatada,
         reservasAtivas: 0,
         impactaBI: true,
         impactaRelatorio: true,
         origemModulo: "AreasComuns",
-        criadoEm: new Date().toLocaleString("pt-BR")
+        criadoEm: new Date().toLocaleString("pt-BR"),
+        criadoEmISO: new Date().toISOString()
       };
 
       listaAtualizada = [
@@ -237,12 +389,13 @@ function AreasComuns() {
     salvarStorage(STORAGE_KEY, listaAtualizada);
 
     if (areaExcluida) {
-      registrarFluxo("excluída", areaExcluida);
+      registrarFluxo("excluída", areaExcluida, areaExcluida);
     }
   }
 
   function alterarStatus(id, status) {
     let areaAtualizada = null;
+    const areaAntes = areas.find((area) => area.id === id);
 
     const listaAtualizada = areas.map((area) => {
       if (area.id !== id) return area;
@@ -263,7 +416,7 @@ function AreasComuns() {
     salvarStorage(STORAGE_KEY, listaAtualizada);
 
     if (areaAtualizada) {
-      registrarFluxo(`status alterado para ${status}`, areaAtualizada);
+      registrarFluxo(`status alterado para ${status}`, areaAtualizada, areaAntes);
     }
   }
 
@@ -493,7 +646,7 @@ function AreasComuns() {
                     <div style={styles.infoGrid}>
                       <div style={styles.infoItem}>
                         <span>Capacidade</span>
-                        <strong>{area.capacidade}</strong>
+                        <strong>{area.capacidade || "Opcional"}</strong>
                       </div>
 
                       <div style={styles.infoItem}>
@@ -586,6 +739,7 @@ function AreasComuns() {
                   </label>
 
                   <input
+                    minLength="3"
                     placeholder="Ex: Piscina, Salão de Festas..."
                     value={novaArea.nome}
                     onChange={(e) =>
@@ -604,12 +758,13 @@ function AreasComuns() {
                   </label>
 
                   <input
-                    placeholder="Ex: 50 pessoas"
+                    inputMode="numeric"
+                    placeholder="Opcional. Ex: 50"
                     value={novaArea.capacidade}
                     onChange={(e) =>
                       setNovaArea({
                         ...novaArea,
-                        capacidade: e.target.value
+                        capacidade: limparCapacidade(e.target.value)
                       })
                     }
                     style={styles.input}

@@ -1,17 +1,22 @@
 import { useState } from "react";
+import { registrarAuditoria } from "../../Services/auditoriaService";
+import { criarNotificacao } from "../../Services/notificacaoService";
 
 function OcorrenciasPorteiro() {
   const STORAGE_KEY = "ocorrencias";
   const STORAGE_AVISOS_SINDICO = "avisos_sindico";
   const STORAGE_MOVIMENTACOES = "movimentacoes";
   const STORAGE_RELATORIOS = "relatorios_operacionais";
+  const STORAGE_HISTORICO = "historico_ocorrencias";
 
   const estadoInicial = {
     categoria: "",
     prioridade: "Média",
     titulo: "",
     apartamento: "",
-    descricao: ""
+    descricao: "",
+    turno: "",
+    dataPlantao: ""
   };
 
   const [ocorrencias, setOcorrencias] = useState(() => {
@@ -49,6 +54,125 @@ function OcorrenciasPorteiro() {
     }
   }
 
+  function obterPerfilCondominio() {
+    try {
+      const perfil =
+        JSON.parse(localStorage.getItem("perfil_condominio")) ||
+        JSON.parse(localStorage.getItem("configuracoes")) ||
+        {};
+
+      return {
+        condominioId: perfil.id || perfil.condominioId || null,
+        nomeCondominio: perfil.nomeCondominio || ""
+      };
+    } catch {
+      return {
+        condominioId: null,
+        nomeCondominio: ""
+      };
+    }
+  }
+
+  function turnoAtual() {
+    const hora = new Date().getHours();
+
+    if (hora >= 6 && hora < 12) return "Manhã";
+    if (hora >= 12 && hora < 18) return "Tarde";
+    return "Noite";
+  }
+
+  function validarOcorrencia() {
+    const titulo = String(novaOcorrencia.titulo || "").trim();
+    const descricao = String(novaOcorrencia.descricao || "").trim();
+
+    if (!novaOcorrencia.categoria) {
+      alert("Selecione a categoria da ocorrência.");
+      return false;
+    }
+
+    if (!novaOcorrencia.prioridade) {
+      alert("Selecione a prioridade da ocorrência.");
+      return false;
+    }
+
+    if (titulo.length < 4) {
+      alert("Informe um título válido com pelo menos 4 caracteres.");
+      return false;
+    }
+
+    if (descricao.length < 10) {
+      alert("Descreva melhor a ocorrência. Use pelo menos 10 caracteres.");
+      return false;
+    }
+
+    return true;
+  }
+
+  function registrarAuditoriaOcorrencia({
+    acao,
+    detalhes,
+    antes = null,
+    depois = null,
+    referenciaId = null
+  }) {
+    registrarAuditoria({
+      acao,
+      modulo: "Livro de Ocorrências",
+      detalhes,
+      antes,
+      depois,
+      referenciaId
+    });
+  }
+
+  function criarNotificacaoOcorrencia({
+    titulo,
+    mensagem,
+    referenciaId = null,
+    prioridade = "normal",
+    perfilDestino = "sindico"
+  }) {
+    criarNotificacao({
+      titulo,
+      mensagem,
+      tipo: "Ocorrência",
+      origem: "Livro de Ocorrências",
+      perfilDestino,
+      moduloOrigem: "LivroOcorrencias",
+      referenciaId,
+      prioridade
+    });
+  }
+
+  function registrarHistoricoOcorrencia(acao, registro, antes = null) {
+    const historico = lerStorage(STORAGE_HISTORICO);
+
+    const novoHistorico = {
+      id: Date.now() + 3,
+      ocorrenciaId: registro.id,
+      acao,
+      origem: "Porteiro",
+      titulo: registro.titulo,
+      categoria: registro.categoria,
+      prioridade: registro.prioridade,
+      descricao: registro.descricao,
+      apartamento: registro.apartamento,
+      status: registro.status,
+      porteiroId: registro.porteiroId,
+      porteiroNome: registro.porteiroNome,
+      porteiroUsuario: registro.porteiroUsuario,
+      dataPlantao: registro.dataPlantao,
+      turno: registro.turno,
+      antes,
+      depois: registro,
+      registradoEm: new Date().toLocaleString("pt-BR"),
+      criadoEm: new Date().toISOString(),
+      origemModulo: "LivroOcorrencias"
+    };
+
+    salvarStorage(STORAGE_HISTORICO, [novoHistorico, ...historico]);
+  }
+
   function limparFormulario() {
     setNovaOcorrencia(estadoInicial);
   }
@@ -65,6 +189,10 @@ function OcorrenciasPorteiro() {
       apartamento: registro.apartamento,
       morador: "",
       responsavel: registro.porteiroNome,
+      porteiroId: registro.porteiroId,
+      porteiroUsuario: registro.porteiroUsuario,
+      turno: registro.turno,
+      dataPlantao: registro.dataPlantao,
       status: registro.status,
       respostaSindico: "",
       cienciaSindico: false,
@@ -92,6 +220,10 @@ function OcorrenciasPorteiro() {
       descricao: registro.descricao,
       apartamento: registro.apartamento,
       responsavel: registro.porteiroNome,
+      porteiroId: registro.porteiroId,
+      porteiroUsuario: registro.porteiroUsuario,
+      turno: registro.turno,
+      dataPlantao: registro.dataPlantao,
       status: registro.status,
       data: registro.data,
       hora: registro.hora,
@@ -132,16 +264,12 @@ function OcorrenciasPorteiro() {
   }
 
   function registrarOcorrencia() {
-    if (
-      !novaOcorrencia.categoria ||
-      !novaOcorrencia.titulo ||
-      !novaOcorrencia.descricao
-    ) {
-      alert("Preencha categoria, título e descrição");
+    if (!validarOcorrencia()) {
       return;
     }
 
     const porteiro = obterPorteiroLogado();
+    const perfilCondominio = obterPerfilCondominio();
     const agora = new Date();
 
     const nova = {
@@ -151,12 +279,15 @@ function OcorrenciasPorteiro() {
       tipoRegistro: "Ocorrência",
       categoria: novaOcorrencia.categoria,
       prioridade: novaOcorrencia.prioridade,
-      titulo: novaOcorrencia.titulo,
-      apartamento: novaOcorrencia.apartamento,
-      descricao: novaOcorrencia.descricao,
+      titulo: String(novaOcorrencia.titulo || "").trim(),
+      apartamento: String(novaOcorrencia.apartamento || "").trim(),
+      descricao: String(novaOcorrencia.descricao || "").trim(),
 
       status: "Encaminhada",
       etapa: "encaminhada_ao_sindico",
+
+      condominioId: perfilCondominio.condominioId,
+      nomeCondominio: perfilCondominio.nomeCondominio,
 
       impactaBI: true,
       impactaRelatorio: true,
@@ -167,6 +298,12 @@ function OcorrenciasPorteiro() {
         hour: "2-digit",
         minute: "2-digit"
       }),
+      criadoEm: agora.toISOString(),
+      atualizadoEm: agora.toISOString(),
+      dataPlantao:
+        novaOcorrencia.dataPlantao ||
+        agora.toLocaleDateString("pt-BR"),
+      turno: novaOcorrencia.turno || porteiro?.turno || turnoAtual(),
 
       porteiroId: porteiro?.id || null,
       porteiroNome: porteiro?.nome || "Porteiro",
@@ -197,6 +334,24 @@ function OcorrenciasPorteiro() {
     registrarAvisoSindico(nova);
     registrarMovimentacao(nova);
     registrarRelatorio(nova);
+    registrarHistoricoOcorrencia("criação", nova);
+
+    registrarAuditoriaOcorrencia({
+      acao: "Criou ocorrência",
+      detalhes: `${nova.titulo} • ${nova.categoria} • ${nova.prioridade}`,
+      depois: nova,
+      referenciaId: nova.id
+    });
+
+    criarNotificacaoOcorrencia({
+      titulo:
+        nova.prioridade === "Urgente"
+          ? "Ocorrência urgente registrada"
+          : "Nova ocorrência registrada",
+      mensagem: `${nova.titulo} • ${nova.porteiroNome}`,
+      referenciaId: nova.id,
+      prioridade: nova.prioridade === "Urgente" ? "alta" : "normal"
+    });
 
     limparFormulario();
     setAbaAtiva("encaminhadas");
@@ -211,6 +366,8 @@ function OcorrenciasPorteiro() {
 
     if (!confirmar) return;
 
+    const ocorrenciaExcluida = ocorrencias.find((item) => item.id === id);
+
     const listaAtualizada = ocorrencias.filter(
       (item) => item.id !== id
     );
@@ -223,6 +380,24 @@ function OcorrenciasPorteiro() {
     );
 
     salvarStorage(STORAGE_AVISOS_SINDICO, avisos);
+
+    if (ocorrenciaExcluida) {
+      registrarHistoricoOcorrencia("exclusão", ocorrenciaExcluida, ocorrenciaExcluida);
+
+      registrarAuditoriaOcorrencia({
+        acao: "Excluiu ocorrência",
+        detalhes: `${ocorrenciaExcluida.titulo} • ${ocorrenciaExcluida.categoria}`,
+        antes: ocorrenciaExcluida,
+        referenciaId: id
+      });
+
+      criarNotificacaoOcorrencia({
+        titulo: "Ocorrência removida",
+        mensagem: `${ocorrenciaExcluida.titulo} foi removida pelo porteiro.`,
+        referenciaId: id,
+        prioridade: "alta"
+      });
+    }
   }
 
   function correspondeBusca(item) {
@@ -425,11 +600,50 @@ function OcorrenciasPorteiro() {
           </select>
 
           <label style={styles.label}>
+            Turno do plantão
+          </label>
+
+          <select
+            style={styles.input}
+            value={novaOcorrencia.turno}
+            onChange={(e) =>
+              setNovaOcorrencia({
+                ...novaOcorrencia,
+                turno: e.target.value
+              })
+            }
+          >
+            <option value="">
+              Automático
+            </option>
+            <option>Manhã</option>
+            <option>Tarde</option>
+            <option>Noite</option>
+          </select>
+
+          <label style={styles.label}>
+            Data do plantão
+          </label>
+
+          <input
+            type="date"
+            style={styles.input}
+            value={novaOcorrencia.dataPlantao}
+            onChange={(e) =>
+              setNovaOcorrencia({
+                ...novaOcorrencia,
+                dataPlantao: e.target.value
+              })
+            }
+          />
+
+          <label style={styles.label}>
             Título
           </label>
 
           <input
             style={styles.input}
+            minLength="4"
             placeholder="Ex: Barulho no bloco A"
             value={novaOcorrencia.titulo}
             onChange={(e) =>
@@ -462,6 +676,7 @@ function OcorrenciasPorteiro() {
 
           <textarea
             style={styles.textarea}
+            minLength="10"
             placeholder="Descreva o que aconteceu no plantão..."
             value={novaOcorrencia.descricao}
             onChange={(e) =>
@@ -612,6 +827,10 @@ function OcorrenciasPorteiro() {
 
                       <span>
                         👤 {item.porteiroNome || "Porteiro"}
+                      </span>
+
+                      <span>
+                        🕒 {item.turno || "Plantão não informado"}
                       </span>
 
                       {item.apartamento && (

@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { registrarAuditoria } from "../../Services/auditoriaService";
+import { criarNotificacao } from "../../Services/notificacaoService";
 
 function EncomendasMorador() {
   const STORAGE_ENCOMENDAS = "encomendas";
@@ -61,6 +63,51 @@ function EncomendasMorador() {
     setEsperadas(lerStorage(STORAGE_ESPERADAS));
   }
 
+  function pertenceAoApartamento(item) {
+    const apartamentoMorador =
+      morador?.apartamento ||
+      morador?.apto ||
+      "";
+
+    const apartamentoIdMorador = morador?.apartamentoId || null;
+
+    return (
+      String(item.apartamento || item.apto || "") === String(apartamentoMorador) ||
+      (
+        apartamentoIdMorador &&
+        String(item.apartamentoId || "") === String(apartamentoIdMorador)
+      ) ||
+      item.moradorId === morador?.id ||
+      item.usuario === morador?.usuario ||
+      item.morador === morador?.nome ||
+      item.nome === morador?.nome
+    );
+  }
+
+  function registrarAuditoriaEncomenda(acao, registro, antes = null) {
+    registrarAuditoria({
+      acao,
+      modulo: "Encomendas Morador",
+      detalhes: `${registro?.tipo || "Encomenda"} • Apto ${registro?.apartamento || "-"}`,
+      antes,
+      depois: registro,
+      referenciaId: registro?.id || null
+    });
+  }
+
+  function criarNotificacaoEncomendaMorador(registro, titulo, mensagem) {
+    criarNotificacao({
+      titulo,
+      mensagem,
+      tipo: "Encomendas",
+      origem: "Morador",
+      perfilDestino: "sindico",
+      moduloOrigem: "EncomendasMorador",
+      referenciaId: registro?.id || null,
+      prioridade: "normal"
+    });
+  }
+
   function limparFormulario() {
     setTipoEntrega("");
     setDescricaoEntrega("");
@@ -79,12 +126,15 @@ function EncomendasMorador() {
         registro.descricao ||
         `Morador informou que está aguardando uma entrega de ${registro.tipo}.`,
       apartamento: registro.apartamento,
+      apartamentoId: registro.apartamentoId || null,
       morador: registro.morador,
       responsavel: registro.morador,
       status: "Novo",
       respostaSindico: "",
       cienciaSindico: false,
-      data: registro.data
+      data: registro.data,
+      condominioId: registro.condominioId || null,
+      nomeCondominio: registro.nomeCondominio || ""
     };
 
     salvarStorage(STORAGE_AVISOS_SINDICO, [
@@ -103,8 +153,11 @@ function EncomendasMorador() {
       titulo: `Entrega aguardada - ${registro.tipo}`,
       descricao: registro.descricao,
       apartamento: registro.apartamento,
+      apartamentoId: registro.apartamentoId || null,
       morador: registro.morador,
+      moradorId: registro.moradorId || null,
       transportadora: registro.transportadora,
+      status: registro.status,
       data: registro.data,
       hora: registro.hora
     };
@@ -125,7 +178,9 @@ function EncomendasMorador() {
       titulo: `Entrega aguardada - ${registro.tipo}`,
       descricao: registro.descricao,
       apartamento: registro.apartamento,
+      apartamentoId: registro.apartamentoId || null,
       morador: registro.morador,
+      moradorId: registro.moradorId || null,
       transportadora: registro.transportadora,
       status: registro.status,
       data: registro.data,
@@ -139,8 +194,18 @@ function EncomendasMorador() {
   }
 
   function registrarEsperada() {
+    if (!morador) {
+      alert("Sessão do morador não encontrada.");
+      return;
+    }
+
     if (!tipoEntrega) {
       alert("Selecione o tipo da entrega");
+      return;
+    }
+
+    if (descricaoEntrega && descricaoEntrega.trim().length < 3) {
+      alert("Informe uma descrição válida ou deixe o campo em branco.");
       return;
     }
 
@@ -155,8 +220,15 @@ function EncomendasMorador() {
       nome: morador?.nome || "Morador",
       usuario: morador?.usuario || "",
 
-      apartamento: morador?.apartamento || "",
+      apartamento: morador?.apartamento || morador?.apto || "",
+      apto: morador?.apartamento || morador?.apto || "",
+      apartamentoId: morador?.apartamentoId || null,
       bloco: morador?.bloco || "",
+      tipoMorador: morador?.tipoMorador || "Morador",
+      moradorPrincipal: Boolean(morador?.moradorPrincipal),
+      perfilMorador: morador?.perfilMorador || "dependente",
+      condominioId: morador?.condominioId || null,
+      nomeCondominio: morador?.nomeCondominio || "",
 
       tipo: tipoEntrega,
       transportadora: transportadora || "Não informada",
@@ -174,7 +246,10 @@ function EncomendasMorador() {
 
       recebidaPorteiro: false,
       notificadoMorador: false,
-      cienciaSindico: false
+      cienciaSindico: false,
+      criadoEm: agora.toISOString(),
+      atualizadoEm: agora.toISOString(),
+      origemModulo: "EncomendasMorador"
     };
 
     const atualizadas = [
@@ -188,6 +263,14 @@ function EncomendasMorador() {
     registrarAvisoSindico(nova);
     registrarMovimentacao(nova);
     registrarRelatorio(nova);
+
+    registrarAuditoriaEncomenda("Registrou encomenda esperada", nova);
+
+    criarNotificacaoEncomendaMorador(
+      nova,
+      "Encomenda esperada informada",
+      `${nova.morador} informou uma entrega aguardada para o apto ${nova.apartamento}.`
+    );
 
     limparFormulario();
 
@@ -213,26 +296,19 @@ function EncomendasMorador() {
     );
 
     salvarStorage(STORAGE_AVISOS_SINDICO, avisosAtualizados);
+
+    const cancelada = esperadas.find((item) => item.id === id);
+
+    if (cancelada) {
+      registrarAuditoriaEncomenda("Cancelou encomenda esperada", cancelada, cancelada);
+    }
   }
 
   const encomendasMorador =
-    encomendas.filter(
-      (e) =>
-        String(e.apartamento) === String(morador?.apartamento) ||
-        e.moradorId === morador?.id ||
-        e.morador === morador?.nome ||
-        e.nome === morador?.nome
-    );
+    encomendas.filter((e) => pertenceAoApartamento(e));
 
   const esperadasMorador =
-    esperadas.filter(
-      (e) =>
-        String(e.apartamento) === String(morador?.apartamento) ||
-        e.moradorId === morador?.id ||
-        e.usuario === morador?.usuario ||
-        e.morador === morador?.nome ||
-        e.nome === morador?.nome
-    );
+    esperadas.filter((e) => pertenceAoApartamento(e));
 
   const encomendasFiltradas =
     encomendasMorador.filter((item) => {
@@ -245,22 +321,38 @@ function EncomendasMorador() {
         item.transportadora?.toLowerCase().includes(texto) ||
         item.status?.toLowerCase().includes(texto);
 
+      const statusNormalizado = String(item.status || "").toLowerCase();
+
       const correspondeStatus =
         filtroStatus === "Todos" ||
-        item.status === filtroStatus;
+        statusNormalizado === String(filtroStatus).toLowerCase();
 
       return correspondeBusca && correspondeStatus;
     });
 
   const pendentes =
-    encomendasMorador.filter(
-      (e) => e.status === "pendente"
-    );
+    encomendasMorador.filter((e) => {
+      const status = String(e.status || "").toLowerCase();
+
+      return (
+        status === "pendente" ||
+        status === "recebido" ||
+        status === "aguardando" ||
+        status === "aguardando retirada" ||
+        status === "atrasado"
+      );
+    });
 
   const retiradas =
-    encomendasMorador.filter(
-      (e) => e.status === "retirada"
-    );
+    encomendasMorador.filter((e) => {
+      const status = String(e.status || "").toLowerCase();
+
+      return (
+        status === "retirada" ||
+        status === "retirado" ||
+        status === "entregue"
+      );
+    });
 
   return (
     <div style={styles.container}>
@@ -291,7 +383,11 @@ function EncomendasMorador() {
               </span>
 
               <span style={styles.apBadge}>
-                Apto {morador.apartamento || "-"}
+                Apto {morador.apartamento || morador.apto || "-"}
+              </span>
+
+              <span style={styles.apBadge}>
+                {morador.moradorPrincipal ? "Principal" : "Dependente"}
               </span>
             </div>
           )}
@@ -493,10 +589,10 @@ function EncomendasMorador() {
                 style={styles.filter}
               >
                 <option>Todos</option>
-                <option value="pendente">
+                <option value="recebido">
                   Pendente
                 </option>
-                <option value="retirada">
+                <option value="entregue">
                   Retirada
                 </option>
               </select>

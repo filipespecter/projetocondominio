@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { registrarAuditoria } from "../../Services/auditoriaService";
+import { criarNotificacao } from "../../Services/notificacaoService";
 
 function Configuracoes() {
   const [abaAtiva, setAbaAtiva] = useState("dados");
@@ -12,7 +14,14 @@ function Configuracoes() {
     telefone: "",
     sindico: "",
     email: "",
-    corTema: "#16a34a"
+    corTema: "#16a34a",
+
+    logoUrl: "",
+    plano: "MVP Local",
+    statusComercial: "Ativo",
+    quantidadeUnidades: "",
+    responsavelTecnico: "",
+    observacoesComerciais: ""
   });
 
   const [preferencias, setPreferencias] = useState({
@@ -103,15 +112,42 @@ function Configuracoes() {
     }
   }
 
+  function registrarConfiguracaoAuditoria(acao, detalhes, depois = null, antes = null) {
+    registrarAuditoria({
+      acao,
+      modulo: "Configurações",
+      detalhes,
+      antes,
+      depois
+    });
+  }
+
+  function criarNotificacaoConfiguracao(titulo, mensagem, prioridade = "normal") {
+    criarNotificacao({
+      titulo,
+      mensagem,
+      tipo: "Configuração",
+      origem: "Configurações",
+      perfilDestino: "sindico",
+      moduloOrigem: "Configurações",
+      prioridade
+    });
+  }
+
   function carregarTudo() {
     const dadosConfig = carregarObjeto("configuracoes", null);
+    const dadosPerfil = carregarObjeto("perfil_condominio", null);
     const dadosPreferencias = carregarObjeto("preferenciasSistema", null);
     const dadosWhatsapp = carregarObjeto("whatsappConfig", null);
     const dadosBI = carregarObjeto("biConfig", null);
     const dadosSeguranca = carregarObjeto("segurancaConfig", null);
 
-    if (dadosConfig) {
-      setConfig(dadosConfig);
+    if (dadosConfig || dadosPerfil) {
+      setConfig((prev) => ({
+        ...prev,
+        ...(dadosConfig || {}),
+        ...(dadosPerfil || {})
+      }));
     }
 
     if (dadosPreferencias) {
@@ -198,27 +234,81 @@ function Configuracoes() {
   }
 
   function salvarDadosCondominio() {
-    localStorage.setItem("configuracoes", JSON.stringify(config));
+    const perfilCondominio = {
+      ...config,
+      atualizadoEm: new Date().toLocaleString("pt-BR"),
+      origem: "Configuracoes",
+      preparadoParaSaaS: true
+    };
+
+    localStorage.setItem("configuracoes", JSON.stringify(perfilCondominio));
+    localStorage.setItem("perfil_condominio", JSON.stringify(perfilCondominio));
+
+    registrarConfiguracaoAuditoria(
+      "Atualizou perfil do condomínio",
+      `Perfil do condomínio ${config.nomeCondominio || "não informado"} atualizado.`,
+      perfilCondominio
+    );
+
+    criarNotificacaoConfiguracao(
+      "Perfil do condomínio atualizado",
+      `Os dados institucionais do condomínio ${config.nomeCondominio || "não informado"} foram atualizados.`
+    );
+
     feedback("Dados do condomínio salvos com sucesso.");
   }
 
   function salvarPreferencias() {
     localStorage.setItem("preferenciasSistema", JSON.stringify(preferencias));
+
+    registrarConfiguracaoAuditoria(
+      "Atualizou preferências do sistema",
+      "Preferências gerais do GreenCondo foram atualizadas.",
+      preferencias
+    );
+
     feedback("Preferências salvas com sucesso.");
   }
 
   function salvarWhatsapp() {
     localStorage.setItem("whatsappConfig", JSON.stringify(whatsappConfig));
+
+    registrarConfiguracaoAuditoria(
+      "Atualizou configurações de WhatsApp",
+      `Provider configurado: ${whatsappConfig.provider}`,
+      whatsappConfig
+    );
+
     feedback("Configurações de WhatsApp salvas com sucesso.");
   }
 
   function salvarBI() {
     localStorage.setItem("biConfig", JSON.stringify(biConfig));
+
+    registrarConfiguracaoAuditoria(
+      "Atualizou configurações do BI",
+      `Período padrão do BI: ${biConfig.periodoPadrao}`,
+      biConfig
+    );
+
     feedback("Configurações do BI salvas com sucesso.");
   }
 
   function salvarSeguranca() {
     localStorage.setItem("segurancaConfig", JSON.stringify(segurancaConfig));
+
+    registrarConfiguracaoAuditoria(
+      "Atualizou configurações de segurança",
+      "Configurações de autenticação e JWT futuro foram atualizadas.",
+      segurancaConfig
+    );
+
+    criarNotificacaoConfiguracao(
+      "Segurança atualizada",
+      "As configurações de segurança do sistema foram atualizadas.",
+      "alta"
+    );
+
     feedback("Configurações de segurança salvas com sucesso.");
   }
 
@@ -275,6 +365,18 @@ function Configuracoes() {
     }
 
     salvarUsuarios(listaAtualizada);
+
+    registrarConfiguracaoAuditoria(
+      editId ? "Editou usuário administrativo" : "Criou usuário administrativo",
+      `${novoUsuario.nome} - ${novoUsuario.usuario}`,
+      novoUsuario
+    );
+
+    criarNotificacaoConfiguracao(
+      editId ? "Usuário administrativo editado" : "Novo usuário administrativo",
+      `${novoUsuario.nome} foi ${editId ? "editado" : "criado"} no sistema.`
+    );
+
     setNovoUsuario(usuarioInicial);
     setEditId(null);
     feedback("Usuário salvo com sucesso.");
@@ -319,6 +421,20 @@ function Configuracoes() {
     const listaAtualizada = usuariosSindico.filter((u) => u.id !== id);
 
     salvarUsuarios(listaAtualizada);
+
+    registrarConfiguracaoAuditoria(
+      "Excluiu usuário administrativo",
+      `${usuario?.nome || "Usuário"} foi excluído.`,
+      null,
+      usuario
+    );
+
+    criarNotificacaoConfiguracao(
+      "Usuário administrativo excluído",
+      `${usuario?.nome || "Usuário"} foi removido do sistema.`,
+      "alta"
+    );
+
     feedback("Usuário excluído com sucesso.");
   }
 
@@ -327,6 +443,8 @@ function Configuracoes() {
       alert("Apenas o Síndico Mestre pode alterar status.");
       return;
     }
+
+    const usuarioAntes = usuariosSindico.find((u) => u.id === id);
 
     const listaAtualizada = usuariosSindico.map((u) =>
       u.id === id && u.perfil !== "mestre"
@@ -338,6 +456,16 @@ function Configuracoes() {
     );
 
     salvarUsuarios(listaAtualizada);
+
+    const usuarioDepois = listaAtualizada.find((u) => u.id === id);
+
+    registrarConfiguracaoAuditoria(
+      "Alterou status de usuário administrativo",
+      `${usuarioAntes?.nome || "Usuário"} teve o status alterado para ${usuarioDepois?.status}.`,
+      usuarioDepois,
+      usuarioAntes
+    );
+
     feedback("Status atualizado com sucesso.");
   }
 
@@ -400,6 +528,21 @@ function Configuracoes() {
     localStorage.setItem("sessaoSindico", JSON.stringify(sessaoAtualizada));
     sessionStorage.setItem("sessaoSindico", JSON.stringify(sessaoAtualizada));
 
+    registrarConfiguracaoAuditoria(
+      "Alterou credenciais do Síndico Mestre",
+      "As credenciais principais do sistema foram atualizadas.",
+      {
+        usuario: credenciaisMestre.usuario,
+        senhaAlterada: Boolean(credenciaisMestre.senha)
+      }
+    );
+
+    criarNotificacaoConfiguracao(
+      "Credenciais do Síndico Mestre alteradas",
+      "As credenciais principais do sistema foram atualizadas.",
+      "alta"
+    );
+
     setCredenciaisMestre({
       usuario: credenciaisMestre.usuario,
       senha: "",
@@ -408,8 +551,7 @@ function Configuracoes() {
 
     feedback("Credenciais atualizadas com sucesso.");
   }
-
-  function gerarBackup() {
+    function gerarBackup() {
     if (!isMestre) {
       alert("Apenas o Síndico Mestre pode gerar backup.");
       return;
@@ -417,6 +559,7 @@ function Configuracoes() {
 
     const chaves = [
       "configuracoes",
+      "perfil_condominio",
       "preferenciasSistema",
       "whatsappConfig",
       "biConfig",
@@ -445,7 +588,10 @@ function Configuracoes() {
 
       "avisos",
       "avisos_sindico",
+      "notificacoes",
       "notificacoesMorador",
+
+      "auditoria_logs",
 
       "ocorrencias",
       "historico_ocorrencias",
@@ -472,8 +618,9 @@ function Configuracoes() {
     const backup = {
       sistema: preferencias.nomeSistema || "GreenCondo",
       tipo: "backup-completo-greencondo",
-      versao: "front-localstorage-v1",
+      versao: "front-localstorage-v2-profissional",
       geradoEm: new Date().toISOString(),
+      perfilCondominio: config,
       dados
     };
 
@@ -493,6 +640,20 @@ function Configuracoes() {
     localStorage.setItem(
       "ultimoBackupInfinity",
       new Date().toLocaleString("pt-BR")
+    );
+
+    registrarConfiguracaoAuditoria(
+      "Gerou backup completo",
+      "Backup completo do sistema foi gerado.",
+      {
+        totalChaves: chaves.length,
+        versao: "front-localstorage-v2-profissional"
+      }
+    );
+
+    criarNotificacaoConfiguracao(
+      "Backup completo gerado",
+      "Um backup completo do GreenCondo foi gerado com sucesso."
     );
 
     feedback("Backup completo gerado com sucesso.");
@@ -529,9 +690,36 @@ function Configuracoes() {
           localStorage.setItem(chave, JSON.stringify(conteudo.dados[chave]));
         });
 
+        if (conteudo.perfilCondominio) {
+          localStorage.setItem(
+            "perfil_condominio",
+            JSON.stringify(conteudo.perfilCondominio)
+          );
+
+          localStorage.setItem(
+            "configuracoes",
+            JSON.stringify(conteudo.perfilCondominio)
+          );
+        }
+
         localStorage.setItem(
           "ultimoBackupInfinity",
           new Date().toLocaleString("pt-BR")
+        );
+
+        registrarConfiguracaoAuditoria(
+          "Restaurou backup",
+          "Backup do sistema foi restaurado.",
+          {
+            arquivo: arquivo.name,
+            restauradoEm: new Date().toLocaleString("pt-BR")
+          }
+        );
+
+        criarNotificacaoConfiguracao(
+          "Backup restaurado",
+          "Um backup foi restaurado no GreenCondo.",
+          "alta"
         );
 
         carregarTudo();
@@ -545,7 +733,8 @@ function Configuracoes() {
 
     event.target.value = "";
   }
-    return (
+
+  return (
     <div style={styles.container}>
       <section style={styles.hero}>
         <div>
@@ -672,6 +861,66 @@ function Configuracoes() {
               </div>
             </Campo>
 
+            <Campo label="Logo do condomínio URL">
+              <input
+                value={config.logoUrl}
+                onChange={(e) => setConfig({ ...config, logoUrl: e.target.value })}
+                style={styles.input}
+                placeholder="https://..."
+              />
+            </Campo>
+
+            <Campo label="Plano comercial">
+              <select
+                value={config.plano}
+                onChange={(e) => setConfig({ ...config, plano: e.target.value })}
+                style={styles.input}
+              >
+                <option>MVP Local</option>
+                <option>Básico</option>
+                <option>Profissional</option>
+                <option>Premium</option>
+                <option>Enterprise</option>
+              </select>
+            </Campo>
+
+            <Campo label="Status comercial">
+              <select
+                value={config.statusComercial}
+                onChange={(e) =>
+                  setConfig({ ...config, statusComercial: e.target.value })
+                }
+                style={styles.input}
+              >
+                <option>Ativo</option>
+                <option>Teste</option>
+                <option>Suspenso</option>
+                <option>Cancelado</option>
+              </select>
+            </Campo>
+
+            <Campo label="Quantidade de unidades">
+              <input
+                value={config.quantidadeUnidades}
+                onChange={(e) =>
+                  setConfig({ ...config, quantidadeUnidades: e.target.value })
+                }
+                style={styles.input}
+                placeholder="Ex: 80 apartamentos"
+              />
+            </Campo>
+
+            <Campo label="Responsável técnico/comercial">
+              <input
+                value={config.responsavelTecnico}
+                onChange={(e) =>
+                  setConfig({ ...config, responsavelTecnico: e.target.value })
+                }
+                style={styles.input}
+                placeholder="Ex: Star Infinity Code"
+              />
+            </Campo>
+
             <div style={styles.groupFull}>
               <label style={styles.label}>Endereço</label>
 
@@ -679,6 +928,22 @@ function Configuracoes() {
                 value={config.endereco}
                 onChange={(e) => setConfig({ ...config, endereco: e.target.value })}
                 style={styles.input}
+              />
+            </div>
+
+            <div style={styles.groupFull}>
+              <label style={styles.label}>Observações comerciais</label>
+
+              <input
+                value={config.observacoesComerciais}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    observacoesComerciais: e.target.value
+                  })
+                }
+                style={styles.input}
+                placeholder="Ex: Cliente em fase de teste, contrato mensal, implantação inicial..."
               />
             </div>
           </div>
@@ -954,8 +1219,7 @@ function Configuracoes() {
           </button>
         </section>
       )}
-
-      {abaAtiva === "backup" && (
+            {abaAtiva === "backup" && (
         <section style={styles.panel}>
           <div style={styles.panelHeader}>
             <div>
@@ -976,7 +1240,7 @@ function Configuracoes() {
               <p>
                 Baixe um arquivo JSON com configurações, usuários,
                 avisos, reservas, visitantes, encomendas, BI,
-                relatórios, notificações e históricos.
+                relatórios, notificações, auditoria e históricos.
               </p>
 
               <button
@@ -1106,7 +1370,8 @@ function Configuracoes() {
           </div>
         </section>
       )}
-            {abaAtiva === "bi" && (
+
+      {abaAtiva === "bi" && (
         <section style={styles.panel}>
           <div style={styles.panelHeader}>
             <div>

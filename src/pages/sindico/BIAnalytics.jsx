@@ -22,7 +22,8 @@ import {
   buscarAtividadesRecentes,
   gerarComparativosBI,
   gerarDadosComparativoGrafico,
-  gerarResumoExecutivoBI
+  gerarResumoExecutivoBI,
+  gerarRankingsPremiumBI
 } from "../../Services/biService";
 
 function BIAnalytics() {
@@ -41,6 +42,7 @@ function BIAnalytics() {
   const [comparativos, setComparativos] = useState({});
   const [dadosComparativo, setDadosComparativo] = useState([]);
   const [resumoExecutivo, setResumoExecutivo] = useState([]);
+  const [rankingsPremium, setRankingsPremium] = useState({});
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState("");
 
   useEffect(() => {
@@ -60,6 +62,7 @@ function BIAnalytics() {
     setComparativos(gerarComparativosBI(periodoSelecionado));
     setDadosComparativo(gerarDadosComparativoGrafico(periodoSelecionado));
     setResumoExecutivo(gerarResumoExecutivoBI(periodoSelecionado));
+    setRankingsPremium(gerarRankingsPremiumBI(periodoSelecionado));
     setUltimaAtualizacao(new Date().toLocaleString("pt-BR"));
   }
 
@@ -305,7 +308,14 @@ function BIAnalytics() {
               icon="🏢"
               title="Apartamentos"
               value={indicadores.totalApartamentos || 0}
-              detail="Unidades registradas"
+              detail={`${indicadores.totalApartamentosOcupados || 0} ocupados`}
+            />
+
+            <IndicatorCard
+              icon="👑"
+              title="Moradores principais"
+              value={indicadores.totalMoradoresPrincipais || 0}
+              detail={`${indicadores.totalDependentes || 0} dependentes`}
             />
 
             <IndicatorCard
@@ -360,9 +370,37 @@ function BIAnalytics() {
             <IndicatorCard
               icon="🔔"
               title="Notificações"
-              value={indicadores.totalNotificacoesMorador || 0}
-              detail="Moradores"
+              value={(indicadores.totalNotificacoesMorador || 0) + (indicadores.totalNotificacoesSistema || 0)}
+              detail="Moradores e sistema"
             />
+
+            <IndicatorCard
+              icon="🧰"
+              title="Prestadores"
+              value={indicadores.totalPrestadores || 0}
+              detail={`${indicadores.totalPrestadoresExecucao || 0} em execução`}
+            />
+
+            <IndicatorCard
+              icon="🏗️"
+              title="Áreas comuns"
+              value={indicadores.totalAreas || 0}
+              detail={`${indicadores.totalAreasManutencao || 0} em manutenção`}
+            />
+
+            <IndicatorCard
+              icon="🧾"
+              title="Auditoria"
+              value={indicadores.totalAuditorias || 0}
+              detail="Registros do sistema"
+            />
+          </section>
+
+          <section style={styles.rankingGrid}>
+            <RankingBox title="Top áreas reservadas" dados={rankingsPremium.areasMaisReservadas || []} />
+            <RankingBox title="Moradores com mais reservas" dados={rankingsPremium.moradoresComMaisReservas || []} />
+            <RankingBox title="Apartamentos com visitantes" dados={rankingsPremium.apartamentosComMaisVisitantes || []} />
+            <RankingBox title="Prestadores utilizados" dados={rankingsPremium.prestadoresMaisUtilizados || []} />
           </section>
 
           <div style={styles.extraGrid}>
@@ -545,6 +583,25 @@ function BIAnalytics() {
   );
 }
 
+function RankingBox({ title, dados }) {
+  return (
+    <div style={styles.rankingBox}>
+      <h3 style={styles.rankingTitle}>{title}</h3>
+
+      {dados.length === 0 ? (
+        <p style={styles.rankingEmpty}>Sem dados suficientes.</p>
+      ) : (
+        dados.map((item, index) => (
+          <div key={index} style={styles.rankingItem}>
+            <span>{index + 1}. {item.nome}</span>
+            <strong>{item.total}</strong>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
 function MiniMetric({ label, value }) {
   return (
     <div style={styles.miniMetric}>
@@ -572,6 +629,39 @@ const styles = {
       "repeat(auto-fit,minmax(360px,1fr))",
     gap: "22px",
     marginBottom: "22px"
+  },
+
+  rankingGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))",
+    gap: "18px",
+    marginBottom: "22px"
+  },
+
+  rankingBox: {
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.10)",
+    borderRadius: "22px",
+    padding: "18px"
+  },
+
+  rankingTitle: {
+    margin: "0 0 12px",
+    color: "#dcfce7"
+  },
+
+  rankingItem: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: "12px",
+    padding: "10px 0",
+    borderBottom: "1px solid rgba(255,255,255,0.08)",
+    color: "rgba(255,255,255,0.78)"
+  },
+
+  rankingEmpty: {
+    color: "rgba(255,255,255,0.52)",
+    margin: 0
   },
 
   hero: {

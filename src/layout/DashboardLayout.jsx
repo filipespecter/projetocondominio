@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 import {
   Link,
   Outlet,
@@ -22,13 +24,67 @@ import {
   FaHardHat
 } from "react-icons/fa";
 
+import { contarNaoLidas } from "../Services/notificacaoService";
+
 function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const [perfilCondominio, setPerfilCondominio] = useState({
+    nomeCondominio: "Condomínio",
+    logoUrl: "",
+    plano: "Gestão Premium"
+  });
+
+  const [notificacoesNaoLidas, setNotificacoesNaoLidas] = useState(0);
+
   const sessaoSalva =
     localStorage.getItem("sessaoSindico") ||
     sessionStorage.getItem("sessaoSindico");
+
+  useEffect(() => {
+    carregarPerfilCondominio();
+    carregarNotificacoes();
+
+    const interval = setInterval(() => {
+      carregarPerfilCondominio();
+      carregarNotificacoes();
+    }, 1000);
+
+    window.addEventListener("storage", carregarPerfilCondominio);
+    window.addEventListener("storage", carregarNotificacoes);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("storage", carregarPerfilCondominio);
+      window.removeEventListener("storage", carregarNotificacoes);
+    };
+  }, []);
+
+  function carregarPerfilCondominio() {
+    try {
+      const perfil =
+        JSON.parse(localStorage.getItem("perfil_condominio")) ||
+        JSON.parse(localStorage.getItem("configuracoes")) ||
+        {};
+
+      setPerfilCondominio({
+        nomeCondominio: perfil.nomeCondominio || "Condomínio",
+        logoUrl: perfil.logoUrl || "",
+        plano: perfil.plano || "Gestão Premium"
+      });
+    } catch {
+      setPerfilCondominio({
+        nomeCondominio: "Condomínio",
+        logoUrl: "",
+        plano: "Gestão Premium"
+      });
+    }
+  }
+
+  function carregarNotificacoes() {
+    setNotificacoesNaoLidas(contarNaoLidas("sindico"));
+  }
 
   if (!sessaoSalva) {
     return <Navigate to="/login/sindico" replace />;
@@ -65,10 +121,22 @@ function DashboardLayout() {
       <aside style={styles.sidebar}>
         <div>
           <div style={styles.logoContainer}>
-            <div style={styles.logoIcon}>🏢</div>
+            <div style={styles.logoIcon}>
+              {perfilCondominio.logoUrl ? (
+                <img
+                  src={perfilCondominio.logoUrl}
+                  alt="Logo do condomínio"
+                  style={styles.logoImage}
+                />
+              ) : (
+                "🏢"
+              )}
+            </div>
 
             <div>
-              <h2 style={styles.logo}>Condomínio</h2>
+              <h2 style={styles.logo}>
+                {perfilCondominio.nomeCondominio || "Condomínio"}
+              </h2>
 
               <p style={styles.logoSub}>
                 Painel Executivo
@@ -77,8 +145,20 @@ function DashboardLayout() {
           </div>
 
           <div style={styles.premiumBadge}>
-            ✨ Gestão Premium
+            ✨ {perfilCondominio.plano || "Gestão Premium"}
           </div>
+
+          {notificacoesNaoLidas > 0 && (
+            <div style={styles.notificationBox}>
+              <FaBell />
+
+              <span>
+                {notificacoesNaoLidas} notificação
+                {notificacoesNaoLidas > 1 ? "ões" : ""} pendente
+                {notificacoesNaoLidas > 1 ? "s" : ""}
+              </span>
+            </div>
+          )}
 
           <div style={styles.userBox}>
             <div style={styles.userAvatar}>
@@ -177,7 +257,11 @@ function DashboardLayout() {
               to="/dashboard/avisos"
               active={itemAtivo("/dashboard/avisos")}
               icon={<FaBell />}
-              label="Avisos"
+              label={
+                notificacoesNaoLidas > 0
+                  ? `Avisos (${notificacoesNaoLidas})`
+                  : "Avisos"
+              }
             />
 
             <MenuItem
@@ -306,7 +390,14 @@ const styles = {
     fontSize: "30px",
     boxShadow:
       "inset 0 0 0 1px rgba(255,255,255,0.14), 0 14px 30px rgba(0,0,0,0.18)",
-    backdropFilter: "blur(12px)"
+    backdropFilter: "blur(12px)",
+    overflow: "hidden"
+  },
+
+  logoImage: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover"
   },
 
   logo: {
@@ -339,6 +430,20 @@ const styles = {
     fontSize: "12px",
     fontWeight: "900",
     marginBottom: "18px"
+  },
+
+  notificationBox: {
+    background: "rgba(250,204,21,0.16)",
+    border: "1px solid rgba(250,204,21,0.28)",
+    color: "#fef9c3",
+    borderRadius: "17px",
+    padding: "12px 13px",
+    marginBottom: "18px",
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    fontSize: "13px",
+    fontWeight: "900"
   },
 
   userBox: {

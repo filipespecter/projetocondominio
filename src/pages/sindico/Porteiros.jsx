@@ -1,7 +1,11 @@
 import { useState } from "react";
+import { registrarAuditoria } from "../../Services/auditoriaService";
+import { criarNotificacao } from "../../Services/notificacaoService";
 
 function Porteiros() {
   const STORAGE_KEY = "porteiros";
+  const STORAGE_MOVIMENTACOES = "movimentacoes";
+  const STORAGE_RELATORIOS = "relatorios_operacionais";
 
   const estadoInicialPorteiro = {
     nome: "",
@@ -10,12 +14,29 @@ function Porteiros() {
     usuario: "",
     senha: "",
     status: "Ativo",
-    ultimoLogin: null
+    codigoPorteiro: "",
+    ultimoLogin: null,
+    ultimoLogout: null,
+    ultimoPlantao: null,
+    condominioId: null,
+    nomeCondominio: ""
   };
 
   const [porteiros, setPorteiros] = useState(() => {
     const dados = localStorage.getItem(STORAGE_KEY);
-    return dados ? JSON.parse(dados) : [];
+
+    if (!dados) return [];
+
+    const lista = JSON.parse(dados);
+
+    return lista.map((porteiro, index) => ({
+      ...porteiro,
+      codigoPorteiro: porteiro.codigoPorteiro || gerarCodigoPorteiro(index + 1),
+      status: porteiro.status || "Ativo",
+      ultimoLogin: porteiro.ultimoLogin || null,
+      ultimoLogout: porteiro.ultimoLogout || null,
+      ultimoPlantao: porteiro.ultimoPlantao || null
+    }));
   });
 
   const [mostrarModal, setMostrarModal] = useState(false);
@@ -33,6 +54,7 @@ function Porteiros() {
       p.turno?.toLowerCase().includes(texto) ||
       p.telefone?.toLowerCase().includes(texto) ||
       p.usuario?.toLowerCase().includes(texto) ||
+      p.codigoPorteiro?.toLowerCase().includes(texto) ||
       p.status?.toLowerCase().includes(texto);
 
     const correspondeStatus =
@@ -66,20 +88,178 @@ function Porteiros() {
     (p) => p.turno === "Noite"
   ).length;
 
+  function lerStorage(chave) {
+    try {
+      return JSON.parse(localStorage.getItem(chave)) || [];
+    } catch {
+      return [];
+    }
+  }
+
+  function salvarStorage(chave, dados) {
+    localStorage.setItem(chave, JSON.stringify(dados));
+  }
+
+  function limparTelefone(valor) {
+    return String(valor || "").replace(/\D/g, "");
+  }
+
+  function gerarCodigoPorteiro(numero) {
+    return `P${String(numero).padStart(3, "0")}`;
+  }
+
+  function proximoCodigoPorteiro() {
+    const numeros = porteiros
+      .map((p) => Number(String(p.codigoPorteiro || "").replace(/\D/g, "")))
+      .filter((n) => !isNaN(n));
+
+    const proximo = numeros.length > 0 ? Math.max(...numeros) + 1 : porteiros.length + 1;
+
+    return gerarCodigoPorteiro(proximo);
+  }
+
+  function obterPerfilCondominio() {
+    try {
+      const perfil =
+        JSON.parse(localStorage.getItem("perfil_condominio")) ||
+        JSON.parse(localStorage.getItem("configuracoes")) ||
+        {};
+
+      return {
+        condominioId: perfil.id || perfil.condominioId || null,
+        nomeCondominio: perfil.nomeCondominio || ""
+      };
+    } catch {
+      return {
+        condominioId: null,
+        nomeCondominio: ""
+      };
+    }
+  }
+
+  function obterUsuarioAtual() {
+    try {
+      return (
+        JSON.parse(localStorage.getItem("usuarioSindico")) ||
+        JSON.parse(sessionStorage.getItem("usuarioSindico")) ||
+        {}
+      );
+    } catch {
+      return {};
+    }
+  }
+
+  function registrarMovimentacaoPorteiro(acao, porteiro) {
+    const movimentacoes = lerStorage(STORAGE_MOVIMENTACOES);
+
+    const nova = {
+      id: Date.now(),
+      tipo: "Porteiro",
+      origem: "Síndico",
+      titulo: `${acao}: ${porteiro?.nome || "Porteiro"}`,
+      descricao: `${porteiro?.codigoPorteiro || "-"} • Turno ${porteiro?.turno || "-"}`,
+      status: porteiro?.status || "",
+      data: new Date().toLocaleDateString("pt-BR"),
+      hora: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      }),
+      criadoEm: new Date().toISOString()
+    };
+
+    salvarStorage(STORAGE_MOVIMENTACOES, [nova, ...movimentacoes]);
+
+    const relatorios = lerStorage(STORAGE_RELATORIOS);
+    salvarStorage(STORAGE_RELATORIOS, [nova, ...relatorios]);
+  }
+
+  function registrarAuditoriaPorteiro({
+    acao,
+    detalhes,
+    antes = null,
+    depois = null,
+    referenciaId = null
+  }) {
+    registrarAuditoria({
+      acao,
+      modulo: "Porteiros",
+      detalhes,
+      antes,
+      depois,
+      referenciaId
+    });
+  }
+
+  function criarNotificacaoPorteiro({
+    titulo,
+    mensagem,
+    referenciaId = null,
+    prioridade = "normal"
+  }) {
+    criarNotificacao({
+      titulo,
+      mensagem,
+      tipo: "Porteiros",
+      origem: "Porteiros",
+      perfilDestino: "sindico",
+      moduloOrigem: "Porteiros",
+      referenciaId,
+      prioridade
+    });
+  }
+
+  function validarPorteiro() {
+    const nome = String(novoPorteiro.nome || "").trim();
+    const telefone = limparTelefone(novoPorteiro.telefone);
+    const usuario = String(novoPorteiro.usuario || "").trim();
+    const senha = String(novoPorteiro.senha || "").trim();
+
+    if (nome.length < 3) {
+      alert("Informe um nome válido com pelo menos 3 caracteres.");
+      return false;
+    }
+
+    if (!novoPorteiro.turno) {
+      alert("Selecione o turno do porteiro.");
+      return false;
+    }
+
+    if (telefone.length < 10 || telefone.length > 11) {
+      alert("Informe um telefone válido com DDD. Use apenas números.");
+      return false;
+    }
+
+    if (usuario.length < 4) {
+      alert("O usuário de login deve ter pelo menos 4 caracteres.");
+      return false;
+    }
+
+    if (/\s/.test(usuario)) {
+      alert("O usuário de login não pode conter espaços.");
+      return false;
+    }
+
+    if (senha.length < 4) {
+      alert("A senha deve ter pelo menos 4 caracteres.");
+      return false;
+    }
+
+    if (!novoPorteiro.status) {
+      alert("Selecione o status do porteiro.");
+      return false;
+    }
+
+    return true;
+  }
+
+
   function limparFormulario() {
     setNovoPorteiro(estadoInicialPorteiro);
     setEditId(null);
   }
 
   function salvarPorteiro() {
-    if (
-      !novoPorteiro.nome ||
-      !novoPorteiro.turno ||
-      !novoPorteiro.telefone ||
-      !novoPorteiro.usuario ||
-      !novoPorteiro.senha
-    ) {
-      alert("Preencha todos os campos");
+    if (!validarPorteiro()) {
       return;
     }
 
@@ -95,30 +275,85 @@ function Porteiros() {
       return;
     }
 
+    const perfilCondominio = obterPerfilCondominio();
+    const usuarioAtual = obterUsuarioAtual();
+
+    const porteiroFormatado = {
+      ...novoPorteiro,
+      nome: String(novoPorteiro.nome || "").trim(),
+      turno: novoPorteiro.turno,
+      telefone: limparTelefone(novoPorteiro.telefone),
+      usuario: String(novoPorteiro.usuario || "").trim(),
+      senha: String(novoPorteiro.senha || "").trim(),
+      status: novoPorteiro.status || "Ativo",
+      codigoPorteiro: novoPorteiro.codigoPorteiro || proximoCodigoPorteiro(),
+      condominioId: perfilCondominio.condominioId,
+      nomeCondominio: perfilCondominio.nomeCondominio,
+      criadoPor: usuarioAtual.nome || usuarioAtual.usuario || "Administrador",
+      atualizadoEm: new Date().toISOString()
+    };
+
     let listaAtualizada = [];
 
     if (editId !== null) {
+      const porteiroAntes = porteiros.find((p) => p.id === editId);
+
       listaAtualizada = porteiros.map((p) =>
         p.id === editId
           ? {
               ...p,
-              ...novoPorteiro,
+              ...porteiroFormatado,
               id: editId
             }
           : p
       );
 
+      const porteiroDepois = listaAtualizada.find((p) => p.id === editId);
+
+      registrarAuditoriaPorteiro({
+        acao: "Editou porteiro",
+        detalhes: `${porteiroFormatado.nome} - ${porteiroFormatado.codigoPorteiro}`,
+        antes: porteiroAntes,
+        depois: porteiroDepois,
+        referenciaId: editId
+      });
+
+      criarNotificacaoPorteiro({
+        titulo: "Porteiro atualizado",
+        mensagem: `${porteiroFormatado.nome} teve o cadastro atualizado.`,
+        referenciaId: editId
+      });
+
+      registrarMovimentacaoPorteiro("Editou porteiro", porteiroDepois);
+
       setEditId(null);
     } else {
       const novo = {
         id: Date.now(),
-        ...novoPorteiro
+        ...porteiroFormatado,
+        dataCadastro: new Date().toLocaleDateString("pt-BR"),
+        criadoEm: new Date().toISOString()
       };
 
       listaAtualizada = [
         ...porteiros,
         novo
       ];
+
+      registrarAuditoriaPorteiro({
+        acao: "Cadastrou porteiro",
+        detalhes: `${novo.nome} - ${novo.codigoPorteiro}`,
+        depois: novo,
+        referenciaId: novo.id
+      });
+
+      criarNotificacaoPorteiro({
+        titulo: "Novo porteiro cadastrado",
+        mensagem: `${novo.nome} foi cadastrado no turno ${novo.turno}.`,
+        referenciaId: novo.id
+      });
+
+      registrarMovimentacaoPorteiro("Cadastrou porteiro", novo);
     }
 
     setPorteiros(listaAtualizada);
@@ -149,6 +384,8 @@ function Porteiros() {
 
     if (!confirmar) return;
 
+    const porteiroExcluido = porteiros.find((p) => p.id === id);
+
     const lista = porteiros.filter(
       (p) => p.id !== id
     );
@@ -159,6 +396,22 @@ function Porteiros() {
       STORAGE_KEY,
       JSON.stringify(lista)
     );
+
+    registrarAuditoriaPorteiro({
+      acao: "Excluiu porteiro",
+      detalhes: `${porteiroExcluido?.nome || "Porteiro"} - ${porteiroExcluido?.codigoPorteiro || "-"}`,
+      antes: porteiroExcluido,
+      referenciaId: id
+    });
+
+    criarNotificacaoPorteiro({
+      titulo: "Porteiro removido",
+      mensagem: `${porteiroExcluido?.nome || "Um porteiro"} foi removido do cadastro.`,
+      referenciaId: id,
+      prioridade: "alta"
+    });
+
+    registrarMovimentacaoPorteiro("Excluiu porteiro", porteiroExcluido);
   }
 
   function fecharModal() {
@@ -396,7 +649,7 @@ function Porteiros() {
                       </h3>
 
                       <p style={styles.operatorUser}>
-                        @{p.usuario}
+                        @{p.usuario} • {p.codigoPorteiro || "P---"}
                       </p>
                     </div>
 
@@ -424,6 +677,11 @@ function Porteiros() {
                   </div>
 
                   <div style={styles.operatorData}>
+                    <div style={styles.dataItem}>
+                      <span>Código</span>
+                      <strong>{p.codigoPorteiro || "P---"}</strong>
+                    </div>
+
                     <div style={styles.dataItem}>
                       <span>Telefone</span>
                       <strong>{p.telefone || "-"}</strong>
@@ -498,6 +756,7 @@ function Porteiros() {
                   </label>
 
                   <input
+                    minLength="3"
                     placeholder="Ex: Carlos Henrique"
                     value={novoPorteiro.nome}
                     onChange={(e) =>
@@ -541,12 +800,14 @@ function Porteiros() {
                   </label>
 
                   <input
-                    placeholder="Ex: (81) 99999-9999"
+                    inputMode="numeric"
+                    maxLength="11"
+                    placeholder="Ex: 81999999999"
                     value={novoPorteiro.telefone}
                     onChange={(e) =>
                       setNovoPorteiro({
                         ...novoPorteiro,
-                        telefone: e.target.value
+                        telefone: limparTelefone(e.target.value)
                       })
                     }
                     style={styles.input}
@@ -587,12 +848,13 @@ function Porteiros() {
                   </label>
 
                   <input
+                    minLength="4"
                     placeholder="Ex: porteiro01"
                     value={novoPorteiro.usuario}
                     onChange={(e) =>
                       setNovoPorteiro({
                         ...novoPorteiro,
-                        usuario: e.target.value
+                        usuario: e.target.value.replace(/\s/g, "")
                       })
                     }
                     style={styles.input}
@@ -606,6 +868,7 @@ function Porteiros() {
 
                   <input
                     type="password"
+                    minLength="4"
                     placeholder="Senha de acesso"
                     value={novoPorteiro.senha}
                     onChange={(e) =>

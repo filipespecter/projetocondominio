@@ -48,7 +48,11 @@ function DashboardMorador() {
     }
 
     const apartamentoMorador =
-      usuario?.apartamento || "";
+      usuario?.apartamento ||
+      usuario?.apto ||
+      "";
+
+    const apartamentoIdMorador = usuario?.apartamentoId || null;
 
     const avisos =
       JSON.parse(localStorage.getItem("avisos")) || [];
@@ -62,33 +66,61 @@ function DashboardMorador() {
     const ocorrencias =
       JSON.parse(localStorage.getItem("ocorrencias")) || [];
 
-    const encomendasMorador =
-      encomendas.filter(
-        (item) =>
-          String(item.apartamento) ===
-            String(apartamentoMorador) &&
-          item.status === "pendente"
+    const sugestoesMorador =
+      JSON.parse(localStorage.getItem("sugestoesMorador")) || [];
+
+    const sugestoesReclamacoes =
+      JSON.parse(localStorage.getItem("sugestoes_reclamacoes")) || [];
+
+    function pertenceAoApartamento(item) {
+      return (
+        String(item.apartamento || item.apto || "") ===
+          String(apartamentoMorador) ||
+        (
+          apartamentoIdMorador &&
+          String(item.apartamentoId || "") === String(apartamentoIdMorador)
+        )
       );
+    }
+
+    const encomendasMorador =
+      encomendas.filter((item) => {
+        const status = String(item.status || "").toLowerCase();
+
+        return (
+          pertenceAoApartamento(item) &&
+          (
+            status === "pendente" ||
+            status === "recebido" ||
+            status === "aguardando" ||
+            status === "aguardando retirada" ||
+            status === "atrasado"
+          )
+        );
+      });
 
     const reservasMorador =
       reservas.filter(
         (item) =>
           item.moradorId === usuario?.id ||
           item.moradorNome === usuario?.nome ||
-          String(item.apartamento) ===
-            String(apartamentoMorador)
+          item.morador === usuario?.nome ||
+          pertenceAoApartamento(item)
       );
 
     const solicitacoesMorador =
-      ocorrencias.filter(
+      [
+        ...ocorrencias,
+        ...sugestoesMorador,
+        ...sugestoesReclamacoes
+      ].filter(
         (item) =>
-          item.origem === "morador" &&
-          (
-            item.moradorId === usuario?.id ||
-            item.moradorUsuario === usuario?.usuario ||
-            String(item.apartamento) ===
-              String(apartamentoMorador)
-          )
+          item.origem === "morador" ||
+          item.origemModulo === "Morador" ||
+          item.moradorId === usuario?.id ||
+          item.moradorUsuario === usuario?.usuario ||
+          item.usuario === usuario?.usuario ||
+          pertenceAoApartamento(item)
       );
 
     const solicitacoesResolvidas =
@@ -103,7 +135,10 @@ function DashboardMorador() {
       encomendas: encomendasMorador.length,
       reservas: reservasMorador.length,
       solicitacoes: solicitacoesMorador.length,
-      resolvidas: solicitacoesResolvidas.length
+      resolvidas: solicitacoesResolvidas.length,
+      moradorPrincipal: Boolean(usuario?.moradorPrincipal),
+      perfilMorador: usuario?.perfilMorador || "dependente",
+      tipoMorador: usuario?.tipoMorador || "Morador"
     });
 
     const novasAtividades = [];
@@ -190,6 +225,14 @@ function DashboardMorador() {
                 Bloco {morador.bloco}
               </span>
             )}
+
+            <span style={styles.apBadge}>
+              {morador?.moradorPrincipal ? "Morador principal" : "Dependente"}
+            </span>
+
+            <span style={styles.apBadge}>
+              {morador?.tipoMorador || "Morador"}
+            </span>
           </div>
         </div>
 
@@ -233,10 +276,22 @@ function DashboardMorador() {
         </button>
 
         <button
-          style={styles.actionButton}
-          onClick={() =>
-            navigate("/dashboard/morador/reservas")
-          }
+          style={{
+            ...styles.actionButton,
+            ...(
+              morador?.permissoesMorador?.podeReservar === false
+                ? styles.actionDisabled
+                : {}
+            )
+          }}
+          onClick={() => {
+            if (morador?.permissoesMorador?.podeReservar === false) {
+              alert("Seu perfil está como dependente. A permissão de reserva pode ser liberada pelo condomínio.");
+              return;
+            }
+
+            navigate("/dashboard/morador/reservas");
+          }}
         >
           <span style={styles.actionIconBlue}>
             📅
@@ -248,7 +303,9 @@ function DashboardMorador() {
             </strong>
 
             <p>
-              Áreas comuns disponíveis
+              {morador?.permissoesMorador?.podeReservar === false
+                ? "Disponível para morador principal"
+                : "Áreas comuns disponíveis"}
             </p>
           </div>
         </button>
@@ -430,6 +487,26 @@ function DashboardMorador() {
             </strong>
           </div>
 
+          <div style={styles.infoBox}>
+            <span style={styles.infoLabel}>
+              Tipo de acesso
+            </span>
+
+            <strong>
+              {morador?.moradorPrincipal ? "Morador principal" : "Dependente"}
+            </strong>
+          </div>
+
+          <div style={styles.infoBox}>
+            <span style={styles.infoLabel}>
+              Tipo de morador
+            </span>
+
+            <strong>
+              {morador?.tipoMorador || "-"}
+            </strong>
+          </div>
+
           <div style={styles.resolvedBox}>
             <span>
               ✅ Solicitações resolvidas
@@ -587,6 +664,11 @@ const styles = {
     textAlign: "left",
     boxShadow:
       "0 12px 35px rgba(15,23,42,0.07)"
+  },
+
+  actionDisabled: {
+    opacity: 0.65,
+    cursor: "not-allowed"
   },
 
   actionIcon: {

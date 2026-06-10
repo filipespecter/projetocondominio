@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { registrarAuditoria } from "../../Services/auditoriaService";
+import { criarNotificacao } from "../../Services/notificacaoService";
 
 function Visitantes() {
   const STORAGE_KEY = "visitantes";
@@ -10,6 +12,7 @@ function Visitantes() {
   const estadoInicialVisitante = {
     nome: "",
     documento: "",
+    telefone: "",
     apartamento: "",
     morador: "",
     moradorId: "",
@@ -18,8 +21,13 @@ function Visitantes() {
     autorizado: false,
     bloqueado: false,
     status: "Aguardando",
-    tipo: "Visita",
-    cienciaSindico: true
+    tipo: "Visitante",
+    cienciaSindico: true,
+    condominioId: null,
+    nomeCondominio: "",
+    criadoPor: "",
+    porteiroId: null,
+    porteiroNome: ""
   };
 
   const [visitantes, setVisitantes] = useState(() =>
@@ -76,6 +84,7 @@ function Visitantes() {
     const correspondeBusca =
       v.nome?.toLowerCase().includes(texto) ||
       v.documento?.toLowerCase().includes(texto) ||
+      v.telefone?.toLowerCase().includes(texto) ||
       v.apartamento?.toLowerCase().includes(texto) ||
       v.morador?.toLowerCase().includes(texto) ||
       v.tipo?.toLowerCase().includes(texto) ||
@@ -108,6 +117,173 @@ function Visitantes() {
     (v) => v.status === "Saiu"
   );
 
+  function limparDocumento(valor) {
+    return String(valor || "").replace(/[^\dA-Za-z.-]/g, "");
+  }
+
+  function limparTelefone(valor) {
+    return String(valor || "").replace(/\D/g, "");
+  }
+
+  function validarHora(valor) {
+    if (!valor) return true;
+    return /^([01]\d|2[0-3]):[0-5]\d$/.test(valor);
+  }
+
+  function validarDocumento(valor) {
+    const doc = String(valor || "").trim();
+
+    const cpfNumerico = doc.replace(/\D/g, "");
+
+    if (cpfNumerico.length === 11) {
+      return true;
+    }
+
+    const rgValido = /^[0-9A-Za-z.-]{5,14}$/.test(doc);
+
+    return rgValido;
+  }
+
+  function obterPerfilCondominio() {
+    try {
+      const perfil =
+        JSON.parse(localStorage.getItem("perfil_condominio")) ||
+        JSON.parse(localStorage.getItem("configuracoes")) ||
+        {};
+
+      return {
+        condominioId: perfil.id || perfil.condominioId || null,
+        nomeCondominio: perfil.nomeCondominio || ""
+      };
+    } catch {
+      return {
+        condominioId: null,
+        nomeCondominio: ""
+      };
+    }
+  }
+
+  function obterUsuarioAtual() {
+    try {
+      return (
+        JSON.parse(localStorage.getItem("usuarioSindico")) ||
+        JSON.parse(sessionStorage.getItem("usuarioSindico")) ||
+        JSON.parse(localStorage.getItem("usuarioPorteiro")) ||
+        JSON.parse(sessionStorage.getItem("usuarioPorteiro")) ||
+        {}
+      );
+    } catch {
+      return {};
+    }
+  }
+
+  function registrarAuditoriaVisitante({
+    acao,
+    detalhes,
+    antes = null,
+    depois = null,
+    referenciaId = null
+  }) {
+    registrarAuditoria({
+      acao,
+      modulo: "Visitantes",
+      detalhes,
+      antes,
+      depois,
+      referenciaId
+    });
+  }
+
+  function criarNotificacaoVisitante({
+    titulo,
+    mensagem,
+    referenciaId = null,
+    prioridade = "normal",
+    perfilDestino = "sindico"
+  }) {
+    criarNotificacao({
+      titulo,
+      mensagem,
+      tipo: "Visitantes",
+      origem: "Visitantes",
+      perfilDestino,
+      moduloOrigem: "Visitantes",
+      referenciaId,
+      prioridade
+    });
+  }
+
+  function validarVisitante() {
+    const nome = String(novoVisitante.nome || "").trim();
+    const documento = String(novoVisitante.documento || "").trim();
+    const telefone = limparTelefone(novoVisitante.telefone);
+    const entrada = String(novoVisitante.entrada || "").trim();
+
+    if (nome.length < 3) {
+      alert("Informe o nome do visitante com pelo menos 3 caracteres.");
+      return false;
+    }
+
+    if (!documento) {
+      alert("Informe o documento do visitante.");
+      return false;
+    }
+
+    if (!validarDocumento(documento)) {
+      alert("Informe um CPF com 11 números ou um RG válido.");
+      return false;
+    }
+
+    if (telefone && (telefone.length < 10 || telefone.length > 11)) {
+      alert("Informe um telefone válido com DDD ou deixe em branco.");
+      return false;
+    }
+
+    if (!novoVisitante.tipo) {
+      alert("Selecione o tipo do visitante.");
+      return false;
+    }
+
+    if (entrada && !validarHora(entrada)) {
+      alert("Informe a hora no formato HH:mm. Exemplo: 14:35");
+      return false;
+    }
+
+    if (!novoVisitante.morador) {
+      alert("Selecione o morador responsável.");
+      return false;
+    }
+
+    if (!novoVisitante.apartamento) {
+      alert("O apartamento do morador responsável é obrigatório.");
+      return false;
+    }
+
+    const documentoNormalizado = documento.replace(/\D/g, "") || documento.toLowerCase();
+
+    const visitanteDuplicado = visitantes.find((v) => {
+      const docExistente =
+        String(v.documento || "").replace(/\D/g, "") ||
+        String(v.documento || "").toLowerCase();
+
+      const statusAtual = normalizarStatus(v.status);
+
+      return (
+        docExistente === documentoNormalizado &&
+        v.id !== editId &&
+        statusAtual !== "Saiu" &&
+        statusAtual !== "Bloqueado"
+      );
+    });
+
+    if (visitanteDuplicado) {
+      alert("Já existe um visitante ativo/pendente com este documento.");
+      return false;
+    }
+
+    return true;
+  }
+
   function registrarMovimentacao(acao, visitante) {
     const movimentacoes = lerStorage(STORAGE_MOVIMENTACOES);
 
@@ -128,7 +304,8 @@ function Visitantes() {
       }),
       timestamp: Date.now(),
       impactaBI: true,
-      origemModulo: "Visitantes"
+      origemModulo: "Visitantes",
+      atualizadoEm: agora.toISOString()
     };
 
     salvarStorage(STORAGE_MOVIMENTACOES, [nova, ...movimentacoes]);
@@ -240,21 +417,37 @@ function Visitantes() {
     salvarStorage(STORAGE_AVISOS_SINDICO, atualizados);
   }
 
-  function registrarFluxo(acao, visitante) {
+  function registrarFluxo(acao, visitante, antes = null) {
     registrarMovimentacao(acao, visitante);
     registrarRelatorio(acao, visitante);
     registrarHistorico(acao, visitante);
     registrarAvisoSindico(acao, visitante);
+
+    registrarAuditoriaVisitante({
+      acao: `Visitante - ${acao}`,
+      detalhes: `${visitante.nome} - Apto ${visitante.apartamento}`,
+      antes,
+      depois: visitante,
+      referenciaId: visitante.id
+    });
+
+    if (["cadastro", "edição", "exclusão"].includes(acao)) {
+      criarNotificacaoVisitante({
+        titulo:
+          acao === "cadastro"
+            ? "Novo visitante registrado"
+            : acao === "edição"
+            ? "Visitante atualizado"
+            : "Visitante removido",
+        mensagem: `${visitante.nome} • Apartamento ${visitante.apartamento}`,
+        referenciaId: visitante.id,
+        prioridade: acao === "exclusão" ? "alta" : "normal"
+      });
+    }
   }
 
   function salvarVisitante() {
-    if (
-      !novoVisitante.nome ||
-      !novoVisitante.documento ||
-      !novoVisitante.apartamento ||
-      !novoVisitante.morador
-    ) {
-      alert("Preencha os campos obrigatórios");
+    if (!validarVisitante()) {
       return;
     }
 
@@ -268,10 +461,22 @@ function Visitantes() {
       statusFinal = "Autorizado";
     }
 
+    const perfilCondominio = obterPerfilCondominio();
+    const usuarioAtual = obterUsuarioAtual();
+
     const visitanteCompleto = {
       ...novoVisitante,
+      nome: String(novoVisitante.nome || "").trim(),
+      documento: limparDocumento(novoVisitante.documento),
+      telefone: limparTelefone(novoVisitante.telefone),
+      tipo: novoVisitante.tipo || "Visitante",
       status: statusFinal,
       cienciaSindico: true,
+      condominioId: perfilCondominio.condominioId,
+      nomeCondominio: perfilCondominio.nomeCondominio,
+      criadoPor: usuarioAtual.nome || usuarioAtual.usuario || "Sistema",
+      porteiroId: usuarioAtual.tipo === "porteiro" ? usuarioAtual.id || null : novoVisitante.porteiroId || null,
+      porteiroNome: usuarioAtual.tipo === "porteiro" ? usuarioAtual.nome || usuarioAtual.usuario || "" : novoVisitante.porteiroNome || "",
       data: agora.toLocaleDateString("pt-BR"),
       hora: agora.toLocaleTimeString([], {
         hour: "2-digit",
@@ -304,16 +509,23 @@ function Visitantes() {
           : v
       );
 
-      registrarFluxo("edição", {
-        ...visitanteCompleto,
-        id: editId
-      });
+      const visitanteAntes = visitantes.find((v) => v.id === editId);
+
+      registrarFluxo(
+        "edição",
+        {
+          ...visitanteCompleto,
+          id: editId
+        },
+        visitanteAntes
+      );
 
       setEditId(null);
     } else {
       const novo = {
         id: Date.now(),
-        ...visitanteCompleto
+        ...visitanteCompleto,
+        criadoEm: agora.toISOString()
       };
 
       listaAtualizada = [novo, ...visitantes];
@@ -341,6 +553,20 @@ function Visitantes() {
       registrarMovimentacao("exclusão", visitante);
       registrarRelatorio("exclusão", visitante);
       registrarHistorico("exclusão", visitante);
+
+      registrarAuditoriaVisitante({
+        acao: "Excluiu visitante",
+        detalhes: `${visitante.nome} - Apto ${visitante.apartamento}`,
+        antes: visitante,
+        referenciaId: id
+      });
+
+      criarNotificacaoVisitante({
+        titulo: "Visitante removido",
+        mensagem: `${visitante.nome} foi removido do controle de acesso.`,
+        referenciaId: id,
+        prioridade: "alta"
+      });
     }
 
     const novaLista = visitantes.filter((v) => v.id !== id);
@@ -418,6 +644,29 @@ function Visitantes() {
       registrarRelatorio(`status: ${status}`, visitanteAtualizado);
       registrarHistorico(`status: ${status}`, visitanteAtualizado);
       atualizarAvisoSindico(visitanteAtualizado);
+
+      registrarAuditoriaVisitante({
+        acao: `Alterou status do visitante para ${status}`,
+        detalhes: `${visitanteAtualizado.nome} - Apto ${visitanteAtualizado.apartamento}`,
+        depois: visitanteAtualizado,
+        referenciaId: visitanteAtualizado.id
+      });
+
+      criarNotificacaoVisitante({
+        titulo:
+          status === "Autorizado"
+            ? "Visitante autorizado"
+            : status === "Em Visita"
+            ? "Visitante entrou no condomínio"
+            : status === "Saiu"
+            ? "Visitante saiu do condomínio"
+            : status === "Bloqueado"
+            ? "Visitante bloqueado"
+            : "Status de visitante atualizado",
+        mensagem: `${visitanteAtualizado.nome} • Apartamento ${visitanteAtualizado.apartamento}`,
+        referenciaId: visitanteAtualizado.id,
+        prioridade: status === "Bloqueado" ? "alta" : "normal"
+      });
     }
 
     setVisitantes(lista);
@@ -504,8 +753,10 @@ function Visitantes() {
   }
 
   function tipoVisual(tipo) {
-    if (tipo === "Entrega") return "📦";
+    if (tipo === "Entregador") return "📦";
     if (tipo === "Prestador") return "🧰";
+    if (tipo === "Técnico") return "🔧";
+    if (tipo === "Corretor") return "🏘️";
     if (tipo === "Familiar") return "👨‍👩‍👧";
     return "👤";
   }
@@ -706,6 +957,11 @@ function Visitantes() {
                     </div>
 
                     <div style={styles.infoItem}>
+                      <span>Telefone</span>
+                      <strong>{v.telefone || "-"}</strong>
+                    </div>
+
+                    <div style={styles.infoItem}>
                       <span>Entrada</span>
                       <strong>
                         {v.entrada || v.horarioEntrada || v.hora || "-"}
@@ -785,6 +1041,7 @@ function Visitantes() {
                   <label style={styles.label}>Nome</label>
 
                   <input
+                    minLength="3"
                     placeholder="Nome do visitante"
                     value={novoVisitante.nome}
                     onChange={(e) =>
@@ -801,12 +1058,30 @@ function Visitantes() {
                   <label style={styles.label}>Documento</label>
 
                   <input
-                    placeholder="Documento"
+                    placeholder="CPF ou RG"
                     value={novoVisitante.documento}
                     onChange={(e) =>
                       setNovoVisitante({
                         ...novoVisitante,
-                        documento: e.target.value
+                        documento: limparDocumento(e.target.value)
+                      })
+                    }
+                    style={styles.input}
+                  />
+                </div>
+
+                <div style={styles.formRow}>
+                  <label style={styles.label}>Telefone</label>
+
+                  <input
+                    inputMode="numeric"
+                    maxLength="11"
+                    placeholder="Ex: 81999999999"
+                    value={novoVisitante.telefone}
+                    onChange={(e) =>
+                      setNovoVisitante({
+                        ...novoVisitante,
+                        telefone: limparTelefone(e.target.value)
                       })
                     }
                     style={styles.input}
@@ -826,10 +1101,12 @@ function Visitantes() {
                     }
                     style={styles.input}
                   >
-                    <option>Visita</option>
-                    <option>Entrega</option>
-                    <option>Prestador</option>
+                    <option>Visitante</option>
                     <option>Familiar</option>
+                    <option>Prestador</option>
+                    <option>Entregador</option>
+                    <option>Corretor</option>
+                    <option>Técnico</option>
                   </select>
                 </div>
 
@@ -838,6 +1115,7 @@ function Visitantes() {
 
                   <input
                     placeholder="Ex: 14:35"
+                    maxLength="5"
                     value={novoVisitante.entrada}
                     onChange={(e) =>
                       setNovoVisitante({

@@ -1,19 +1,47 @@
 import { useState } from "react";
+import { registrarAuditoria } from "../../Services/auditoriaService";
+import { criarNotificacao } from "../../Services/notificacaoService";
 
 function Apartamentos() {
   const STORAGE_KEY = "apartamentos";
+  const STORAGE_MOVIMENTACOES = "movimentacoes";
+  const STORAGE_RELATORIOS = "relatorios_operacionais";
 
   const estadoInicialApartamento = {
     bloco: "",
     numero: "",
     andar: "",
     morador: "",
-    status: "Ocupado"
+    moradoresIds: [],
+    moradoresNomes: [],
+    moradorPrincipalId: null,
+    moradorPrincipalNome: "",
+    status: "Ocupado",
+    condominioId: null,
+    nomeCondominio: ""
   };
 
   const [apartamentos, setApartamentos] = useState(() => {
     const dados = localStorage.getItem(STORAGE_KEY);
-    return dados ? JSON.parse(dados) : [];
+
+    if (!dados) return [];
+
+    const lista = JSON.parse(dados);
+
+    return lista.map((ap) => ({
+      ...ap,
+      bloco: ap.bloco || "",
+      numero: ap.numero || "",
+      andar: ap.andar || "",
+      morador: ap.morador || "",
+      moradoresIds: ap.moradoresIds || [],
+      moradoresNomes: ap.moradoresNomes || (ap.morador ? [ap.morador] : []),
+      moradorPrincipalId: ap.moradorPrincipalId || null,
+      moradorPrincipalNome: ap.moradorPrincipalNome || "",
+      moradorPrincipalId: ap.moradorPrincipalId || null,
+      moradorPrincipalNome: ap.moradorPrincipalNome || "",
+      status: ap.status || "Ocupado"
+    }));
   });
 
   const [moradores] = useState(() => {
@@ -35,6 +63,7 @@ function Apartamentos() {
       ap.numero?.toLowerCase().includes(texto) ||
       ap.andar?.toLowerCase().includes(texto) ||
       ap.morador?.toLowerCase().includes(texto) ||
+      ap.moradoresNomes?.join(" ").toLowerCase().includes(texto) ||
       ap.status?.toLowerCase().includes(texto);
 
     const correspondeStatus =
@@ -44,23 +73,212 @@ function Apartamentos() {
     return correspondeBusca && correspondeStatus;
   });
 
+  function lerStorage(chave) {
+    try {
+      return JSON.parse(localStorage.getItem(chave)) || [];
+    } catch {
+      return [];
+    }
+  }
+
+  function salvarStorage(chave, dados) {
+    localStorage.setItem(chave, JSON.stringify(dados));
+  }
+
+  function limparNumero(valor) {
+    return String(valor || "").replace(/\D/g, "");
+  }
+
+  function obterPerfilCondominio() {
+    try {
+      const perfil =
+        JSON.parse(localStorage.getItem("perfil_condominio")) ||
+        JSON.parse(localStorage.getItem("configuracoes")) ||
+        {};
+
+      return {
+        condominioId: perfil.id || perfil.condominioId || null,
+        nomeCondominio: perfil.nomeCondominio || ""
+      };
+    } catch {
+      return {
+        condominioId: null,
+        nomeCondominio: ""
+      };
+    }
+  }
+
+  function obterUsuarioAtual() {
+    try {
+      return (
+        JSON.parse(localStorage.getItem("usuarioSindico")) ||
+        JSON.parse(sessionStorage.getItem("usuarioSindico")) ||
+        {}
+      );
+    } catch {
+      return {};
+    }
+  }
+
+  function registrarMovimentacaoApartamento(acao, apartamento) {
+    const movimentacoes = lerStorage(STORAGE_MOVIMENTACOES);
+
+    const nova = {
+      id: Date.now(),
+      tipo: "Apartamento",
+      origem: "Síndico",
+      titulo: `${acao}: Bloco ${apartamento?.bloco || "-"} Apto ${apartamento?.numero || "-"}`,
+      descricao: `Status: ${apartamento?.status || "-"} • Andar: ${apartamento?.andar || "-"}`,
+      status: apartamento?.status || "",
+      data: new Date().toLocaleDateString("pt-BR"),
+      hora: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      }),
+      criadoEm: new Date().toISOString()
+    };
+
+    salvarStorage(STORAGE_MOVIMENTACOES, [nova, ...movimentacoes]);
+
+    const relatorios = lerStorage(STORAGE_RELATORIOS);
+
+    salvarStorage(STORAGE_RELATORIOS, [nova, ...relatorios]);
+  }
+
+  function registrarAuditoriaApartamento({
+    acao,
+    detalhes,
+    antes = null,
+    depois = null,
+    referenciaId = null
+  }) {
+    registrarAuditoria({
+      acao,
+      modulo: "Apartamentos",
+      detalhes,
+      antes,
+      depois,
+      referenciaId
+    });
+  }
+
+  function criarNotificacaoApartamento({
+    titulo,
+    mensagem,
+    referenciaId = null,
+    prioridade = "normal"
+  }) {
+    criarNotificacao({
+      titulo,
+      mensagem,
+      tipo: "Apartamentos",
+      origem: "Apartamentos",
+      perfilDestino: "sindico",
+      moduloOrigem: "Apartamentos",
+      referenciaId,
+      prioridade
+    });
+  }
+
+  function moradoresDoApartamento(numeroApartamento) {
+    return moradores.filter(
+      (morador) =>
+        String(morador.apto || morador.apartamento || "") ===
+        String(numeroApartamento || "")
+    );
+  }
+
+  function obterMoradorPrincipal(lista) {
+    return lista.find((morador) => morador.moradorPrincipal) || lista[0] || null;
+  }
+
+  function sincronizarMoradoresComApartamento(apartamento) {
+    const moradoresAtuais = lerStorage("moradores");
+
+    const atualizados = moradoresAtuais.map((morador) => {
+      const estaVinculado = (apartamento.moradoresIds || []).some(
+        (id) => String(id) === String(morador.id)
+      );
+
+      if (!estaVinculado) return morador;
+
+      return {
+        ...morador,
+        apartamentoId: apartamento.id,
+        apto: apartamento.numero,
+        apartamento: apartamento.numero,
+        atualizadoEm: new Date().toISOString()
+      };
+    });
+
+    salvarStorage("moradores", atualizados);
+  }
+
+  function validarApartamento() {
+    const bloco = String(novoAp.bloco || "").trim();
+    const numero = String(novoAp.numero || "").trim();
+    const andar = String(novoAp.andar || "").trim();
+
+    if (!bloco) {
+      alert("Informe o bloco do apartamento.");
+      return false;
+    }
+
+    if (!numero) {
+      alert("Informe o número do apartamento.");
+      return false;
+    }
+
+    if (!/^[0-9A-Za-z-]+$/.test(numero)) {
+      alert("O número do apartamento deve conter apenas letras, números ou hífen.");
+      return false;
+    }
+
+    if (!andar) {
+      alert("Informe o andar do apartamento.");
+      return false;
+    }
+
+    if (!/^\d+$/.test(andar)) {
+      alert("O andar deve conter apenas números.");
+      return false;
+    }
+
+    if (!novoAp.status) {
+      alert("Selecione o status do apartamento.");
+      return false;
+    }
+
+    return true;
+  }
+
   function selecionarMorador(moradorId) {
     const moradorSelecionado = moradores.find(
       (m) => String(m.id) === String(moradorId)
     );
 
-    if (!moradorSelecionado) {
-      setNovoAp({
-        ...novoAp,
-        morador: ""
-      });
+    if (!moradorSelecionado) return;
 
+    const moradoresIdsAtuais = novoAp.moradoresIds || [];
+    const moradoresNomesAtuais = novoAp.moradoresNomes || [];
+
+    if (moradoresIdsAtuais.some((id) => String(id) === String(moradorSelecionado.id))) {
       return;
     }
 
+    const novosIds = [...moradoresIdsAtuais, moradorSelecionado.id];
+    const novosNomes = [...moradoresNomesAtuais, moradorSelecionado.nome];
+    const principalAtual =
+      moradores.find((m) => m.moradorPrincipal && novosIds.some((id) => String(id) === String(m.id))) ||
+      moradorSelecionado;
+
     setNovoAp({
       ...novoAp,
-      morador: moradorSelecionado.nome,
+      morador: principalAtual?.nome || novosNomes[0] || "",
+      moradoresIds: novosIds,
+      moradoresNomes: novosNomes,
+      moradorPrincipalId: principalAtual?.id || null,
+      moradorPrincipalNome: principalAtual?.nome || "",
       numero:
         novoAp.numero ||
         moradorSelecionado.apartamento ||
@@ -69,9 +287,30 @@ function Apartamentos() {
     });
   }
 
+  function removerMoradorVinculado(moradorId) {
+    const novosIds = (novoAp.moradoresIds || []).filter(
+      (id) => String(id) !== String(moradorId)
+    );
+
+    const novosMoradores = moradores.filter((m) =>
+      novosIds.some((id) => String(id) === String(m.id))
+    );
+
+    const novosNomes = novosMoradores.map((m) => m.nome);
+    const principal = obterMoradorPrincipal(novosMoradores);
+
+    setNovoAp({
+      ...novoAp,
+      morador: principal?.nome || novosNomes[0] || "",
+      moradoresIds: novosIds,
+      moradoresNomes: novosNomes,
+      moradorPrincipalId: principal?.id || null,
+      moradorPrincipalNome: principal?.nome || ""
+    });
+  }
+
   function salvarApartamento() {
-    if (!novoAp.bloco || !novoAp.numero || !novoAp.andar) {
-      alert("Preencha os campos obrigatórios");
+    if (!validarApartamento()) {
       return;
     }
 
@@ -87,26 +326,98 @@ function Apartamentos() {
       return;
     }
 
+    const perfilCondominio = obterPerfilCondominio();
+    const usuarioAtual = obterUsuarioAtual();
+
+    const moradoresSelecionados = moradores.filter((morador) =>
+      (novoAp.moradoresIds || []).some((id) => String(id) === String(morador.id))
+    );
+
+    const moradoresJaDoApartamento = moradoresDoApartamento(novoAp.numero);
+
+    const mapaMoradores = new Map();
+
+    [...moradoresSelecionados, ...moradoresJaDoApartamento].forEach((morador) => {
+      mapaMoradores.set(String(morador.id), morador);
+    });
+
+    const moradoresVinculados = Array.from(mapaMoradores.values());
+    const principal = obterMoradorPrincipal(moradoresVinculados);
+
+    const apartamentoFormatado = {
+      ...novoAp,
+      bloco: String(novoAp.bloco || "").trim().toUpperCase(),
+      numero: String(novoAp.numero || "").trim(),
+      andar: limparNumero(novoAp.andar),
+      morador: principal?.nome || moradoresVinculados[0]?.nome || novoAp.morador || "",
+      moradoresIds: moradoresVinculados.map((morador) => morador.id),
+      moradoresNomes: moradoresVinculados.map((morador) => morador.nome),
+      moradorPrincipalId: principal?.id || null,
+      moradorPrincipalNome: principal?.nome || "",
+      status: novoAp.status || "Ocupado",
+      condominioId: perfilCondominio.condominioId,
+      nomeCondominio: perfilCondominio.nomeCondominio,
+      criadoPor: usuarioAtual.nome || usuarioAtual.usuario || "Administrador",
+      atualizadoEm: new Date().toISOString()
+    };
+
     let listaAtualizada = [];
 
     if (editId !== null) {
+      const apartamentoAntes = apartamentos.find((ap) => ap.id === editId);
+
       listaAtualizada = apartamentos.map((ap) =>
         ap.id === editId
           ? {
-              ...novoAp,
+              ...apartamentoFormatado,
               id: editId
             }
           : ap
       );
 
+      const apartamentoDepois = listaAtualizada.find((ap) => ap.id === editId);
+
+      registrarAuditoriaApartamento({
+        acao: "Editou apartamento",
+        detalhes: `Bloco ${apartamentoFormatado.bloco} - Apto ${apartamentoFormatado.numero}`,
+        antes: apartamentoAntes,
+        depois: apartamentoDepois,
+        referenciaId: editId
+      });
+
+      criarNotificacaoApartamento({
+        titulo: "Apartamento atualizado",
+        mensagem: `Bloco ${apartamentoFormatado.bloco} - Apto ${apartamentoFormatado.numero} foi atualizado.`,
+        referenciaId: editId
+      });
+
+      registrarMovimentacaoApartamento("Editou apartamento", apartamentoDepois);
+
       setEditId(null);
     } else {
       const novo = {
         id: Date.now(),
-        ...novoAp
+        ...apartamentoFormatado,
+        dataCadastro: new Date().toLocaleDateString("pt-BR"),
+        criadoEm: new Date().toISOString()
       };
 
       listaAtualizada = [...apartamentos, novo];
+
+      registrarAuditoriaApartamento({
+        acao: "Cadastrou apartamento",
+        detalhes: `Bloco ${novo.bloco} - Apto ${novo.numero}`,
+        depois: novo,
+        referenciaId: novo.id
+      });
+
+      criarNotificacaoApartamento({
+        titulo: "Novo apartamento cadastrado",
+        mensagem: `Bloco ${novo.bloco} - Apto ${novo.numero} foi cadastrado.`,
+        referenciaId: novo.id
+      });
+
+      registrarMovimentacaoApartamento("Cadastrou apartamento", novo);
     }
 
     setApartamentos(listaAtualizada);
@@ -116,6 +427,15 @@ function Apartamentos() {
       JSON.stringify(listaAtualizada)
     );
 
+    const apartamentoSalvo =
+      editId !== null
+        ? listaAtualizada.find((ap) => ap.id === editId)
+        : listaAtualizada[listaAtualizada.length - 1];
+
+    if (apartamentoSalvo) {
+      sincronizarMoradoresComApartamento(apartamentoSalvo);
+    }
+
     setNovoAp(estadoInicialApartamento);
     setMostrarModal(false);
   }
@@ -123,7 +443,11 @@ function Apartamentos() {
   function editarApartamento(ap) {
     setNovoAp({
       ...estadoInicialApartamento,
-      ...ap
+      ...ap,
+      moradoresIds: ap.moradoresIds || [],
+      moradoresNomes: ap.moradoresNomes || (ap.morador ? [ap.morador] : []),
+      moradorPrincipalId: ap.moradorPrincipalId || null,
+      moradorPrincipalNome: ap.moradorPrincipalNome || ""
     });
 
     setEditId(ap.id);
@@ -137,6 +461,8 @@ function Apartamentos() {
 
     if (!confirmar) return;
 
+    const apartamentoExcluido = apartamentos.find((ap) => ap.id === id);
+
     const listaAtualizada = apartamentos.filter(
       (ap) => ap.id !== id
     );
@@ -147,6 +473,22 @@ function Apartamentos() {
       STORAGE_KEY,
       JSON.stringify(listaAtualizada)
     );
+
+    registrarAuditoriaApartamento({
+      acao: "Excluiu apartamento",
+      detalhes: `Bloco ${apartamentoExcluido?.bloco || "-"} - Apto ${apartamentoExcluido?.numero || "-"}`,
+      antes: apartamentoExcluido,
+      referenciaId: id
+    });
+
+    criarNotificacaoApartamento({
+      titulo: "Apartamento removido",
+      mensagem: `Bloco ${apartamentoExcluido?.bloco || "-"} - Apto ${apartamentoExcluido?.numero || "-"} foi removido.`,
+      referenciaId: id,
+      prioridade: "alta"
+    });
+
+    registrarMovimentacaoApartamento("Excluiu apartamento", apartamentoExcluido);
   }
 
   function fecharModal() {
@@ -481,11 +823,23 @@ function Apartamentos() {
 
                       <div style={styles.infoItem}>
                         <span style={styles.infoLabel}>
-                          Morador vinculado
+                          Morador principal
                         </span>
 
                         <strong>
-                          {ap.morador || "Sem morador"}
+                          {ap.moradorPrincipalNome || ap.morador || "Sem principal"}
+                        </strong>
+                      </div>
+
+                      <div style={styles.infoItem}>
+                        <span style={styles.infoLabel}>
+                          Moradores vinculados
+                        </span>
+
+                        <strong>
+                          {ap.moradoresNomes?.length > 0
+                            ? ap.moradoresNomes.join(", ")
+                            : ap.morador || "Sem morador"}
                         </strong>
                       </div>
                     </div>
@@ -629,12 +983,13 @@ function Apartamentos() {
                 </label>
 
                 <input
+                  maxLength="3"
                   placeholder="Ex: A"
                   value={novoAp.bloco}
                   onChange={(e) =>
                     setNovoAp({
                       ...novoAp,
-                      bloco: e.target.value
+                      bloco: e.target.value.toUpperCase()
                     })
                   }
                   style={styles.input}
@@ -647,12 +1002,13 @@ function Apartamentos() {
                 </label>
 
                 <input
+                  inputMode="numeric"
                   placeholder="Ex: 101"
                   value={novoAp.numero}
                   onChange={(e) =>
                     setNovoAp({
                       ...novoAp,
-                      numero: e.target.value
+                      numero: e.target.value.replace(/[^0-9A-Za-z-]/g, "")
                     })
                   }
                   style={styles.input}
@@ -665,12 +1021,13 @@ function Apartamentos() {
                 </label>
 
                 <input
+                  inputMode="numeric"
                   placeholder="Ex: 1"
                   value={novoAp.andar}
                   onChange={(e) =>
                     setNovoAp({
                       ...novoAp,
-                      andar: e.target.value
+                      andar: limparNumero(e.target.value)
                     })
                   }
                   style={styles.input}
@@ -683,23 +1040,49 @@ function Apartamentos() {
                 </label>
 
                 <select
-                  value={
-                    moradores.find((m) => m.nome === novoAp.morador)?.id || ""
-                  }
+                  value=""
                   onChange={(e) => selecionarMorador(e.target.value)}
                   style={styles.input}
                 >
                   <option value="">
-                    Selecione um morador
+                    Adicionar morador
                   </option>
 
                   {moradores.map((morador) => (
                     <option key={morador.id} value={morador.id}>
                       {morador.nome} - Apto{" "}
-                      {morador.apartamento || morador.apto || "-"}
+                      {morador.apartamento || morador.apto || "-"} -{" "}
+                      {morador.tipoMorador || "Morador"}
+                      {morador.moradorPrincipal ? " - Principal" : ""}
                     </option>
                   ))}
                 </select>
+
+                {(novoAp.moradoresIds || []).length > 0 && (
+                  <div style={styles.linkedResidents}>
+                    {(novoAp.moradoresIds || []).map((moradorId) => {
+                      const morador = moradores.find(
+                        (m) => String(m.id) === String(moradorId)
+                      );
+
+                      if (!morador) return null;
+
+                      return (
+                        <span key={moradorId} style={styles.linkedResident}>
+                          {morador.nome}
+                          {morador.moradorPrincipal ? " ★" : ""}
+                          <button
+                            type="button"
+                            style={styles.removeResidentButton}
+                            onClick={() => removerMoradorVinculado(moradorId)}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               <div style={styles.formRow}>
@@ -1441,6 +1824,38 @@ const styles = {
     outline: "none",
     fontSize: "14px",
     background: "#f9fafb"
+  },
+
+  linkedResidents: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "8px",
+    marginTop: "10px"
+  },
+
+  linkedResident: {
+    background: "#dcfce7",
+    color: "#166534",
+    border: "1px solid #bbf7d0",
+    borderRadius: "999px",
+    padding: "7px 10px",
+    fontSize: "12px",
+    fontWeight: "900",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "7px"
+  },
+
+  removeResidentButton: {
+    border: "none",
+    background: "#166534",
+    color: "white",
+    borderRadius: "50%",
+    width: "18px",
+    height: "18px",
+    cursor: "pointer",
+    fontWeight: "900",
+    lineHeight: "18px"
   },
 
   modalButtons: {

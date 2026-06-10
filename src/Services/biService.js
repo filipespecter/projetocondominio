@@ -155,6 +155,23 @@ function filtrarPorPeriodo(lista, periodo = "geral", anterior = false) {
   return filtrarPorIntervalo(lista, inicio, fim);
 }
 
+function contarPorCampo(lista, campo, limite = 5) {
+  const mapa = {};
+
+  lista.forEach((item) => {
+    const chave = item[campo] || "Não informado";
+    mapa[chave] = (mapa[chave] || 0) + 1;
+  });
+
+  return Object.entries(mapa)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limite)
+    .map(([nome, total]) => ({
+      nome,
+      total
+    }));
+}
+
 function calcularVariacao(atual, anterior) {
   if (anterior === 0 && atual === 0) {
     return {
@@ -221,6 +238,13 @@ export function buscarDadosBI(periodo = "geral", anterior = false) {
 
     notificacoesMorador: lerStorage("notificacoesMorador"),
 
+    notificacoes: lerStorage("notificacoes"),
+
+    auditoria: [
+      ...lerStorage("auditoria_logs"),
+      ...lerStorage("auditoriaSistema")
+    ],
+
     ocorrencias: [
       ...lerStorage("ocorrencias"),
       ...lerStorage("historico_ocorrencias"),
@@ -255,6 +279,18 @@ export function buscarDadosBI(periodo = "geral", anterior = false) {
       periodo,
       anterior
     ),
+
+    notificacoes: filtrarPorPeriodo(
+      dados.notificacoes,
+      periodo,
+      anterior
+    ),
+
+    auditoria: filtrarPorPeriodo(
+      dados.auditoria,
+      periodo,
+      anterior
+    ),
     ocorrencias: filtrarPorPeriodo(dados.ocorrencias, periodo, anterior),
     sugestoes: filtrarPorPeriodo(dados.sugestoes, periodo, anterior),
     operacional: filtrarPorPeriodo(dados.operacional, periodo, anterior)
@@ -263,6 +299,49 @@ export function buscarDadosBI(periodo = "geral", anterior = false) {
 
 export function gerarIndicadoresBI(periodo = "geral", anterior = false) {
   const dados = buscarDadosBI(periodo, anterior);
+
+  const moradoresPrincipais = dados.moradores.filter((m) => m.moradorPrincipal).length;
+  const dependentes = dados.moradores.filter((m) => !m.moradorPrincipal).length;
+
+  const apartamentosOcupados = dados.apartamentos.filter((a) => {
+    const status = normalizarTexto(a.status);
+
+    return (
+      status === "ocupado" ||
+      a.morador ||
+      a.moradoresNomes?.length > 0 ||
+      a.moradoresIds?.length > 0
+    );
+  }).length;
+
+  const areasDisponiveis = dados.areasComuns.filter((area) => {
+    const status = normalizarTexto(area.status);
+    return status === "disponível" || status === "disponivel" || !status;
+  }).length;
+
+  const areasManutencao = dados.areasComuns.filter((area) => {
+    const status = normalizarTexto(area.status);
+    return status === "manutenção" || status === "manutencao";
+  }).length;
+
+  const prestadoresCondominio = dados.prestadores.filter(
+    (p) => normalizarTexto(p.tipoServico || p.tipo) === "condomínio" ||
+      normalizarTexto(p.tipoServico || p.tipo) === "condominio"
+  ).length;
+
+  const prestadoresParticulares = dados.prestadores.filter(
+    (p) => normalizarTexto(p.tipoServico || p.tipo) === "particular"
+  ).length;
+
+  const prestadoresExecucao = dados.prestadores.filter((p) => {
+    const status = normalizarTexto(p.status);
+    return status === "em execução" || status === "em execucao";
+  }).length;
+
+  const prestadoresFinalizados = dados.prestadores.filter((p) => {
+    const status = normalizarTexto(p.status);
+    return status === "finalizado" || status === "finalizada";
+  }).length;
 
   const visitantesAtivos = dados.visitantes.filter((v) => {
     const status = normalizarTexto(v.status || v.statusSindico);
@@ -281,9 +360,11 @@ export function gerarIndicadoresBI(periodo = "geral", anterior = false) {
 
     return (
       status === "pendente" ||
+      status === "recebido" ||
       status === "aguardando" ||
       status === "aguardando retirada" ||
-      status === "esperada"
+      status === "esperada" ||
+      status === "atrasado"
     );
   }).length;
 
@@ -358,7 +439,11 @@ export function gerarIndicadoresBI(periodo = "geral", anterior = false) {
 
   return {
     totalMoradores: dados.moradores.length,
+    totalMoradoresPrincipais: moradoresPrincipais,
+    totalDependentes: dependentes,
+
     totalApartamentos: dados.apartamentos.length,
+    totalApartamentosOcupados: apartamentosOcupados,
     totalPorteiros: dados.porteiros.length,
 
     totalVisitantes: dados.visitantes.length,
@@ -372,13 +457,22 @@ export function gerarIndicadoresBI(periodo = "geral", anterior = false) {
     totalReservasPendentes: reservasPendentes,
 
     totalPrestadores: dados.prestadores.length,
+    totalPrestadoresCondominio: prestadoresCondominio,
+    totalPrestadoresParticulares: prestadoresParticulares,
+    totalPrestadoresExecucao: prestadoresExecucao,
+    totalPrestadoresFinalizados: prestadoresFinalizados,
+
     totalAreas: dados.areasComuns.length,
+    totalAreasDisponiveis: areasDisponiveis,
+    totalAreasManutencao: areasManutencao,
 
     totalAvisos: dados.avisos.length,
     totalAvisosSindico: dados.avisos.length,
     totalPendenciasSindico: pendenciasSindico,
 
     totalNotificacoesMorador: dados.notificacoesMorador.length,
+    totalNotificacoesSistema: dados.notificacoes.length,
+    totalAuditorias: dados.auditoria.length,
 
     totalOcorrencias: dados.ocorrencias.length,
     totalOcorrenciasAbertas: ocorrenciasAbertas,
@@ -440,12 +534,17 @@ export function gerarDistribuicaoGeral(periodo = "geral") {
 
   return [
     { nome: "Moradores", total: indicadores.totalMoradores },
+    { nome: "Principais", total: indicadores.totalMoradoresPrincipais },
+    { nome: "Dependentes", total: indicadores.totalDependentes },
     { nome: "Apartamentos", total: indicadores.totalApartamentos },
+    { nome: "Aptos ocupados", total: indicadores.totalApartamentosOcupados },
     { nome: "Porteiros", total: indicadores.totalPorteiros },
     { nome: "Visitantes", total: indicadores.totalVisitantes },
     { nome: "Encomendas", total: indicadores.totalEncomendas },
     { nome: "Reservas", total: indicadores.totalReservas },
     { nome: "Prestadores", total: indicadores.totalPrestadores },
+    { nome: "Áreas comuns", total: indicadores.totalAreas },
+    { nome: "Auditoria", total: indicadores.totalAuditorias },
     { nome: "Ocorrências", total: indicadores.totalOcorrencias },
     { nome: "Sugestões", total: indicadores.totalSugestoes },
     { nome: "Reclamações", total: indicadores.totalReclamacoes },
@@ -464,8 +563,23 @@ export function gerarIndicadoresCriticos(periodo = "geral") {
     { nome: "Ocorrências abertas", total: indicadores.totalOcorrenciasAbertas },
     { nome: "Reclamações abertas", total: indicadores.totalReclamacoesAbertas },
     { nome: "Sugestões abertas", total: indicadores.totalSugestoesAbertas },
-    { nome: "Pendências do síndico", total: indicadores.totalPendenciasSindico }
+    { nome: "Pendências do síndico", total: indicadores.totalPendenciasSindico },
+    { nome: "Áreas em manutenção", total: indicadores.totalAreasManutencao },
+    { nome: "Prestadores em execução", total: indicadores.totalPrestadoresExecucao }
   ];
+}
+
+export function gerarRankingsPremiumBI(periodo = "geral") {
+  const dados = buscarDadosBI(periodo);
+
+  return {
+    areasMaisReservadas: contarPorCampo(dados.reservas, "area"),
+    moradoresComMaisReservas: contarPorCampo(dados.reservas, "moradorNome"),
+    apartamentosComMaisVisitantes: contarPorCampo(dados.visitantes, "apartamento"),
+    prestadoresMaisUtilizados: contarPorCampo(dados.prestadores, "servico"),
+    ocorrenciasPorCategoria: contarPorCampo(dados.ocorrencias, "categoria"),
+    auditoriaPorModulo: contarPorCampo(dados.auditoria, "modulo")
+  };
 }
 
 export function gerarRankingModulos(periodo = "geral") {

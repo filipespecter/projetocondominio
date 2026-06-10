@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { registrarAuditoria } from "../../Services/auditoriaService";
+import { criarNotificacao } from "../../Services/notificacaoService";
 
 function VisitantesPorteiro() {
   const STORAGE_KEY = "visitantes";
@@ -91,9 +93,50 @@ function VisitantesPorteiro() {
     return (
       moradores.find(
         (m) =>
+          String(m.apartamento || m.apto) === String(apartamento) &&
+          m.moradorPrincipal
+      ) ||
+      moradores.find(
+        (m) =>
           String(m.apartamento || m.apto) === String(apartamento)
+      ) ||
+      {}
+    );
+  }
+
+  function buscarApartamento(apartamento) {
+    const apartamentos = lerStorage("apartamentos");
+
+    return (
+      apartamentos.find(
+        (ap) =>
+          String(ap.numero || ap.apartamento || ap.apto) === String(apartamento)
       ) || {}
     );
+  }
+
+  function registrarAuditoriaVisitante(acao, visitante, antes = null) {
+    registrarAuditoria({
+      acao,
+      modulo: "Visitantes Porteiro",
+      detalhes: `${visitante?.nome || "Visitante"} • Apto ${visitante?.apartamento || "-"}`,
+      antes,
+      depois: visitante,
+      referenciaId: visitante?.id || null
+    });
+  }
+
+  function criarNotificacaoSindicoVisitante(visitante, titulo, mensagem, prioridade = "normal") {
+    criarNotificacao({
+      titulo,
+      mensagem,
+      tipo: "Visitantes",
+      origem: "Porteiro",
+      perfilDestino: "sindico",
+      moduloOrigem: "VisitantesPorteiro",
+      referenciaId: visitante?.id || null,
+      prioridade
+    });
   }
 
   function registrarAvisoSindico(acao, visitante) {
@@ -112,6 +155,7 @@ function VisitantesPorteiro() {
         visitante.observacao ||
         `Visitante ${visitante.nome} para o apartamento ${visitante.apartamento}`,
       apartamento: visitante.apartamento,
+      apartamentoId: visitante.apartamentoId || null,
       morador: moradorResponsavel.nome || visitante.morador || "",
       responsavel: visitante.porteiro || "Porteiro",
       status: visitante.status,
@@ -121,7 +165,9 @@ function VisitantesPorteiro() {
       impactaBI: true,
       impactaRelatorio: true,
       exibirNaCentral: true,
-      origemModulo: "Visitantes"
+      origemModulo: "Visitantes",
+      criadoEm: agora.toISOString(),
+      atualizadoEm: agora.toISOString()
     };
 
     salvarStorage(STORAGE_AVISOS_SINDICO, [
@@ -235,6 +281,7 @@ function VisitantesPorteiro() {
       descricao: `O visitante ${visitante.nome} está com status: ${visitante.status}`,
       visitanteId: visitante.id,
       apartamento: visitante.apartamento,
+      apartamentoId: visitante.apartamentoId || null,
       morador: moradorResponsavel.nome,
       moradorId: moradorResponsavel.id || "",
       status: visitante.status,
@@ -259,6 +306,7 @@ function VisitantesPorteiro() {
     registrarMovimentacao(acao, visitante);
     registrarRelatorio(acao, visitante);
     registrarHistorico(acao, visitante);
+    registrarAuditoriaVisitante(`Visitante - ${acao}`, visitante);
 
     if (
       visitante.status === "Autorizado" ||
@@ -275,6 +323,11 @@ function VisitantesPorteiro() {
       return;
     }
 
+    if (form.nome.trim().length < 3) {
+      alert("Informe um nome válido para o visitante.");
+      return;
+    }
+
     if (
       form.tipoVisitante === "Prestador de serviço" &&
       !form.documento
@@ -288,10 +341,14 @@ function VisitantesPorteiro() {
       form.apartamento
     );
 
+    const apartamentoSelecionado = buscarApartamento(form.apartamento);
+
     const novo = {
       id: Date.now(),
-      nome: form.nome,
+      nome: form.nome.trim(),
       apartamento: form.apartamento,
+      apto: form.apartamento,
+      apartamentoId: apartamentoSelecionado.id || moradorResponsavel.apartamentoId || null,
       morador: moradorResponsavel.nome || "",
       moradorId: moradorResponsavel.id || "",
       observacao: form.observacao,
@@ -308,6 +365,7 @@ function VisitantesPorteiro() {
       porteiro: porteiro?.nome || "Porteiro",
       porteiroUsuario: porteiro?.usuario || "",
       turno: porteiro?.turno || "-",
+      porteiroId: porteiro?.id || null,
       impactaBI: true,
       impactaRelatorio: true,
       exibirNaCentral: true,
@@ -323,6 +381,11 @@ function VisitantesPorteiro() {
     setVisitantes(atualizados);
 
     registrarFluxo("cadastro", novo);
+    criarNotificacaoSindicoVisitante(
+      novo,
+      "Novo visitante registrado",
+      `${novo.nome} foi registrado para o apto ${novo.apartamento}.`
+    );
 
     limparFormulario();
   }
@@ -353,7 +416,8 @@ function VisitantesPorteiro() {
         impactaBI: true,
         impactaRelatorio: true,
         exibirNaCentral: true,
-        origemModulo: "Visitantes"
+        origemModulo: "Visitantes",
+        atualizadoEm: agora.toISOString()
       };
 
       if (novoStatus === "Saiu") {
@@ -375,6 +439,19 @@ function VisitantesPorteiro() {
 
     if (visitanteAtualizado) {
       registrarFluxo(`status_${novoStatus}`, visitanteAtualizado);
+
+      if (
+        novoStatus === "Em Visita" ||
+        novoStatus === "Saiu" ||
+        novoStatus === "Bloqueado"
+      ) {
+        criarNotificacaoSindicoVisitante(
+          visitanteAtualizado,
+          `Visitante ${novoStatus}`,
+          `${visitanteAtualizado.nome} agora está com status ${novoStatus}.`,
+          novoStatus === "Bloqueado" ? "alta" : "normal"
+        );
+      }
     }
   }
 
@@ -400,6 +477,7 @@ function VisitantesPorteiro() {
       registrarHistorico("exclusao", visitante);
       registrarMovimentacao("exclusao", visitante);
       registrarRelatorio("exclusao", visitante);
+      registrarAuditoriaVisitante("Excluiu visitante", visitante, visitante);
     }
   }
 

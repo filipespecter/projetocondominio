@@ -12,7 +12,10 @@ function DashboardPorteiro() {
     moradores: 0,
     esperadas: 0,
     ocorrencias: 0,
-    ocorrenciasResolvidas: 0
+    ocorrenciasResolvidas: 0,
+    visitantesDentro: 0,
+    moradoresPrincipais: 0,
+    dependentes: 0
   });
 
   const [movimentacoes, setMovimentacoes] =
@@ -120,9 +123,17 @@ function DashboardPorteiro() {
         localStorage.getItem("ocorrencias")
       ) || [];
 
-    const pendentes = encomendas.filter(
-      (e) => e.status === "pendente"
-    );
+    const pendentes = encomendas.filter((e) => {
+      const status = String(e.status || "").toLowerCase();
+
+      return (
+        status === "pendente" ||
+        status === "recebido" ||
+        status === "aguardando" ||
+        status === "aguardando retirada" ||
+        status === "atrasado"
+      );
+    });
 
     const ocorrenciasEncaminhadas =
       ocorrencias.filter(
@@ -138,10 +149,25 @@ function DashboardPorteiro() {
           item.status === "Resolvido"
       );
 
+    const visitantesDentro = visitantes.filter(
+      (v) => v.status === "Em Visita"
+    ).length;
+
+    const moradoresPrincipais = moradores.filter(
+      (m) => m.moradorPrincipal
+    ).length;
+
+    const dependentes = moradores.filter(
+      (m) => !m.moradorPrincipal
+    ).length;
+
     setDados({
       visitantes: visitantes.length,
+      visitantesDentro,
       encomendas: pendentes.length,
       moradores: moradores.length,
+      moradoresPrincipais,
+      dependentes,
       esperadas: esperadas.length,
       ocorrencias: ocorrenciasEncaminhadas.length,
       ocorrenciasResolvidas: ocorrenciasResolvidas.length
@@ -412,6 +438,15 @@ function DashboardPorteiro() {
               </span>
             </div>
 
+            <div style={styles.statusItem}>
+              <span style={styles.statusIconGreen}>
+                ●
+              </span>
+              <span>
+                Morador principal e dependentes integrados
+              </span>
+            </div>
+
           </div>
 
         </div>
@@ -502,7 +537,7 @@ function DashboardPorteiro() {
 
                 <span style={styles.historyTime}>
 
-                  {item.data} • {item.porteiro}
+                  {item.data || item.criadoEm || "-"} • {item.porteiro || item.responsavel || item.origem || "Sistema"}
 
                 </span>
 
