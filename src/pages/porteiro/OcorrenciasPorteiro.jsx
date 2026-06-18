@@ -14,6 +14,10 @@ function OcorrenciasPorteiro() {
     prioridade: "Média",
     titulo: "",
     apartamento: "",
+    apartamentoId: null,
+    bloco: "",
+    torre: "",
+    unidade: "",
     descricao: "",
     turno: "",
     dataPlantao: ""
@@ -43,7 +47,9 @@ function OcorrenciasPorteiro() {
   function obterPorteiroLogado() {
     const sessao =
       localStorage.getItem("sessaoPorteiro") ||
-      sessionStorage.getItem("sessaoPorteiro");
+      sessionStorage.getItem("sessaoPorteiro") ||
+      localStorage.getItem("usuarioPorteiro") ||
+      sessionStorage.getItem("usuarioPorteiro");
 
     if (!sessao) return null;
 
@@ -157,6 +163,12 @@ function OcorrenciasPorteiro() {
       prioridade: registro.prioridade,
       descricao: registro.descricao,
       apartamento: registro.apartamento,
+      apartamentoId: registro.apartamentoId || null,
+      bloco: registro.bloco || "",
+      torre: registro.torre || "",
+      unidade: registro.unidade || "",
+      condominioId: registro.condominioId || null,
+      nomeCondominio: registro.nomeCondominio || "",
       status: registro.status,
       porteiroId: registro.porteiroId,
       porteiroNome: registro.porteiroNome,
@@ -187,6 +199,12 @@ function OcorrenciasPorteiro() {
       titulo: registro.titulo,
       descricao: registro.descricao,
       apartamento: registro.apartamento,
+      apartamentoId: registro.apartamentoId || null,
+      bloco: registro.bloco || "",
+      torre: registro.torre || "",
+      unidade: registro.unidade || "",
+      condominioId: registro.condominioId || null,
+      nomeCondominio: registro.nomeCondominio || "",
       morador: "",
       responsavel: registro.porteiroNome,
       porteiroId: registro.porteiroId,
@@ -219,6 +237,12 @@ function OcorrenciasPorteiro() {
       titulo: registro.titulo,
       descricao: registro.descricao,
       apartamento: registro.apartamento,
+      apartamentoId: registro.apartamentoId || null,
+      bloco: registro.bloco || "",
+      torre: registro.torre || "",
+      unidade: registro.unidade || "",
+      condominioId: registro.condominioId || null,
+      nomeCondominio: registro.nomeCondominio || "",
       responsavel: registro.porteiroNome,
       porteiroId: registro.porteiroId,
       porteiroUsuario: registro.porteiroUsuario,
@@ -247,6 +271,12 @@ function OcorrenciasPorteiro() {
       titulo: registro.titulo,
       descricao: registro.descricao,
       apartamento: registro.apartamento,
+      apartamentoId: registro.apartamentoId || null,
+      bloco: registro.bloco || "",
+      torre: registro.torre || "",
+      unidade: registro.unidade || "",
+      condominioId: registro.condominioId || null,
+      nomeCondominio: registro.nomeCondominio || "",
       responsavel: registro.porteiroNome,
       status: registro.status,
       prioridade: registro.prioridade,
@@ -281,6 +311,10 @@ function OcorrenciasPorteiro() {
       prioridade: novaOcorrencia.prioridade,
       titulo: String(novaOcorrencia.titulo || "").trim(),
       apartamento: String(novaOcorrencia.apartamento || "").trim(),
+      apartamentoId: novaOcorrencia.apartamentoId || null,
+      bloco: novaOcorrencia.bloco || "",
+      torre: novaOcorrencia.torre || "",
+      unidade: novaOcorrencia.unidade || "",
       descricao: String(novaOcorrencia.descricao || "").trim(),
 
       status: "Encaminhada",
@@ -320,7 +354,9 @@ function OcorrenciasPorteiro() {
       respostasSindico: [],
       respostaSindico: "",
       dataResolucao: "",
-      horaResolucao: ""
+      horaResolucao: "",
+      sindicoId: null,
+      sindicoNome: ""
     };
 
     const listaAtualizada = [
@@ -382,12 +418,21 @@ function OcorrenciasPorteiro() {
     salvarStorage(STORAGE_AVISOS_SINDICO, avisos);
 
     if (ocorrenciaExcluida) {
-      registrarHistoricoOcorrencia("exclusão", ocorrenciaExcluida, ocorrenciaExcluida);
+      const registroExclusao = {
+        ...ocorrenciaExcluida,
+        status: "Excluída",
+        atualizadoEm: new Date().toISOString()
+      };
+
+      registrarHistoricoOcorrencia("exclusão", registroExclusao, ocorrenciaExcluida);
+      registrarMovimentacao(registroExclusao);
+      registrarRelatorio(registroExclusao);
 
       registrarAuditoriaOcorrencia({
         acao: "Excluiu ocorrência",
         detalhes: `${ocorrenciaExcluida.titulo} • ${ocorrenciaExcluida.categoria}`,
         antes: ocorrenciaExcluida,
+        depois: registroExclusao,
         referenciaId: id
       });
 
@@ -411,34 +456,38 @@ function OcorrenciasPorteiro() {
       item.status?.toLowerCase().includes(texto) ||
       item.porteiroNome?.toLowerCase().includes(texto) ||
       item.moradorNome?.toLowerCase().includes(texto) ||
-      item.apartamento?.toLowerCase().includes(texto)
+      String(item.apartamento || "").toLowerCase().includes(texto)
     );
   }
 
   const encaminhadas = ocorrencias.filter(
     (item) =>
-      item.status !== "Resolvido" &&
-      item.status !== "Resolvida" &&
+      !["resolvido", "resolvida"].includes(
+        String(item.status || "").toLowerCase()
+      ) &&
       correspondeBusca(item)
   );
 
   const historico = ocorrencias.filter(
     (item) =>
-      (item.status === "Resolvido" ||
-        item.status === "Resolvida") &&
+      ["resolvido", "resolvida"].includes(
+        String(item.status || "").toLowerCase()
+      ) &&
       correspondeBusca(item)
   );
 
   const totalEncaminhadas = ocorrencias.filter(
     (item) =>
-      item.status !== "Resolvido" &&
-      item.status !== "Resolvida"
+      !["resolvido", "resolvida"].includes(
+        String(item.status || "").toLowerCase()
+      )
   ).length;
 
   const totalResolvidas = ocorrencias.filter(
     (item) =>
-      item.status === "Resolvido" ||
-      item.status === "Resolvida"
+      ["resolvido", "resolvida"].includes(
+        String(item.status || "").toLowerCase()
+      )
   ).length;
 
   const totalPorteiros = ocorrencias.filter(
@@ -1045,7 +1094,7 @@ const styles = {
 
   mainGrid: {
     display: "grid",
-    gridTemplateColumns: "400px 1fr",
+    gridTemplateColumns: "repeat(auto-fit,minmax(380px,1fr))",
     gap: "24px",
     alignItems: "flex-start"
   },
@@ -1168,6 +1217,7 @@ const styles = {
     border: "1px solid #d1d5db",
     outline: "none",
     minWidth: "260px",
+    maxWidth: "100%",
     background: "#f9fafb"
   },
 

@@ -154,55 +154,64 @@ function Relatorios() {
   }
 
   function carregarDados() {
-    setDados({
-      moradores: lerStorage(STORAGE_KEYS.moradores),
-      apartamentos: lerStorage(STORAGE_KEYS.apartamentos),
-      porteiros: lerStorage(STORAGE_KEYS.porteiros),
+    const perfilAtual = obterPerfilCondominio();
+    const condominioId = perfilAtual.condominioId;
 
-      visitantes: [
+    function filtrarCondominio(lista) {
+      return removerDuplicados(lista).filter((item) =>
+        itemPertenceAoCondominio(item, condominioId)
+      );
+    }
+
+    setDados({
+      moradores: filtrarCondominio(lerStorage(STORAGE_KEYS.moradores)),
+      apartamentos: filtrarCondominio(lerStorage(STORAGE_KEYS.apartamentos)),
+      porteiros: filtrarCondominio(lerStorage(STORAGE_KEYS.porteiros)),
+
+      visitantes: filtrarCondominio([
         ...lerStorage(STORAGE_KEYS.visitantes),
         ...lerStorage(STORAGE_KEYS.visitantesHistorico)
-      ],
+      ]),
 
-      encomendas: [
+      encomendas: filtrarCondominio([
         ...lerStorage(STORAGE_KEYS.encomendas),
         ...lerStorage(STORAGE_KEYS.encomendasHistorico),
         ...lerStorage(STORAGE_KEYS.encomendasEsperadas)
-      ],
+      ]),
 
-      reservas: lerStorage(STORAGE_KEYS.reservas),
-      areasComuns: lerStorage(STORAGE_KEYS.areasComuns),
+      reservas: filtrarCondominio(lerStorage(STORAGE_KEYS.reservas)),
+      areasComuns: filtrarCondominio(lerStorage(STORAGE_KEYS.areasComuns)),
 
-      avisos: [
+      avisos: filtrarCondominio([
         ...lerStorage(STORAGE_KEYS.avisos),
         ...lerStorage(STORAGE_KEYS.avisosSindico),
         ...lerStorage(STORAGE_KEYS.notificacoesMorador)
-      ],
+      ]),
 
-      prestadores: [
+      prestadores: filtrarCondominio([
         ...lerStorage(STORAGE_KEYS.prestadores),
         ...lerStorage(STORAGE_KEYS.prestadoresParticulares)
-      ],
+      ]),
 
-      ocorrencias: [
+      ocorrencias: filtrarCondominio([
         ...lerStorage(STORAGE_KEYS.ocorrencias),
         ...lerStorage(STORAGE_KEYS.historicoOcorrencias)
-      ],
+      ]),
 
-      sugestoes: [
+      sugestoes: filtrarCondominio([
         ...lerStorage(STORAGE_KEYS.sugestoes),
         ...lerStorage(STORAGE_KEYS.sugestoesReclamacoes)
-      ],
+      ]),
 
-      movimentacoes: [
+      movimentacoes: filtrarCondominio([
         ...lerStorage(STORAGE_KEYS.movimentacoes),
         ...lerStorage(STORAGE_KEYS.relatoriosOperacionais)
-      ],
+      ]),
 
-      auditoria: [
+      auditoria: filtrarCondominio([
         ...lerStorage(STORAGE_KEYS.auditoria),
         ...lerStorage(STORAGE_KEYS.auditoriaSistema)
-      ],
+      ]),
 
       configuracoes:
         lerObjeto(STORAGE_KEYS.perfilCondominio) ||
@@ -211,6 +220,40 @@ function Relatorios() {
     });
 
     setUltimaAtualizacao(new Date().toLocaleString("pt-BR"));
+  }
+
+  function removerDuplicados(lista) {
+    const vistos = new Set();
+
+    return (lista || []).filter((item, index) => {
+      const chave = String(
+        item?.id ||
+          item?.codigoInterno ||
+          item?.codigo ||
+          item?.documento ||
+          item?.cpfCnpj ||
+          item?.email ||
+          item?.nome ||
+          item?.titulo ||
+          index
+      );
+
+      if (vistos.has(chave)) {
+        return false;
+      }
+
+      vistos.add(chave);
+      return true;
+    });
+  }
+
+  function itemPertenceAoCondominio(item, condominioId) {
+    if (!condominioId) return true;
+
+    return (
+      !item?.condominioId ||
+      String(item.condominioId) === String(condominioId)
+    );
   }
 
   function obterDataItem(item) {
@@ -770,7 +813,7 @@ function Relatorios() {
       createdAt: new Date().toISOString()
     };
 
-    const atualizado = [novo, ...historico].slice(0, 10);
+    const atualizado = [novo, ...historico].slice(0, 50);
 
     setHistorico(atualizado);
 
@@ -831,7 +874,7 @@ function Relatorios() {
         head: [tabela.colunas],
         body:
           tabela.linhas.length > 0
-            ? tabela.linhas.slice(0, 80)
+            ? tabela.linhas
             : [["Sem registros"]],
         headStyles: {
           fillColor: [20, 83, 45]
@@ -920,7 +963,11 @@ function Relatorios() {
     const csv = linhas
       .map((linha) =>
         linha
-          .map((celula) => `"${String(celula || "").replaceAll('"', '""')}"`)
+          .map((celula) =>
+            `"${String(celula || "")
+              .replaceAll('"', '""')
+              .replace(/\r?\n|\r/g, " ")}"`
+          )
           .join(";")
       )
       .join("\n");
@@ -939,7 +986,9 @@ function Relatorios() {
       .replace(/[^\w-]/g, "")}.csv`;
     link.click();
 
-    URL.revokeObjectURL(url);
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 100);
 
     salvarHistorico("CSV");
     registrarAuditoriaRelatorio("Gerou CSV", `${preview.titulo} • ${nomePeriodo()}`);
@@ -1199,12 +1248,12 @@ function Relatorios() {
             <h3>Resumo</h3>
 
             {preview.resumo.map((item, index) => (
-              <p key={index}>• {item}</p>
+              <p key={`${item}-${index}`}>• {item}</p>
             ))}
           </section>
 
           {preview.tabelas.map((tabela, tabelaIndex) => (
-            <section key={tabelaIndex} style={styles.tableBox}>
+            <section key={`${tabela.titulo}-${tabelaIndex}`} style={styles.tableBox}>
               <h3>{tabela.titulo}</h3>
 
               <div style={styles.tableWrapper}>
@@ -1359,6 +1408,7 @@ const styles = {
 
   heroStat: {
     minWidth: "140px",
+    maxWidth: "100%",
     background: "#ffffff",
     border: "1px solid #e5e7eb",
     padding: "16px",
@@ -1367,6 +1417,7 @@ const styles = {
 
   heroStatGreen: {
     minWidth: "160px",
+    maxWidth: "100%",
     background: "#ecfdf5",
     border: "1px solid #bbf7d0",
     color: "#166534",
@@ -1376,7 +1427,7 @@ const styles = {
 
   layoutGrid: {
     display: "grid",
-    gridTemplateColumns: "380px minmax(0,1fr)",
+    gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
     gap: "22px",
     alignItems: "flex-start",
     marginBottom: "24px"
@@ -1567,6 +1618,7 @@ const styles = {
 
   previewSeal: {
     background: "#16a34a",
+    whiteSpace: "nowrap",
     color: "white",
     padding: "14px 18px",
     borderRadius: "16px",

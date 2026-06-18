@@ -16,6 +16,9 @@ function Visitantes() {
     apartamento: "",
     morador: "",
     moradorId: "",
+    apartamentoId: null,
+    tipoMorador: "",
+    moradorPrincipal: false,
     observacao: "",
     entrada: "",
     autorizado: false,
@@ -40,7 +43,10 @@ function Visitantes() {
     return lista.map((morador) => ({
       ...morador,
       apto: morador.apto || morador.apartamento || "",
-      apartamento: morador.apartamento || morador.apto || ""
+      apartamento: morador.apartamento || morador.apto || "",
+      apartamentoId: morador.apartamentoId || null,
+      tipoMorador: morador.tipoMorador || "Morador",
+      moradorPrincipal: Boolean(morador.moradorPrincipal)
     }));
   });
 
@@ -305,7 +311,7 @@ function Visitantes() {
       timestamp: Date.now(),
       impactaBI: true,
       origemModulo: "Visitantes",
-      atualizadoEm: agora.toISOString()
+      atualizadoEm: new Date().toISOString()
     };
 
     salvarStorage(STORAGE_MOVIMENTACOES, [nova, ...movimentacoes]);
@@ -476,6 +482,9 @@ function Visitantes() {
       nomeCondominio: perfilCondominio.nomeCondominio,
       criadoPor: usuarioAtual.nome || usuarioAtual.usuario || "Sistema",
       porteiroId: usuarioAtual.tipo === "porteiro" ? usuarioAtual.id || null : novoVisitante.porteiroId || null,
+      apartamentoId: novoVisitante.apartamentoId || null,
+      tipoMorador: novoVisitante.tipoMorador || "",
+      moradorPrincipal: Boolean(novoVisitante.moradorPrincipal),
       porteiroNome: usuarioAtual.tipo === "porteiro" ? usuarioAtual.nome || usuarioAtual.usuario || "" : novoVisitante.porteiroNome || "",
       data: agora.toLocaleDateString("pt-BR"),
       hora: agora.toLocaleTimeString([], {
@@ -580,6 +589,9 @@ function Visitantes() {
       ...estadoInicialVisitante,
       ...v,
       status: normalizarStatus(v.status),
+      apartamentoId: v.apartamentoId || null,
+      tipoMorador: v.tipoMorador || "",
+      moradorPrincipal: Boolean(v.moradorPrincipal),
       moradorId:
         v.moradorId ||
         obterMoradorIdPorNomeApartamento(v.morador, v.apartamento)
@@ -693,7 +705,10 @@ function Visitantes() {
         ...novoVisitante,
         moradorId: "",
         morador: "",
-        apartamento: ""
+        apartamento: "",
+        apartamentoId: null,
+        tipoMorador: "",
+        moradorPrincipal: false
       });
 
       return;
@@ -704,7 +719,10 @@ function Visitantes() {
       moradorId: moradorSelecionado.id,
       morador: moradorSelecionado.nome,
       apartamento:
-        moradorSelecionado.apartamento || moradorSelecionado.apto || ""
+        moradorSelecionado.apartamento || moradorSelecionado.apto || "",
+      apartamentoId: moradorSelecionado.apartamentoId || null,
+      tipoMorador: moradorSelecionado.tipoMorador || "Morador",
+      moradorPrincipal: Boolean(moradorSelecionado.moradorPrincipal)
     });
   }
 
@@ -1525,7 +1543,7 @@ const styles = {
 
   actionRow: {
     display: "grid",
-    gridTemplateColumns: "repeat(4,1fr)",
+    gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))",
     gap: "8px",
     marginTop: "18px"
   },
@@ -1617,7 +1635,8 @@ const styles = {
   },
 
   modal: {
-    width: "780px",
+    width: "100%",
+    maxWidth: "780px",
     maxHeight: "90vh",
     overflowY: "auto",
     background: "#f8fafc",

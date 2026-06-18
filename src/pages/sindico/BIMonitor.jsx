@@ -23,8 +23,12 @@ import TrendAnalysis from "../../components/BI/TrendAnalysis";
 function BIMonitor() {
   const [hora, setHora] = useState("");
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState("");
-  const [visaoAtiva, setVisaoAtiva] = useState("geral");
-  const [telaMonitor, setTelaMonitor] = useState("geral");
+  const [visaoAtiva, setVisaoAtiva] = useState(
+    () => localStorage.getItem("bi_monitor_visao") || "geral"
+  );
+  const [telaMonitor, setTelaMonitor] = useState(
+    () => localStorage.getItem("bi_monitor_tela") || "geral"
+  );
 
   const [indicadores, setIndicadores] = useState({});
   const [saude, setSaude] = useState({});
@@ -37,6 +41,23 @@ function BIMonitor() {
   const [ranking, setRanking] = useState([]);
   const [atividades, setAtividades] = useState({});
   const [rankingsPremium, setRankingsPremium] = useState({});
+
+  function verificarAcessoBI() {
+    try {
+      const perfil =
+        JSON.parse(localStorage.getItem("perfil_condominio")) ||
+        JSON.parse(localStorage.getItem("configuracoes")) ||
+        {};
+
+      const plano = perfil.plano || "Completo";
+
+      return plano === "Completo";
+    } catch {
+      return true;
+    }
+  }
+
+  const acessoLiberado = verificarAcessoBI();
 
   useEffect(() => {
     carregarDados();
@@ -67,7 +88,7 @@ function BIMonitor() {
       clearInterval(relogio);
       clearInterval(sincronizador);
     };
-  }, [visaoAtiva, telaMonitor]);
+  }, []);
 
   function carregarDados() {
     setIndicadores(gerarIndicadoresBI("geral"));
@@ -124,6 +145,45 @@ function BIMonitor() {
           dataKey: "total",
           secondKey: null
         };
+
+  if (!acessoLiberado) {
+    return (
+      <div style={styles.container}>
+        <div style={styles.scanLine}></div>
+
+        <header style={styles.header}>
+          <div>
+            <span style={styles.badge}>
+              🔒 ÁREA RESTRITA
+            </span>
+
+            <h1 style={styles.title}>
+              BI Monitor
+            </h1>
+
+            <p style={styles.subtitle}>
+              A Central de Monitoramento está disponível apenas no Plano Completo.
+              Entre em contato com a Star Infinity Code para realizar o upgrade.
+            </p>
+          </div>
+
+          <div style={styles.headerRight}>
+            <div style={styles.statusPill}>
+              Recurso premium
+            </div>
+
+            <div style={styles.clock}>
+              Plano Básico
+            </div>
+
+            <div style={styles.updateText}>
+              Contato: (81) 7910-9935
+            </div>
+          </div>
+        </header>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.container}>
@@ -345,7 +405,7 @@ function BIMonitor() {
 
                 <div style={styles.alertList}>
                   {insights.slice(0, 4).map((item, index) => (
-                    <div key={index} style={styles.alertItem}>
+                    <div key={item.id || item.titulo || index} style={styles.alertItem}>
                       <strong>{item.titulo}</strong>
                       <p>{item.texto}</p>
                     </div>
@@ -390,7 +450,7 @@ function BIMonitor() {
 
             <div style={styles.summaryList}>
               {resumo.map((item, index) => (
-                <div key={index} style={styles.summaryItem}>
+                <div key={`${item}-${index}`} style={styles.summaryItem}>
                   🧠 {item}
                 </div>
               ))}
@@ -404,7 +464,7 @@ function BIMonitor() {
 
             <div style={styles.alertList}>
               {insights.map((item, index) => (
-                <div key={index} style={styles.alertItem}>
+                <div key={item.id || item.titulo || index} style={styles.alertItem}>
                   <strong>{item.titulo}</strong>
                   <p>{item.texto}</p>
                 </div>
@@ -432,7 +492,7 @@ function RankingMonitor({ title, dados }) {
         <p style={styles.rankingEmpty}>Sem dados suficientes.</p>
       ) : (
         dados.slice(0, 5).map((item, index) => (
-          <div key={index} style={styles.rankingItem}>
+          <div key={item.id || item.nome || index} style={styles.rankingItem}>
             <span>{index + 1}. {item.nome}</span>
             <strong>{item.total}</strong>
           </div>
@@ -651,7 +711,7 @@ const styles = {
 
   commandGrid: {
     display: "grid",
-    gridTemplateColumns: "minmax(0,2fr) minmax(320px,420px)",
+    gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
     gap: "20px",
     marginBottom: "20px",
     alignItems: "stretch"
@@ -794,14 +854,14 @@ const styles = {
 
   analyticsGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(420px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
     gap: "20px",
     marginBottom: "20px"
   },
 
   bottomGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(420px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
     gap: "20px",
     marginBottom: "20px"
   },

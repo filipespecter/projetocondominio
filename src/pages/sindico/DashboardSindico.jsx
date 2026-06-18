@@ -7,6 +7,7 @@ function DashboardSindico() {
   const [mostrarManual, setMostrarManual] = useState(false);
 
   const [perfilCondominio, setPerfilCondominio] = useState({
+    condominioId: null,
     nomeCondominio: "Condomínio",
     plano: "Gestão Premium",
     statusComercial: "Ativo",
@@ -44,7 +45,7 @@ function DashboardSindico() {
 
     const interval = setInterval(() => {
       carregarDados();
-    }, 1000);
+    }, 10000);
 
     window.addEventListener("storage", carregarDados);
 
@@ -80,7 +81,13 @@ function DashboardSindico() {
       lerObjeto("configuracoes") ||
       {};
 
+    const condominioId =
+      perfil.id ||
+      perfil.condominioId ||
+      null;
+
     setPerfilCondominio({
+      condominioId,
       nomeCondominio: perfil.nomeCondominio || "Condomínio",
       plano: perfil.plano || "Gestão Premium",
       statusComercial: perfil.statusComercial || "Ativo",
@@ -94,7 +101,15 @@ function DashboardSindico() {
     const prestadores = [
       ...lerStorage("condominio_prestadores"),
       ...lerStorage("prestadores_particulares_v2")
-    ];
+    ].filter(
+      (item, index, array) =>
+        index ===
+        array.findIndex(
+          (p) =>
+            String(p.id || p.cpfCnpj || p.documento || p.nome || index) ===
+            String(item.id || item.cpfCnpj || item.documento || item.nome || index)
+        )
+    );
 
     const encomendas = [
       ...lerStorage("encomendas"),
@@ -120,6 +135,10 @@ function DashboardSindico() {
     const notificacoesSindicoNaoLidas = notificacoes.filter((item) => {
       return item.perfilDestino === "sindico" && !item.lida;
     });
+
+    const notificacoesMoradorPendentes = notificacoesMorador.filter(
+      (item) => !item.lida
+    );
 
     const areasComuns = lerStorage("areasComuns");
 
@@ -243,7 +262,9 @@ function DashboardSindico() {
       movimentacoes: movimentacoes.length,
       sugestoes: sugestoesAbertas.length,
       reclamacoes: reclamacoesAbertas.length,
-      notificacoes: notificacoesSindicoNaoLidas.length + notificacoesMorador.length,
+      notificacoes:
+        notificacoesSindicoNaoLidas.length +
+        notificacoesMoradorPendentes.length,
       auditoria: auditoria.length,
       moradoresPrincipais: moradoresPrincipais.length,
       dependentes: dependentes.length,
@@ -255,6 +276,7 @@ function DashboardSindico() {
 
     const historico = [
       ...notificacoes.slice(-5).map((n) => ({
+        id: n.id || `notificacao-${n.titulo || ""}-${n.data || ""}`,
         icon: n.lida ? "🔔" : "🟡",
         titulo: n.titulo || "Notificação",
         texto: n.mensagem || "Nova notificação do sistema",
@@ -263,6 +285,7 @@ function DashboardSindico() {
       })),
 
       ...auditoria.slice(-5).map((a) => ({
+        id: a.id || `auditoria-${a.acao || ""}-${a.criadoEm || ""}`,
         icon: "🧾",
         titulo: a.acao || "Registro de auditoria",
         texto: `${a.usuario || "Sistema"} • ${a.modulo || "Sistema"}`,
@@ -271,6 +294,7 @@ function DashboardSindico() {
       })),
 
       ...ocorrencias.slice(-4).map((o) => ({
+        id: o.id || `ocorrencia-${o.titulo || ""}-${o.criadoEm || ""}`,
         icon: "💬",
         titulo: o.titulo || o.tipo || "Ocorrência registrada",
         texto:
@@ -282,6 +306,7 @@ function DashboardSindico() {
       })),
 
       ...encomendas.slice(-4).map((e) => ({
+        id: e.id || `encomenda-${e.codigoInterno || e.codigo || ""}-${e.criadoEm || ""}`,
         icon: "📦",
         titulo: e.status === "esperada" || e.status === "Esperada"
           ? "Encomenda esperada"
@@ -292,6 +317,7 @@ function DashboardSindico() {
       })),
 
       ...reservas.slice(-4).map((r) => ({
+        id: r.id || `reserva-${r.area || r.areaComum || ""}-${r.criadoEm || ""}`,
         icon: "📅",
         titulo: "Reserva solicitada",
         texto: r.area || r.areaComum || "Área comum",
@@ -300,6 +326,7 @@ function DashboardSindico() {
       })),
 
       ...visitantes.slice(-4).map((v) => ({
+        id: v.id || `visitante-${v.nome || ""}-${v.data || ""}`,
         icon: "👤",
         titulo: "Visitante registrado",
         texto: v.nome || "Visitante",
@@ -308,6 +335,7 @@ function DashboardSindico() {
       })),
 
       ...sugestoesReclamacoes.slice(-4).map((s) => ({
+        id: s.id || `solicitacao-${s.titulo || s.tipo || ""}-${s.criadoEm || ""}`,
         icon: normalizarTexto(s.tipoRegistro || s.tipo || s.categoria).includes("reclama")
           ? "⚠️"
           : "💡",
@@ -570,7 +598,7 @@ function DashboardSindico() {
         ) : (
           <div style={styles.timeline}>
             {atividades.map((item, index) => (
-              <div key={index} style={styles.activityItem}>
+              <div key={item.id || index} style={styles.activityItem}>
                 <div style={styles.activityIcon}>
                   {item.icon}
                 </div>
@@ -786,7 +814,8 @@ const styles = {
     border: "1px solid rgba(255,255,255,0.16)",
     borderRadius: "26px",
     padding: "24px",
-    minWidth: "245px",
+    width: "100%",
+    maxWidth: "245px",
     textAlign: "center"
   },
 
@@ -949,7 +978,7 @@ const styles = {
 
   middleGrid: {
     display: "grid",
-    gridTemplateColumns: "2fr 1fr",
+    gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
     gap: "24px",
     marginBottom: "26px"
   },
@@ -1235,7 +1264,8 @@ const styles = {
   },
 
   modal: {
-    width: "850px",
+    width: "100%",
+    maxWidth: "850px",
     maxHeight: "90vh",
     overflowY: "auto",
     background: "#f8fafc",

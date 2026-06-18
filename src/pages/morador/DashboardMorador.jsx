@@ -24,7 +24,9 @@ function DashboardMorador() {
   function carregarSessao() {
     const sessao =
       localStorage.getItem("sessaoMorador") ||
-      sessionStorage.getItem("sessaoMorador");
+      sessionStorage.getItem("sessaoMorador") ||
+      localStorage.getItem("usuarioMorador") ||
+      sessionStorage.getItem("usuarioMorador");
 
     try {
       const usuario = sessao ? JSON.parse(sessao) : null;
@@ -37,7 +39,9 @@ function DashboardMorador() {
   function carregarDashboard() {
     const sessao =
       localStorage.getItem("sessaoMorador") ||
-      sessionStorage.getItem("sessaoMorador");
+      sessionStorage.getItem("sessaoMorador") ||
+      localStorage.getItem("usuarioMorador") ||
+      sessionStorage.getItem("usuarioMorador");
 
     let usuario = null;
 
@@ -53,6 +57,7 @@ function DashboardMorador() {
       "";
 
     const apartamentoIdMorador = usuario?.apartamentoId || null;
+    const condominioIdMorador = usuario?.condominioId || null;
 
     const avisos =
       JSON.parse(localStorage.getItem("avisos")) || [];
@@ -72,6 +77,15 @@ function DashboardMorador() {
     const sugestoesReclamacoes =
       JSON.parse(localStorage.getItem("sugestoes_reclamacoes")) || [];
 
+    function pertenceAoCondominio(item) {
+      if (!condominioIdMorador) return true;
+
+      return (
+        !item.condominioId ||
+        String(item.condominioId) === String(condominioIdMorador)
+      );
+    }
+
     function pertenceAoApartamento(item) {
       return (
         String(item.apartamento || item.apto || "") ===
@@ -83,11 +97,29 @@ function DashboardMorador() {
       );
     }
 
+    const avisosMorador =
+      avisos.filter((item) => {
+        const avisoGeral =
+          !item.apartamento &&
+          !item.apartamentoId &&
+          !item.moradorId;
+
+        return (
+          pertenceAoCondominio(item) &&
+          (
+            avisoGeral ||
+            pertenceAoApartamento(item) ||
+            String(item.moradorId || "") === String(usuario?.id || "")
+          )
+        );
+      });
+
     const encomendasMorador =
       encomendas.filter((item) => {
         const status = String(item.status || "").toLowerCase();
 
         return (
+          pertenceAoCondominio(item) &&
           pertenceAoApartamento(item) &&
           (
             status === "pendente" ||
@@ -102,10 +134,13 @@ function DashboardMorador() {
     const reservasMorador =
       reservas.filter(
         (item) =>
+          pertenceAoCondominio(item) &&
+          (
           item.moradorId === usuario?.id ||
           item.moradorNome === usuario?.nome ||
           item.morador === usuario?.nome ||
           pertenceAoApartamento(item)
+          )
       );
 
     const solicitacoesMorador =
@@ -115,23 +150,26 @@ function DashboardMorador() {
         ...sugestoesReclamacoes
       ].filter(
         (item) =>
+          pertenceAoCondominio(item) &&
+          (
           item.origem === "morador" ||
           item.origemModulo === "Morador" ||
           item.moradorId === usuario?.id ||
           item.moradorUsuario === usuario?.usuario ||
           item.usuario === usuario?.usuario ||
           pertenceAoApartamento(item)
+          )
       );
 
     const solicitacoesResolvidas =
-      solicitacoesMorador.filter(
-        (item) =>
-          item.status === "Resolvida" ||
-          item.status === "Resolvido"
+      solicitacoesMorador.filter((item) =>
+        ["resolvida", "resolvido"].includes(
+          String(item.status || "").toLowerCase()
+        )
       );
 
     setDados({
-      avisos: avisos.length,
+      avisos: avisosMorador.length,
       encomendas: encomendasMorador.length,
       reservas: reservasMorador.length,
       solicitacoes: solicitacoesMorador.length,
@@ -145,25 +183,25 @@ function DashboardMorador() {
 
     if (encomendasMorador.length > 0) {
       novasAtividades.push({
-        id: 1,
+        id: "atividade-encomendas",
         icone: "📦",
         titulo: "Encomendas pendentes",
         texto: `Você possui ${encomendasMorador.length} encomenda(s) aguardando retirada.`
       });
     }
 
-    if (avisos.length > 0) {
+    if (avisosMorador.length > 0) {
       novasAtividades.push({
-        id: 2,
+        id: "atividade-avisos",
         icone: "📢",
         titulo: "Avisos publicados",
-        texto: `Existem ${avisos.length} aviso(s) disponível(is) para leitura.`
+        texto: `Existem ${avisosMorador.length} aviso(s) disponível(is) para leitura.`
       });
     }
 
     if (reservasMorador.length > 0) {
       novasAtividades.push({
-        id: 3,
+        id: "atividade-reservas",
         icone: "📅",
         titulo: "Reservas registradas",
         texto: `Você possui ${reservasMorador.length} reserva(s) no sistema.`
@@ -172,7 +210,7 @@ function DashboardMorador() {
 
     if (solicitacoesMorador.length > 0) {
       novasAtividades.push({
-        id: 4,
+        id: "atividade-solicitacoes",
         icone: "💬",
         titulo: "Solicitações enviadas",
         texto: `Você possui ${solicitacoesMorador.length} sugestão(ões) ou reclamação(ões).`
@@ -181,7 +219,7 @@ function DashboardMorador() {
 
     if (novasAtividades.length === 0) {
       novasAtividades.push({
-        id: 5,
+        id: "atividade-boas-vindas",
         icone: "🏢",
         titulo: "Bem-vindo ao portal",
         texto: "Nenhuma atividade recente encontrada no momento."
@@ -601,7 +639,8 @@ const styles = {
     border: "1px solid rgba(255,255,255,0.14)",
     borderRadius: "24px",
     padding: "22px",
-    minWidth: "230px",
+    width: "100%",
+    maxWidth: "230px",
     textAlign: "center",
     backdropFilter: "blur(12px)"
   },
@@ -824,7 +863,7 @@ const styles = {
 
   bottomGrid: {
     display: "grid",
-    gridTemplateColumns: "2fr 1fr",
+    gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
     gap: "24px"
   },
 

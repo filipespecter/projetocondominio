@@ -33,14 +33,20 @@ function DashboardLayout() {
   const [perfilCondominio, setPerfilCondominio] = useState({
     nomeCondominio: "Condomínio",
     logoUrl: "",
-    plano: "Gestão Premium"
+    plano: "Completo"
   });
 
   const [notificacoesNaoLidas, setNotificacoesNaoLidas] = useState(0);
 
+  const planoAtual = perfilCondominio?.plano || "Completo";
+  const possuiBI = planoAtual === "Completo";
+  const textoPlano = possuiBI ? "Completo" : "Básico";
+
   const sessaoSalva =
     localStorage.getItem("sessaoSindico") ||
-    sessionStorage.getItem("sessaoSindico");
+    sessionStorage.getItem("sessaoSindico") ||
+    localStorage.getItem("usuarioSindico") ||
+    sessionStorage.getItem("usuarioSindico");
 
   useEffect(() => {
     carregarPerfilCondominio();
@@ -49,7 +55,7 @@ function DashboardLayout() {
     const interval = setInterval(() => {
       carregarPerfilCondominio();
       carregarNotificacoes();
-    }, 1000);
+    }, 10000);
 
     window.addEventListener("storage", carregarPerfilCondominio);
     window.addEventListener("storage", carregarNotificacoes);
@@ -70,14 +76,17 @@ function DashboardLayout() {
 
       setPerfilCondominio({
         nomeCondominio: perfil.nomeCondominio || "Condomínio",
-        logoUrl: perfil.logoUrl || "",
-        plano: perfil.plano || "Gestão Premium"
+        logoUrl: perfil.logoUrl || perfil.tema?.logoUrl || "",
+        plano:
+          perfil.plano === "Básico" || perfil.plano === "Completo"
+            ? perfil.plano
+            : "Completo"
       });
     } catch {
       setPerfilCondominio({
         nomeCondominio: "Condomínio",
         logoUrl: "",
-        plano: "Gestão Premium"
+        plano: "Completo"
       });
     }
   }
@@ -145,7 +154,7 @@ function DashboardLayout() {
           </div>
 
           <div style={styles.premiumBadge}>
-            ✨ {perfilCondominio.plano || "Gestão Premium"}
+            ✨ Plano {textoPlano}
           </div>
 
           {notificacoesNaoLidas > 0 && (
@@ -276,6 +285,13 @@ function DashboardLayout() {
               active={itemAtivo("/dashboard/bi-analytics")}
               icon={<FaChartLine />}
               label="BI Analytics"
+            />
+
+            <MenuItem
+              to="/dashboard/bi-monitor"
+              active={itemAtivo("/dashboard/bi-monitor")}
+              icon={<FaChartLine />}
+              label="BI Monitor"
             />
 
             <MenuItem

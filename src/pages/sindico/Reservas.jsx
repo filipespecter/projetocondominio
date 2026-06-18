@@ -14,6 +14,10 @@ function Reservas() {
     morador: "",
     moradorId: null,
     apartamento: "",
+    apartamentoId: null,
+    tipoMorador: "",
+    moradorPrincipal: false,
+    perfilMorador: "",
     data: "",
     horario: "",
     obs: "",
@@ -52,7 +56,11 @@ function Reservas() {
     return lista.map((morador) => ({
       ...morador,
       apto: morador.apto || morador.apartamento || "",
-      apartamento: morador.apartamento || morador.apto || ""
+      apartamento: morador.apartamento || morador.apto || "",
+      apartamentoId: morador.apartamentoId || null,
+      tipoMorador: morador.tipoMorador || "Morador",
+      moradorPrincipal: Boolean(morador.moradorPrincipal),
+      perfilMorador: morador.perfilMorador || (morador.moradorPrincipal ? "principal" : "dependente")
     }));
   });
 
@@ -180,6 +188,7 @@ function Reservas() {
         r.data === novaReserva.data &&
         r.horario === novaReserva.horario &&
         r.status !== "recusada" &&
+        r.status !== "cancelada" &&
         r.id !== editId
     );
 
@@ -239,8 +248,12 @@ function Reservas() {
       morador: reserva.morador,
       moradorId: reserva.moradorId || null,
       apartamento: reserva.apartamento,
+      apartamentoId: reserva.apartamentoId || null,
       area: reserva.area,
+      areaId: reserva.areaId || null,
       status: reserva.status,
+      condominioId: reserva.condominioId || null,
+      nomeCondominio: reserva.nomeCondominio || "",
       data: new Date().toLocaleDateString("pt-BR"),
       hora: new Date().toLocaleTimeString([], {
         hour: "2-digit",
@@ -333,7 +346,11 @@ function Reservas() {
         ...novaReserva,
         moradorId: null,
         morador: "",
-        apartamento: ""
+        apartamento: "",
+        apartamentoId: null,
+        tipoMorador: "",
+        moradorPrincipal: false,
+        perfilMorador: ""
       });
 
       return;
@@ -346,7 +363,13 @@ function Reservas() {
       apartamento:
         moradorSelecionado.apartamento ||
         moradorSelecionado.apto ||
-        ""
+        "",
+      apartamentoId: moradorSelecionado.apartamentoId || null,
+      tipoMorador: moradorSelecionado.tipoMorador || "Morador",
+      moradorPrincipal: Boolean(moradorSelecionado.moradorPrincipal),
+      perfilMorador:
+        moradorSelecionado.perfilMorador ||
+        (moradorSelecionado.moradorPrincipal ? "principal" : "dependente")
     });
   }
 
@@ -366,6 +389,10 @@ function Reservas() {
       morador: String(novaReserva.morador || "").trim(),
       moradorId: novaReserva.moradorId || null,
       apartamento: String(novaReserva.apartamento || "").trim(),
+      apartamentoId: novaReserva.apartamentoId || null,
+      tipoMorador: novaReserva.tipoMorador || "",
+      moradorPrincipal: Boolean(novaReserva.moradorPrincipal),
+      perfilMorador: novaReserva.perfilMorador || "",
       data: novaReserva.data,
       horario: novaReserva.horario,
       obs: String(novaReserva.obs || "").trim(),
@@ -436,12 +463,6 @@ function Reservas() {
       (r) => r.id !== id
     );
 
-    const reservaDepois = lista.find((r) => r.id === id);
-
-    if (reservaDepois) {
-      registrarFluxoReserva(`status: ${status}`, reservaDepois, reservaAntes);
-    }
-
     setReservas(lista);
 
     localStorage.setItem(
@@ -459,7 +480,11 @@ function Reservas() {
       ...estadoInicialReserva,
       ...reserva,
       moradorId: reserva.moradorId || null,
-      areaId: reserva.areaId || null
+      areaId: reserva.areaId || null,
+      apartamentoId: reserva.apartamentoId || null,
+      tipoMorador: reserva.tipoMorador || "",
+      moradorPrincipal: Boolean(reserva.moradorPrincipal),
+      perfilMorador: reserva.perfilMorador || ""
     });
 
     setEditId(reserva.id);
@@ -488,12 +513,6 @@ function Reservas() {
         : r
     );
 
-    const reservaDepois = lista.find((r) => r.id === id);
-
-    if (reservaDepois) {
-      registrarFluxoReserva(`status: ${status}`, reservaDepois, reservaAntes);
-    }
-
     setReservas(lista);
 
     localStorage.setItem(
@@ -521,7 +540,7 @@ function Reservas() {
 
     const correspondeStatus =
       filtroStatus === "Todos" ||
-      r.status === filtroStatus;
+      String(r.status || "").toLowerCase() === String(filtroStatus).toLowerCase();
 
     return correspondeBusca && correspondeStatus;
   });
@@ -531,15 +550,15 @@ function Reservas() {
   ].sort((a, b) => new Date(a.data) - new Date(b.data));
 
   const pendentes = reservas.filter(
-    (r) => r.status === "pendente"
+    (r) => String(r.status || "").toLowerCase() === "pendente"
   );
 
   const aprovadas = reservas.filter(
-    (r) => r.status === "aprovada"
+    (r) => String(r.status || "").toLowerCase() === "aprovada"
   );
 
   const recusadas = reservas.filter(
-    (r) => r.status === "recusada"
+    (r) => String(r.status || "").toLowerCase() === "recusada"
   );
 
   function corStatus(status) {
@@ -788,6 +807,13 @@ function Reservas() {
                       <span>Apartamento</span>
                       <strong>{r.apartamento || "-"}</strong>
                     </div>
+
+                    <div style={styles.infoItem}>
+                      <span>Perfil</span>
+                      <strong>
+                        {r.moradorPrincipal ? "Principal" : r.tipoMorador || "Morador"}
+                      </strong>
+                    </div>
                   </div>
 
                   {r.obs && (
@@ -940,7 +966,9 @@ function Reservas() {
                         value={morador.id}
                       >
                         {morador.nome} - Apto{" "}
-                        {morador.apartamento || morador.apto}
+                        {morador.apartamento || morador.apto} -{" "}
+                        {morador.tipoMorador || "Morador"}
+                        {morador.moradorPrincipal ? " - Principal" : " - Dependente"}
                       </option>
                     ))}
                   </select>
@@ -1347,7 +1375,7 @@ const styles = {
 
   actionRow: {
     display: "grid",
-    gridTemplateColumns: "repeat(4,1fr)",
+    gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))",
     gap: "8px",
     marginTop: "18px"
   },
@@ -1445,14 +1473,17 @@ const styles = {
     justifyContent: "center",
     alignItems: "center",
     zIndex: 999,
-    padding: "20px"
+    padding: "20px",
+    boxSizing: "border-box"
   },
 
   modal: {
-    width: "780px",
+    width: "100%",
+    maxWidth: "780px",
     maxHeight: "90vh",
     overflowY: "auto",
     background: "#f8fafc",
+    boxSizing: "border-box",
     padding: "26px",
     borderRadius: "36px",
     boxShadow: "0 30px 80px rgba(0,0,0,0.28)"

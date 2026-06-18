@@ -11,39 +11,39 @@ import {
   Navigate
 } from "react-router-dom";
 
-import Login from "./pages/Login";
+import Login from "./pages/login";
 
 import DashboardLayout from "./layout/DashboardLayout";
 import DashboardPorteiroLayout from "./layout/DashboardPorteiroLayout";
 import DashboardMoradorLayout from "./layout/DashboardMoradorLayout";
 
-import DashboardSindico from "./pages/Sindico/DashboardSindico";
-import Prestadores from "./pages/Sindico/Prestadores";
-import Apartamentos from "./pages/Sindico/Apartamentos";
-import Moradores from "./pages/Sindico/Moradores";
-import Porteiros from "./pages/Sindico/Porteiros";
-import Visitantes from "./pages/Sindico/Visitantes";
-import Movimentacoes from "./pages/Sindico/Movimentacoes";
-import Encomendas from "./pages/Sindico/Encomendas";
-import Reservas from "./pages/Sindico/Reservas";
-import AreasComuns from "./pages/Sindico/AreasComuns";
-import Avisos from "./pages/Sindico/Avisos";
-import Relatorios from "./pages/Sindico/Relatorios";
-import BIAnalytics from "./pages/Sindico/BIAnalytics";
-import BIMonitor from "./pages/Sindico/BIMonitor";
-import Configuracoes from "./pages/Sindico/Configuracoes";
+import DashboardSindico from "./pages/sindico/DashboardSindico";
+import Prestadores from "./pages/sindico/Prestadores";
+import Apartamentos from "./pages/sindico/Apartamentos";
+import Moradores from "./pages/sindico/Moradores";
+import Porteiros from "./pages/sindico/Porteiros";
+import Visitantes from "./pages/sindico/Visitantes";
+import Movimentacoes from "./pages/sindico/Movimentacoes";
+import Encomendas from "./pages/sindico/Encomendas";
+import Reservas from "./pages/sindico/Reservas";
+import AreasComuns from "./pages/sindico/AreasComuns";
+import Avisos from "./pages/sindico/Avisos";
+import Relatorios from "./pages/sindico/Relatorios";
+import BIAnalytics from "./pages/sindico/BIAnalytics";
+import BIMonitor from "./pages/sindico/BIMonitor";
+import Configuracoes from "./pages/sindico/Configuracoes";
 
-import DashboardPorteiro from "./pages/Porteiro/DashboardPorteiro";
-import EncomendasPorteiro from "./pages/Porteiro/EncomendasPorteiro";
-import VisitantesPorteiro from "./pages/Porteiro/VisitantesPorteiro";
-import MoradoresPorteiro from "./pages/Porteiro/MoradoresPorteiro";
-import OcorrenciasPorteiro from "./pages/Porteiro/OcorrenciasPorteiro";
+import DashboardPorteiro from "./pages/porteiro/DashboardPorteiro";
+import EncomendasPorteiro from "./pages/porteiro/EncomendasPorteiro";
+import VisitantesPorteiro from "./pages/porteiro/VisitantesPorteiro";
+import MoradoresPorteiro from "./pages/porteiro/MoradoresPorteiro";
+import OcorrenciasPorteiro from "./pages/porteiro/OcorrenciasPorteiro";
 
-import DashboardMorador from "./pages/Morador/DashboardMorador";
-import AvisosMorador from "./pages/Morador/AvisosMorador";
-import EncomendasMorador from "./pages/Morador/EncomendasMorador";
-import ReservasMorador from "./pages/Morador/ReservasMorador";
-import SugestoesMorador from "./pages/Morador/SugestoesMorador";
+import DashboardMorador from "./pages/morador/DashboardMorador";
+import AvisosMorador from "./pages/morador/AvisosMorador";
+import EncomendasMorador from "./pages/morador/EncomendasMorador";
+import ReservasMorador from "./pages/morador/ReservasMorador";
+import SugestoesMorador from "./pages/morador/SugestoesMorador";
 
 function Home() {
   const navigate = useNavigate();
@@ -226,4 +226,4 @@ const styles = {
   }
 };
 
-export default App;
+export default App; 

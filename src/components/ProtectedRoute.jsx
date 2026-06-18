@@ -19,6 +19,58 @@ function ProtectedRoute({ children, tipoPermitido }) {
     }
   }
 
+  function limparSessao(chaves) {
+    chaves.forEach((chave) => {
+      localStorage.removeItem(chave);
+      sessionStorage.removeItem(chave);
+    });
+  }
+
+  function normalizarTipo(usuario) {
+    if (!usuario) return "";
+
+    const tipo =
+      usuario.tipo ||
+      usuario.perfilTipo ||
+      usuario.perfilAcesso ||
+      usuario.perfil ||
+      usuario.tipoUsuario ||
+      "";
+
+    return String(tipo).toLowerCase();
+  }
+
+  function usuarioEhValidoParaRota(usuario) {
+    const tipoUsuario = normalizarTipo(usuario);
+
+    if (!tipoUsuario) {
+      return true;
+    }
+
+    if (tipoPermitido === "morador") {
+      return (
+        tipoUsuario === "morador" ||
+        tipoUsuario === "principal" ||
+        tipoUsuario === "dependente"
+      );
+    }
+
+    if (tipoPermitido === "sindico") {
+      return (
+        tipoUsuario === "sindico" ||
+        tipoUsuario === "admin" ||
+        tipoUsuario === "mestre" ||
+        tipoUsuario === "sub"
+      );
+    }
+
+    if (tipoPermitido === "porteiro") {
+      return tipoUsuario === "porteiro";
+    }
+
+    return tipoUsuario === tipoPermitido;
+  }
+
   const chavesSessao = obterChavesSessao();
 
   const usuarioSalvo =
@@ -46,10 +98,7 @@ function ProtectedRoute({ children, tipoPermitido }) {
   try {
     usuarioLogado = JSON.parse(usuarioSalvo.valor);
   } catch {
-    chavesSessao.forEach((chave) => {
-      localStorage.removeItem(chave);
-      sessionStorage.removeItem(chave);
-    });
+    limparSessao(chavesSessao);
 
     return (
       <Navigate
@@ -59,12 +108,7 @@ function ProtectedRoute({ children, tipoPermitido }) {
     );
   }
 
-  const tipoUsuario =
-    usuarioLogado.tipo ||
-    usuarioLogado.perfilTipo ||
-    usuarioLogado.perfilAcesso;
-
-  if (tipoUsuario && tipoUsuario !== tipoPermitido) {
+  if (!usuarioEhValidoParaRota(usuarioLogado)) {
     return (
       <Navigate
         to={`/login/${tipoPermitido}`}

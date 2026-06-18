@@ -30,7 +30,9 @@ function BIAnalytics() {
   const [periodo, setPeriodo] = useState("geral");
   const [tipoGrafico, setTipoGrafico] = useState("barra");
   const [graficoAtivo, setGraficoAtivo] = useState("distribuicao");
-  const [abaAtiva, setAbaAtiva] = useState("geral");
+  const [abaAtiva, setAbaAtiva] = useState(
+    () => localStorage.getItem("bi_monitor_tela") || "geral"
+  );
 
   const [indicadores, setIndicadores] = useState({});
   const [saude, setSaude] = useState({});
@@ -45,8 +47,33 @@ function BIAnalytics() {
   const [rankingsPremium, setRankingsPremium] = useState({});
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState("");
 
+  function verificarAcessoBI() {
+    try {
+      const perfil =
+        JSON.parse(localStorage.getItem("perfil_condominio")) ||
+        JSON.parse(localStorage.getItem("configuracoes")) ||
+        {};
+
+      const plano = perfil.plano || "Completo";
+
+      return plano === "Completo";
+    } catch {
+      return true;
+    }
+  }
+
+  const acessoLiberado = verificarAcessoBI();
+
   useEffect(() => {
     carregarBI(periodo);
+  }, [periodo]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      carregarBI(periodo);
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, [periodo]);
 
   function carregarBI(periodoSelecionado = periodo) {
@@ -150,6 +177,45 @@ function BIAnalytics() {
 
   const graficoSelecionado =
     graficos.find((item) => item.id === graficoAtivo) || graficos[0];
+
+  if (!acessoLiberado) {
+    return (
+      <div style={styles.container}>
+        <section style={styles.hero}>
+          <div>
+            <span style={styles.heroBadge}>
+              🔒 Área restrita
+            </span>
+
+            <h1 style={styles.title}>BI Analytics</h1>
+
+            <p style={styles.subtitle}>
+              Este recurso está disponível apenas para clientes do Plano Completo.
+              Entre em contato com a Star Infinity Code para realizar o upgrade.
+            </p>
+
+            <div style={styles.heroActions}>
+              <button style={styles.refreshButton}>
+                Contato: (81) 7910-9935
+              </button>
+            </div>
+          </div>
+
+          <div style={styles.heroStats}>
+            <div style={styles.heroCardNeon}>
+              <span>Plano atual</span>
+              <strong>Básico</strong>
+            </div>
+
+            <div style={styles.heroCard}>
+              <span>Recurso</span>
+              <strong>Premium</strong>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.container}>
@@ -567,7 +633,7 @@ function BIAnalytics() {
 
             <div style={styles.insightsList}>
               {insights.map((item, index) => (
-                <div key={index} style={styles.insightItem}>
+                <div key={item.id || item.titulo || index} style={styles.insightItem}>
                   <span style={styles.insightType}>{item.tipo}</span>
 
                   <strong>{item.titulo}</strong>
@@ -592,7 +658,7 @@ function RankingBox({ title, dados }) {
         <p style={styles.rankingEmpty}>Sem dados suficientes.</p>
       ) : (
         dados.map((item, index) => (
-          <div key={index} style={styles.rankingItem}>
+          <div key={item.id || item.nome || index} style={styles.rankingItem}>
             <span>{index + 1}. {item.nome}</span>
             <strong>{item.total}</strong>
           </div>
@@ -731,7 +797,8 @@ const styles = {
   },
 
   heroCard: {
-    minWidth: "135px",
+    width: "100%",
+    maxWidth: "180px",
     background: "rgba(255,255,255,0.07)",
     border: "1px solid rgba(185,255,138,0.14)",
     padding: "16px",
@@ -739,7 +806,8 @@ const styles = {
   },
 
   heroCardNeon: {
-    minWidth: "135px",
+    width: "100%",
+    maxWidth: "180px",
     background: "rgba(124,255,74,0.12)",
     border: "1px solid rgba(124,255,74,0.35)",
     color: "#b9ff8a",
@@ -844,7 +912,7 @@ const styles = {
 
   commandCenterGrid: {
     display: "grid",
-    gridTemplateColumns: "minmax(0,1.55fr) minmax(300px,0.85fr)",
+    gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
     gap: "22px",
     marginBottom: "22px"
   },

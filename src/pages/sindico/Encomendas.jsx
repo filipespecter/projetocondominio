@@ -14,6 +14,9 @@ function Encomendas() {
     morador: "",
     moradorId: null,
     apartamento: "",
+    apartamentoId: null,
+    tipoMorador: "",
+    moradorPrincipal: false,
     descricao: "",
     codigo: "",
     codigoInterno: "",
@@ -43,7 +46,10 @@ function Encomendas() {
     return lista.map((morador) => ({
       ...morador,
       apto: morador.apto || morador.apartamento || "",
-      apartamento: morador.apartamento || morador.apto || ""
+      apartamento: morador.apartamento || morador.apto || "",
+      apartamentoId: morador.apartamentoId || null,
+      tipoMorador: morador.tipoMorador || "Morador",
+      moradorPrincipal: Boolean(morador.moradorPrincipal)
     }));
   });
 
@@ -250,7 +256,10 @@ function Encomendas() {
         ...novaEncomenda,
         morador: "",
         apartamento: "",
-        moradorId: null
+        moradorId: null,
+        apartamentoId: null,
+        tipoMorador: "",
+        moradorPrincipal: false
       });
 
       return;
@@ -263,7 +272,10 @@ function Encomendas() {
       apartamento:
         moradorSelecionado.apartamento ||
         moradorSelecionado.apto ||
-        ""
+        "",
+      apartamentoId: moradorSelecionado.apartamentoId || null,
+      tipoMorador: moradorSelecionado.tipoMorador || "Morador",
+      moradorPrincipal: Boolean(moradorSelecionado.moradorPrincipal)
     });
   }
 
@@ -470,6 +482,9 @@ function Encomendas() {
       condominioId: perfilCondominio.condominioId,
       nomeCondominio: perfilCondominio.nomeCondominio,
       criadoPor: usuarioAtual.nome || usuarioAtual.usuario || "Sistema",
+      apartamentoId: novaEncomenda.apartamentoId || null,
+      tipoMorador: novaEncomenda.tipoMorador || "",
+      moradorPrincipal: Boolean(novaEncomenda.moradorPrincipal),
       porteiroId: usuarioAtual.tipo === "porteiro" ? usuarioAtual.id || null : novaEncomenda.porteiroId || null,
       porteiroNome: usuarioAtual.tipo === "porteiro" ? usuarioAtual.nome || usuarioAtual.usuario || "" : novaEncomenda.porteiroNome || "",
       atualizadoEm: new Date().toISOString()
@@ -1357,7 +1372,7 @@ const styles = {
 
   actionRow: {
     display: "grid",
-    gridTemplateColumns: "repeat(4,1fr)",
+    gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))",
     gap: "8px",
     marginTop: "18px"
   },
@@ -1449,7 +1464,8 @@ const styles = {
   },
 
   modal: {
-    width: "780px",
+    width: "100%",
+    maxWidth: "780px",
     maxHeight: "90vh",
     overflowY: "auto",
     background: "#f8fafc",

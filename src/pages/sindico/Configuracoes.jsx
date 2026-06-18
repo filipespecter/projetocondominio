@@ -15,9 +15,16 @@ function Configuracoes() {
     sindico: "",
     email: "",
     corTema: "#16a34a",
+    tema: {
+      corPrincipal: "#16a34a",
+      corSecundaria: "#064e3b",
+      aplicarTemaPersonalizado: false,
+      logoUrl: "",
+      atualizadoEm: ""
+    },
 
     logoUrl: "",
-    plano: "MVP Local",
+    plano: "Completo",
     statusComercial: "Ativo",
     quantidadeUnidades: "",
     responsavelTecnico: "",
@@ -62,10 +69,17 @@ function Configuracoes() {
     loginPorPerfil: true
   });
 
-  const usuarioLogado =
-    JSON.parse(localStorage.getItem("usuarioSindico")) ||
-    JSON.parse(sessionStorage.getItem("usuarioSindico")) ||
-    {};
+  const usuarioLogado = (() => {
+    try {
+      return (
+        JSON.parse(localStorage.getItem("usuarioSindico")) ||
+        JSON.parse(sessionStorage.getItem("usuarioSindico")) ||
+        {}
+      );
+    } catch {
+      return {};
+    }
+  })();
 
   const isMestre =
     usuarioLogado.perfilAdmin === "mestre" ||
@@ -143,11 +157,38 @@ function Configuracoes() {
     const dadosSeguranca = carregarObjeto("segurancaConfig", null);
 
     if (dadosConfig || dadosPerfil) {
-      setConfig((prev) => ({
-        ...prev,
-        ...(dadosConfig || {}),
-        ...(dadosPerfil || {})
-      }));
+      setConfig((prev) => {
+        const dadosUnificados = {
+          ...prev,
+          ...(dadosConfig || {}),
+          ...(dadosPerfil || {})
+        };
+
+        return {
+          ...dadosUnificados,
+          plano:
+            dadosUnificados.plano === "Básico" ||
+            dadosUnificados.plano === "Completo"
+              ? dadosUnificados.plano
+              : "Completo",
+          corTema:
+            dadosUnificados.corTema ||
+            dadosUnificados.tema?.corPrincipal ||
+            "#16a34a",
+          tema: {
+            ...prev.tema,
+            ...(dadosUnificados.tema || {}),
+            corPrincipal:
+              dadosUnificados.tema?.corPrincipal ||
+              dadosUnificados.corTema ||
+              "#16a34a",
+            logoUrl:
+              dadosUnificados.tema?.logoUrl ||
+              dadosUnificados.logoUrl ||
+              ""
+          }
+        };
+      });
     }
 
     if (dadosPreferencias) {
@@ -234,12 +275,46 @@ function Configuracoes() {
   }
 
   function salvarDadosCondominio() {
+    const agoraISO = new Date().toISOString();
+    const agoraBR = new Date().toLocaleString("pt-BR");
+
+    const planoNormalizado =
+      config.plano === "Básico" || config.plano === "Completo"
+        ? config.plano
+        : "Completo";
+
     const perfilCondominio = {
       ...config,
-      atualizadoEm: new Date().toLocaleString("pt-BR"),
+      condominioId:
+        config.condominioId ||
+        `cond-${Date.now()}`,
+      plano: planoNormalizado,
+      corTema: config.corTema || "#16a34a",
+      tema: {
+        ...(config.tema || {}),
+        corPrincipal: config.corTema || config.tema?.corPrincipal || "#16a34a",
+        corSecundaria: config.tema?.corSecundaria || "#064e3b",
+        aplicarTemaPersonalizado:
+          Boolean(config.tema?.aplicarTemaPersonalizado),
+        logoUrl: config.logoUrl || config.tema?.logoUrl || "",
+        atualizadoEm: agoraISO
+      },
+      recursosPlano: {
+        biAnalytics: planoNormalizado === "Completo",
+        biMonitor: planoNormalizado === "Completo",
+        centralBI: planoNormalizado === "Completo"
+      },
+      criadoEm: config.criadoEm || agoraISO,
+      atualizadoEm: agoraBR,
+      atualizadoEmISO: agoraISO,
       origem: "Configuracoes",
       preparadoParaSaaS: true
     };
+
+    setConfig((prev) => ({
+      ...prev,
+      ...perfilCondominio
+    }));
 
     localStorage.setItem("configuracoes", JSON.stringify(perfilCondominio));
     localStorage.setItem("perfil_condominio", JSON.stringify(perfilCondominio));
@@ -592,6 +667,7 @@ function Configuracoes() {
       "notificacoesMorador",
 
       "auditoria_logs",
+      "auditoriaSistema",
 
       "ocorrencias",
       "historico_ocorrencias",
@@ -635,7 +711,9 @@ function Configuracoes() {
     link.download = `backup-greencondo-${Date.now()}.json`;
     link.click();
 
-    URL.revokeObjectURL(url);
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 100);
 
     localStorage.setItem(
       "ultimoBackupInfinity",
@@ -853,18 +931,61 @@ function Configuracoes() {
                 <input
                   type="color"
                   value={config.corTema}
-                  onChange={(e) => setConfig({ ...config, corTema: e.target.value })}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      corTema: e.target.value,
+                      tema: {
+                        ...(config.tema || {}),
+                        corPrincipal: e.target.value,
+                        atualizadoEm: new Date().toISOString()
+                      }
+                    })
+                  }
                   style={styles.colorInput}
                 />
 
                 <strong>{config.corTema}</strong>
+              </div>
+
+              <div
+                style={{
+                  ...styles.colorPreview,
+                  borderColor: config.corTema
+                }}
+              >
+                <div
+                  style={{
+                    ...styles.colorPreviewHeader,
+                    background: config.corTema
+                  }}
+                >
+                  Preview do condomínio
+                </div>
+
+                <div style={styles.colorPreviewBody}>
+                  <strong>{config.nomeCondominio || "Nome do condomínio"}</strong>
+                  <span>
+                    Cor salva para uso futuro no backend e tema do cliente.
+                  </span>
+                </div>
               </div>
             </Campo>
 
             <Campo label="Logo do condomínio URL">
               <input
                 value={config.logoUrl}
-                onChange={(e) => setConfig({ ...config, logoUrl: e.target.value })}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    logoUrl: e.target.value,
+                    tema: {
+                      ...(config.tema || {}),
+                      logoUrl: e.target.value,
+                      atualizadoEm: new Date().toISOString()
+                    }
+                  })
+                }
                 style={styles.input}
                 placeholder="https://..."
               />
@@ -876,12 +997,15 @@ function Configuracoes() {
                 onChange={(e) => setConfig({ ...config, plano: e.target.value })}
                 style={styles.input}
               >
-                <option>MVP Local</option>
                 <option>Básico</option>
-                <option>Profissional</option>
-                <option>Premium</option>
-                <option>Enterprise</option>
+                <option>Completo</option>
               </select>
+
+              <div style={styles.planInfo}>
+                {config.plano === "Básico"
+                  ? "Plano Básico: libera todos os módulos operacionais e bloqueia somente BI Analytics, BI Monitor e Central de BI."
+                  : "Plano Completo: libera todos os módulos, incluindo visualizações e central de BI."}
+              </div>
             </Campo>
 
             <Campo label="Status comercial">
@@ -1829,6 +1953,41 @@ const styles = {
     border: "none",
     background: "none",
     cursor: "pointer"
+  },
+
+  colorPreview: {
+    marginTop: "10px",
+    border: "1px solid #16a34a",
+    borderRadius: "16px",
+    overflow: "hidden",
+    background: "#ffffff"
+  },
+
+  colorPreviewHeader: {
+    color: "white",
+    padding: "12px",
+    fontWeight: "900",
+    fontSize: "13px"
+  },
+
+  colorPreviewBody: {
+    padding: "12px",
+    display: "grid",
+    gap: "6px",
+    color: "#374151",
+    fontSize: "13px"
+  },
+
+  planInfo: {
+    marginTop: "8px",
+    background: "#f0fdf4",
+    border: "1px solid #bbf7d0",
+    color: "#166534",
+    borderRadius: "12px",
+    padding: "10px",
+    fontSize: "12px",
+    fontWeight: "700",
+    lineHeight: "1.4"
   },
 
   primaryButton: {

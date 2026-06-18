@@ -32,7 +32,9 @@ function DashboardPorteiro() {
 
     const sessaoSalva =
       localStorage.getItem("sessaoPorteiro") ||
-      sessionStorage.getItem("sessaoPorteiro");
+      sessionStorage.getItem("sessaoPorteiro") ||
+      localStorage.getItem("usuarioPorteiro") ||
+      sessionStorage.getItem("usuarioPorteiro");
 
     try {
 
@@ -138,15 +140,17 @@ function DashboardPorteiro() {
     const ocorrenciasEncaminhadas =
       ocorrencias.filter(
         (item) =>
-          item.status !== "Resolvida" &&
-          item.status !== "Resolvido"
+          !["resolvida", "resolvido"].includes(
+            String(item.status || "").toLowerCase()
+          )
       );
 
     const ocorrenciasResolvidas =
       ocorrencias.filter(
         (item) =>
-          item.status === "Resolvida" ||
-          item.status === "Resolvido"
+          ["resolvida", "resolvido"].includes(
+            String(item.status || "").toLowerCase()
+          )
       );
 
     const visitantesDentro = visitantes.filter(
@@ -735,7 +739,8 @@ const styles = {
     border: "1px solid rgba(255,255,255,0.14)",
     borderRadius: "24px",
     padding: "22px",
-    minWidth: "240px",
+    width: "100%",
+    maxWidth: "240px",
     textAlign: "center",
     backdropFilter: "blur(12px)"
   },
@@ -898,7 +903,7 @@ const styles = {
 
   secondaryGrid: {
     display: "grid",
-    gridTemplateColumns: "2fr 1fr",
+    gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
     gap: "24px",
     marginBottom: "24px"
   },
@@ -1017,7 +1022,7 @@ const styles = {
 
   bottomGrid: {
     display: "grid",
-    gridTemplateColumns: "2fr 1fr",
+    gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
     gap: "24px"
   },
 

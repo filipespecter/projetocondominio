@@ -26,11 +26,11 @@ function Prestadores() {
     dataSaida: "",
     horaSaida: "",
     observacao: "",
-    condominioId: null,
-    nomeCondominio: "",
-    criadoPor: "",
     status: "Pendente",
     moradorId: null,
+    apartamentoId: null,
+    tipoMoradorResponsavel: "",
+    moradorPrincipalResponsavel: false,
     condominioId: null,
     nomeCondominio: "",
     criadoPor: "",
@@ -246,8 +246,12 @@ function Prestadores() {
       descricao: `${prestador?.servico || "-"} • ${prestador?.tipoServico || "-"}`,
       status: prestador?.status || "",
       apartamento: prestador?.apartamento || "",
+      apartamentoId: prestador?.apartamentoId || null,
       responsavel: prestador?.responsavel || "",
+      moradorId: prestador?.moradorId || null,
       areaRelacionada: prestador?.areaRelacionada || "",
+      condominioId: prestador?.condominioId || null,
+      nomeCondominio: prestador?.nomeCondominio || "",
       data: new Date().toLocaleDateString("pt-BR"),
       hora: new Date().toLocaleTimeString([], {
         hour: "2-digit",
@@ -277,6 +281,8 @@ function Prestadores() {
       descricao: `Poço: ${registro?.poco || "-"} • Consumo: ${registro?.consumo || "0"} m³`,
       status: registro?.poco || "",
       responsavel: registro?.porteiro || "",
+      condominioId: registro?.condominioId || null,
+      nomeCondominio: registro?.nomeCondominio || "",
       data: registro?.data || new Date().toLocaleDateString("pt-BR"),
       hora: registro?.horario || new Date().toLocaleTimeString([], {
         hour: "2-digit",
@@ -341,6 +347,21 @@ function Prestadores() {
       }
     }
 
+    if (novoPrestador.dataSaida && novoPrestador.dataEntrada) {
+      const entrada = new Date(
+        `${novoPrestador.dataEntrada}T${novoPrestador.horaEntrada || "00:00"}`
+      );
+
+      const saida = new Date(
+        `${novoPrestador.dataSaida}T${novoPrestador.horaSaida || "23:59"}`
+      );
+
+      if (!isNaN(entrada.getTime()) && !isNaN(saida.getTime()) && saida < entrada) {
+        alert("A data/hora de saída não pode ser anterior à entrada.");
+        return false;
+      }
+    }
+
     return true;
   }
 
@@ -355,16 +376,28 @@ function Prestadores() {
       ...novoPrestador,
       moradorId: morador.id,
       responsavel: morador.nome,
-      apartamento: morador.apartamento || morador.apto || ""
+      apartamento: morador.apartamento || morador.apto || "",
+      apartamentoId: morador.apartamentoId || novoPrestador.apartamentoId || null,
+      tipoMoradorResponsavel: morador.tipoMorador || "Morador",
+      moradorPrincipalResponsavel: Boolean(morador.moradorPrincipal)
     });
   }
 
   function selecionarApartamento(valor) {
+    const apartamentoSelecionado = apartamentos.find(
+      (ap) =>
+        String(ap.numero || ap.apartamento || ap.apto || ap.numeroApartamento || "") ===
+        String(valor)
+    );
+
     setNovoPrestador({
       ...novoPrestador,
       apartamento: valor,
+      apartamentoId: apartamentoSelecionado?.id || null,
       responsavel: "",
-      moradorId: null
+      moradorId: null,
+      tipoMoradorResponsavel: "",
+      moradorPrincipalResponsavel: false
     });
   }
 
@@ -445,8 +478,6 @@ function Prestadores() {
         (item) => item.id !== id
       );
 
-      prestadorDepois = listaAtualizada.find((item) => item.id === id);
-
       setPrestadores(listaAtualizada);
 
       localStorage.setItem(
@@ -457,8 +488,6 @@ function Prestadores() {
       const listaAtualizada = particulares.filter(
         (item) => item.id !== id
       );
-
-      prestadorDepois = listaAtualizada.find((item) => item.id === id);
 
       setParticulares(listaAtualizada);
 
@@ -492,6 +521,22 @@ function Prestadores() {
       return;
     }
 
+    const listaBase = abaAtiva === "condominio" ? prestadores : particulares;
+    const cpfNovo = limparNumeros(novoPrestador.cpf);
+
+    if (cpfNovo) {
+      const cpfDuplicado = listaBase.some(
+        (item) =>
+          limparNumeros(item.cpf) === cpfNovo &&
+          item.id !== editId
+      );
+
+      if (cpfDuplicado) {
+        alert("Já existe um prestador cadastrado com este CPF nesta aba.");
+        return;
+      }
+    }
+
     const perfilCondominio = obterPerfilCondominio();
     const usuarioAtual = obterUsuarioAtual();
 
@@ -502,6 +547,9 @@ function Prestadores() {
       telefone: formatarTelefone(novoPrestador.telefone),
       cpf: novoPrestador.cpf ? formatarCPF(novoPrestador.cpf) : "",
       servico: String(novoPrestador.servico || "").trim(),
+      apartamentoId: novoPrestador.apartamentoId || null,
+      tipoMoradorResponsavel: novoPrestador.tipoMoradorResponsavel || "",
+      moradorPrincipalResponsavel: Boolean(novoPrestador.moradorPrincipalResponsavel),
       condominioId: perfilCondominio.condominioId,
       nomeCondominio: perfilCondominio.nomeCondominio,
       atualizadoPor: usuarioAtual.nome || usuarioAtual.usuario || "Sistema",
@@ -510,7 +558,6 @@ function Prestadores() {
     };
 
     if (editId !== null) {
-      const listaBase = abaAtiva === "condominio" ? prestadores : particulares;
       const prestadorAntes = listaBase.find((item) => item.id === editId);
 
       dados.id = editId;
@@ -612,11 +659,24 @@ function Prestadores() {
           ? {
               ...item,
               status,
+              dataSaida:
+                status === "Finalizado" && !item.dataSaida
+                  ? new Date().toISOString().slice(0, 10)
+                  : item.dataSaida,
+              horaSaida:
+                status === "Finalizado" && !item.horaSaida
+                  ? new Date().toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit"
+                    })
+                  : item.horaSaida,
               atualizadoEm: new Date().toLocaleString("pt-BR"),
               updatedAt: new Date().toISOString()
             }
           : item
       );
+
+      prestadorDepois = listaAtualizada.find((item) => item.id === id);
 
       setPrestadores(listaAtualizada);
 
@@ -630,11 +690,24 @@ function Prestadores() {
           ? {
               ...item,
               status,
+              dataSaida:
+                status === "Finalizado" && !item.dataSaida
+                  ? new Date().toISOString().slice(0, 10)
+                  : item.dataSaida,
+              horaSaida:
+                status === "Finalizado" && !item.horaSaida
+                  ? new Date().toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit"
+                    })
+                  : item.horaSaida,
               atualizadoEm: new Date().toLocaleString("pt-BR"),
               updatedAt: new Date().toISOString()
             }
           : item
       );
+
+      prestadorDepois = listaAtualizada.find((item) => item.id === id);
 
       setParticulares(listaAtualizada);
 
@@ -676,10 +749,14 @@ function Prestadores() {
   }
 
   function calcularConsumoManual(leituraAnterior, leituraAtual) {
+    if (leituraAnterior === "" || leituraAtual === "") return "";
+
     const anterior = Number(leituraAnterior);
     const atual = Number(leituraAtual);
 
-    if (!anterior || !atual || atual < anterior) return "";
+    if (Number.isNaN(anterior) || Number.isNaN(atual) || atual < anterior) {
+      return "";
+    }
 
     return String(atual - anterior);
   }
@@ -700,6 +777,15 @@ function Prestadores() {
         novoOperacional.leituraAnterior,
         novoOperacional.leituraAtual
       );
+
+    if (
+      novoOperacional.leituraAnterior &&
+      novoOperacional.leituraAtual &&
+      !consumoCalculado
+    ) {
+      alert("A leitura atual não pode ser menor que a leitura anterior.");
+      return;
+    }
 
     const perfilCondominio = obterPerfilCondominio();
     const usuarioAtual = obterUsuarioAtual();
@@ -1654,11 +1740,20 @@ function Prestadores() {
                       >
                         <option value="">Selecione um apartamento</option>
 
-                        {apartamentos.map((ap) => (
-                          <option key={ap.id} value={ap.numero}>
-                            Bloco {ap.bloco || "-"} - Apto {ap.numero}
-                          </option>
-                        ))}
+                        {apartamentos.map((ap) => {
+                          const numeroApartamento =
+                            ap.numero ||
+                            ap.apartamento ||
+                            ap.apto ||
+                            ap.numeroApartamento ||
+                            "";
+
+                          return (
+                            <option key={ap.id || numeroApartamento} value={numeroApartamento}>
+                              Bloco {ap.bloco || "-"} - Apto {numeroApartamento}
+                            </option>
+                          );
+                        })}
                       </select>
                     ) : (
                       <input
@@ -1691,6 +1786,7 @@ function Prestadores() {
                         {moradoresDoApartamento.map((morador) => (
                           <option key={morador.id} value={morador.id}>
                             {morador.nome} - {morador.tipoMorador || "Morador"}
+                            {morador.moradorPrincipal ? " - Principal" : " - Dependente"}
                           </option>
                         ))}
                       </select>
@@ -1939,7 +2035,8 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "14px",
-    boxShadow: "0 14px 35px rgba(15,23,42,0.06)"
+    boxShadow: "0 14px 35px rgba(15,23,42,0.06)",
+    flexWrap: "wrap"
   },
 
   searchWrap: {
@@ -2146,7 +2243,7 @@ const styles = {
 
   actionRow: {
     display: "grid",
-    gridTemplateColumns: "repeat(4,1fr)",
+    gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))",
     gap: "8px",
     marginTop: "18px"
   },
@@ -2529,10 +2626,12 @@ const styles = {
   },
 
   modal: {
-    width: "820px",
+    width: "100%",
+    maxWidth: "820px",
     maxHeight: "90vh",
     overflowY: "auto",
     background: "#f8fafc",
+    boxSizing: "border-box",
     padding: "26px",
     borderRadius: "36px",
     boxShadow: "0 30px 80px rgba(0,0,0,0.28)"
