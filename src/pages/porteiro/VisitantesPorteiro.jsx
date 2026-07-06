@@ -493,23 +493,23 @@ function VisitantesPorteiro() {
     if (status === "Autorizado") {
       return {
         texto: "Autorizado",
-        fundo: "#dbeafe",
-        cor: "#1d4ed8"
+        fundo: "#ede9fe",
+        cor: "#6d28d9"
       };
     }
 
     if (status === "Em Visita") {
       return {
         texto: "Dentro do condomínio",
-        fundo: "#dcfce7",
-        cor: "#166534"
+        fundo: "#f3e8ff",
+        cor: "#7c3aed"
       };
     }
 
     if (status === "Saiu") {
       return {
         texto: "Saiu",
-        fundo: "#f3f4f6",
+        fundo: "#f5f3ff",
         cor: "#374151"
       };
     }
@@ -524,7 +524,7 @@ function VisitantesPorteiro() {
 
     return {
       texto: status,
-      fundo: "#f3f4f6",
+      fundo: "#f5f3ff",
       cor: "#111827"
     };
   }
@@ -986,12 +986,13 @@ const styles = {
   container: {
     width: "100%",
     fontFamily: "Arial",
-    color: "#111827"
+    color: "#111827",
+    position: "relative"
   },
 
   hero: {
     background:
-      "linear-gradient(135deg,#052e16,#14532d,#166534)",
+      "linear-gradient(135deg,#4c1d95,#6d28d9,#7c3aed)",
     borderRadius: "30px",
     padding: "32px",
     color: "white",
@@ -1001,7 +1002,8 @@ const styles = {
     gap: "28px",
     marginBottom: "26px",
     boxShadow:
-      "0 20px 45px rgba(20,83,45,0.25)"
+      "0 22px 55px rgba(124,58,237,0.24), 0 0 38px rgba(168,85,247,0.12)",
+    border: "1px solid rgba(255,255,255,0.18)"
   },
 
   heroBadge: {
@@ -1032,7 +1034,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "10px",
-    color: "#dcfce7",
+    color: "#f3e8ff",
     fontSize: "14px",
     fontWeight: "600"
   },
@@ -1041,9 +1043,9 @@ const styles = {
     width: "9px",
     height: "9px",
     borderRadius: "50%",
-    background: "#22c55e",
+    background: "#a855f7",
     boxShadow:
-      "0 0 0 5px rgba(34,197,94,0.16)"
+      "0 0 0 5px rgba(168,85,247,0.18)"
   },
 
   heroPanel: {
@@ -1069,8 +1071,8 @@ const styles = {
   },
 
   heroStatus: {
-    background: "#dcfce7",
-    color: "#166534",
+    background: "#f3e8ff",
+    color: "#7c3aed",
     padding: "8px 12px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1087,7 +1089,7 @@ const styles = {
 
   cardPrimary: {
     background:
-      "linear-gradient(135deg,#14532d,#16a34a)",
+      "linear-gradient(135deg,#6d28d9,#8b5cf6)",
     borderRadius: "24px",
     padding: "24px",
     color: "white",
@@ -1095,19 +1097,20 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "center",
     boxShadow:
-      "0 14px 35px rgba(22,163,74,0.2)"
+      "0 14px 35px rgba(124,58,237,0.18)"
   },
 
   card: {
-    background: "white",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
     borderRadius: "24px",
     padding: "24px",
     display: "flex",
     alignItems: "center",
     gap: "18px",
     boxShadow:
-      "0 12px 35px rgba(15,23,42,0.07)",
-    border: "1px solid #eef2f7"
+      "0 16px 40px rgba(88,28,135,0.08)",
+    border: "1px solid #ede9fe"
   },
 
   cardLabelLight: {
@@ -1142,7 +1145,7 @@ const styles = {
     width: "54px",
     height: "54px",
     borderRadius: "18px",
-    background: "#dbeafe",
+    background: "#ede9fe",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1153,7 +1156,7 @@ const styles = {
     width: "54px",
     height: "54px",
     borderRadius: "18px",
-    background: "#dcfce7",
+    background: "#f3e8ff",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1164,7 +1167,7 @@ const styles = {
     width: "54px",
     height: "54px",
     borderRadius: "18px",
-    background: "#f3f4f6",
+    background: "#f5f3ff",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1179,13 +1182,13 @@ const styles = {
 
   cardNumberBlue: {
     margin: "8px 0 0",
-    color: "#2563eb",
+    color: "#7c3aed",
     fontSize: "34px"
   },
 
   cardNumberGreen: {
     margin: "8px 0 0",
-    color: "#166534",
+    color: "#7c3aed",
     fontSize: "34px"
   },
 
@@ -1196,13 +1199,14 @@ const styles = {
   },
 
   formCard: {
-    background: "white",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
     borderRadius: "28px",
     padding: "26px",
     marginBottom: "26px",
     boxShadow:
-      "0 14px 40px rgba(15,23,42,0.08)",
-    border: "1px solid #eef2f7"
+      "0 18px 45px rgba(88,28,135,0.09)",
+    border: "1px solid #ede9fe"
   },
 
   sectionHeader: {
@@ -1215,7 +1219,7 @@ const styles = {
 
   sectionTitle: {
     margin: 0,
-    color: "#14532d",
+    color: "#6d28d9",
     fontSize: "24px"
   },
 
@@ -1227,8 +1231,8 @@ const styles = {
   },
 
   sectionBadge: {
-    background: "#f0fdf4",
-    color: "#166534",
+    background: "#faf5ff",
+    color: "#7c3aed",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1247,10 +1251,10 @@ const styles = {
     width: "100%",
     padding: "14px 15px",
     borderRadius: "15px",
-    border: "1px solid #d1d5db",
+    border: "1px solid #c4b5fd",
     outline: "none",
     fontSize: "14px",
-    background: "#f9fafb",
+    background: "#fbfaff",
     boxSizing: "border-box"
   },
 
@@ -1259,10 +1263,10 @@ const styles = {
     minHeight: "95px",
     padding: "14px 15px",
     borderRadius: "15px",
-    border: "1px solid #d1d5db",
+    border: "1px solid #c4b5fd",
     outline: "none",
     fontSize: "14px",
-    background: "#f9fafb",
+    background: "#fbfaff",
     boxSizing: "border-box",
     marginTop: "14px",
     resize: "vertical",
@@ -1273,7 +1277,7 @@ const styles = {
     marginTop: "14px",
     width: "100%",
     background:
-      "linear-gradient(135deg,#14532d,#16a34a)",
+      "linear-gradient(135deg,#6d28d9,#8b5cf6)",
     color: "white",
     border: "none",
     padding: "15px",
@@ -1281,16 +1285,17 @@ const styles = {
     cursor: "pointer",
     fontWeight: "800",
     boxShadow:
-      "0 12px 25px rgba(22,163,74,0.20)"
+      "0 12px 25px rgba(124,58,237,0.18)"
   },
 
   listCard: {
-    background: "white",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
     borderRadius: "28px",
     padding: "26px",
     boxShadow:
-      "0 14px 40px rgba(15,23,42,0.08)",
-    border: "1px solid #eef2f7"
+      "0 18px 45px rgba(88,28,135,0.09)",
+    border: "1px solid #ede9fe"
   },
 
   listHeader: {
@@ -1309,23 +1314,23 @@ const styles = {
   search: {
     padding: "13px 14px",
     borderRadius: "15px",
-    border: "1px solid #d1d5db",
+    border: "1px solid #c4b5fd",
     outline: "none",
-    background: "#f9fafb",
+    background: "#fbfaff",
     minWidth: "230px"
   },
 
   filter: {
     padding: "13px 14px",
     borderRadius: "15px",
-    border: "1px solid #d1d5db",
+    border: "1px solid #c4b5fd",
     outline: "none",
-    background: "#f9fafb"
+    background: "#fbfaff"
   },
 
   empty: {
-    background: "#f9fafb",
-    border: "1px dashed #d1d5db",
+    background: "#fbfaff",
+    border: "1px dashed #c4b5fd",
     borderRadius: "22px",
     padding: "45px",
     textAlign: "center"
@@ -1354,8 +1359,8 @@ const styles = {
   },
 
   visitorCard: {
-    background: "#f9fafb",
-    border: "1px solid #e5e7eb",
+    background: "#fbfaff",
+    border: "1px solid #ddd6fe",
     borderRadius: "24px",
     padding: "22px",
     boxShadow:
@@ -1389,7 +1394,7 @@ const styles = {
     width: "48px",
     height: "48px",
     borderRadius: "17px",
-    background: "#dcfce7",
+    background: "#f3e8ff",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1404,8 +1409,9 @@ const styles = {
   },
 
   infoItem: {
-    background: "white",
-    border: "1px solid #eef2f7",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
+    border: "1px solid #ede9fe",
     borderRadius: "16px",
     padding: "12px"
   },
@@ -1418,9 +1424,9 @@ const styles = {
   },
 
   documento: {
-    background: "#eff6ff",
-    border: "1px solid #bfdbfe",
-    color: "#1d4ed8",
+    background: "#faf5ff",
+    border: "1px solid #ddd6fe",
+    color: "#6d28d9",
     padding: "12px",
     borderRadius: "14px",
     fontSize: "13px",
@@ -1428,8 +1434,9 @@ const styles = {
   },
 
   obs: {
-    background: "white",
-    border: "1px solid #eef2f7",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
+    border: "1px solid #ede9fe",
     borderRadius: "14px",
     padding: "12px",
     color: "#374151",
@@ -1451,7 +1458,7 @@ const styles = {
   },
 
   blue: {
-    background: "#2563eb",
+    background: "#7c3aed",
     color: "white",
     border: "none",
     padding: "11px",
@@ -1461,7 +1468,7 @@ const styles = {
   },
 
   green: {
-    background: "#16a34a",
+    background: "#8b5cf6",
     color: "white",
     border: "none",
     padding: "11px",

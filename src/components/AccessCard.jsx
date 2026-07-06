@@ -3,96 +3,198 @@ function AccessCard({ icon, title, description, color, buttonColor }) {
     <>
       <style>
         {`
-          .access-card {
-            position: relative;
-            width: 280px;
-            height: 340px;
-            border-radius: 28px;
-            padding: 26px;
-            overflow: hidden;
-            cursor: pointer;
-            background: linear-gradient(
-              180deg,
-              rgba(255,255,255,0.18),
-              rgba(255,255,255,0.08)
-            );
-            border: 1px solid rgba(255,255,255,0.22);
-            box-shadow: 0 24px 60px rgba(0,0,0,0.28);
-            backdrop-filter: blur(18px);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            transition: 0.35s ease;
-          }
+          .access-card{
+            position:relative;
+            width:300px;
+            height:360px;
+            border-radius:32px;
+            padding:28px;
+            overflow:hidden;
+            cursor:pointer;
 
-          .access-card::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: -120%;
-            width: 70%;
-            height: 100%;
-            background: linear-gradient(
-              120deg,
-              transparent,
-              rgba(250,204,21,0.55),
-              transparent
-            );
-            transform: skewX(-22deg);
-            transition: 0.7s ease;
-          }
+            background:
+              linear-gradient(
+                180deg,
+                rgba(255,255,255,.78),
+                rgba(255,255,255,.56)
+              );
 
-          .access-card:hover::before {
-            left: 140%;
-          }
+            border:1px solid rgba(124,58,237,.16);
 
-          .access-card:hover {
-            transform: translateY(-14px) scale(1.03);
-            border-color: rgba(250,204,21,0.75);
+            backdrop-filter:blur(18px);
+
+            display:flex;
+            flex-direction:column;
+            justify-content:center;
+            align-items:center;
+            text-align:center;
+
+            transition:.35s;
+
             box-shadow:
-              0 30px 80px rgba(0,0,0,0.38),
-              0 0 30px rgba(250,204,21,0.18);
+              0 24px 60px rgba(88,28,135,.10),
+              inset 0 1px 0 rgba(255,255,255,.65);
           }
 
-          .access-icon {
-            font-size: 78px;
-            margin-bottom: 22px;
-            color: var(--card-color);
-            transition: 0.35s ease;
-            filter: drop-shadow(0 0 18px rgba(255,255,255,0.16));
+          .access-card::before{
+            content:"";
+            position:absolute;
+            inset:0;
+
+            background:
+              linear-gradient(
+                135deg,
+                transparent,
+                rgba(255,255,255,.45),
+                transparent
+              );
+
+            transform:translateX(-120%);
+            transition:.8s;
           }
 
-          .access-card:hover .access-icon {
-            transform: scale(1.16) rotate(-3deg);
-            color: #facc15;
+          .access-card:hover::before{
+            transform:translateX(120%);
           }
 
-          .access-title {
-            font-size: 23px;
-            font-weight: 900;
-            color: white;
-            margin-bottom: 12px;
+          .access-card::after{
+
+            content:"";
+
+            position:absolute;
+
+            width:240px;
+            height:240px;
+
+            border-radius:50%;
+
+            background:var(--card-color);
+
+            opacity:.08;
+
+            top:-90px;
+            right:-90px;
+
+            filter:blur(45px);
+
           }
 
-          .access-description {
-            font-size: 14px;
-            color: rgba(255,255,255,0.72);
-            line-height: 1.5;
-            margin-bottom: 24px;
+          .access-card:hover{
+
+            transform:translateY(-12px) scale(1.03);
+
+            border-color:rgba(124,58,237,.35);
+
+            box-shadow:
+
+              0 35px 80px rgba(88,28,135,.18),
+
+              0 0 40px rgba(124,58,237,.12);
+
           }
 
-          .access-button {
-            border: none;
-            border-radius: 999px;
-            padding: 12px 28px;
-            background: linear-gradient(135deg, var(--button-color), #facc15);
-            color: white;
-            font-weight: 900;
-            cursor: pointer;
-            box-shadow: 0 12px 28px rgba(0,0,0,0.25);
+          .access-icon{
+
+            width:95px;
+            height:95px;
+
+            border-radius:28px;
+
+            display:flex;
+            justify-content:center;
+            align-items:center;
+
+            background:
+              linear-gradient(
+                135deg,
+                var(--card-color),
+                #a855f7
+              );
+
+            color:white;
+
+            font-size:46px;
+
+            margin-bottom:24px;
+
+            box-shadow:
+              0 18px 40px rgba(124,58,237,.22);
+
+            transition:.35s;
+
           }
+
+          .access-card:hover .access-icon{
+
+            transform:rotate(-6deg) scale(1.12);
+
+          }
+
+          .access-title{
+
+            color:#111827;
+
+            font-size:24px;
+
+            font-weight:900;
+
+            margin-bottom:14px;
+
+          }
+
+          .access-description{
+
+            color:#6b7280;
+
+            line-height:1.6;
+
+            font-size:14px;
+
+            margin-bottom:28px;
+
+            min-height:64px;
+
+          }
+
+          .access-button{
+
+            border:none;
+
+            border-radius:999px;
+
+            padding:14px 34px;
+
+            font-size:15px;
+
+            font-weight:900;
+
+            color:white;
+
+            cursor:pointer;
+
+            background:
+              linear-gradient(
+                135deg,
+                var(--button-color),
+                #a855f7
+              );
+
+            box-shadow:
+              0 16px 32px rgba(124,58,237,.24);
+
+            transition:.3s;
+
+          }
+
+          .access-button:hover{
+
+            transform:scale(1.04);
+
+            box-shadow:
+              0 20px 40px rgba(124,58,237,.34);
+
+          }
+
         `}
       </style>
 
@@ -116,8 +218,9 @@ function AccessCard({ icon, title, description, color, buttonColor }) {
         </div>
 
         <button className="access-button">
-          Entrar
+          Entrar →
         </button>
+
       </div>
     </>
   );

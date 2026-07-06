@@ -25,6 +25,7 @@ import {
 } from "react-icons/fa";
 
 import { contarNaoLidas } from "../Services/notificacaoService";
+import logoStar from "../assets/images/logo-star-infinity.png";
 
 function DashboardLayout() {
   const navigate = useNavigate();
@@ -128,27 +129,26 @@ function DashboardLayout() {
   return (
     <div style={styles.container}>
       <aside style={styles.sidebar}>
-        <div>
+        <div style={styles.sidebarGlow}></div>
+        <div style={styles.sidebarGrid}></div>
+
+        <div style={styles.sidebarContent}>
           <div style={styles.logoContainer}>
             <div style={styles.logoIcon}>
-              {perfilCondominio.logoUrl ? (
-                <img
-                  src={perfilCondominio.logoUrl}
-                  alt="Logo do condomínio"
-                  style={styles.logoImage}
-                />
-              ) : (
-                "🏢"
-              )}
+              <img
+                src={logoStar}
+                alt="Star Infinity Code"
+                style={styles.logoImage}
+              />
             </div>
 
             <div>
               <h2 style={styles.logo}>
-                {perfilCondominio.nomeCondominio || "Condomínio"}
+                InfinityCondo
               </h2>
 
               <p style={styles.logoSub}>
-                Painel Executivo
+                {perfilCondominio.nomeCondominio || "Painel Executivo"}
               </p>
             </div>
           </div>
@@ -306,11 +306,11 @@ function DashboardLayout() {
         <div style={styles.footer}>
           <div style={styles.footerCard}>
             <p style={styles.footerTitle}>
-              Central Administrativa
+              Star Infinity Code
             </p>
 
             <p style={styles.footerText}>
-              Controle completo do condomínio em tempo real.
+              Produto profissional de gestão condominial.
             </p>
           </div>
 
@@ -367,53 +367,92 @@ const styles = {
     display: "flex",
     minHeight: "100vh",
     background:
-      "linear-gradient(180deg,#f8fafc,#ecfdf5)",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.14),transparent 30%), linear-gradient(180deg,#ffffff,#f8f5ff)",
     fontFamily: "Arial"
   },
 
   sidebar: {
-    width: "310px",
-    minWidth: "310px",
+    width: "330px",
+    minWidth: "330px",
     minHeight: "100vh",
     background:
-      "radial-gradient(circle at top left,rgba(34,197,94,0.25),transparent 32%), linear-gradient(180deg,#020617,#052e16,#14532d)",
+      "radial-gradient(circle at top left,rgba(168,85,247,0.28),transparent 30%), radial-gradient(circle at bottom right,rgba(59,130,246,0.16),transparent 32%), linear-gradient(180deg,#1e1b4b,#2e1065,#4c1d95,#6d28d9)",
     padding: "26px 20px",
     display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
-    boxShadow: "12px 0 45px rgba(3,27,15,0.30)",
+    boxShadow:
+      "14px 0 50px rgba(88,28,135,0.24), inset -1px 0 0 rgba(255,255,255,0.12)",
     color: "white",
     overflowY: "auto",
-    boxSizing: "border-box"
+    boxSizing: "border-box",
+    position: "relative"
+  },
+
+  sidebarGlow: {
+    position: "absolute",
+    width: "220px",
+    height: "220px",
+    borderRadius: "50%",
+    background: "rgba(168,85,247,0.22)",
+    filter: "blur(55px)",
+    top: "-70px",
+    right: "-90px",
+    pointerEvents: "none"
+  },
+
+  sidebarGrid: {
+    position: "absolute",
+    inset: 0,
+    backgroundImage:
+      "linear-gradient(rgba(255,255,255,0.055) 1px, transparent 1px), linear-gradient(90deg,rgba(255,255,255,0.055) 1px, transparent 1px)",
+    backgroundSize: "36px 36px",
+    opacity: 0.45,
+    maskImage:
+      "linear-gradient(to bottom,black,black 72%,transparent)",
+    pointerEvents: "none"
+  },
+
+  sidebarContent: {
+    position: "relative",
+    zIndex: 2
   },
 
   logoContainer: {
     display: "flex",
     alignItems: "center",
     gap: "14px",
-    marginBottom: "14px"
+    marginBottom: "16px",
+    padding: "12px",
+    borderRadius: "26px",
+    background:
+      "linear-gradient(135deg,rgba(255,255,255,0.13),rgba(255,255,255,0.06))",
+    border: "1px solid rgba(255,255,255,0.14)",
+    boxShadow: "0 18px 38px rgba(0,0,0,0.16)"
   },
 
   logoIcon: {
-    width: "62px",
-    height: "62px",
-    borderRadius: "22px",
+    width: "86px",
+    height: "86px",
+    borderRadius: "26px",
     background:
-      "linear-gradient(135deg,rgba(255,255,255,0.18),rgba(255,255,255,0.08))",
+      "linear-gradient(135deg,rgba(255,255,255,0.95),rgba(245,243,255,0.88))",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "30px",
     boxShadow:
-      "inset 0 0 0 1px rgba(255,255,255,0.14), 0 14px 30px rgba(0,0,0,0.18)",
-    backdropFilter: "blur(12px)",
-    overflow: "hidden"
+      "0 18px 36px rgba(0,0,0,0.20), 0 0 30px rgba(168,85,247,0.20)",
+    overflow: "hidden",
+    flexShrink: 0
   },
 
   logoImage: {
     width: "100%",
     height: "100%",
-    objectFit: "cover"
+    objectFit: "contain",
+    padding: "7px",
+    boxSizing: "border-box"
   },
 
   logo: {
@@ -425,12 +464,13 @@ const styles = {
   },
 
   logoSub: {
-    margin: "4px 0 0",
-    color: "rgba(255,255,255,0.68)",
-    fontSize: "12px",
+    margin: "5px 0 0",
+    color: "rgba(255,255,255,0.72)",
+    fontSize: "11px",
     textTransform: "uppercase",
     letterSpacing: "1px",
-    fontWeight: "800"
+    fontWeight: "900",
+    lineHeight: "1.35"
   },
 
   premiumBadge: {
@@ -438,20 +478,21 @@ const styles = {
     alignItems: "center",
     width: "fit-content",
     background:
-      "linear-gradient(135deg,rgba(250,204,21,0.26),rgba(255,255,255,0.10))",
-    border: "1px solid rgba(250,204,21,0.28)",
-    color: "#fef9c3",
+      "linear-gradient(135deg,rgba(255,255,255,0.16),rgba(168,85,247,0.16))",
+    border: "1px solid rgba(255,255,255,0.18)",
+    color: "#f5f3ff",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
     fontWeight: "900",
-    marginBottom: "18px"
+    marginBottom: "18px",
+    boxShadow: "0 10px 24px rgba(0,0,0,0.12)"
   },
 
   notificationBox: {
-    background: "rgba(250,204,21,0.16)",
-    border: "1px solid rgba(250,204,21,0.28)",
-    color: "#fef9c3",
+    background: "rgba(255,255,255,0.13)",
+    border: "1px solid rgba(255,255,255,0.18)",
+    color: "#f5f3ff",
     borderRadius: "17px",
     padding: "12px 13px",
     marginBottom: "18px",
@@ -459,20 +500,21 @@ const styles = {
     alignItems: "center",
     gap: "10px",
     fontSize: "13px",
-    fontWeight: "900"
+    fontWeight: "900",
+    boxShadow: "0 12px 26px rgba(0,0,0,0.12)"
   },
 
   userBox: {
     background:
-      "linear-gradient(135deg,rgba(255,255,255,0.13),rgba(255,255,255,0.07))",
-    border: "1px solid rgba(255,255,255,0.14)",
+      "linear-gradient(135deg,rgba(255,255,255,0.14),rgba(255,255,255,0.07))",
+    border: "1px solid rgba(255,255,255,0.16)",
     borderRadius: "26px",
     padding: "16px",
     display: "flex",
     alignItems: "center",
     gap: "13px",
     marginBottom: "26px",
-    boxShadow: "0 18px 38px rgba(0,0,0,0.20)",
+    boxShadow: "0 18px 38px rgba(0,0,0,0.18)",
     backdropFilter: "blur(14px)"
   },
 
@@ -481,13 +523,14 @@ const styles = {
     height: "56px",
     borderRadius: "19px",
     background:
-      "linear-gradient(135deg,#16a34a,#22c55e)",
+      "linear-gradient(135deg,#7c3aed,#a855f7)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "26px",
     flexShrink: 0,
-    boxShadow: "0 12px 24px rgba(34,197,94,0.22)"
+    boxShadow:
+      "0 12px 24px rgba(168,85,247,0.28), 0 0 26px rgba(168,85,247,0.18)"
   },
 
   userName: {
@@ -497,10 +540,10 @@ const styles = {
   },
 
   userRole: {
-    color: "rgba(255,255,255,0.70)",
+    color: "rgba(255,255,255,0.72)",
     fontSize: "12px",
     marginTop: "3px",
-    fontWeight: "600"
+    fontWeight: "700"
   },
 
   onlineLine: {
@@ -508,17 +551,17 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "7px",
-    color: "#bbf7d0",
+    color: "#ddd6fe",
     fontSize: "12px",
-    fontWeight: "800"
+    fontWeight: "900"
   },
 
   onlineDot: {
     width: "8px",
     height: "8px",
     borderRadius: "50%",
-    background: "#22c55e",
-    boxShadow: "0 0 0 5px rgba(34,197,94,0.16)"
+    background: "#a855f7",
+    boxShadow: "0 0 0 5px rgba(168,85,247,0.18)"
   },
 
   menuGroup: {
@@ -526,7 +569,7 @@ const styles = {
   },
 
   menuGroupTitle: {
-    color: "rgba(255,255,255,0.38)",
+    color: "rgba(255,255,255,0.42)",
     fontSize: "11px",
     fontWeight: "900",
     letterSpacing: "1.6px",
@@ -550,15 +593,16 @@ const styles = {
     fontSize: "14px",
     fontWeight: "850",
     transition: "0.2s",
-    background: "rgba(255,255,255,0.055)",
-    border: "1px solid rgba(255,255,255,0.06)"
+    background: "rgba(255,255,255,0.065)",
+    border: "1px solid rgba(255,255,255,0.075)",
+    boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.025)"
   },
 
   menuIcon: {
     width: "36px",
     height: "36px",
     borderRadius: "14px",
-    background: "rgba(255,255,255,0.10)",
+    background: "rgba(255,255,255,0.11)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -567,24 +611,27 @@ const styles = {
 
   active: {
     background:
-      "linear-gradient(135deg,#16a34a,#22c55e)",
+      "linear-gradient(135deg,#6d28d9,#a855f7)",
     color: "white",
-    border: "1px solid rgba(255,255,255,0.24)",
+    border: "1px solid rgba(255,255,255,0.28)",
     boxShadow:
-      "0 14px 28px rgba(34,197,94,0.28)"
+      "0 14px 30px rgba(168,85,247,0.30), 0 0 26px rgba(168,85,247,0.16)"
   },
 
   footer: {
-    marginTop: "24px"
+    marginTop: "24px",
+    position: "relative",
+    zIndex: 2
   },
 
   footerCard: {
     background:
-      "linear-gradient(135deg,rgba(255,255,255,0.11),rgba(255,255,255,0.06))",
-    border: "1px solid rgba(255,255,255,0.11)",
+      "linear-gradient(135deg,rgba(255,255,255,0.13),rgba(255,255,255,0.07))",
+    border: "1px solid rgba(255,255,255,0.13)",
     borderRadius: "23px",
     padding: "16px",
-    marginBottom: "14px"
+    marginBottom: "14px",
+    boxShadow: "0 14px 32px rgba(0,0,0,0.14)"
   },
 
   footerTitle: {
@@ -595,15 +642,15 @@ const styles = {
 
   footerText: {
     margin: "7px 0 0",
-    color: "rgba(255,255,255,0.62)",
+    color: "rgba(255,255,255,0.64)",
     fontSize: "12px",
     lineHeight: "1.45"
   },
 
   logoutButton: {
     width: "100%",
-    background: "rgba(255,255,255,0.10)",
-    border: "1px solid rgba(255,255,255,0.12)",
+    background: "rgba(255,255,255,0.11)",
+    border: "1px solid rgba(255,255,255,0.14)",
     color: "white",
     padding: "14px",
     borderRadius: "17px",
@@ -612,7 +659,8 @@ const styles = {
     justifyContent: "center",
     gap: "10px",
     cursor: "pointer",
-    fontWeight: "900"
+    fontWeight: "900",
+    boxShadow: "0 10px 24px rgba(0,0,0,0.12)"
   },
 
   content: {
@@ -620,7 +668,7 @@ const styles = {
     padding: "34px",
     overflowY: "auto",
     background:
-      "radial-gradient(circle at top right,rgba(187,247,208,0.28),transparent 26%), linear-gradient(180deg,#f8fafc,#ecfdf5)",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.16),transparent 28%), radial-gradient(circle at bottom left,rgba(59,130,246,0.08),transparent 30%), linear-gradient(180deg,#ffffff,#f8f5ff)",
     boxSizing: "border-box"
   }
 };

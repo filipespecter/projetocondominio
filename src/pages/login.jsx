@@ -5,10 +5,14 @@ import {
   FaIdBadge,
   FaUserCircle,
   FaArrowLeft,
-  FaCheckCircle
+  FaCheckCircle,
+  FaEye,
+  FaEyeSlash,
+  FaKey
 } from "react-icons/fa";
 
 import { useState } from "react";
+import logoStar from "../assets/images/logo-star-infinity.png";
 
 function Login() {
   const { tipo } = useParams();
@@ -18,12 +22,14 @@ function Login() {
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
   const [avisoPadrao, setAvisoPadrao] = useState(null);
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [recuperarSenha, setRecuperarSenha] = useState(false);
 
   const perfis = {
     sindico: {
       titulo: "Síndico / Administrador",
       subtitulo: "Acesso executivo para gestão completa do condomínio.",
-      gradient: "linear-gradient(135deg,#052e16,#166534,#22c55e)",
+      gradient: "linear-gradient(135deg,#4c1d95,#7c3aed,#a855f7)",
       icon: <FaShieldAlt size={42} color="white" />,
       chamada: "Gestão completa",
       recursos: [
@@ -37,7 +43,7 @@ function Login() {
     porteiro: {
       titulo: "Porteiro",
       subtitulo: "Controle operacional de visitantes, encomendas e ocorrências.",
-      gradient: "linear-gradient(135deg,#031b0f,#14532d,#16a34a)",
+      gradient: "linear-gradient(135deg,#312e81,#6d28d9,#8b5cf6)",
       icon: <FaIdBadge size={42} color="white" />,
       chamada: "Controle de portaria",
       recursos: [
@@ -51,7 +57,7 @@ function Login() {
     morador: {
       titulo: "Morador",
       subtitulo: "Acompanhe avisos, reservas, encomendas e solicitações.",
-      gradient: "linear-gradient(135deg,#052e16,#047857,#4ade80)",
+      gradient: "linear-gradient(135deg,#1e1b4b,#7c3aed,#c084fc)",
       icon: <FaUserCircle size={42} color="white" />,
       chamada: "Portal do morador",
       recursos: [
@@ -355,6 +361,16 @@ function Login() {
     navigate("/dashboard/configuracoes", { replace: true });
   }
 
+  function abrirRecuperacaoSenha() {
+    setErro("");
+    setAvisoPadrao(null);
+    setRecuperarSenha(true);
+  }
+
+  function fecharRecuperacaoSenha() {
+    setRecuperarSenha(false);
+  }
+
   function handleKeyPress(e) {
     if (e.key === "Enter") {
       fazerLogin();
@@ -365,6 +381,10 @@ function Login() {
     <div style={styles.container}>
       <div style={styles.glowGreen}></div>
       <div style={styles.glowGold}></div>
+      <div style={styles.gridOverlay}></div>
+      <div style={styles.codeRain}>
+        {"010101 110010 101101 001011 111000 010110 100101"}
+      </div>
 
       <div style={styles.loginShell}>
         <div style={styles.formSide}>
@@ -375,6 +395,14 @@ function Login() {
             <FaArrowLeft />
             Voltar
           </button>
+
+          <div style={styles.logoBox}>
+            <img
+              src={logoStar}
+              alt="Star Infinity Code"
+              style={styles.logoImage}
+            />
+          </div>
 
           <div
             style={{
@@ -416,15 +444,35 @@ function Login() {
               Senha
             </label>
 
-            <input
-              style={styles.input}
-              type="password"
-              placeholder="Digite sua senha"
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
-              onKeyDown={handleKeyPress}
-            />
+            <div style={styles.passwordWrap}>
+              <input
+                style={styles.passwordInput}
+                type={mostrarSenha ? "text" : "password"}
+                placeholder="Digite sua senha"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                onKeyDown={handleKeyPress}
+              />
+
+              <button
+                type="button"
+                style={styles.eyeButton}
+                onClick={() => setMostrarSenha(!mostrarSenha)}
+                title={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+              >
+                {mostrarSenha ? <FaEyeSlash /> : <FaEye />}
+              </button>
+            </div>
           </div>
+
+          <button
+            type="button"
+            style={styles.forgotButton}
+            onClick={abrirRecuperacaoSenha}
+          >
+            <FaKey />
+            Esqueci minha senha
+          </button>
 
           {erro && (
             <div style={styles.errorBox}>
@@ -436,18 +484,20 @@ function Login() {
             style={styles.button}
             onClick={fazerLogin}
           >
-            Acessar Plataforma
+            Entrar no InfinityCondo →
           </button>
 
           <p style={styles.footerText}>
-            Infinity Condo • Star Infinity Code © 2026
+            InfinityCondo • Star Infinity Code © 2026
           </p>
         </div>
 
         <div style={styles.infoSide}>
           <div>
+            <div style={styles.infoLogoMark}>✦</div>
+
             <span style={styles.systemBadge}>
-              Infinity Condo
+              InfinityCondo
             </span>
 
             <h2 style={styles.infoTitle}>
@@ -484,6 +534,38 @@ function Login() {
           </div>
         </div>
       </div>
+
+      {recuperarSenha && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.warningModal}>
+            <div style={styles.warningIcon}>
+              🔐
+            </div>
+
+            <h2 style={styles.warningTitle}>
+              Recuperação de senha
+            </h2>
+
+            <p style={styles.warningText}>
+              A recuperação automática será ativada na versão com backend.
+            </p>
+
+            <p style={styles.warningText}>
+              Por enquanto, solicite a redefinição ao administrador do sistema
+              ou entre em contato com a Star Infinity Code.
+            </p>
+
+            <div style={styles.warningActions}>
+              <button
+                style={styles.changeNowButton}
+                onClick={fecharRecuperacaoSenha}
+              >
+                Entendi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {avisoPadrao && (
         <div style={styles.modalOverlay}>
@@ -532,7 +614,7 @@ const styles = {
   container: {
     minHeight: "100vh",
     background:
-      "radial-gradient(circle at top left,rgba(34,197,94,0.26),transparent 32%), radial-gradient(circle at bottom right,rgba(250,204,21,0.20),transparent 28%), linear-gradient(135deg,#020617,#052e16 48%,#064e3b)",
+      "radial-gradient(circle at top left,rgba(124,58,237,0.24),transparent 30%), radial-gradient(circle at bottom right,rgba(168,85,247,0.20),transparent 28%), radial-gradient(circle at center,rgba(59,130,246,0.10),transparent 36%), linear-gradient(135deg,#ffffff,#f8f5ff 48%,#ffffff)",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
@@ -545,36 +627,65 @@ const styles = {
 
   glowGreen: {
     position: "absolute",
-    width: "360px",
-    height: "360px",
+    width: "430px",
+    height: "430px",
     borderRadius: "50%",
-    background: "rgba(34,197,94,0.18)",
-    filter: "blur(70px)",
-    top: "-80px",
-    left: "-80px"
+    background: "rgba(124,58,237,0.15)",
+    filter: "blur(80px)",
+    top: "-120px",
+    left: "-100px"
   },
 
   glowGold: {
     position: "absolute",
-    width: "320px",
-    height: "320px",
+    width: "380px",
+    height: "380px",
     borderRadius: "50%",
-    background: "rgba(250,204,21,0.14)",
-    filter: "blur(75px)",
-    bottom: "-80px",
-    right: "-80px"
+    background: "rgba(168,85,247,0.12)",
+    filter: "blur(85px)",
+    bottom: "-110px",
+    right: "-90px"
+  },
+
+  gridOverlay: {
+    position: "absolute",
+    inset: 0,
+    backgroundImage:
+      "linear-gradient(rgba(124,58,237,0.08) 1px, transparent 1px), linear-gradient(90deg,rgba(124,58,237,0.08) 1px, transparent 1px)",
+    backgroundSize: "44px 44px",
+    maskImage:
+      "linear-gradient(to bottom,transparent,black 24%,black 76%,transparent)",
+    opacity: 0.55
+  },
+
+  codeRain: {
+    position: "absolute",
+    left: "50%",
+    bottom: "7%",
+    transform: "translateX(-50%)",
+    width: "900px",
+    maxWidth: "86%",
+    color: "rgba(109,40,217,0.13)",
+    fontSize: "18px",
+    fontWeight: "900",
+    letterSpacing: "12px",
+    textAlign: "center",
+    userSelect: "none",
+    pointerEvents: "none",
+    filter: "blur(0.2px)"
   },
 
   loginShell: {
-    width: "940px",
-    minHeight: "610px",
+    width: "1080px",
+    minHeight: "650px",
     display: "grid",
     gridTemplateColumns: "1fr 0.95fr",
     background:
-      "linear-gradient(180deg,rgba(255,255,255,0.16),rgba(255,255,255,0.07))",
-    border: "1px solid rgba(255,255,255,0.20)",
-    borderRadius: "38px",
-    boxShadow: "0 35px 90px rgba(0,0,0,0.35)",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.13),transparent 35%), linear-gradient(180deg,rgba(255,255,255,0.95),rgba(251,250,255,0.88))",
+    border: "1px solid rgba(124,58,237,0.18)",
+    borderRadius: "40px",
+    boxShadow:
+      "0 35px 90px rgba(88,28,135,0.16), inset 0 0 0 1px rgba(255,255,255,0.75)",
     backdropFilter: "blur(22px)",
     overflow: "hidden",
     position: "relative",
@@ -582,31 +693,34 @@ const styles = {
   },
 
   formSide: {
-    padding: "48px",
+    padding: "50px",
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
     position: "relative",
-    background: "rgba(255,255,255,0.08)"
+    background:
+      "radial-gradient(circle at top left,rgba(124,58,237,0.08),transparent 32%), rgba(255,255,255,0.94)"
   },
 
   infoSide: {
-    padding: "48px",
+    padding: "50px",
     background:
-      "radial-gradient(circle at top right,rgba(250,204,21,0.20),transparent 38%), linear-gradient(145deg,rgba(2,6,23,0.30),rgba(5,46,22,0.35))",
-    borderLeft: "1px solid rgba(255,255,255,0.14)",
+      "radial-gradient(circle at top right,rgba(255,255,255,0.20),transparent 34%), radial-gradient(circle at bottom left,rgba(168,85,247,0.24),transparent 38%), linear-gradient(145deg,#2e1065,#4c1d95,#7c3aed)",
+    borderLeft: "1px solid rgba(255,255,255,0.18)",
     color: "white",
     display: "flex",
     flexDirection: "column",
-    justifyContent: "space-between"
+    justifyContent: "space-between",
+    position: "relative",
+    overflow: "hidden"
   },
 
   backButton: {
     position: "absolute",
     top: "24px",
     left: "24px",
-    border: "1px solid rgba(255,255,255,0.16)",
-    background: "rgba(255,255,255,0.10)",
+    border: "1px solid #ddd6fe",
+    background: "#ffffff",
     padding: "10px 14px",
     borderRadius: "14px",
     cursor: "pointer",
@@ -614,27 +728,39 @@ const styles = {
     alignItems: "center",
     gap: "8px",
     fontWeight: "800",
-    color: "white",
-    backdropFilter: "blur(12px)"
+    color: "#6d28d9",
+    boxShadow: "0 10px 24px rgba(124,58,237,0.10)"
+  },
+
+  logoBox: {
+    width: "230px",
+    maxWidth: "78%",
+    margin: "18px 0 18px"
+  },
+
+  logoImage: {
+    width: "100%",
+    display: "block",
+    filter: "drop-shadow(0 0 24px rgba(124,58,237,0.30))"
   },
 
   iconCircle: {
-    width: "98px",
-    height: "98px",
-    borderRadius: "32px",
+    width: "88px",
+    height: "88px",
+    borderRadius: "28px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    margin: "20px 0 18px",
+    margin: "4px 0 16px",
     boxShadow:
-      "0 18px 40px rgba(22,163,74,0.24), 0 0 35px rgba(250,204,21,0.10)"
+      "0 18px 40px rgba(124,58,237,0.24), 0 0 35px rgba(168,85,247,0.18)"
   },
 
   profileBadge: {
     width: "fit-content",
-    background: "rgba(250,204,21,0.16)",
-    color: "#facc15",
-    border: "1px solid rgba(250,204,21,0.28)",
+    background: "#f3e8ff",
+    color: "#6d28d9",
+    border: "1px solid #ddd6fe",
     padding: "8px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -645,14 +771,14 @@ const styles = {
   title: {
     margin: 0,
     fontSize: "34px",
-    color: "white",
+    color: "#111827",
     letterSpacing: "-0.6px"
   },
 
   subtitle: {
     marginTop: "10px",
     marginBottom: "28px",
-    color: "rgba(255,255,255,0.68)",
+    color: "#6b7280",
     lineHeight: "1.5"
   },
 
@@ -663,7 +789,7 @@ const styles = {
 
   label: {
     display: "block",
-    color: "rgba(255,255,255,0.78)",
+    color: "#374151",
     fontSize: "13px",
     fontWeight: "900",
     marginBottom: "8px"
@@ -673,24 +799,72 @@ const styles = {
     width: "100%",
     padding: "16px",
     borderRadius: "17px",
-    border: "1px solid rgba(255,255,255,0.18)",
+    border: "1px solid #ddd6fe",
     fontSize: "15px",
     outline: "none",
-    background: "rgba(255,255,255,0.10)",
-    color: "white",
+    background: "#ffffff",
+    color: "#111827",
+    boxSizing: "border-box",
+    boxShadow: "0 10px 26px rgba(124,58,237,0.06)"
+  },
+
+  passwordWrap: {
+    width: "100%",
+    display: "flex",
+    alignItems: "center",
+    borderRadius: "17px",
+    border: "1px solid #ddd6fe",
+    background: "#ffffff",
+    boxSizing: "border-box",
+    overflow: "hidden",
+    boxShadow: "0 10px 26px rgba(124,58,237,0.06)"
+  },
+
+  passwordInput: {
+    flex: 1,
+    padding: "16px",
+    border: "none",
+    fontSize: "15px",
+    outline: "none",
+    background: "transparent",
+    color: "#111827",
     boxSizing: "border-box"
+  },
+
+  eyeButton: {
+    width: "52px",
+    height: "52px",
+    border: "none",
+    background: "transparent",
+    color: "#6d28d9",
+    cursor: "pointer",
+    fontSize: "18px"
+  },
+
+  forgotButton: {
+    border: "none",
+    background: "transparent",
+    color: "#6d28d9",
+    cursor: "pointer",
+    fontWeight: "900",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    margin: "-3px 0 15px",
+    padding: 0
   },
 
   errorBox: {
     width: "100%",
-    background: "rgba(254,226,226,0.96)",
+    background: "#fee2e2",
     color: "#dc2626",
     padding: "13px",
     borderRadius: "14px",
     marginBottom: "16px",
     textAlign: "center",
     fontWeight: "800",
-    boxSizing: "border-box"
+    boxSizing: "border-box",
+    border: "1px solid #fecaca"
   },
 
   button: {
@@ -703,26 +877,41 @@ const styles = {
     fontSize: "15px",
     cursor: "pointer",
     marginTop: "8px",
-    background:
-      "linear-gradient(135deg,#16a34a,#facc15)",
+    background: "linear-gradient(135deg,#6d28d9,#a855f7)",
     boxShadow:
-      "0 16px 34px rgba(0,0,0,0.24), 0 0 24px rgba(250,204,21,0.16)"
+      "0 18px 38px rgba(124,58,237,0.28), 0 0 32px rgba(168,85,247,0.18)"
   },
 
   footerText: {
     margin: "22px 0 0",
-    color: "rgba(255,255,255,0.46)",
-    fontSize: "12px"
+    color: "#7c3aed",
+    fontSize: "12px",
+    fontWeight: "800"
+  },
+
+  infoLogoMark: {
+    width: "74px",
+    height: "74px",
+    borderRadius: "24px",
+    background:
+      "linear-gradient(135deg,rgba(255,255,255,0.22),rgba(255,255,255,0.08))",
+    border: "1px solid rgba(255,255,255,0.20)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "44px",
+    marginBottom: "18px",
+    boxShadow: "0 20px 45px rgba(0,0,0,0.18)"
   },
 
   systemBadge: {
     display: "inline-block",
     width: "fit-content",
     background: "rgba(255,255,255,0.12)",
-    border: "1px solid rgba(255,255,255,0.16)",
+    border: "1px solid rgba(255,255,255,0.18)",
     padding: "9px 13px",
     borderRadius: "999px",
-    color: "#dcfce7",
+    color: "#f5f3ff",
     fontSize: "12px",
     fontWeight: "900",
     marginBottom: "18px"
@@ -731,11 +920,12 @@ const styles = {
   infoTitle: {
     margin: 0,
     fontSize: "38px",
-    letterSpacing: "-0.8px"
+    letterSpacing: "-0.8px",
+    color: "white"
   },
 
   infoText: {
-    color: "rgba(255,255,255,0.68)",
+    color: "rgba(255,255,255,0.72)",
     lineHeight: "1.6",
     marginTop: "12px"
   },
@@ -749,21 +939,22 @@ const styles = {
 
   featureItem: {
     background: "rgba(255,255,255,0.10)",
-    border: "1px solid rgba(255,255,255,0.13)",
+    border: "1px solid rgba(255,255,255,0.14)",
     borderRadius: "18px",
     padding: "14px",
     display: "flex",
     alignItems: "center",
     gap: "12px",
-    fontWeight: "800"
+    fontWeight: "800",
+    boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.04)"
   },
 
   secureBox: {
-    background: "rgba(250,204,21,0.12)",
-    border: "1px solid rgba(250,204,21,0.28)",
+    background: "rgba(255,255,255,0.11)",
+    border: "1px solid rgba(255,255,255,0.18)",
     borderRadius: "22px",
     padding: "18px",
-    color: "#fef3c7"
+    color: "#f5f3ff"
   },
 
   modalOverlay: {
@@ -780,15 +971,14 @@ const styles = {
 
   warningModal: {
     width: "460px",
-    background:
-      "linear-gradient(180deg,rgba(255,255,255,0.18),rgba(255,255,255,0.08))",
-    border: "1px solid rgba(250,204,21,0.35)",
+    background: "linear-gradient(180deg,#ffffff,#fbfaff)",
+    border: "1px solid #ddd6fe",
     borderRadius: "32px",
     padding: "34px",
-    color: "white",
+    color: "#111827",
     textAlign: "center",
     boxShadow:
-      "0 35px 90px rgba(0,0,0,0.42), 0 0 40px rgba(250,204,21,0.14)"
+      "0 35px 90px rgba(88,28,135,0.26), 0 0 40px rgba(168,85,247,0.14)"
   },
 
   warningIcon: {
@@ -796,7 +986,8 @@ const styles = {
     height: "74px",
     borderRadius: "24px",
     margin: "0 auto 18px",
-    background: "linear-gradient(135deg,#92400e,#facc15)",
+    background: "linear-gradient(135deg,#6d28d9,#a855f7)",
+    color: "white",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -805,11 +996,12 @@ const styles = {
 
   warningTitle: {
     margin: "0 0 12px",
-    fontSize: "28px"
+    fontSize: "28px",
+    color: "#111827"
   },
 
   warningText: {
-    color: "rgba(255,255,255,0.76)",
+    color: "#4b5563",
     lineHeight: "1.6"
   },
 
@@ -821,7 +1013,7 @@ const styles = {
 
   changeNowButton: {
     flex: 1,
-    background: "linear-gradient(135deg,#16a34a,#facc15)",
+    background: "linear-gradient(135deg,#6d28d9,#a855f7)",
     color: "white",
     border: "none",
     padding: "14px",
@@ -832,9 +1024,9 @@ const styles = {
 
   continueButton: {
     flex: 1,
-    background: "rgba(255,255,255,0.10)",
-    color: "white",
-    border: "1px solid rgba(255,255,255,0.18)",
+    background: "#ffffff",
+    color: "#6d28d9",
+    border: "1px solid #c4b5fd",
     padding: "14px",
     borderRadius: "16px",
     cursor: "pointer",

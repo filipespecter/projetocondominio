@@ -667,12 +667,13 @@ const styles = {
   container: {
     width: "100%",
     fontFamily: "Arial",
-    color: "#111827"
+    color: "#111827",
+    position: "relative"
   },
 
   hero: {
     background:
-      "linear-gradient(135deg,#052e16,#14532d,#166534)",
+      "linear-gradient(135deg,#4c1d95,#6d28d9,#7c3aed)",
     borderRadius: "30px",
     padding: "32px",
     color: "white",
@@ -681,7 +682,8 @@ const styles = {
     alignItems: "center",
     gap: "28px",
     marginBottom: "26px",
-    boxShadow: "0 20px 45px rgba(20,83,45,0.25)"
+    boxShadow: "0 22px 55px rgba(124,58,237,0.24), 0 0 38px rgba(168,85,247,0.12)",
+    border: "1px solid rgba(255,255,255,0.18)"
   },
 
   heroBadge: {
@@ -712,7 +714,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "10px",
-    color: "#dcfce7",
+    color: "#f3e8ff",
     fontSize: "14px",
     fontWeight: "600"
   },
@@ -721,8 +723,8 @@ const styles = {
     width: "9px",
     height: "9px",
     borderRadius: "50%",
-    background: "#22c55e",
-    boxShadow: "0 0 0 5px rgba(34,197,94,0.16)"
+    background: "#a855f7",
+    boxShadow: "0 0 0 5px rgba(168,85,247,0.18)"
   },
 
   turnoBadge: {
@@ -758,8 +760,8 @@ const styles = {
   },
 
   dateStatus: {
-    background: "#dcfce7",
-    color: "#166534",
+    background: "#f3e8ff",
+    color: "#7c3aed",
     padding: "8px 12px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -776,22 +778,23 @@ const styles = {
 
   cardPrimary: {
     background:
-      "linear-gradient(135deg,#14532d,#16a34a)",
+      "linear-gradient(135deg,#6d28d9,#8b5cf6)",
     borderRadius: "24px",
     padding: "24px",
     color: "white",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    boxShadow: "0 14px 35px rgba(22,163,74,0.2)"
+    boxShadow: "0 14px 35px rgba(124,58,237,0.18)"
   },
 
   card: {
-    background: "white",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
     borderRadius: "24px",
     padding: "24px",
-    boxShadow: "0 12px 35px rgba(15,23,42,0.07)",
-    border: "1px solid #eef2f7"
+    boxShadow: "0 16px 40px rgba(88,28,135,0.08)",
+    border: "1px solid #ede9fe"
   },
 
   cardTop: {
@@ -833,7 +836,7 @@ const styles = {
     width: "50px",
     height: "50px",
     borderRadius: "17px",
-    background: "#dcfce7",
+    background: "#f3e8ff",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -844,7 +847,7 @@ const styles = {
     width: "50px",
     height: "50px",
     borderRadius: "17px",
-    background: "#dbeafe",
+    background: "#ede9fe",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -863,8 +866,8 @@ const styles = {
   },
 
   badgeBlue: {
-    background: "#dbeafe",
-    color: "#1d4ed8",
+    background: "#ede9fe",
+    color: "#6d28d9",
     padding: "7px 12px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -872,8 +875,8 @@ const styles = {
   },
 
   badgeGreen: {
-    background: "#dcfce7",
-    color: "#166534",
+    background: "#f3e8ff",
+    color: "#7c3aed",
     padding: "7px 12px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -913,7 +916,7 @@ const styles = {
     borderRadius: "28px",
     padding: "26px",
     boxShadow: "0 14px 40px rgba(15,23,42,0.08)",
-    border: "1px solid #eef2f7",
+    border: "1px solid #ede9fe",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
@@ -922,8 +925,8 @@ const styles = {
 
   operationBadge: {
     display: "inline-block",
-    background: "#f0fdf4",
-    color: "#166534",
+    background: "#faf5ff",
+    color: "#7c3aed",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -933,7 +936,7 @@ const styles = {
 
   operationTitle: {
     margin: 0,
-    color: "#14532d",
+    color: "#6d28d9",
     fontSize: "24px"
   },
 
@@ -948,7 +951,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "22px",
-    background: "#f9fafb",
+    background: "#fbfaff",
     padding: "18px",
     borderRadius: "22px"
   },
@@ -968,28 +971,28 @@ const styles = {
 
   operationNumberGreen: {
     margin: "8px 0 0",
-    color: "#166534",
+    color: "#7c3aed",
     fontSize: "34px"
   },
 
   operationDivider: {
     width: "1px",
     height: "54px",
-    background: "#e5e7eb"
+    background: "#ddd6fe"
   },
 
   quickStatus: {
     background:
-      "linear-gradient(135deg,#ffffff,#f8fafc)",
+      "linear-gradient(135deg,#ffffff,#fbfaff)",
     borderRadius: "28px",
     padding: "26px",
     boxShadow: "0 14px 40px rgba(15,23,42,0.08)",
-    border: "1px solid #eef2f7"
+    border: "1px solid #ede9fe"
   },
 
   quickTitle: {
     margin: "0 0 18px",
-    color: "#14532d",
+    color: "#6d28d9",
     fontSize: "22px"
   },
 
@@ -1009,11 +1012,11 @@ const styles = {
   },
 
   statusIconGreen: {
-    color: "#16a34a"
+    color: "#8b5cf6"
   },
 
   statusIconBlue: {
-    color: "#2563eb"
+    color: "#7c3aed"
   },
 
   statusIconYellow: {
@@ -1031,7 +1034,7 @@ const styles = {
     borderRadius: "28px",
     padding: "26px",
     boxShadow: "0 14px 40px rgba(15,23,42,0.08)",
-    border: "1px solid #eef2f7"
+    border: "1px solid #ede9fe"
   },
 
   sectionHeader: {
@@ -1044,7 +1047,7 @@ const styles = {
 
   historyTitle: {
     margin: 0,
-    color: "#14532d",
+    color: "#6d28d9",
     fontSize: "23px"
   },
 
@@ -1055,8 +1058,8 @@ const styles = {
   },
 
   live: {
-    background: "#dcfce7",
-    color: "#166534",
+    background: "#f3e8ff",
+    color: "#7c3aed",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1067,7 +1070,7 @@ const styles = {
     padding: "45px",
     textAlign: "center",
     color: "#6b7280",
-    background: "#f9fafb",
+    background: "#fbfaff",
     borderRadius: "22px",
     border: "1px dashed #d1d5db"
   },
@@ -1093,9 +1096,9 @@ const styles = {
     gap: "14px",
     padding: "17px",
     borderRadius: "18px",
-    background: "#f9fafb",
+    background: "#fbfaff",
     marginBottom: "12px",
-    border: "1px solid #eef2f7"
+    border: "1px solid #ede9fe"
   },
 
   historyIcon: {
@@ -1103,7 +1106,7 @@ const styles = {
     height: "44px",
     minWidth: "44px",
     borderRadius: "15px",
-    background: "#dcfce7",
+    background: "#f3e8ff",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1129,12 +1132,12 @@ const styles = {
     borderRadius: "28px",
     padding: "26px",
     boxShadow: "0 14px 40px rgba(15,23,42,0.08)",
-    border: "1px solid #eef2f7"
+    border: "1px solid #ede9fe"
   },
 
   alertTitle: {
     margin: 0,
-    color: "#14532d",
+    color: "#6d28d9",
     fontSize: "23px"
   },
 
@@ -1145,8 +1148,8 @@ const styles = {
   },
 
   alertCardDark: {
-    background: "#f0fdf4",
-    border: "1px solid #bbf7d0",
+    background: "#faf5ff",
+    border: "1px solid #ddd6fe",
     borderRadius: "18px",
     padding: "18px",
     marginBottom: "14px"
@@ -1161,24 +1164,24 @@ const styles = {
   },
 
   alertCardBlue: {
-    background: "#eff6ff",
-    border: "1px solid #bfdbfe",
+    background: "#faf5ff",
+    border: "1px solid #ddd6fe",
     borderRadius: "18px",
     padding: "18px",
     marginBottom: "14px"
   },
 
   alertCardGreen: {
-    background: "#f0fdf4",
-    border: "1px solid #bbf7d0",
+    background: "#faf5ff",
+    border: "1px solid #ddd6fe",
     borderRadius: "18px",
     padding: "18px",
     marginBottom: "14px"
   },
 
   alertCardNeutral: {
-    background: "#f9fafb",
-    border: "1px solid #e5e7eb",
+    background: "#fbfaff",
+    border: "1px solid #ddd6fe",
     borderRadius: "18px",
     padding: "18px"
   },

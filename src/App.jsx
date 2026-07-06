@@ -11,6 +11,8 @@ import {
   Navigate
 } from "react-router-dom";
 
+import logoStar from "./assets/images/logo-star-infinity.png";
+
 import Login from "./pages/login";
 
 import DashboardLayout from "./layout/DashboardLayout";
@@ -50,45 +52,68 @@ function Home() {
 
   return (
     <div style={styles.container}>
-      <div style={styles.logo}>🏢</div>
+      <div style={styles.glowOne}></div>
+      <div style={styles.glowTwo}></div>
+      <div style={styles.grid}></div>
 
-      <h1 style={styles.title}>GreenCondo</h1>
-
-      <p style={styles.subtitle}>
-        Selecione o tipo de acesso ao sistema
-      </p>
-
-      <div style={styles.cards}>
-        <div onClick={() => navigate("/login/sindico")}>
-          <AccessCard
-            icon={<FaUserShield />}
-            title="Síndico / Adm"
-            description="Acesso corporativo ao sistema e gestão total do condomínio"
-            color="#7b2cbf"
-            buttonColor="#7b2cbf"
-          />
-        </div>
-
-        <div onClick={() => navigate("/login/porteiro")}>
-          <AccessCard
-            icon={<FaBuilding />}
-            title="Porteiro"
-            description="Acesso para registro de encomendas, visitantes e consultas"
-            color="#1c7c3c"
-            buttonColor="#1c7c3c"
-          />
-        </div>
-
-        <div onClick={() => navigate("/login/morador")}>
-          <AccessCard
-            icon={<FaUser />}
-            title="Morador"
-            description="Acesso para acompanhar encomendas, reservas e avisos"
-            color="#4cc9f0"
-            buttonColor="#4cc9f0"
-          />
-        </div>
+      <div style={styles.codeRain}>
+        010101 110010 101101 001011 111000 010110
       </div>
+
+      <section style={styles.hero}>
+        <img
+          src={logoStar}
+          alt="Star Infinity Code"
+          style={styles.logoImage}
+        />
+
+        <span style={styles.badge}>
+          Produto da Star Infinity Code
+        </span>
+
+        <h1 style={styles.title}>InfinityCondo</h1>
+
+        <p style={styles.subtitle}>
+          Plataforma inteligente para gestão condominial, operação de portaria,
+          reservas, encomendas e comunicação integrada.
+        </p>
+
+        <div style={styles.cards}>
+          <div onClick={() => navigate("/login/sindico")}>
+            <AccessCard
+              icon={<FaUserShield />}
+              title="Síndico / Adm"
+              description="Acesso corporativo ao sistema e gestão total do condomínio"
+              color="#7c3aed"
+              buttonColor="#7c3aed"
+            />
+          </div>
+
+          <div onClick={() => navigate("/login/porteiro")}>
+            <AccessCard
+              icon={<FaBuilding />}
+              title="Porteiro"
+              description="Acesso para registro de encomendas, visitantes e consultas"
+              color="#6d28d9"
+              buttonColor="#6d28d9"
+            />
+          </div>
+
+          <div onClick={() => navigate("/login/morador")}>
+            <AccessCard
+              icon={<FaUser />}
+              title="Morador"
+              description="Acesso para acompanhar encomendas, reservas e avisos"
+              color="#a855f7"
+              buttonColor="#a855f7"
+            />
+          </div>
+        </div>
+
+        <p style={styles.footer}>
+          Powered by <strong>Star Infinity Code</strong> © 2026
+        </p>
+      </section>
     </div>
   );
 }
@@ -176,54 +201,133 @@ const styles = {
   container: {
     minHeight: "100vh",
     background:
-      "radial-gradient(circle at top left, rgba(34,197,94,0.30), transparent 32%), radial-gradient(circle at bottom right, rgba(250,204,21,0.20), transparent 28%), linear-gradient(135deg,#020617,#052e16 45%,#064e3b)",
+      "radial-gradient(circle at top left,rgba(124,58,237,0.24),transparent 30%), radial-gradient(circle at bottom right,rgba(168,85,247,0.18),transparent 28%), linear-gradient(135deg,#ffffff,#f8f5ff 50%,#ffffff)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontFamily: "Arial",
+    overflow: "hidden",
+    position: "relative",
+    padding: "34px",
+    boxSizing: "border-box"
+  },
+
+  glowOne: {
+    position: "absolute",
+    width: "420px",
+    height: "420px",
+    borderRadius: "50%",
+    background: "rgba(124,58,237,0.15)",
+    filter: "blur(85px)",
+    top: "-120px",
+    left: "-100px"
+  },
+
+  glowTwo: {
+    position: "absolute",
+    width: "380px",
+    height: "380px",
+    borderRadius: "50%",
+    background: "rgba(168,85,247,0.12)",
+    filter: "blur(85px)",
+    bottom: "-110px",
+    right: "-100px"
+  },
+
+  grid: {
+    position: "absolute",
+    inset: 0,
+    backgroundImage:
+      "linear-gradient(rgba(124,58,237,0.07) 1px, transparent 1px), linear-gradient(90deg,rgba(124,58,237,0.07) 1px, transparent 1px)",
+    backgroundSize: "44px 44px",
+    opacity: 0.55,
+    pointerEvents: "none"
+  },
+
+  codeRain: {
+    position: "absolute",
+    bottom: "7%",
+    left: "50%",
+    transform: "translateX(-50%)",
+    color: "rgba(109,40,217,0.12)",
+    fontSize: "18px",
+    fontWeight: "900",
+    letterSpacing: "12px",
+    whiteSpace: "nowrap",
+    pointerEvents: "none"
+  },
+
+  hero: {
+    width: "100%",
+    maxWidth: "1280px",
+    minHeight: "720px",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.13),transparent 34%), linear-gradient(180deg,rgba(255,255,255,0.94),rgba(251,250,255,0.86))",
+    border: "1px solid rgba(124,58,237,0.16)",
+    borderRadius: "44px",
+    boxShadow:
+      "0 34px 90px rgba(88,28,135,0.14), inset 0 0 0 1px rgba(255,255,255,0.75)",
+    backdropFilter: "blur(22px)",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    color: "white",
-    fontFamily: "Arial",
-    overflow: "hidden",
+    padding: "44px",
     position: "relative",
-    padding: "40px",
+    zIndex: 2,
     boxSizing: "border-box"
   },
 
-  logo: {
-    width: "92px",
-    height: "92px",
-    borderRadius: "32px",
-    background:
-      "linear-gradient(135deg,rgba(255,255,255,0.18),rgba(255,255,255,0.06))",
-    border: "1px solid rgba(255,255,255,0.18)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "52px",
-    marginBottom: "22px",
-    boxShadow: "0 22px 50px rgba(0,0,0,0.28)"
+  logoImage: {
+    width: "310px",
+    maxWidth: "90%",
+    marginBottom: "18px",
+    filter: "drop-shadow(0 0 30px rgba(124,58,237,0.34))"
+  },
+
+  badge: {
+    background: "#f3e8ff",
+    border: "1px solid #ddd6fe",
+    color: "#6d28d9",
+    padding: "9px 15px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "900",
+    marginBottom: "16px"
   },
 
   title: {
-    fontSize: "52px",
+    fontSize: "58px",
     margin: "0",
     fontWeight: "900",
-    letterSpacing: "2px"
+    letterSpacing: "-1px",
+    color: "#111827"
   },
 
   subtitle: {
     marginTop: "14px",
-    marginBottom: "46px",
-    color: "rgba(255,255,255,0.72)",
-    fontSize: "16px"
+    marginBottom: "44px",
+    color: "#6b7280",
+    fontSize: "16px",
+    maxWidth: "720px",
+    lineHeight: "1.6",
+    textAlign: "center"
   },
 
   cards: {
-    display: "flex",
-    gap: "34px",
-    flexWrap: "wrap",
-    justifyContent: "center"
+    width: "100%",
+    display: "grid",
+    gridTemplateColumns: "repeat(3, 280px)",
+    gap: "28px",
+    justifyContent: "center",
+    alignItems: "stretch"
+  },
+
+  footer: {
+    margin: "34px 0 0",
+    color: "#6b7280",
+    fontSize: "13px"
   }
 };
 
-export default App; 
+export default App;

@@ -564,12 +564,13 @@ const styles = {
   container: {
     width: "100%",
     fontFamily: "Arial",
-    color: "#111827"
+    color: "#111827",
+    position: "relative"
   },
 
   hero: {
     background:
-      "linear-gradient(135deg,#0f172a,#1e3a8a,#2563eb)",
+      "linear-gradient(135deg,#2e1065,#4c1d95,#7c3aed)",
     borderRadius: "30px",
     padding: "32px",
     color: "white",
@@ -579,7 +580,8 @@ const styles = {
     gap: "28px",
     marginBottom: "26px",
     boxShadow:
-      "0 20px 45px rgba(37,99,235,0.25)"
+      "0 22px 55px rgba(124,58,237,0.24), 0 0 38px rgba(168,85,247,0.12)",
+    border: "1px solid rgba(255,255,255,0.18)"
   },
 
   heroBadge: {
@@ -610,7 +612,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "10px",
-    color: "#dbeafe",
+    color: "#ede9fe",
     fontSize: "14px",
     fontWeight: "600",
     flexWrap: "wrap"
@@ -620,9 +622,9 @@ const styles = {
     width: "9px",
     height: "9px",
     borderRadius: "50%",
-    background: "#38bdf8",
+    background: "#a855f7",
     boxShadow:
-      "0 0 0 5px rgba(56,189,248,0.16)"
+      "0 0 0 5px rgba(168,85,247,0.18)"
   },
 
   apBadge: {
@@ -658,8 +660,8 @@ const styles = {
   },
 
   heroStatus: {
-    background: "#dbeafe",
-    color: "#1d4ed8",
+    background: "#ede9fe",
+    color: "#6d28d9",
     padding: "8px 12px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -676,7 +678,7 @@ const styles = {
 
   actionPrimary: {
     background:
-      "linear-gradient(135deg,#1e3a8a,#2563eb)",
+      "linear-gradient(135deg,#4c1d95,#7c3aed)",
     color: "white",
     border: "none",
     padding: "22px",
@@ -687,13 +689,13 @@ const styles = {
     gap: "16px",
     textAlign: "left",
     boxShadow:
-      "0 14px 35px rgba(37,99,235,0.20)"
+      "0 14px 35px rgba(124,58,237,0.18)"
   },
 
   actionButton: {
     background: "white",
     color: "#111827",
-    border: "1px solid #eef2f7",
+    border: "1px solid #ede9fe",
     padding: "22px",
     borderRadius: "24px",
     cursor: "pointer",
@@ -725,7 +727,7 @@ const styles = {
     width: "54px",
     height: "54px",
     borderRadius: "18px",
-    background: "#dbeafe",
+    background: "#ede9fe",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -753,7 +755,7 @@ const styles = {
 
   cardPrimary: {
     background:
-      "linear-gradient(135deg,#1e3a8a,#2563eb)",
+      "linear-gradient(135deg,#4c1d95,#7c3aed)",
     borderRadius: "24px",
     padding: "24px",
     color: "white",
@@ -761,19 +763,20 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "center",
     boxShadow:
-      "0 14px 35px rgba(37,99,235,0.2)"
+      "0 14px 35px rgba(124,58,237,0.18)"
   },
 
   card: {
-    background: "white",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
     borderRadius: "24px",
     padding: "24px",
     display: "flex",
     alignItems: "center",
     gap: "18px",
     boxShadow:
-      "0 12px 35px rgba(15,23,42,0.07)",
-    border: "1px solid #eef2f7"
+      "0 16px 40px rgba(88,28,135,0.08)",
+    border: "1px solid #ede9fe"
   },
 
   cardLabelLight: {
@@ -808,7 +811,7 @@ const styles = {
     width: "54px",
     height: "54px",
     borderRadius: "18px",
-    background: "#dbeafe",
+    background: "#ede9fe",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -819,7 +822,7 @@ const styles = {
     width: "54px",
     height: "54px",
     borderRadius: "18px",
-    background: "#dcfce7",
+    background: "#f3e8ff",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -845,13 +848,13 @@ const styles = {
 
   cardNumberBlue: {
     margin: "8px 0 0",
-    color: "#2563eb",
+    color: "#7c3aed",
     fontSize: "34px"
   },
 
   cardNumberGreen: {
     margin: "8px 0 0",
-    color: "#166534",
+    color: "#7c3aed",
     fontSize: "34px"
   },
 
@@ -868,21 +871,23 @@ const styles = {
   },
 
   history: {
-    background: "white",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
     borderRadius: "28px",
     padding: "26px",
     boxShadow:
-      "0 14px 40px rgba(15,23,42,0.08)",
-    border: "1px solid #eef2f7"
+      "0 18px 45px rgba(88,28,135,0.09)",
+    border: "1px solid #ede9fe"
   },
 
   statusPanel: {
-    background: "white",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
     borderRadius: "28px",
     padding: "26px",
     boxShadow:
-      "0 14px 40px rgba(15,23,42,0.08)",
-    border: "1px solid #eef2f7"
+      "0 18px 45px rgba(88,28,135,0.09)",
+    border: "1px solid #ede9fe"
   },
 
   sectionHeader: {
@@ -895,7 +900,7 @@ const styles = {
 
   sectionTitle: {
     margin: 0,
-    color: "#1e3a8a",
+    color: "#4c1d95",
     fontSize: "24px"
   },
 
@@ -907,8 +912,8 @@ const styles = {
   },
 
   sectionBadge: {
-    background: "#eff6ff",
-    color: "#1d4ed8",
+    background: "#faf5ff",
+    color: "#6d28d9",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -923,8 +928,8 @@ const styles = {
   },
 
   historyItem: {
-    background: "#f9fafb",
-    border: "1px solid #eef2f7",
+    background: "#fbfaff",
+    border: "1px solid #ede9fe",
     borderRadius: "18px",
     padding: "16px",
     display: "flex",
@@ -936,7 +941,7 @@ const styles = {
     width: "44px",
     height: "44px",
     borderRadius: "15px",
-    background: "#dbeafe",
+    background: "#ede9fe",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -958,8 +963,8 @@ const styles = {
   },
 
   infoBox: {
-    background: "#f9fafb",
-    border: "1px solid #eef2f7",
+    background: "#fbfaff",
+    border: "1px solid #ede9fe",
     borderRadius: "16px",
     padding: "14px",
     marginTop: "14px"
@@ -974,11 +979,11 @@ const styles = {
 
   resolvedBox: {
     marginTop: "16px",
-    background: "#f0fdf4",
-    border: "1px solid #bbf7d0",
+    background: "#faf5ff",
+    border: "1px solid #ddd6fe",
     borderRadius: "16px",
     padding: "14px",
-    color: "#166534",
+    color: "#7c3aed",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",

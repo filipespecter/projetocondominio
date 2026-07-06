@@ -15,6 +15,7 @@ import {
 } from "react-icons/fa";
 
 import { useEffect, useState } from "react";
+import logoStar from "../assets/images/logo-star-infinity.png";
 
 function DashboardMoradorLayout() {
 
@@ -108,6 +109,9 @@ function DashboardMoradorLayout() {
 
       <aside style={styles.sidebar}>
 
+        <div style={styles.sidebarGlow}></div>
+        <div style={styles.sidebarGrid}></div>
+
         <div>
 
           {/* LOGO */}
@@ -115,13 +119,17 @@ function DashboardMoradorLayout() {
           <div style={styles.logoBox}>
 
             <div style={styles.logoIcon}>
-              🏠
+              <img
+                src={logoStar}
+                alt="Star Infinity Code"
+                style={styles.logoImage}
+              />
             </div>
 
             <div>
 
               <h2 style={styles.logo}>
-                Morador
+                InfinityCondo
               </h2>
 
               <p style={styles.logoSub}>
@@ -309,98 +317,177 @@ const styles = {
   container: {
     display: "flex",
     minHeight: "100vh",
-    background: "#f3f4f6",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.12),transparent 30%), linear-gradient(180deg,#ffffff,#f8f5ff)",
     fontFamily: "Arial"
   },
 
   sidebar: {
-    width: "292px",
-    minWidth: "292px",
+    width: "306px",
+    minWidth: "306px",
     minHeight: "100vh",
     background:
-      "linear-gradient(180deg,#0f172a,#1e3a8a,#2563eb)",
+      "radial-gradient(circle at top left,rgba(168,85,247,0.26),transparent 30%), radial-gradient(circle at bottom right,rgba(59,130,246,0.14),transparent 32%), linear-gradient(180deg,#1e1b4b,#2e1065,#4c1d95,#6d28d9)",
     color: "white",
     padding: "26px 20px",
     display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
-    boxShadow: "8px 0 35px rgba(15,23,42,0.22)",
+    boxShadow:
+      "12px 0 44px rgba(88,28,135,0.22), inset -1px 0 0 rgba(255,255,255,0.10)",
     position: "relative",
-    overflow: "hidden"
+    overflow: "hidden",
+    boxSizing: "border-box"
+  },
+
+  sidebarGlow: {
+    position: "absolute",
+    width: "220px",
+    height: "220px",
+    borderRadius: "50%",
+    background: "rgba(168,85,247,0.20)",
+    filter: "blur(55px)",
+    top: "-80px",
+    right: "-90px",
+    pointerEvents: "none"
+  },
+
+  sidebarGrid: {
+    position: "absolute",
+    inset: 0,
+    backgroundImage:
+      "linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg,rgba(255,255,255,0.05) 1px, transparent 1px)",
+    backgroundSize: "36px 36px",
+    opacity: 0.45,
+    pointerEvents: "none"
   },
 
   logoBox: {
     display: "flex",
     alignItems: "center",
     gap: "14px",
-    marginBottom: "22px"
+    marginBottom: "22px",
+    position: "relative",
+    zIndex: 2,
+    padding: "12px",
+    borderRadius: "24px",
+    background:
+      "linear-gradient(135deg,rgba(255,255,255,0.13),rgba(255,255,255,0.06))",
+    border: "1px solid rgba(255,255,255,0.14)",
+    boxShadow: "0 16px 34px rgba(0,0,0,0.14)"
   },
 
   logoIcon: {
-    width: "58px",
-    height: "58px",
-    borderRadius: "20px",
-    background: "rgba(255,255,255,0.14)",
+    width: "74px",
+    height: "74px",
+    borderRadius: "22px",
+    background:
+      "linear-gradient(135deg,rgba(255,255,255,0.96),rgba(245,243,255,0.88))",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    fontSize: "29px",
     boxShadow:
-      "inset 0 0 0 1px rgba(255,255,255,0.12)",
-    backdropFilter: "blur(10px)"
+      "0 14px 28px rgba(0,0,0,0.18), 0 0 28px rgba(168,85,247,0.18)",
+    overflow: "hidden",
+    flexShrink: 0
+  },
+
+  logoImage: {
+    width: "100%",
+    height: "100%",
+    objectFit: "contain",
+    padding: "6px",
+    boxSizing: "border-box"
   },
 
   logo: {
     margin: 0,
     fontSize: "21px",
-    fontWeight: "800",
+    fontWeight: "900",
     letterSpacing: "-0.3px"
   },
 
   logoSub: {
     margin: "4px 0 0",
-    color: "rgba(255,255,255,0.68)",
-    fontSize: "13px",
-    fontWeight: "600",
+    color: "rgba(255,255,255,0.72)",
+    fontSize: "12px",
+    fontWeight: "800",
     textTransform: "uppercase",
     letterSpacing: "0.8px"
   },
 
+  statusBox: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "9px",
+    background: "rgba(255,255,255,0.12)",
+    border: "1px solid rgba(255,255,255,0.18)",
+    padding: "9px 12px",
+    borderRadius: "999px",
+    marginBottom: "18px",
+    position: "relative",
+    zIndex: 2
+  },
+
+  statusDot: {
+    width: "9px",
+    height: "9px",
+    borderRadius: "50%",
+    background: "#a855f7",
+    boxShadow: "0 0 0 5px rgba(168,85,247,0.18)"
+  },
+
+  statusText: {
+    fontSize: "12px",
+    fontWeight: "900",
+    color: "#f5f3ff"
+  },
+
   userBox: {
-    background: "rgba(255,255,255,0.10)",
-    border: "1px solid rgba(255,255,255,0.12)",
+    background: "rgba(255,255,255,0.11)",
+    border: "1px solid rgba(255,255,255,0.14)",
     borderRadius: "24px",
     padding: "16px",
     display: "flex",
     alignItems: "center",
     gap: "13px",
     marginBottom: "26px",
-    boxShadow: "0 14px 30px rgba(0,0,0,0.12)",
-    backdropFilter: "blur(12px)"
+    boxShadow: "0 14px 30px rgba(0,0,0,0.14)",
+    backdropFilter: "blur(12px)",
+    position: "relative",
+    zIndex: 2
   },
 
   avatar: {
     width: "52px",
     height: "52px",
     borderRadius: "18px",
-    background: "rgba(255,255,255,0.14)",
+    background: "linear-gradient(135deg,#7c3aed,#a855f7)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "25px",
-    flexShrink: 0
+    flexShrink: 0,
+    boxShadow: "0 12px 24px rgba(168,85,247,0.24)"
   },
 
   userName: {
     fontSize: "16px",
-    fontWeight: "800",
+    fontWeight: "900",
     marginBottom: "3px"
   },
 
   userRole: {
     fontSize: "12px",
     color: "rgba(255,255,255,0.72)",
-    fontWeight: "600"
+    fontWeight: "700"
+  },
+
+  userShift: {
+    marginTop: "5px",
+    color: "#ddd6fe",
+    fontSize: "12px",
+    fontWeight: "800"
   },
 
   menuLabel: {
@@ -408,13 +495,17 @@ const styles = {
     fontSize: "11px",
     fontWeight: "900",
     letterSpacing: "1.5px",
-    margin: "0 0 12px 6px"
+    margin: "0 0 12px 6px",
+    position: "relative",
+    zIndex: 2
   },
 
   menu: {
     display: "flex",
     flexDirection: "column",
-    gap: "10px"
+    gap: "10px",
+    position: "relative",
+    zIndex: 2
   },
 
   item: {
@@ -425,10 +516,25 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "12px",
-    background: "rgba(255,255,255,0.07)",
-    border: "1px solid rgba(255,255,255,0.07)",
+    background: "rgba(255,255,255,0.075)",
+    border: "1px solid rgba(255,255,255,0.08)",
     transition: "0.2s",
-    fontWeight: "800",
+    fontWeight: "850",
+    fontSize: "14px"
+  },
+
+  menuItem: {
+    color: "rgba(255,255,255,0.86)",
+    textDecoration: "none",
+    padding: "14px 15px",
+    borderRadius: "17px",
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    background: "rgba(255,255,255,0.075)",
+    border: "1px solid rgba(255,255,255,0.08)",
+    transition: "0.2s",
+    fontWeight: "850",
     fontSize: "14px"
   },
 
@@ -436,7 +542,7 @@ const styles = {
     width: "35px",
     height: "35px",
     borderRadius: "13px",
-    background: "rgba(255,255,255,0.10)",
+    background: "rgba(255,255,255,0.11)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -445,43 +551,44 @@ const styles = {
   },
 
   active: {
-    background:
-      "linear-gradient(135deg,#38bdf8,#2563eb)",
+    background: "linear-gradient(135deg,#6d28d9,#a855f7)",
     color: "white",
-    border: "1px solid rgba(255,255,255,0.20)",
-    boxShadow:
-      "0 14px 28px rgba(37,99,235,0.28)"
+    border: "1px solid rgba(255,255,255,0.24)",
+    boxShadow: "0 14px 28px rgba(168,85,247,0.28)"
   },
 
   sidebarFooter: {
-    marginTop: "24px"
+    marginTop: "24px",
+    position: "relative",
+    zIndex: 2
   },
 
   footerCard: {
-    background: "rgba(255,255,255,0.08)",
-    border: "1px solid rgba(255,255,255,0.10)",
+    background: "rgba(255,255,255,0.09)",
+    border: "1px solid rgba(255,255,255,0.12)",
     borderRadius: "22px",
     padding: "16px",
-    marginBottom: "14px"
+    marginBottom: "14px",
+    boxShadow: "0 12px 26px rgba(0,0,0,0.10)"
   },
 
   footerTitle: {
     margin: 0,
     fontSize: "14px",
-    fontWeight: "800"
+    fontWeight: "900"
   },
 
   footerText: {
     margin: "7px 0 0",
-    color: "rgba(255,255,255,0.62)",
+    color: "rgba(255,255,255,0.64)",
     fontSize: "12px",
     lineHeight: "1.45"
   },
 
   logout: {
     width: "100%",
-    border: "1px solid rgba(255,255,255,0.12)",
-    background: "rgba(255,255,255,0.10)",
+    border: "1px solid rgba(255,255,255,0.14)",
+    background: "rgba(255,255,255,0.11)",
     color: "white",
     padding: "14px",
     borderRadius: "16px",
@@ -490,7 +597,22 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     gap: "10px",
-    fontWeight: "800"
+    fontWeight: "900"
+  },
+
+  logoutButton: {
+    width: "100%",
+    border: "1px solid rgba(255,255,255,0.14)",
+    background: "rgba(255,255,255,0.11)",
+    color: "white",
+    padding: "14px",
+    borderRadius: "16px",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "10px",
+    fontWeight: "900"
   },
 
   content: {
@@ -498,7 +620,7 @@ const styles = {
     padding: "30px",
     overflowY: "auto",
     background:
-      "linear-gradient(180deg,#f8fafc,#f3f4f6)"
+      "radial-gradient(circle at top right,rgba(168,85,247,0.14),transparent 28%), radial-gradient(circle at bottom left,rgba(59,130,246,0.08),transparent 30%), linear-gradient(180deg,#ffffff,#f8f5ff)"
   }
 
 };

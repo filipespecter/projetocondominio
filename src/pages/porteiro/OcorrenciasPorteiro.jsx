@@ -946,12 +946,13 @@ const styles = {
   container: {
     width: "100%",
     fontFamily: "Arial",
-    color: "#111827"
+    color: "#111827",
+    position: "relative"
   },
 
   hero: {
     background:
-      "linear-gradient(135deg,#052e16,#14532d,#166534)",
+      "linear-gradient(135deg,#4c1d95,#6d28d9,#7c3aed)",
     borderRadius: "30px",
     padding: "32px",
     color: "white",
@@ -960,7 +961,8 @@ const styles = {
     alignItems: "center",
     gap: "30px",
     marginBottom: "26px",
-    boxShadow: "0 20px 45px rgba(20,83,45,0.25)",
+    boxShadow: "0 22px 55px rgba(124,58,237,0.24), 0 0 38px rgba(168,85,247,0.12)",
+    border: "1px solid rgba(255,255,255,0.18)",
     position: "relative",
     overflow: "hidden"
   },
@@ -1010,8 +1012,8 @@ const styles = {
   },
 
   heroStatus: {
-    background: "#dcfce7",
-    color: "#166534",
+    background: "#f3e8ff",
+    color: "#7c3aed",
     padding: "8px 12px",
     borderRadius: "999px",
     fontWeight: "700",
@@ -1027,22 +1029,23 @@ const styles = {
 
   cardPrimary: {
     background:
-      "linear-gradient(135deg,#14532d,#16a34a)",
+      "linear-gradient(135deg,#6d28d9,#8b5cf6)",
     borderRadius: "24px",
     padding: "24px",
     color: "white",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    boxShadow: "0 14px 35px rgba(22,163,74,0.2)"
+    boxShadow: "0 14px 35px rgba(124,58,237,0.18)"
   },
 
   card: {
-    background: "white",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
     borderRadius: "24px",
     padding: "24px",
-    boxShadow: "0 12px 35px rgba(15,23,42,0.07)",
-    border: "1px solid #eef2f7"
+    boxShadow: "0 16px 40px rgba(88,28,135,0.08)",
+    border: "1px solid #ede9fe"
   },
 
   cardLabelLight: {
@@ -1082,13 +1085,13 @@ const styles = {
 
   cardNumberGreen: {
     margin: "10px 0 0",
-    color: "#166534",
+    color: "#7c3aed",
     fontSize: "34px"
   },
 
   cardNumberBlue: {
     margin: "10px 0 0",
-    color: "#2563eb",
+    color: "#7c3aed",
     fontSize: "34px"
   },
 
@@ -1100,19 +1103,21 @@ const styles = {
   },
 
   formCard: {
-    background: "white",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
     borderRadius: "28px",
     padding: "26px",
-    boxShadow: "0 14px 40px rgba(15,23,42,0.08)",
-    border: "1px solid #eef2f7"
+    boxShadow: "0 18px 45px rgba(88,28,135,0.09)",
+    border: "1px solid #ede9fe"
   },
 
   listCard: {
-    background: "white",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
     borderRadius: "28px",
     padding: "26px",
-    boxShadow: "0 14px 40px rgba(15,23,42,0.08)",
-    border: "1px solid #eef2f7"
+    boxShadow: "0 18px 45px rgba(88,28,135,0.09)",
+    border: "1px solid #ede9fe"
   },
 
   sectionTop: {
@@ -1125,7 +1130,7 @@ const styles = {
 
   sectionTitle: {
     margin: 0,
-    color: "#14532d",
+    color: "#6d28d9",
     fontSize: "23px"
   },
 
@@ -1137,8 +1142,8 @@ const styles = {
   },
 
   lockBadge: {
-    background: "#f0fdf4",
-    color: "#166534",
+    background: "#faf5ff",
+    color: "#7c3aed",
     padding: "9px 12px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1158,12 +1163,12 @@ const styles = {
     width: "100%",
     padding: "14px 15px",
     borderRadius: "15px",
-    border: "1px solid #d1d5db",
+    border: "1px solid #c4b5fd",
     outline: "none",
     fontSize: "14px",
     marginBottom: "15px",
     boxSizing: "border-box",
-    background: "#f9fafb"
+    background: "#fbfaff"
   },
 
   textarea: {
@@ -1171,12 +1176,12 @@ const styles = {
     minHeight: "140px",
     padding: "14px 15px",
     borderRadius: "15px",
-    border: "1px solid #d1d5db",
+    border: "1px solid #c4b5fd",
     outline: "none",
     fontSize: "14px",
     marginBottom: "16px",
     boxSizing: "border-box",
-    background: "#f9fafb",
+    background: "#fbfaff",
     resize: "vertical",
     fontFamily: "Arial",
     lineHeight: "1.5"
@@ -1185,14 +1190,14 @@ const styles = {
   submitButton: {
     width: "100%",
     background:
-      "linear-gradient(135deg,#14532d,#16a34a)",
+      "linear-gradient(135deg,#6d28d9,#8b5cf6)",
     color: "white",
     border: "none",
     padding: "15px",
     borderRadius: "16px",
     cursor: "pointer",
     fontWeight: "800",
-    boxShadow: "0 12px 25px rgba(22,163,74,0.24)"
+    boxShadow: "0 12px 25px rgba(124,58,237,0.20)"
   },
 
   formHint: {
@@ -1214,16 +1219,16 @@ const styles = {
   search: {
     padding: "13px 15px",
     borderRadius: "15px",
-    border: "1px solid #d1d5db",
+    border: "1px solid #c4b5fd",
     outline: "none",
     minWidth: "260px",
     maxWidth: "100%",
-    background: "#f9fafb"
+    background: "#fbfaff"
   },
 
   tabs: {
     display: "flex",
-    background: "#f3f4f6",
+    background: "#f5f3ff",
     padding: "6px",
     borderRadius: "18px",
     marginBottom: "22px",
@@ -1242,17 +1247,18 @@ const styles = {
   },
 
   tabActive: {
-    background: "white",
-    color: "#14532d",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
+    color: "#6d28d9",
     boxShadow: "0 6px 18px rgba(15,23,42,0.08)"
   },
 
   empty: {
-    background: "#f9fafb",
+    background: "#fbfaff",
     borderRadius: "22px",
     padding: "45px",
     textAlign: "center",
-    border: "1px dashed #d1d5db"
+    border: "1px dashed #c4b5fd"
   },
 
   emptyIcon: {
@@ -1287,14 +1293,14 @@ const styles = {
     width: "14px",
     height: "14px",
     borderRadius: "50%",
-    background: "#16a34a",
+    background: "#8b5cf6",
     marginTop: "26px",
-    boxShadow: "0 0 0 6px #dcfce7"
+    boxShadow: "0 0 0 6px #f3e8ff"
   },
 
   occurrenceCard: {
-    background: "#f9fafb",
-    border: "1px solid #e5e7eb",
+    background: "#fbfaff",
+    border: "1px solid #ddd6fe",
     borderRadius: "24px",
     padding: "22px"
   },
@@ -1314,8 +1320,8 @@ const styles = {
   },
 
   originBadge: {
-    background: "#dcfce7",
-    color: "#166534",
+    background: "#f3e8ff",
+    color: "#7c3aed",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1339,8 +1345,8 @@ const styles = {
   },
 
   priorityLow: {
-    background: "#dcfce7",
-    color: "#166534"
+    background: "#f3e8ff",
+    color: "#7c3aed"
   },
 
   priorityMedium: {
@@ -1378,8 +1384,8 @@ const styles = {
   },
 
   statusResolved: {
-    background: "#dcfce7",
-    color: "#166534"
+    background: "#f3e8ff",
+    color: "#7c3aed"
   },
 
   description: {
@@ -1407,9 +1413,9 @@ const styles = {
   },
 
   resolvedBox: {
-    background: "#f0fdf4",
-    border: "1px solid #bbf7d0",
-    color: "#166534",
+    background: "#faf5ff",
+    border: "1px solid #ddd6fe",
+    color: "#7c3aed",
     padding: "14px",
     borderRadius: "16px",
     fontSize: "14px"
