@@ -40,7 +40,7 @@ function Relatorios() {
     configuracoes: "configuracoes",
     perfilCondominio: "perfil_condominio",
 
-    historico: "historico_relatorios_greencondo"
+    historico: "historico_relatorios_infinitycondo"
   };
 
   const [dados, setDados] = useState({});
@@ -829,7 +829,7 @@ function Relatorios() {
 
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(20);
-    doc.text("GreenCondo", 14, 17);
+    doc.text("InfinityCondo", 14, 17);
 
     doc.setFontSize(10);
     doc.text(perfilCondominio.nomeCondominio || "Central de Relatórios Condominiais", 14, 27);
@@ -921,7 +921,7 @@ function Relatorios() {
 
     doc.setFontSize(8);
     doc.setTextColor(130, 130, 130);
-    doc.text("Relatório gerado automaticamente pelo GreenCondo.", 14, 287);
+    doc.text("Relatório gerado automaticamente pelo InfinityCondo.", 14, 287);
 
     salvarHistorico("PDF");
     registrarAuditoriaRelatorio("Gerou PDF", `${preview.titulo} • ${nomePeriodo()}`);
@@ -1008,7 +1008,7 @@ function Relatorios() {
         <div>
           <span style={styles.heroBadge}>📄 Central de Documentos</span>
 
-          <h1 style={styles.title}>Relatórios GreenCondo</h1>
+          <h1 style={styles.title}>Relatórios InfinityCondo</h1>
 
           <p style={styles.subtitle}>
             Gere documentos operacionais, executivos e personalizados com
@@ -1219,7 +1219,7 @@ function Relatorios() {
               <p style={styles.previewSubtitle}>{preview.descricao}</p>
             </div>
 
-            <div style={styles.previewSeal}>GreenCondo</div>
+            <div style={styles.previewSeal}>InfinityCondo</div>
           </div>
 
           <div style={styles.metaGrid}>
@@ -1362,23 +1362,23 @@ const styles = {
   },
 
   hero: {
-    background: "linear-gradient(135deg,#ffffff,#f0fdf4)",
+    background: "linear-gradient(135deg,#ffffff,#faf5ff)",
     borderRadius: "28px",
     padding: "34px",
     display: "flex",
     justifyContent: "space-between",
     gap: "28px",
     alignItems: "center",
-    boxShadow: "0 18px 45px rgba(15,23,42,0.08)",
+    boxShadow: "0 18px 45px rgba(88,28,135,0.09)",
     marginBottom: "24px",
-    border: "1px solid #dcfce7"
+    border: "1px solid #f3e8ff"
   },
 
   heroBadge: {
     display: "inline-block",
-    background: "#dcfce7",
-    border: "1px solid #bbf7d0",
-    color: "#166534",
+    background: "#f3e8ff",
+    border: "1px solid #ddd6fe",
+    color: "#7c3aed",
     padding: "9px 13px",
     borderRadius: "999px",
     fontWeight: "900",
@@ -1410,7 +1410,7 @@ const styles = {
     minWidth: "140px",
     maxWidth: "100%",
     background: "#ffffff",
-    border: "1px solid #e5e7eb",
+    border: "1px solid #ddd6fe",
     padding: "16px",
     borderRadius: "18px"
   },
@@ -1419,8 +1419,8 @@ const styles = {
     minWidth: "160px",
     maxWidth: "100%",
     background: "#ecfdf5",
-    border: "1px solid #bbf7d0",
-    color: "#166534",
+    border: "1px solid #ddd6fe",
+    color: "#7c3aed",
     padding: "16px",
     borderRadius: "18px"
   },
@@ -1435,10 +1435,10 @@ const styles = {
 
   configPanel: {
     background: "#ffffff",
-    border: "1px solid #e5e7eb",
+    border: "1px solid #ddd6fe",
     borderRadius: "24px",
     padding: "24px",
-    boxShadow: "0 16px 40px rgba(15,23,42,0.07)"
+    boxShadow: "0 16px 40px rgba(88,28,135,0.08)"
   },
 
   previewPanel: {
@@ -1446,8 +1446,8 @@ const styles = {
     color: "#111827",
     borderRadius: "24px",
     padding: "28px",
-    boxShadow: "0 16px 40px rgba(15,23,42,0.07)",
-    border: "1px solid #e5e7eb"
+    boxShadow: "0 16px 40px rgba(88,28,135,0.08)",
+    border: "1px solid #ddd6fe"
   },
 
   panelHeader: {
@@ -1457,8 +1457,8 @@ const styles = {
   panelBadge: {
     display: "inline-block",
     background: "#ecfdf5",
-    color: "#166534",
-    border: "1px solid #bbf7d0",
+    color: "#7c3aed",
+    border: "1px solid #ddd6fe",
     padding: "7px 11px",
     borderRadius: "999px",
     fontWeight: "900",
@@ -1488,7 +1488,7 @@ const styles = {
   reportButton: {
     background: "#ffffff",
     color: "#111827",
-    border: "1px solid #e5e7eb",
+    border: "1px solid #ddd6fe",
     borderRadius: "16px",
     padding: "13px",
     display: "flex",
@@ -1499,8 +1499,8 @@ const styles = {
 
   reportButtonActive: {
     background: "#ecfdf5",
-    color: "#166534",
-    border: "1px solid #22c55e",
+    color: "#7c3aed",
+    border: "1px solid #a855f7",
     boxShadow: "0 0 0 3px rgba(34,197,94,0.12)"
   },
 
@@ -1512,7 +1512,7 @@ const styles = {
     width: "100%",
     background: "#ffffff",
     color: "#111827",
-    border: "1px solid #d1d5db",
+    border: "1px solid #c4b5fd",
     borderRadius: "14px",
     padding: "13px",
     outline: "none"
@@ -1522,7 +1522,7 @@ const styles = {
     width: "100%",
     background: "#ffffff",
     color: "#111827",
-    border: "1px solid #d1d5db",
+    border: "1px solid #c4b5fd",
     borderRadius: "14px",
     padding: "13px",
     outline: "none",
@@ -1534,7 +1534,7 @@ const styles = {
     minHeight: "92px",
     background: "#ffffff",
     color: "#111827",
-    border: "1px solid #d1d5db",
+    border: "1px solid #c4b5fd",
     borderRadius: "14px",
     padding: "13px",
     outline: "none",
@@ -1546,8 +1546,8 @@ const styles = {
     marginTop: "16px",
     padding: "14px",
     borderRadius: "18px",
-    background: "#f9fafb",
-    border: "1px solid #e5e7eb"
+    background: "#fbfaff",
+    border: "1px solid #ddd6fe"
   },
 
   checkOption: {
@@ -1567,7 +1567,7 @@ const styles = {
   },
 
   primaryButton: {
-    background: "#16a34a",
+    background: "#8b5cf6",
     color: "white",
     border: "none",
     padding: "13px 16px",
@@ -1577,9 +1577,9 @@ const styles = {
   },
 
   secondaryButton: {
-    background: "#f3f4f6",
+    background: "#f5f3ff",
     color: "#111827",
-    border: "1px solid #d1d5db",
+    border: "1px solid #c4b5fd",
     padding: "13px 16px",
     borderRadius: "14px",
     cursor: "pointer",
@@ -1617,7 +1617,7 @@ const styles = {
   },
 
   previewSeal: {
-    background: "#16a34a",
+    background: "#8b5cf6",
     whiteSpace: "nowrap",
     color: "white",
     padding: "14px 18px",
@@ -1633,9 +1633,9 @@ const styles = {
   },
 
   summaryBox: {
-    background: "#f0fdf4",
-    border: "1px solid #bbf7d0",
-    color: "#064e3b",
+    background: "#faf5ff",
+    border: "1px solid #ddd6fe",
+    color: "#5b21b6",
     borderRadius: "18px",
     padding: "18px",
     marginBottom: "18px"
@@ -1647,7 +1647,7 @@ const styles = {
 
   tableWrapper: {
     overflowX: "auto",
-    border: "1px solid #e5e7eb",
+    border: "1px solid #ddd6fe",
     borderRadius: "16px"
   },
 
@@ -1658,11 +1658,11 @@ const styles = {
   },
 
   th: {
-    background: "#f3f4f6",
+    background: "#f5f3ff",
     color: "#374151",
     padding: "12px",
     textAlign: "left",
-    borderBottom: "1px solid #e5e7eb"
+    borderBottom: "1px solid #ddd6fe"
   },
 
   td: {
@@ -1690,16 +1690,16 @@ const styles = {
 
   historyPanel: {
     background: "#ffffff",
-    border: "1px solid #e5e7eb",
+    border: "1px solid #ddd6fe",
     borderRadius: "24px",
     padding: "24px",
     marginBottom: "20px",
-    boxShadow: "0 16px 40px rgba(15,23,42,0.07)"
+    boxShadow: "0 16px 40px rgba(88,28,135,0.08)"
   },
 
   empty: {
     color: "#64748b",
-    background: "#f9fafb",
+    background: "#fbfaff",
     padding: "20px",
     borderRadius: "16px"
   },
@@ -1711,8 +1711,8 @@ const styles = {
   },
 
   historyItem: {
-    background: "#f9fafb",
-    border: "1px solid #e5e7eb",
+    background: "#fbfaff",
+    border: "1px solid #ddd6fe",
     borderRadius: "16px",
     padding: "14px",
     display: "grid",

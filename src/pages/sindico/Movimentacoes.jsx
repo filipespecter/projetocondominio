@@ -160,10 +160,10 @@ function Movimentacoes() {
   }
 
   const COLORS = [
-    "#14532d",
-    "#166534",
-    "#22c55e",
-    "#86efac"
+    "#6d28d9",
+    "#7c3aed",
+    "#a855f7",
+    "#ddd6fe"
   ];
 
   const totalGeral =
@@ -198,7 +198,7 @@ function Movimentacoes() {
             <Line
               type="monotone"
               dataKey="valor"
-              stroke="#14532d"
+              stroke="#6d28d9"
               strokeWidth={4}
             />
 
@@ -233,7 +233,7 @@ function Movimentacoes() {
 
             <Bar
               dataKey="value"
-              fill="#166534"
+              fill="#7c3aed"
               radius={[8, 8, 0, 0]}
             />
 
@@ -313,8 +313,8 @@ function Movimentacoes() {
             <Area
               type="monotone"
               dataKey="valor"
-              stroke="#166534"
-              fill="#bbf7d0"
+              stroke="#7c3aed"
+              fill="#ddd6fe"
               strokeWidth={3}
             />
 
@@ -523,7 +523,7 @@ const styles = {
 
   title: {
     fontSize: "34px",
-    color: "#14532d",
+    color: "#6d28d9",
     margin: 0
   },
 
@@ -542,14 +542,14 @@ const styles = {
   select: {
     padding: "12px 14px",
     borderRadius: "12px",
-    border: "1px solid #d1d5db",
+    border: "1px solid #c4b5fd",
     outline: "none",
     background: "white"
   },
 
   pdfButton: {
     background:
-      "linear-gradient(135deg,#14532d,#166534)",
+      "linear-gradient(135deg,#6d28d9,#7c3aed)",
     color: "white",
     border: "none",
     padding: "12px 18px",
@@ -570,7 +570,7 @@ const styles = {
 
   card: {
     background:
-      "linear-gradient(135deg,#14532d,#166534)",
+      "linear-gradient(135deg,#6d28d9,#7c3aed)",
     color: "white",
     padding: "24px",
     borderRadius: "22px",
@@ -609,7 +609,7 @@ const styles = {
 
   chartTitle: {
     margin: 0,
-    color: "#14532d"
+    color: "#6d28d9"
   },
 
   chartSubtitle: {

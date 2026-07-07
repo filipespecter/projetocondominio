@@ -501,17 +501,17 @@ function Apartamentos() {
     switch (status) {
       case "Ocupado":
         return {
-          background: "#dbeafe",
-          color: "#1d4ed8",
-          border: "#bfdbfe",
+          background: "#ede9fe",
+          color: "#6d28d9",
+          border: "#ddd6fe",
           icon: "👥"
         };
 
       case "Disponível":
         return {
-          background: "#dcfce7",
-          color: "#166534",
-          border: "#bbf7d0",
+          background: "#f3e8ff",
+          color: "#7c3aed",
+          border: "#ddd6fe",
           icon: "✅"
         };
 
@@ -525,9 +525,9 @@ function Apartamentos() {
 
       default:
         return {
-          background: "#f3f4f6",
+          background: "#f5f3ff",
           color: "#374151",
-          border: "#e5e7eb",
+          border: "#ddd6fe",
           icon: "🏢"
         };
     }
@@ -897,54 +897,6 @@ function Apartamentos() {
             </p>
           </div>
 
-          <div style={styles.sideCard}>
-            <h3 style={styles.sideCardTitle}>
-              Blocos cadastrados
-            </h3>
-
-            {blocosUnicos.length === 0 ? (
-              <p style={styles.sideEmpty}>
-                Nenhum bloco cadastrado.
-              </p>
-            ) : (
-              <div style={styles.blockList}>
-                {blocosUnicos.map((bloco) => {
-                  const totalBloco = apartamentos.filter(
-                    (ap) => ap.bloco === bloco
-                  ).length;
-
-                  return (
-                    <div key={bloco} style={styles.blockItem}>
-                      <span style={styles.blockIcon}>
-                        🏬
-                      </span>
-
-                      <div>
-                        <strong>
-                          Bloco {bloco}
-                        </strong>
-
-                        <p>
-                          {totalBloco} unidade(s)
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          <div style={styles.sideCard}>
-            <h3 style={styles.sideCardTitle}>
-              Próxima evolução
-            </h3>
-
-            <p style={styles.sideTextLight}>
-              Depois vamos fazer o painel do porteiro mostrar somente os
-              apartamentos cadastrados aqui.
-            </p>
-          </div>
         </div>
       </div>
 
@@ -1133,22 +1085,25 @@ const styles = {
   container: {
     width: "100%",
     fontFamily: "Arial",
-    color: "#111827"
+    color: "#111827",
+    position: "relative"
   },
 
   hero: {
     background:
-      "radial-gradient(circle at top right,rgba(187,247,208,0.36),transparent 36%), radial-gradient(circle at bottom left,rgba(34,197,94,0.16),transparent 34%), linear-gradient(135deg,#031b0f,#064e3b,#166534)",
-    borderRadius: "38px",
-    padding: "38px",
+      "radial-gradient(circle at top right,rgba(255,255,255,0.16),transparent 30%), radial-gradient(circle at bottom left,rgba(168,85,247,0.24),transparent 34%), linear-gradient(135deg,#2e1065,#4c1d95,#7c3aed)",
+    borderRadius: "42px",
+    padding: "40px",
     color: "white",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
     gap: "34px",
     marginBottom: "26px",
-    boxShadow: "0 28px 70px rgba(22,101,52,0.34)",
-    overflow: "hidden"
+    boxShadow: "0 30px 80px rgba(88,28,135,0.26), 0 0 46px rgba(168,85,247,0.16)",
+    overflow: "hidden",
+    position: "relative",
+    border: "1px solid rgba(255,255,255,0.18)"
   },
 
   heroContent: {
@@ -1168,7 +1123,7 @@ const styles = {
 
   title: {
     margin: 0,
-    fontSize: "44px",
+    fontSize: "46px",
     letterSpacing: "-1px"
   },
 
@@ -1190,7 +1145,7 @@ const styles = {
   heroChip: {
     background: "rgba(255,255,255,0.13)",
     border: "1px solid rgba(255,255,255,0.14)",
-    color: "#dcfce7",
+    color: "#f3e8ff",
     padding: "9px 12px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1234,8 +1189,8 @@ const styles = {
   },
 
   heroStatus: {
-    background: "#dcfce7",
-    color: "#166534",
+    background: "#f3e8ff",
+    color: "#7c3aed",
     padding: "8px 12px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1243,15 +1198,16 @@ const styles = {
   },
 
   commandBar: {
-    background: "white",
-    border: "1px solid #eef2f7",
-    borderRadius: "28px",
-    padding: "18px",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    border: "1px solid #ddd6fe",
+    borderRadius: "30px",
+    padding: "20px",
     display: "flex",
     justifyContent: "space-between",
     gap: "18px",
     marginBottom: "26px",
-    boxShadow: "0 14px 35px rgba(15,23,42,0.06)"
+    boxShadow: "0 16px 40px rgba(88,28,135,0.08)"
   },
 
   searchBox: {
@@ -1264,9 +1220,9 @@ const styles = {
     flex: 1,
     padding: "15px 16px",
     borderRadius: "17px",
-    border: "1px solid #d1d5db",
+    border: "1px solid #c4b5fd",
     outline: "none",
-    background: "#f9fafb",
+    background: "#fbfaff",
     fontSize: "14px"
   },
 
@@ -1274,22 +1230,22 @@ const styles = {
     width: "180px",
     padding: "15px 16px",
     borderRadius: "17px",
-    border: "1px solid #d1d5db",
+    border: "1px solid #c4b5fd",
     outline: "none",
-    background: "#f9fafb",
+    background: "#fbfaff",
     fontSize: "14px"
   },
 
   button: {
     background:
-      "linear-gradient(135deg,#064e3b,#16a34a)",
+      "linear-gradient(135deg,#5b21b6,#8b5cf6)",
     color: "white",
     border: "none",
     padding: "15px 20px",
     borderRadius: "17px",
     cursor: "pointer",
     fontWeight: "900",
-    boxShadow: "0 14px 28px rgba(22,163,74,0.24)",
+    boxShadow: "0 18px 34px rgba(124,58,237,0.28), 0 0 28px rgba(168,85,247,0.18)",
     display: "flex",
     alignItems: "center",
     gap: "9px"
@@ -1308,14 +1264,14 @@ const styles = {
 
   cardPrimary: {
     background:
-      "linear-gradient(135deg,#064e3b,#16a34a)",
+      "linear-gradient(135deg,#5b21b6,#8b5cf6)",
     borderRadius: "28px",
     padding: "24px",
     color: "white",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    boxShadow: "0 18px 38px rgba(22,163,74,0.24)"
+    boxShadow: "0 18px 38px rgba(124,58,237,0.22)"
   },
 
   cardLabelLight: {
@@ -1347,21 +1303,22 @@ const styles = {
   },
 
   resumeCard: {
-    background: "white",
-    borderRadius: "28px",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    borderRadius: "30px",
     padding: "24px",
     display: "flex",
     alignItems: "center",
     gap: "18px",
-    boxShadow: "0 14px 35px rgba(15,23,42,0.07)",
-    border: "1px solid #eef2f7"
+    boxShadow: "0 16px 40px rgba(88,28,135,0.08)",
+    border: "1px solid #ede9fe"
   },
 
   cardIconGreen: {
     width: "58px",
     height: "58px",
     borderRadius: "20px",
-    background: "#dcfce7",
+    background: "#f3e8ff",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1372,7 +1329,7 @@ const styles = {
     width: "58px",
     height: "58px",
     borderRadius: "20px",
-    background: "#dbeafe",
+    background: "#ede9fe",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1398,13 +1355,13 @@ const styles = {
 
   resumeNumberGreen: {
     margin: "8px 0 0",
-    color: "#166534",
+    color: "#7c3aed",
     fontSize: "36px"
   },
 
   resumeNumberBlue: {
     margin: "8px 0 0",
-    color: "#1d4ed8",
+    color: "#6d28d9",
     fontSize: "36px"
   },
 
@@ -1422,11 +1379,12 @@ const styles = {
   },
 
   apartmentsPanel: {
-    background: "white",
-    borderRadius: "34px",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), linear-gradient(180deg,#ffffff,#fbfaff)",
+    borderRadius: "36px",
     padding: "28px",
-    boxShadow: "0 18px 55px rgba(15,23,42,0.08)",
-    border: "1px solid #eef2f7"
+    boxShadow: "0 20px 60px rgba(88,28,135,0.10)",
+    border: "1px solid #ede9fe"
   },
 
   tableHeader: {
@@ -1439,8 +1397,8 @@ const styles = {
 
   sectionMini: {
     display: "inline-block",
-    background: "#dcfce7",
-    color: "#166534",
+    background: "#f3e8ff",
+    color: "#7c3aed",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "11px",
@@ -1450,7 +1408,7 @@ const styles = {
 
   sectionTitle: {
     margin: 0,
-    color: "#052e16",
+    color: "#4c1d95",
     fontSize: "26px"
   },
 
@@ -1462,8 +1420,8 @@ const styles = {
   },
 
   sectionBadge: {
-    background: "#dcfce7",
-    color: "#166534",
+    background: "#f3e8ff",
+    color: "#7c3aed",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1480,10 +1438,11 @@ const styles = {
   apCard: {
     position: "relative",
     overflow: "hidden",
-    background: "linear-gradient(180deg,#ffffff,#f9fafb)",
-    borderRadius: "28px",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.12),transparent 34%), linear-gradient(180deg,#ffffff,#fbfaff)",
+    borderRadius: "30px",
     padding: "22px",
-    boxShadow: "0 14px 35px rgba(15,23,42,0.06)"
+    boxShadow: "0 16px 40px rgba(88,28,135,0.08)"
   },
 
   cardGlow: {
@@ -1492,7 +1451,7 @@ const styles = {
     left: 0,
     width: "100%",
     height: "6px",
-    background: "linear-gradient(135deg,#16a34a,#22c55e)"
+    background: "linear-gradient(135deg,#8b5cf6,#a855f7)"
   },
 
   apCardTop: {
@@ -1507,12 +1466,12 @@ const styles = {
     height: "56px",
     borderRadius: "20px",
     background:
-      "linear-gradient(135deg,#dcfce7,#f0fdf4)",
+      "linear-gradient(135deg,#f3e8ff,#faf5ff)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "28px",
-    border: "1px solid #bbf7d0"
+    border: "1px solid #ddd6fe"
   },
 
   apIdentity: {
@@ -1541,7 +1500,7 @@ const styles = {
 
   infoItem: {
     background: "white",
-    border: "1px solid #eef2f7",
+    border: "1px solid #ede9fe",
     borderRadius: "17px",
     padding: "14px"
   },
@@ -1562,11 +1521,11 @@ const styles = {
 
   integrationBox: {
     marginTop: "14px",
-    background: "#f0fdf4",
-    border: "1px solid #bbf7d0",
+    background: "#faf5ff",
+    border: "1px solid #ddd6fe",
     borderRadius: "17px",
     padding: "13px",
-    color: "#166534",
+    color: "#7c3aed",
     fontSize: "13px"
   },
 
@@ -1578,8 +1537,8 @@ const styles = {
 
   editButton: {
     flex: 1,
-    background: "#dbeafe",
-    color: "#1d4ed8",
+    background: "#ede9fe",
+    color: "#6d28d9",
     border: "none",
     padding: "12px",
     borderRadius: "15px",
@@ -1601,16 +1560,18 @@ const styles = {
   sidePanel: {
     display: "flex",
     flexDirection: "column",
-    gap: "18px"
+    gap: "18px",
+    position: "sticky",
+    top: "24px"
   },
 
   sideCardDark: {
     background:
-      "radial-gradient(circle at top right,rgba(187,247,208,0.24),transparent 34%), linear-gradient(135deg,#052e16,#14532d)",
+      "radial-gradient(circle at top right,rgba(255,255,255,0.18),transparent 34%), radial-gradient(circle at bottom left,rgba(168,85,247,0.24),transparent 34%), linear-gradient(135deg,#2e1065,#4c1d95,#7c3aed)",
     color: "white",
-    borderRadius: "30px",
+    borderRadius: "34px",
     padding: "26px",
-    boxShadow: "0 18px 45px rgba(20,83,45,0.22)"
+    boxShadow: "0 18px 45px rgba(88,28,135,0.20)"
   },
 
   sideBadge: {
@@ -1627,11 +1588,11 @@ const styles = {
   },
 
   progressCircle: {
-    width: "150px",
-    height: "150px",
+    width: "164px",
+    height: "164px",
     borderRadius: "50%",
     background:
-      "conic-gradient(#22c55e 0deg, #22c55e 220deg, rgba(255,255,255,0.16) 220deg)",
+      "conic-gradient(#c084fc 0deg, #a855f7 220deg, rgba(255,255,255,0.16) 220deg)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1649,7 +1610,7 @@ const styles = {
 
   sideCard: {
     background: "white",
-    border: "1px solid #eef2f7",
+    border: "1px solid #ede9fe",
     borderRadius: "28px",
     padding: "24px",
     boxShadow: "0 14px 35px rgba(15,23,42,0.07)"
@@ -1657,7 +1618,7 @@ const styles = {
 
   sideCardTitle: {
     margin: "0 0 14px",
-    color: "#052e16"
+    color: "#4c1d95"
   },
 
   sideEmpty: {
@@ -1675,8 +1636,8 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "12px",
-    background: "#f9fafb",
-    border: "1px solid #eef2f7",
+    background: "#fbfaff",
+    border: "1px solid #ede9fe",
     borderRadius: "17px",
     padding: "13px"
   },
@@ -1685,7 +1646,7 @@ const styles = {
     width: "42px",
     height: "42px",
     borderRadius: "15px",
-    background: "#dcfce7",
+    background: "#f3e8ff",
     display: "flex",
     alignItems: "center",
     justifyContent: "center"
@@ -1698,8 +1659,8 @@ const styles = {
   },
 
   empty: {
-    background: "#f9fafb",
-    border: "1px dashed #d1d5db",
+    background: "#fbfaff",
+    border: "1px dashed #c4b5fd",
     borderRadius: "24px",
     padding: "45px",
     textAlign: "center"
@@ -1722,7 +1683,7 @@ const styles = {
 
   emptyButton: {
     background:
-      "linear-gradient(135deg,#064e3b,#16a34a)",
+      "linear-gradient(135deg,#5b21b6,#8b5cf6)",
     color: "white",
     border: "none",
     padding: "13px 18px",
@@ -1746,16 +1707,17 @@ const styles = {
 
   modal: {
     width: "620px",
-    background: "#f8fafc",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), #fbfaff",
     padding: "26px",
     borderRadius: "36px",
-    boxShadow: "0 30px 80px rgba(0,0,0,0.28)",
+    boxShadow: "0 34px 90px rgba(88,28,135,0.30)",
     border: "1px solid rgba(255,255,255,0.55)"
   },
 
   modalHero: {
     background:
-      "linear-gradient(135deg,#052e16,#166534)",
+      "radial-gradient(circle at top right,rgba(255,255,255,0.16),transparent 34%), linear-gradient(135deg,#4c1d95,#7c3aed)",
     color: "white",
     borderRadius: "28px",
     padding: "26px",
@@ -1797,7 +1759,7 @@ const styles = {
 
   formPanel: {
     background: "white",
-    border: "1px solid #eef2f7",
+    border: "1px solid #ede9fe",
     borderRadius: "26px",
     padding: "20px",
     display: "grid",
@@ -1820,10 +1782,10 @@ const styles = {
   input: {
     padding: "15px",
     borderRadius: "16px",
-    border: "1px solid #d1d5db",
+    border: "1px solid #c4b5fd",
     outline: "none",
     fontSize: "14px",
-    background: "#f9fafb"
+    background: "#fbfaff"
   },
 
   linkedResidents: {
@@ -1834,9 +1796,9 @@ const styles = {
   },
 
   linkedResident: {
-    background: "#dcfce7",
-    color: "#166534",
-    border: "1px solid #bbf7d0",
+    background: "#f3e8ff",
+    color: "#7c3aed",
+    border: "1px solid #ddd6fe",
     borderRadius: "999px",
     padding: "7px 10px",
     fontSize: "12px",
@@ -1848,7 +1810,7 @@ const styles = {
 
   removeResidentButton: {
     border: "none",
-    background: "#166534",
+    background: "#7c3aed",
     color: "white",
     borderRadius: "50%",
     width: "18px",
@@ -1867,7 +1829,7 @@ const styles = {
   saveButton: {
     flex: 1,
     background:
-      "linear-gradient(135deg,#064e3b,#16a34a)",
+      "linear-gradient(135deg,#5b21b6,#8b5cf6)",
     color: "white",
     border: "none",
     padding: "14px",
@@ -1878,7 +1840,7 @@ const styles = {
 
   cancelButton: {
     flex: 1,
-    background: "#f3f4f6",
+    background: "#f5f3ff",
     color: "#374151",
     border: "none",
     padding: "14px",

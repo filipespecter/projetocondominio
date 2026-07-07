@@ -963,347 +963,222 @@ const styles = {
   container: {
     width: "100%",
     fontFamily: "Arial",
-    color: "#111827"
+    color: "#111827",
+    position: "relative"
   },
 
   hero: {
     background:
-      "radial-gradient(circle at top right,rgba(250,204,21,0.24),transparent 30%), linear-gradient(135deg,#f7fee7,#ecfccb 45%,#ffffff)",
-    borderRadius: "36px",
-    padding: "34px",
-    color: "#111827",
+      "radial-gradient(circle at top right,rgba(255,255,255,0.18),transparent 28%), radial-gradient(circle at bottom left,rgba(168,85,247,0.26),transparent 34%), linear-gradient(135deg,#2e1065,#4c1d95,#7c3aed)",
+    borderRadius: "42px",
+    padding: "40px",
+    color: "white",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    gap: "28px",
-    border: "1px solid #d9f99d",
-    boxShadow: "0 24px 60px rgba(101,163,13,0.16)",
-    marginBottom: "24px"
+    gap: "34px",
+    marginBottom: "26px",
+    boxShadow:
+      "0 30px 80px rgba(88,28,135,0.26), 0 0 46px rgba(168,85,247,0.16)",
+    border: "1px solid rgba(255,255,255,0.18)",
+    overflow: "hidden",
+    position: "relative"
   },
 
-  heroLeft: { maxWidth: "680px" },
+  heroLeft: {
+    flex: 1,
+    position: "relative",
+    zIndex: 2
+  },
 
   heroBadge: {
-    display: "inline-block",
-    background: "#fef9c3",
-    border: "1px solid #fde68a",
-    color: "#854d0e",
-    padding: "9px 13px",
+    background: "rgba(255,255,255,0.14)",
+    border: "1px solid rgba(255,255,255,0.18)",
+    padding: "10px 15px",
     borderRadius: "999px",
-    fontSize: "12px",
+    fontSize: "13px",
     fontWeight: "900",
-    marginBottom: "15px"
+    display: "inline-block",
+    marginBottom: "16px",
+    boxShadow: "0 10px 28px rgba(0,0,0,0.10)"
   },
 
   title: {
     margin: 0,
-    fontSize: "44px",
+    fontSize: "46px",
     letterSpacing: "-1px",
-    color: "#365314"
+    fontWeight: "900"
   },
 
   subtitle: {
-    margin: "10px 0 0",
-    color: "#4b5563",
-    lineHeight: "1.55"
+    margin: "13px 0 0",
+    color: "rgba(255,255,255,0.80)",
+    maxWidth: "780px",
+    lineHeight: "1.6",
+    fontSize: "15px"
   },
 
   heroRight: {
+    minWidth: "330px",
     display: "flex",
-    alignItems: "center",
-    gap: "14px"
+    flexDirection: "column",
+    gap: "16px",
+    position: "relative",
+    zIndex: 2
   },
 
   noticeBoard: {
-    display: "flex",
-    gap: "10px",
-    background: "rgba(255,255,255,0.76)",
-    border: "1px solid #d9f99d",
-    padding: "12px",
-    borderRadius: "24px",
-    backdropFilter: "blur(12px)",
-    boxShadow: "0 14px 30px rgba(101,163,13,0.12)"
+    background:
+      "linear-gradient(145deg,rgba(255,255,255,0.16),rgba(255,255,255,0.08))",
+    border: "1px solid rgba(255,255,255,0.18)",
+    borderRadius: "30px",
+    padding: "18px",
+    display: "grid",
+    gridTemplateColumns: "repeat(3,1fr)",
+    gap: "12px",
+    backdropFilter: "blur(16px)",
+    boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)"
   },
 
   noticeItem: {
-    width: "84px",
-    height: "76px",
-    borderRadius: "18px",
-    background: "#ffffff",
-    border: "1px solid #ecfccb",
-    color: "#365314",
+    background: "rgba(255,255,255,0.12)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: "22px",
+    padding: "14px",
+    textAlign: "center",
     display: "flex",
     flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "3px"
+    gap: "6px"
   },
 
   heroButton: {
-    background: "linear-gradient(135deg,#d9f99d,#facc15)",
-    color: "#365314",
-    border: "none",
-    padding: "15px 20px",
-    borderRadius: "17px",
+    background: "linear-gradient(135deg,#6d28d9,#8b5cf6,#a855f7)",
+    color: "white",
+    border: "1px solid rgba(255,255,255,0.22)",
+    padding: "16px 22px",
+    borderRadius: "18px",
     cursor: "pointer",
     fontWeight: "900",
-    whiteSpace: "nowrap",
-    boxShadow: "0 14px 30px rgba(250,204,21,0.28)"
+    boxShadow:
+      "0 18px 34px rgba(124,58,237,0.28), 0 0 28px rgba(168,85,247,0.18)"
   },
 
   controlStrip: {
-    background: "#ffffff",
-    border: "1px solid #d9f99d",
-    borderRadius: "28px",
-    padding: "18px",
-    marginBottom: "24px",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    border: "1px solid #ddd6fe",
+    borderRadius: "30px",
+    padding: "20px",
     display: "flex",
     alignItems: "center",
     gap: "14px",
-    boxShadow: "0 18px 45px rgba(101,163,13,0.10)"
+    marginBottom: "26px",
+    boxShadow: "0 16px 40px rgba(88,28,135,0.08)"
   },
 
   searchWrap: {
     flex: 1,
-    background: "#f7fee7",
-    border: "1px solid #d9f99d",
-    borderRadius: "18px",
-    display: "flex",
-    alignItems: "center",
-    padding: "0 14px"
+    position: "relative"
   },
 
   searchIcon: {
-    color: "#65a30d",
-    fontSize: "20px",
-    marginRight: "8px"
+    position: "absolute",
+    left: "16px",
+    top: "50%",
+    transform: "translateY(-50%)",
+    color: "#7c3aed",
+    fontWeight: "900"
   },
 
   search: {
-    flex: 1,
-    padding: "15px 0",
-    border: "none",
+    width: "100%",
+    padding: "15px 16px 15px 44px",
+    borderRadius: "17px",
+    border: "1px solid #c4b5fd",
     outline: "none",
-    background: "transparent",
+    background: "#fbfaff",
+    color: "#111827",
     fontSize: "14px",
-    color: "#111827"
+    boxSizing: "border-box"
   },
 
   filter: {
-    width: "150px",
-    padding: "15px",
-    borderRadius: "18px",
-    border: "1px solid #d9f99d",
+    width: "170px",
+    padding: "15px 16px",
+    borderRadius: "17px",
+    border: "1px solid #c4b5fd",
     outline: "none",
-    background: "#ffffff",
-    color: "#365314",
-    fontWeight: "800"
+    background: "#fbfaff",
+    color: "#111827",
+    fontSize: "14px"
   },
 
   compactStats: {
+    background: "#f3e8ff",
+    border: "1px solid #ddd6fe",
+    color: "#6d28d9",
+    padding: "12px 14px",
+    borderRadius: "18px",
     display: "flex",
-    gap: "10px",
-    flexWrap: "wrap",
-    fontSize: "12px",
-    color: "#65a30d"
+    gap: "14px",
+    fontSize: "13px",
+    fontWeight: "800",
+    whiteSpace: "nowrap"
   },
 
   communicationPanel: {
     background:
-      "radial-gradient(circle at top right,rgba(250,204,21,0.13),transparent 28%), linear-gradient(180deg,#ffffff,#f7fee7)",
-    border: "1px solid #d9f99d",
-    borderRadius: "34px",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), linear-gradient(180deg,#ffffff,#fbfaff)",
+    border: "1px solid #ede9fe",
+    borderRadius: "36px",
     padding: "28px",
-    boxShadow: "0 22px 60px rgba(101,163,13,0.13)"
+    boxShadow: "0 20px 60px rgba(88,28,135,0.10)"
   },
 
   panelHeader: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "flex-start",
+    gap: "18px",
     marginBottom: "24px"
   },
 
   panelLabel: {
-    background: "#fef9c3",
-    color: "#854d0e",
-    border: "1px solid #fde68a",
+    display: "inline-block",
+    background: "#f3e8ff",
+    color: "#6d28d9",
+    border: "1px solid #ddd6fe",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "11px",
-    fontWeight: "900"
+    fontWeight: "900",
+    marginBottom: "10px"
   },
 
   panelTitle: {
-    margin: "12px 0 0",
-    color: "#365314",
-    fontSize: "28px"
+    margin: 0,
+    color: "#2e1065",
+    fontSize: "27px",
+    letterSpacing: "-0.4px"
   },
 
   resultBadge: {
-    background: "#ecfccb",
-    color: "#365314",
-    border: "1px solid #bef264",
+    background: "#f3e8ff",
+    color: "#6d28d9",
+    border: "1px solid #ddd6fe",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
-    fontWeight: "900"
-  },
-
-  noticeGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(340px,1fr))",
-    gap: "18px"
-  },
-
-  noticeCard: {
-    background: "linear-gradient(180deg,#ffffff,#fafff0)",
-    borderRadius: "30px",
-    padding: "22px",
-    boxShadow: "0 18px 45px rgba(101,163,13,0.13)",
-    border: "1px solid #d9f99d",
-    color: "#111827"
-  },
-
-  cardTop: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: "12px",
-    marginBottom: "18px"
-  },
-
-  noticeIcon: {
-    width: "64px",
-    height: "64px",
-    borderRadius: "24px",
-    background: "linear-gradient(135deg,#d9f99d,#facc15)",
-    color: "#365314",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "28px",
-    boxShadow: "0 14px 28px rgba(250,204,21,0.22)"
-  },
-
-  priorityBadge: {
-    padding: "7px 11px",
-    borderRadius: "999px",
     fontWeight: "900",
-    fontSize: "12px",
     whiteSpace: "nowrap"
   },
 
-  badgeRow: {
-    display: "flex",
-    gap: "8px",
-    flexWrap: "wrap",
-    marginBottom: "14px"
-  },
-
-  categoryTag: {
-    background: "linear-gradient(135deg,#d9f99d,#facc15)",
-    color: "#365314",
-    padding: "7px 11px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: "900"
-  },
-
-  originTag: {
-    background: "#ecfccb",
-    color: "#365314",
-    border: "1px solid #bef264",
-    padding: "7px 11px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: "900"
-  },
-
-  statusTag: {
-    background: "#fef9c3",
-    color: "#854d0e",
-    border: "1px solid #fde68a",
-    padding: "7px 11px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: "900"
-  },
-
-  noticeTitle: {
-    margin: "0 0 10px",
-    color: "#365314",
-    fontSize: "22px"
-  },
-
-  noticeDescription: {
-    margin: 0,
-    color: "#4b5563",
-    lineHeight: "1.55",
-    minHeight: "70px"
-  },
-
-  dateBox: {
-    marginTop: "16px",
-    background: "#f7fee7",
-    border: "1px solid #d9f99d",
-    color: "#365314",
-    borderRadius: "17px",
-    padding: "13px"
-  },
-
-  responseArea: {
-    marginTop: "14px",
-    display: "grid",
-    gap: "10px"
-  },
-
-  responseTextarea: {
-    padding: "13px",
-    borderRadius: "16px",
-    border: "1px solid #d9f99d",
-    resize: "vertical",
-    minHeight: "80px",
-    outline: "none",
-    fontFamily: "Arial",
-    background: "#ffffff",
-    color: "#111827"
-  },
-
-  actionRow: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))",
-    gap: "10px",
-    marginTop: "18px"
-  },
-
-  editButton: {
-    background: "linear-gradient(135deg,#84cc16,#65a30d)",
-    color: "#ffffff",
-    border: "1px solid #bef264",
-    padding: "12px",
-    borderRadius: "15px",
-    cursor: "pointer",
-    fontWeight: "900"
-  },
-
-  deleteButton: {
-    background: "#fee2e2",
-    color: "#b91c1c",
-    border: "1px solid #fecaca",
-    padding: "12px",
-    borderRadius: "15px",
-    cursor: "pointer",
-    fontWeight: "900"
-  },
-
   empty: {
-    background: "#ffffff",
-    border: "1px dashed #bef264",
-    borderRadius: "26px",
-    padding: "48px",
-    textAlign: "center",
-    color: "#365314"
+    background: "#fbfaff",
+    border: "1px dashed #c4b5fd",
+    borderRadius: "28px",
+    padding: "46px",
+    textAlign: "center"
   },
 
   emptyIcon: {
@@ -1313,7 +1188,7 @@ const styles = {
 
   emptyTitle: {
     margin: 0,
-    color: "#365314"
+    color: "#111827"
   },
 
   emptyText: {
@@ -1322,53 +1197,291 @@ const styles = {
   },
 
   emptyButton: {
-    background: "linear-gradient(135deg,#d9f99d,#facc15)",
-    color: "#365314",
+    background: "linear-gradient(135deg,#6d28d9,#a855f7)",
+    color: "white",
     border: "none",
     padding: "13px 18px",
     borderRadius: "15px",
     cursor: "pointer",
+    fontWeight: "900",
+    boxShadow: "0 16px 32px rgba(124,58,237,0.22)"
+  },
+
+  noticeGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit,minmax(330px,1fr))",
+    gap: "18px"
+  },
+
+  avisosGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit,minmax(330px,1fr))",
+    gap: "18px"
+  },
+
+  list: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit,minmax(330px,1fr))",
+    gap: "18px"
+  },
+
+  timeline: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit,minmax(330px,1fr))",
+    gap: "18px"
+  },
+
+  noticeCard: {
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.11),transparent 34%), linear-gradient(180deg,#ffffff,#fbfaff)",
+    border: "1px solid #ede9fe",
+    borderRadius: "30px",
+    padding: "22px",
+    boxShadow: "0 18px 42px rgba(88,28,135,0.10)",
+    position: "relative",
+    overflow: "hidden"
+  },
+
+  card: {
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.11),transparent 34%), linear-gradient(180deg,#ffffff,#fbfaff)",
+    border: "1px solid #ede9fe",
+    borderRadius: "30px",
+    padding: "22px",
+    boxShadow: "0 18px 42px rgba(88,28,135,0.10)",
+    position: "relative",
+    overflow: "hidden"
+  },
+
+  cardTop: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: "14px",
+    alignItems: "flex-start",
+    marginBottom: "14px"
+  },
+
+  noticeIcon: {
+    width: "58px",
+    height: "58px",
+    borderRadius: "20px",
+    background: "linear-gradient(135deg,#f3e8ff,#faf5ff)",
+    border: "1px solid #ddd6fe",
+    color: "#6d28d9",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "28px",
+    flexShrink: 0
+  },
+
+  categoryIcon: {
+    width: "58px",
+    height: "58px",
+    borderRadius: "20px",
+    background: "linear-gradient(135deg,#f3e8ff,#faf5ff)",
+    border: "1px solid #ddd6fe",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "28px",
+    flexShrink: 0
+  },
+
+  badges: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "8px",
+    marginBottom: "12px"
+  },
+
+  priorityBadge: {
+    padding: "8px 11px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "900",
+    border: "1px solid transparent"
+  },
+
+  categoryBadge: {
+    background: "#f3e8ff",
+    color: "#6d28d9",
+    border: "1px solid #ddd6fe",
+    padding: "8px 11px",
+    borderRadius: "999px",
+    fontSize: "12px",
     fontWeight: "900"
   },
 
-  modalBg: {
+  originBadge: {
+    background: "#ede9fe",
+    color: "#4c1d95",
+    border: "1px solid #ddd6fe",
+    padding: "8px 11px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "900"
+  },
+
+  statusBadge: {
+    background: "#f5f3ff",
+    color: "#6d28d9",
+    border: "1px solid #ddd6fe",
+    padding: "8px 11px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "900"
+  },
+
+  dateBadge: {
+    background: "#fbfaff",
+    color: "#6b7280",
+    border: "1px solid #ede9fe",
+    padding: "8px 11px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "800"
+  },
+
+  cardTitle: {
+    margin: "8px 0",
+    color: "#111827",
+    fontSize: "21px",
+    lineHeight: "1.25"
+  },
+
+  noticeTitle: {
+    margin: "8px 0",
+    color: "#111827",
+    fontSize: "21px",
+    lineHeight: "1.25"
+  },
+
+  description: {
+    color: "#6b7280",
+    lineHeight: "1.6",
+    margin: "0 0 14px",
+    fontSize: "14px"
+  },
+
+  meta: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "10px",
+    color: "#6b7280",
+    fontSize: "13px",
+    marginTop: "12px"
+  },
+
+  responseBox: {
+    background: "#f3e8ff",
+    border: "1px solid #ddd6fe",
+    color: "#4c1d95",
+    borderRadius: "18px",
+    padding: "14px",
+    marginTop: "14px",
+    fontSize: "14px"
+  },
+
+  responseInput: {
+    width: "100%",
+    minHeight: "90px",
+    padding: "14px",
+    borderRadius: "16px",
+    border: "1px solid #c4b5fd",
+    outline: "none",
+    background: "#fbfaff",
+    resize: "vertical",
+    boxSizing: "border-box",
+    marginTop: "12px",
+    fontFamily: "Arial"
+  },
+
+  actions: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "10px",
+    marginTop: "16px"
+  },
+
+  buttonSmall: {
+    background: "#f3e8ff",
+    color: "#6d28d9",
+    border: "1px solid #ddd6fe",
+    padding: "10px 12px",
+    borderRadius: "14px",
+    cursor: "pointer",
+    fontWeight: "900"
+  },
+
+  editButton: {
+    background: "#ede9fe",
+    color: "#6d28d9",
+    border: "none",
+    padding: "11px 13px",
+    borderRadius: "14px",
+    cursor: "pointer",
+    fontWeight: "900"
+  },
+
+  deleteButton: {
+    background: "#fee2e2",
+    color: "#dc2626",
+    border: "none",
+    padding: "11px 13px",
+    borderRadius: "14px",
+    cursor: "pointer",
+    fontWeight: "900"
+  },
+
+  saveResponseButton: {
+    background: "linear-gradient(135deg,#6d28d9,#a855f7)",
+    color: "white",
+    border: "none",
+    padding: "11px 13px",
+    borderRadius: "14px",
+    cursor: "pointer",
+    fontWeight: "900",
+    boxShadow: "0 14px 28px rgba(124,58,237,0.22)"
+  },
+
+  modalBackground: {
     position: "fixed",
     inset: 0,
-    background: "rgba(15,23,42,0.42)",
+    background: "rgba(15,23,42,0.62)",
     backdropFilter: "blur(10px)",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
     zIndex: 999,
-    padding: "20px"
+    padding: "20px",
+    boxSizing: "border-box"
   },
 
   modal: {
-    width: "680px",
-    maxHeight: "90vh",
-    overflowY: "auto",
-    background: "linear-gradient(180deg,#ffffff,#f7fee7)",
+    width: "620px",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), #fbfaff",
     padding: "26px",
     borderRadius: "36px",
-    border: "1px solid #d9f99d",
-    boxShadow: "0 30px 90px rgba(101,163,13,0.24)"
+    boxShadow: "0 34px 90px rgba(88,28,135,0.30)",
+    border: "1px solid rgba(255,255,255,0.55)"
   },
 
   modalTop: {
-    background: "linear-gradient(135deg,#ecfccb,#ffffff)",
-    color: "#365314",
+    background:
+      "radial-gradient(circle at top right,rgba(255,255,255,0.16),transparent 34%), linear-gradient(135deg,#4c1d95,#7c3aed)",
+    color: "white",
     borderRadius: "28px",
     padding: "26px",
     display: "flex",
     justifyContent: "space-between",
-    marginBottom: "20px",
-    borderBottom: "3px solid #facc15"
+    gap: "20px",
+    marginBottom: "20px"
   },
 
   modalBadge: {
-    background: "#fef9c3",
-    color: "#854d0e",
-    border: "1px solid #fde68a",
+    background: "rgba(255,255,255,0.14)",
     padding: "8px 12px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1376,7 +1489,7 @@ const styles = {
   },
 
   modalTitle: {
-    margin: "14px 0 0",
+    margin: "14px 0 6px",
     fontSize: "28px"
   },
 
@@ -1384,40 +1497,41 @@ const styles = {
     width: "42px",
     height: "42px",
     borderRadius: "15px",
-    border: "1px solid #d9f99d",
-    background: "#ffffff",
-    color: "#365314",
+    border: "none",
+    background: "rgba(255,255,255,0.14)",
+    color: "white",
     cursor: "pointer",
     fontWeight: "900"
   },
 
   modalSection: {
-    background: "#ffffff",
-    border: "1px solid #d9f99d",
+    background: "white",
+    border: "1px solid #ede9fe",
     borderRadius: "26px",
-    padding: "20px",
-    marginBottom: "15px"
-  },
-
-  modalSectionTitle: {
-    margin: "0 0 16px",
-    color: "#365314"
+    padding: "20px"
   },
 
   formGrid: {
     display: "grid",
-    gridTemplateColumns: "1fr",
+    gridTemplateColumns: "1fr 1fr",
     gap: "15px"
   },
 
-  formRowFull: {
+  formRow: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "7px"
+  },
+
+  groupFull: {
+    gridColumn: "1 / -1",
     display: "flex",
     flexDirection: "column",
     gap: "7px"
   },
 
   label: {
-    color: "#365314",
+    color: "#374151",
     fontSize: "13px",
     fontWeight: "900"
   },
@@ -1425,24 +1539,26 @@ const styles = {
   input: {
     padding: "15px",
     borderRadius: "16px",
-    border: "1px solid #d9f99d",
+    border: "1px solid #c4b5fd",
     outline: "none",
     fontSize: "14px",
-    background: "#ffffff",
-    color: "#111827"
+    background: "#fbfaff",
+    color: "#111827",
+    boxSizing: "border-box"
   },
 
   textarea: {
+    minHeight: "120px",
     padding: "15px",
     borderRadius: "16px",
-    border: "1px solid #d9f99d",
-    resize: "vertical",
-    minHeight: "140px",
+    border: "1px solid #c4b5fd",
     outline: "none",
     fontSize: "14px",
-    background: "#ffffff",
+    background: "#fbfaff",
     color: "#111827",
-    fontFamily: "Arial"
+    resize: "vertical",
+    fontFamily: "Arial",
+    boxSizing: "border-box"
   },
 
   modalButtons: {
@@ -1451,22 +1567,24 @@ const styles = {
     marginTop: "18px"
   },
 
-  saveBtn: {
+  saveButton: {
     flex: 1,
-    background: "linear-gradient(135deg,#84cc16,#facc15)",
-    color: "#365314",
+    background: "linear-gradient(135deg,#6d28d9,#8b5cf6,#a855f7)",
+    color: "white",
     border: "none",
     padding: "14px",
     borderRadius: "17px",
     cursor: "pointer",
-    fontWeight: "900"
+    fontWeight: "900",
+    boxShadow:
+      "0 18px 34px rgba(124,58,237,0.28), 0 0 28px rgba(168,85,247,0.18)"
   },
 
-  cancelBtn: {
+  cancelButton: {
     flex: 1,
-    background: "#ffffff",
-    color: "#365314",
-    border: "1px solid #d9f99d",
+    background: "#f5f3ff",
+    color: "#4c1d95",
+    border: "1px solid #ddd6fe",
     padding: "14px",
     borderRadius: "17px",
     cursor: "pointer",

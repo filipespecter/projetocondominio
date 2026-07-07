@@ -14,10 +14,10 @@ function Configuracoes() {
     telefone: "",
     sindico: "",
     email: "",
-    corTema: "#16a34a",
+    corTema: "#8b5cf6",
     tema: {
-      corPrincipal: "#16a34a",
-      corSecundaria: "#064e3b",
+      corPrincipal: "#8b5cf6",
+      corSecundaria: "#5b21b6",
       aplicarTemaPersonalizado: false,
       logoUrl: "",
       atualizadoEm: ""
@@ -32,7 +32,7 @@ function Configuracoes() {
   });
 
   const [preferencias, setPreferencias] = useState({
-    nomeSistema: "GreenCondo",
+    nomeSistema: "InfinityCondo",
     assinaturaRelatorios: "Síndico / Administração",
     formatoData: "pt-BR",
     notificacoes: true,
@@ -174,14 +174,14 @@ function Configuracoes() {
           corTema:
             dadosUnificados.corTema ||
             dadosUnificados.tema?.corPrincipal ||
-            "#16a34a",
+            "#8b5cf6",
           tema: {
             ...prev.tema,
             ...(dadosUnificados.tema || {}),
             corPrincipal:
               dadosUnificados.tema?.corPrincipal ||
               dadosUnificados.corTema ||
-              "#16a34a",
+              "#8b5cf6",
             logoUrl:
               dadosUnificados.tema?.logoUrl ||
               dadosUnificados.logoUrl ||
@@ -289,11 +289,11 @@ function Configuracoes() {
         config.condominioId ||
         `cond-${Date.now()}`,
       plano: planoNormalizado,
-      corTema: config.corTema || "#16a34a",
+      corTema: config.corTema || "#8b5cf6",
       tema: {
         ...(config.tema || {}),
-        corPrincipal: config.corTema || config.tema?.corPrincipal || "#16a34a",
-        corSecundaria: config.tema?.corSecundaria || "#064e3b",
+        corPrincipal: config.corTema || config.tema?.corPrincipal || "#8b5cf6",
+        corSecundaria: config.tema?.corSecundaria || "#5b21b6",
         aplicarTemaPersonalizado:
           Boolean(config.tema?.aplicarTemaPersonalizado),
         logoUrl: config.logoUrl || config.tema?.logoUrl || "",
@@ -338,7 +338,7 @@ function Configuracoes() {
 
     registrarConfiguracaoAuditoria(
       "Atualizou preferências do sistema",
-      "Preferências gerais do GreenCondo foram atualizadas.",
+      "Preferências gerais do InfinityCondo foram atualizadas.",
       preferencias
     );
 
@@ -692,7 +692,7 @@ function Configuracoes() {
     });
 
     const backup = {
-      sistema: preferencias.nomeSistema || "GreenCondo",
+      sistema: preferencias.nomeSistema || "InfinityCondo",
       tipo: "backup-completo-greencondo",
       versao: "front-localstorage-v2-profissional",
       geradoEm: new Date().toISOString(),
@@ -731,7 +731,7 @@ function Configuracoes() {
 
     criarNotificacaoConfiguracao(
       "Backup completo gerado",
-      "Um backup completo do GreenCondo foi gerado com sucesso."
+      "Um backup completo do InfinityCondo foi gerado com sucesso."
     );
 
     feedback("Backup completo gerado com sucesso.");
@@ -796,7 +796,7 @@ function Configuracoes() {
 
         criarNotificacaoConfiguracao(
           "Backup restaurado",
-          "Um backup foi restaurado no GreenCondo.",
+          "Um backup foi restaurado no InfinityCondo.",
           "alta"
         );
 
@@ -1100,8 +1100,8 @@ function Configuracoes() {
                   <span
                     style={{
                       ...styles.statusBadge,
-                      background: u.status === "Ativo" ? "#dcfce7" : "#fee2e2",
-                      color: u.status === "Ativo" ? "#166534" : "#dc2626"
+                      background: u.status === "Ativo" ? "#f3e8ff" : "#fee2e2",
+                      color: u.status === "Ativo" ? "#7c3aed" : "#dc2626"
                     }}
                   >
                     {u.status}
@@ -1758,12 +1758,13 @@ const styles = {
   container: {
     width: "100%",
     fontFamily: "Arial",
-    color: "#111827"
+    color: "#111827",
+    position: "relative"
   },
 
   hero: {
-    background: "linear-gradient(135deg,#ffffff,#f0fdf4)",
-    border: "1px solid #dcfce7",
+    background: "linear-gradient(135deg,#ffffff,#faf5ff)",
+    border: "1px solid #f3e8ff",
     color: "#111827",
     borderRadius: "28px",
     padding: "34px",
@@ -1771,15 +1772,15 @@ const styles = {
     justifyContent: "space-between",
     gap: "24px",
     alignItems: "center",
-    boxShadow: "0 18px 45px rgba(15,23,42,0.08)",
+    boxShadow: "0 18px 45px rgba(88,28,135,0.09)",
     marginBottom: "22px"
   },
 
   heroBadge: {
     display: "inline-block",
-    background: "#dcfce7",
-    border: "1px solid #bbf7d0",
-    color: "#166534",
+    background: "#f3e8ff",
+    border: "1px solid #ddd6fe",
+    color: "#7c3aed",
     padding: "8px 12px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1809,7 +1810,7 @@ const styles = {
   heroCard: {
     minWidth: "150px",
     background: "#ffffff",
-    border: "1px solid #e5e7eb",
+    border: "1px solid #ddd6fe",
     borderRadius: "18px",
     padding: "16px"
   },
@@ -1825,22 +1826,22 @@ const styles = {
 
   tabs: {
     background: "white",
-    border: "1px solid #e5e7eb",
+    border: "1px solid #ddd6fe",
     borderRadius: "24px",
     padding: "12px",
     display: "flex",
     gap: "10px",
     flexWrap: "wrap",
     marginBottom: "20px",
-    boxShadow: "0 14px 35px rgba(15,23,42,0.06)"
+    boxShadow: "0 14px 35px rgba(88,28,135,0.07)"
   },
 
   tab: {
     flex: 1,
     minWidth: "145px",
-    background: "#f8fafc",
-    color: "#166534",
-    border: "1px solid #d1d5db",
+    background: "#fbfaff",
+    color: "#7c3aed",
+    border: "1px solid #c4b5fd",
     borderRadius: "15px",
     padding: "13px",
     cursor: "pointer",
@@ -1848,14 +1849,14 @@ const styles = {
   },
 
   activeTab: {
-    background: "#16a34a",
+    background: "#8b5cf6",
     color: "white",
-    border: "1px solid #16a34a"
+    border: "1px solid #8b5cf6"
   },
 
   success: {
-    background: "#dcfce7",
-    color: "#166534",
+    background: "#f3e8ff",
+    color: "#7c3aed",
     padding: "14px",
     borderRadius: "16px",
     fontWeight: "900",
@@ -1863,11 +1864,12 @@ const styles = {
   },
 
   panel: {
-    background: "white",
-    border: "1px solid #eef2f7",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), linear-gradient(180deg,#ffffff,#fbfaff)",
+    border: "1px solid #ede9fe",
     borderRadius: "26px",
     padding: "28px",
-    boxShadow: "0 18px 45px rgba(15,23,42,0.07)"
+    boxShadow: "0 18px 45px rgba(88,28,135,0.08)"
   },
 
   panelHeader: {
@@ -1880,8 +1882,8 @@ const styles = {
   },
 
   panelBadge: {
-    background: "#dcfce7",
-    color: "#166534",
+    background: "#f3e8ff",
+    color: "#7c3aed",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "11px",
@@ -1930,7 +1932,7 @@ const styles = {
 
   input: {
     padding: "14px",
-    border: "1px solid #d1d5db",
+    border: "1px solid #c4b5fd",
     borderRadius: "14px",
     outline: "none",
     fontSize: "14px",
@@ -1941,8 +1943,8 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "12px",
-    background: "#f9fafb",
-    border: "1px solid #e5e7eb",
+    background: "#fbfaff",
+    border: "1px solid #ddd6fe",
     borderRadius: "14px",
     padding: "10px"
   },
@@ -1957,7 +1959,7 @@ const styles = {
 
   colorPreview: {
     marginTop: "10px",
-    border: "1px solid #16a34a",
+    border: "1px solid #8b5cf6",
     borderRadius: "16px",
     overflow: "hidden",
     background: "#ffffff"
@@ -1980,9 +1982,9 @@ const styles = {
 
   planInfo: {
     marginTop: "8px",
-    background: "#f0fdf4",
-    border: "1px solid #bbf7d0",
-    color: "#166534",
+    background: "#faf5ff",
+    border: "1px solid #ddd6fe",
+    color: "#7c3aed",
     borderRadius: "12px",
     padding: "10px",
     fontSize: "12px",
@@ -1991,7 +1993,7 @@ const styles = {
   },
 
   primaryButton: {
-    background: "#16a34a",
+    background: "#8b5cf6",
     color: "white",
     border: "none",
     padding: "13px 18px",
@@ -2011,9 +2013,9 @@ const styles = {
   },
 
   safeBox: {
-    background: "#dcfce7",
-    border: "1px solid #bbf7d0",
-    color: "#166534",
+    background: "#f3e8ff",
+    border: "1px solid #ddd6fe",
+    color: "#7c3aed",
     padding: "15px",
     borderRadius: "16px",
     marginBottom: "18px",
@@ -2028,8 +2030,8 @@ const styles = {
   },
 
   infoCard: {
-    background: "#f8fafc",
-    border: "1px solid #e5e7eb",
+    background: "#fbfaff",
+    border: "1px solid #ddd6fe",
     borderRadius: "18px",
     padding: "18px",
     display: "grid",
@@ -2044,11 +2046,11 @@ const styles = {
   },
 
   userCard: {
-    background: "linear-gradient(180deg,#ffffff,#f8fafc)",
-    border: "1px solid #eef2f7",
+    background: "linear-gradient(180deg,#ffffff,#fbfaff)",
+    border: "1px solid #ede9fe",
     borderRadius: "22px",
     padding: "20px",
-    boxShadow: "0 12px 28px rgba(15,23,42,0.06)"
+    boxShadow: "0 12px 28px rgba(88,28,135,0.07)"
   },
 
   userTop: {
@@ -2061,7 +2063,7 @@ const styles = {
     width: "56px",
     height: "56px",
     borderRadius: "18px",
-    background: "#16a34a",
+    background: "#8b5cf6",
     color: "white",
     display: "flex",
     alignItems: "center",
@@ -2094,8 +2096,8 @@ const styles = {
   },
 
   editButton: {
-    background: "#dbeafe",
-    color: "#1d4ed8",
+    background: "#ede9fe",
+    color: "#6d28d9",
     border: "none",
     padding: "10px 12px",
     borderRadius: "12px",
@@ -2124,8 +2126,8 @@ const styles = {
   },
 
   subPanel: {
-    background: "#f8fafc",
-    border: "1px solid #e5e7eb",
+    background: "#fbfaff",
+    border: "1px solid #ddd6fe",
     borderRadius: "22px",
     padding: "22px"
   },
@@ -2142,9 +2144,9 @@ const styles = {
   },
 
   backupCard: {
-    background: "#f0fdf4",
-    border: "1px solid #bbf7d0",
-    color: "#166534",
+    background: "#faf5ff",
+    border: "1px solid #ddd6fe",
+    color: "#7c3aed",
     borderRadius: "22px",
     padding: "22px"
   },
@@ -2177,8 +2179,8 @@ const styles = {
   },
 
   toggleCard: {
-    background: "#f8fafc",
-    border: "1px solid #e5e7eb",
+    background: "#fbfaff",
+    border: "1px solid #ddd6fe",
     borderRadius: "20px",
     padding: "18px",
     display: "flex",

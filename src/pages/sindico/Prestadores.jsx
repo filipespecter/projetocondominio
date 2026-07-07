@@ -2,6 +2,8 @@ import { useState } from "react";
 import { registrarAuditoria } from "../../Services/auditoriaService";
 import { criarNotificacao } from "../../Services/notificacaoService";
 
+import logoStar from "../../assets/images/logo-star-infinity.png";
+
 function Prestadores() {
   const STORAGE_KEYS = {
     prestadores: "condominio_prestadores",
@@ -877,17 +879,17 @@ function Prestadores() {
 
       case "Em execução":
         return {
-          background: "#dbeafe",
-          color: "#1d4ed8",
-          border: "#bfdbfe",
+          background: "#ede9fe",
+          color: "#6d28d9",
+          border: "#ddd6fe",
           label: "Em execução"
         };
 
       case "Finalizado":
         return {
-          background: "#dcfce7",
-          color: "#166534",
-          border: "#bbf7d0",
+          background: "#f3e8ff",
+          color: "#7c3aed",
+          border: "#ddd6fe",
           label: "Finalizado"
         };
 
@@ -901,9 +903,9 @@ function Prestadores() {
 
       default:
         return {
-          background: "#f3f4f6",
+          background: "#f5f3ff",
           color: "#374151",
-          border: "#e5e7eb",
+          border: "#ddd6fe",
           label: status || "Sem status"
         };
     }
@@ -1122,7 +1124,6 @@ function Prestadores() {
                 <label style={styles.label}>Data</label>
 
                 <input
-                  type="date"
                   value={novoOperacional.data}
                   onChange={(e) =>
                     atualizarOperacional("data", e.target.value)
@@ -1135,7 +1136,6 @@ function Prestadores() {
                 <label style={styles.label}>Horário</label>
 
                 <input
-                  type="time"
                   value={novoOperacional.horario}
                   onChange={(e) =>
                     atualizarOperacional("horario", e.target.value)
@@ -1582,8 +1582,6 @@ function Prestadores() {
                   <label style={styles.label}>Telefone</label>
 
                   <input
-                    inputMode="numeric"
-                    maxLength="15"
                     placeholder="Telefone"
                     value={novoPrestador.telefone}
                     onChange={(e) =>
@@ -1600,8 +1598,6 @@ function Prestadores() {
                   <label style={styles.label}>CPF</label>
 
                   <input
-                    inputMode="numeric"
-                    maxLength="14"
                     placeholder="CPF"
                     value={novoPrestador.cpf}
                     onChange={(e) =>
@@ -1762,7 +1758,7 @@ function Prestadores() {
                         onChange={(e) =>
                           setNovoPrestador({
                             ...novoPrestador,
-                            apartamento: e.target.value
+                            apartamento: e.target.value.replace(/\D/g, "").slice(0, 6)
                           })
                         }
                         style={styles.input}
@@ -1819,7 +1815,6 @@ function Prestadores() {
                   <label style={styles.label}>Data entrada</label>
 
                   <input
-                    type="date"
                     value={novoPrestador.dataEntrada}
                     onChange={(e) =>
                       setNovoPrestador({
@@ -1835,7 +1830,6 @@ function Prestadores() {
                   <label style={styles.label}>Hora entrada</label>
 
                   <input
-                    type="time"
                     value={novoPrestador.horaEntrada}
                     onChange={(e) =>
                       setNovoPrestador({
@@ -1851,7 +1845,6 @@ function Prestadores() {
                   <label style={styles.label}>Data saída</label>
 
                   <input
-                    type="date"
                     value={novoPrestador.dataSaida}
                     onChange={(e) =>
                       setNovoPrestador({
@@ -1867,7 +1860,6 @@ function Prestadores() {
                   <label style={styles.label}>Hora saída</label>
 
                   <input
-                    type="time"
                     value={novoPrestador.horaSaida}
                     onChange={(e) =>
                       setNovoPrestador({
@@ -1923,12 +1915,13 @@ const styles = {
   container: {
     width: "100%",
     fontFamily: "Arial",
-    color: "#111827"
+    color: "#111827",
+    position: "relative"
   },
 
   hero: {
     background:
-      "linear-gradient(135deg,#02140b,#064e3b 55%,#15803d)",
+      "linear-gradient(135deg,#02140b,#5b21b6 55%,#7c3aed)",
     borderRadius: "36px",
     padding: "34px",
     color: "white",
@@ -1948,7 +1941,7 @@ const styles = {
     display: "inline-block",
     background: "rgba(255,255,255,0.13)",
     border: "1px solid rgba(255,255,255,0.14)",
-    color: "#dcfce7",
+    color: "#f3e8ff",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1996,23 +1989,24 @@ const styles = {
   },
 
   tabs: {
-    background: "white",
-    border: "1px solid #e5e7eb",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    border: "1px solid #ddd6fe",
     borderRadius: "28px",
     padding: "12px",
     marginBottom: "24px",
     display: "flex",
     gap: "12px",
-    boxShadow: "0 14px 35px rgba(15,23,42,0.06)",
+    boxShadow: "0 14px 35px rgba(88,28,135,0.07)",
     flexWrap: "wrap"
   },
 
   tab: {
     flex: 1,
     minWidth: "210px",
-    background: "#f8fafc",
-    color: "#166534",
-    border: "1px solid #d1d5db",
+    background: "#fbfaff",
+    color: "#7c3aed",
+    border: "1px solid #c4b5fd",
     padding: "14px",
     borderRadius: "18px",
     cursor: "pointer",
@@ -2020,29 +2014,30 @@ const styles = {
   },
 
   activeTab: {
-    background: "linear-gradient(135deg,#064e3b,#16a34a)",
+    background: "linear-gradient(135deg,#5b21b6,#8b5cf6)",
     color: "white",
-    border: "1px solid #16a34a",
-    boxShadow: "0 12px 26px rgba(22,163,74,0.22)"
+    border: "1px solid #8b5cf6",
+    boxShadow: "0 12px 26px rgba(124,58,237,0.18)"
   },
 
   controlStrip: {
-    background: "white",
-    border: "1px solid #e5e7eb",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    border: "1px solid #ddd6fe",
     borderRadius: "28px",
     padding: "18px",
     marginBottom: "24px",
     display: "flex",
     alignItems: "center",
     gap: "14px",
-    boxShadow: "0 14px 35px rgba(15,23,42,0.06)",
+    boxShadow: "0 14px 35px rgba(88,28,135,0.07)",
     flexWrap: "wrap"
   },
 
   searchWrap: {
     flex: 1,
-    background: "#f8fafc",
-    border: "1px solid #d1d5db",
+    background: "#fbfaff",
+    border: "1px solid #c4b5fd",
     borderRadius: "18px",
     display: "flex",
     alignItems: "center",
@@ -2050,7 +2045,7 @@ const styles = {
   },
 
   searchIcon: {
-    color: "#166534",
+    color: "#7c3aed",
     fontSize: "20px",
     marginRight: "8px"
   },
@@ -2073,8 +2068,8 @@ const styles = {
   },
 
   heroButton: {
-    background: "#dcfce7",
-    color: "#166534",
+    background: "#f3e8ff",
+    color: "#7c3aed",
     border: "none",
     padding: "15px 20px",
     borderRadius: "17px",
@@ -2084,11 +2079,12 @@ const styles = {
   },
 
   servicePanel: {
-    background: "white",
-    border: "1px solid #eef2f7",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    border: "1px solid #ddd6fe",
     borderRadius: "34px",
     padding: "28px",
-    boxShadow: "0 18px 55px rgba(15,23,42,0.08)"
+    boxShadow: "0 18px 55px rgba(88,28,135,0.09)"
   },
 
   panelHeader: {
@@ -2099,8 +2095,8 @@ const styles = {
   },
 
   panelLabel: {
-    background: "#dcfce7",
-    color: "#166534",
+    background: "#f3e8ff",
+    color: "#7c3aed",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "11px",
@@ -2109,14 +2105,14 @@ const styles = {
 
   panelTitle: {
     margin: "12px 0 0",
-    color: "#052e16",
+    color: "#4c1d95",
     fontSize: "28px"
   },
 
   resultBadge: {
-    background: "#f0fdf4",
-    color: "#166534",
-    border: "1px solid #bbf7d0",
+    background: "#faf5ff",
+    color: "#7c3aed",
+    border: "1px solid #ddd6fe",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -2140,11 +2136,11 @@ const styles = {
   },
 
   serviceCard: {
-    background: "linear-gradient(180deg,#ffffff,#f8fafc)",
+    background: "linear-gradient(180deg,#ffffff,#fbfaff)",
     borderRadius: "30px",
     padding: "22px",
-    boxShadow: "0 15px 38px rgba(15,23,42,0.06)",
-    border: "1px solid #eef2f7"
+    boxShadow: "0 15px 38px rgba(88,28,135,0.07)",
+    border: "1px solid #ddd6fe"
   },
 
   cardTop: {
@@ -2166,13 +2162,13 @@ const styles = {
     height: "64px",
     borderRadius: "24px",
     background:
-      "linear-gradient(135deg,#052e16,#16a34a)",
+      "linear-gradient(135deg,#4c1d95,#8b5cf6)",
     color: "white",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "28px",
-    boxShadow: "0 14px 26px rgba(22,163,74,0.22)"
+    boxShadow: "0 14px 26px rgba(124,58,237,0.18)"
   },
 
   serviceName: {
@@ -2196,14 +2192,14 @@ const styles = {
   },
 
   serviceType: {
-    background: "#f0fdf4",
-    border: "1px solid #bbf7d0",
+    background: "#faf5ff",
+    border: "1px solid #ddd6fe",
     borderRadius: "18px",
     padding: "13px",
     display: "flex",
     alignItems: "center",
     gap: "10px",
-    color: "#166534",
+    color: "#7c3aed",
     marginBottom: "14px"
   },
 
@@ -2214,16 +2210,17 @@ const styles = {
   },
 
   infoItem: {
-    background: "white",
-    border: "1px solid #eef2f7",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    border: "1px solid #ddd6fe",
     borderRadius: "17px",
     padding: "13px"
   },
 
   timeBox: {
     marginTop: "12px",
-    background: "#f9fafb",
-    border: "1px solid #e5e7eb",
+    background: "#fbfaff",
+    border: "1px solid #ddd6fe",
     borderRadius: "17px",
     padding: "13px",
     display: "grid",
@@ -2249,8 +2246,8 @@ const styles = {
   },
 
   runningButton: {
-    background: "#dbeafe",
-    color: "#1d4ed8",
+    background: "#ede9fe",
+    color: "#6d28d9",
     border: "none",
     padding: "11px",
     borderRadius: "13px",
@@ -2259,8 +2256,8 @@ const styles = {
   },
 
   doneButton: {
-    background: "#dcfce7",
-    color: "#166534",
+    background: "#f3e8ff",
+    color: "#7c3aed",
     border: "none",
     padding: "11px",
     borderRadius: "13px",
@@ -2289,11 +2286,12 @@ const styles = {
   },
 
   operationalPanel: {
-    background: "white",
-    border: "1px solid #eef2f7",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    border: "1px solid #ddd6fe",
     borderRadius: "34px",
     padding: "28px",
-    boxShadow: "0 18px 55px rgba(15,23,42,0.08)"
+    boxShadow: "0 18px 55px rgba(88,28,135,0.09)"
   },
 
   operationalHeader: {
@@ -2317,7 +2315,7 @@ const styles = {
 
   operationalTitle: {
     margin: "12px 0 0",
-    color: "#052e16",
+    color: "#4c1d95",
     fontSize: "30px"
   },
 
@@ -2337,8 +2335,8 @@ const styles = {
   },
 
   operationalFormCard: {
-    background: "#f8fafc",
-    border: "1px solid #e5e7eb",
+    background: "#fbfaff",
+    border: "1px solid #ddd6fe",
     borderRadius: "28px",
     padding: "24px",
     marginBottom: "24px"
@@ -2348,7 +2346,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "10px",
-    color: "#052e16",
+    color: "#4c1d95",
     fontWeight: "900",
     marginBottom: "16px",
     marginTop: "8px"
@@ -2390,7 +2388,8 @@ const styles = {
     border: "1px solid #facc15",
     outline: "none",
     fontSize: "14px",
-    background: "white",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
     boxSizing: "border-box"
   },
 
@@ -2407,7 +2406,7 @@ const styles = {
 
   operationalHistory: {
     background: "#ffffff",
-    border: "1px solid #eef2f7",
+    border: "1px solid #ddd6fe",
     borderRadius: "28px",
     padding: "24px"
   },
@@ -2421,7 +2420,7 @@ const styles = {
   operationalCard: {
     display: "flex",
     gap: "14px",
-    background: "linear-gradient(180deg,#ffffff,#f8fafc)",
+    background: "linear-gradient(180deg,#ffffff,#fbfaff)",
     border: "1px solid #fde68a",
     borderRadius: "24px",
     padding: "18px"
@@ -2478,8 +2477,9 @@ const styles = {
   },
 
   meterItem: {
-    background: "white",
-    border: "1px solid #eef2f7",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    border: "1px solid #ddd6fe",
     borderRadius: "14px",
     padding: "10px"
   },
@@ -2513,8 +2513,8 @@ const styles = {
   },
 
   empty: {
-    background: "#f8fafc",
-    border: "1px dashed #d1d5db",
+    background: "#fbfaff",
+    border: "1px dashed #c4b5fd",
     borderRadius: "26px",
     padding: "48px",
     textAlign: "center"
@@ -2545,7 +2545,7 @@ const styles = {
 
   emptyButton: {
     background:
-      "linear-gradient(135deg,#064e3b,#16a34a)",
+      "linear-gradient(135deg,#5b21b6,#8b5cf6)",
     color: "white",
     border: "none",
     padding: "13px 18px",
@@ -2582,7 +2582,7 @@ const styles = {
   input: {
     padding: "15px",
     borderRadius: "16px",
-    border: "1px solid #d1d5db",
+    border: "1px solid #c4b5fd",
     outline: "none",
     fontSize: "14px",
     background: "white"
@@ -2593,10 +2593,11 @@ const styles = {
     resize: "vertical",
     padding: "15px",
     borderRadius: "16px",
-    border: "1px solid #d1d5db",
+    border: "1px solid #c4b5fd",
     outline: "none",
     fontSize: "14px",
-    background: "white",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
     fontFamily: "Arial"
   },
 
@@ -2630,7 +2631,7 @@ const styles = {
     maxWidth: "820px",
     maxHeight: "90vh",
     overflowY: "auto",
-    background: "#f8fafc",
+    background: "#fbfaff",
     boxSizing: "border-box",
     padding: "26px",
     borderRadius: "36px",
@@ -2639,7 +2640,7 @@ const styles = {
 
   modalTop: {
     background:
-      "linear-gradient(135deg,#052e16,#166534)",
+      "linear-gradient(135deg,#4c1d95,#7c3aed)",
     color: "white",
     borderRadius: "28px",
     padding: "26px",
@@ -2673,8 +2674,9 @@ const styles = {
   },
 
   modalSection: {
-    background: "white",
-    border: "1px solid #eef2f7",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    border: "1px solid #ddd6fe",
     borderRadius: "26px",
     padding: "20px",
     marginBottom: "15px"
@@ -2682,7 +2684,7 @@ const styles = {
 
   modalSectionTitle: {
     margin: "0 0 16px",
-    color: "#052e16"
+    color: "#4c1d95"
   },
 
   modalButtons: {
@@ -2694,7 +2696,7 @@ const styles = {
   saveBtn: {
     flex: 1,
     background:
-      "linear-gradient(135deg,#064e3b,#16a34a)",
+      "linear-gradient(135deg,#5b21b6,#8b5cf6)",
     color: "white",
     border: "none",
     padding: "14px",
@@ -2705,7 +2707,7 @@ const styles = {
 
   cancelBtn: {
     flex: 1,
-    background: "#f3f4f6",
+    background: "#f5f3ff",
     color: "#374151",
     border: "none",
     padding: "14px",

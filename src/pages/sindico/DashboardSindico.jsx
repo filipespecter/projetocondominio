@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import logoStar from "../../assets/images/logo-star-infinity.png";
+
 function DashboardSindico() {
   const navigate = useNavigate();
 
@@ -384,7 +386,10 @@ function DashboardSindico() {
     <div style={styles.container}>
       <div style={styles.hero}>
         <div>
-          <span style={styles.heroBadge}>👑 Central de comando Star Infinity</span>
+          <div style={styles.brandRow}>
+            <img src={logoStar} alt="Star Infinity Code" style={styles.logoImage} />
+            <span style={styles.heroBadge}>👑 Central de comando Star Infinity</span>
+          </div>
 
           <h1 style={styles.title}>Painel Executivo InfinityCondo</h1>
 
@@ -864,9 +869,10 @@ const styles = {
   },
 
   quickButton: {
-    background: "white",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
     color: "#111827",
-    border: "1px solid #ede9fe",
+    border: "1px solid #ddd6fe",
     padding: "22px",
     borderRadius: "26px",
     cursor: "pointer",
@@ -874,7 +880,7 @@ const styles = {
     alignItems: "center",
     gap: "16px",
     textAlign: "left",
-    boxShadow: "0 12px 35px rgba(15,23,42,0.07)"
+    boxShadow: "0 12px 35px rgba(88,28,135,0.08)"
   },
 
   quickIconLight: {
@@ -954,7 +960,7 @@ const styles = {
     alignItems: "center",
     gap: "18px",
     boxShadow: "0 16px 40px rgba(88,28,135,0.08)",
-    border: "1px solid #ede9fe"
+    border: "1px solid #ddd6fe"
   },
 
   kpiIcon: {
@@ -992,7 +998,7 @@ const styles = {
     borderRadius: "30px",
     padding: "28px",
     boxShadow: "0 18px 48px rgba(88,28,135,0.09)",
-    border: "1px solid #ede9fe"
+    border: "1px solid #ddd6fe"
   },
 
   controlPanel: {
@@ -1047,7 +1053,8 @@ const styles = {
   },
 
   priorityValue: {
-    background: "white",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
     padding: "6px 10px",
     borderRadius: "12px"
   },
@@ -1129,7 +1136,7 @@ const styles = {
 
   chartTrack: {
     height: "13px",
-    background: "#f3f4f6",
+    background: "#f5f3ff",
     borderRadius: "999px",
     overflow: "hidden"
   },
@@ -1151,7 +1158,7 @@ const styles = {
     borderRadius: "30px",
     padding: "28px",
     boxShadow: "0 18px 48px rgba(88,28,135,0.09)",
-    border: "1px solid #ede9fe"
+    border: "1px solid #ddd6fe"
   },
 
   activityHeader: {
@@ -1177,8 +1184,8 @@ const styles = {
   },
 
   empty: {
-    background: "#f9fafb",
-    border: "1px dashed #d1d5db",
+    background: "#fbfaff",
+    border: "1px dashed #c4b5fd",
     borderRadius: "24px",
     padding: "40px",
     textAlign: "center"
@@ -1208,8 +1215,8 @@ const styles = {
   activityItem: {
     display: "flex",
     gap: "14px",
-    background: "#f9fafb",
-    border: "1px solid #ede9fe",
+    background: "#fbfaff",
+    border: "1px solid #ddd6fe",
     borderRadius: "20px",
     padding: "16px"
   },
@@ -1232,8 +1239,9 @@ const styles = {
 
   activityType: {
     display: "inline-block",
-    background: "white",
-    border: "1px solid #e5e7eb",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    border: "1px solid #ddd6fe",
     color: "#7c3aed",
     padding: "5px 9px",
     borderRadius: "999px",
@@ -1327,8 +1335,9 @@ const styles = {
   },
 
   manualItem: {
-    background: "white",
-    border: "1px solid #ede9fe",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    border: "1px solid #ddd6fe",
     borderRadius: "22px",
     padding: "20px"
   },
@@ -1354,7 +1363,26 @@ const styles = {
     color: "#6b7280",
     lineHeight: "1.5",
     fontSize: "14px"
-  }
+  },
+
+  brandRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "16px",
+    marginBottom: "16px"
+  },
+
+  logoImage: {
+    width: "88px",
+    height: "88px",
+    objectFit: "contain",
+    borderRadius: "28px",
+    background: "rgba(255,255,255,0.95)",
+    border: "1px solid rgba(255,255,255,0.28)",
+    boxShadow: "0 18px 40px rgba(0,0,0,0.18), 0 0 32px rgba(216,180,254,0.30)",
+    padding: "8px",
+    boxSizing: "border-box"
+  },
 };
 
 export default DashboardSindico;

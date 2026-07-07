@@ -26,6 +26,8 @@ import {
   gerarRankingsPremiumBI
 } from "../../Services/biService";
 
+import logoStar from "../../assets/images/logo-star-infinity.png";
+
 function BIAnalytics() {
   const [periodo, setPeriodo] = useState("geral");
   const [tipoGrafico, setTipoGrafico] = useState("barra");
@@ -182,10 +184,22 @@ function BIAnalytics() {
     return (
       <div style={styles.container}>
         <section style={styles.hero}>
-          <div>
-            <span style={styles.heroBadge}>
-              🔒 Área restrita
-            </span>
+          <div style={styles.heroGrid}></div>
+
+          <div style={styles.heroContent}>
+            <div style={styles.brandRow}>
+              <img
+                src={logoStar}
+                alt="Star Infinity Code"
+                style={styles.logoImage}
+              />
+
+              <div>
+                <span style={styles.heroBadge}>
+                  🔒 Área restrita
+                </span>
+              </div>
+            </div>
 
             <h1 style={styles.title}>BI Analytics</h1>
 
@@ -221,11 +235,22 @@ function BIAnalytics() {
     <div style={styles.container}>
       <section style={styles.hero}>
         <div style={styles.heroGlow}></div>
+        <div style={styles.heroGrid}></div>
 
-        <div>
-          <span style={styles.heroBadge}>
-            🧠 Infinity Intelligence Center
-          </span>
+        <div style={styles.heroContent}>
+          <div style={styles.brandRow}>
+            <img
+              src={logoStar}
+              alt="Star Infinity Code"
+              style={styles.logoImage}
+            />
+
+            <div>
+              <span style={styles.heroBadge}>
+                🧠 Infinity Intelligence Center
+              </span>
+            </div>
+          </div>
 
           <h1 style={styles.title}>BI Command Center</h1>
 
@@ -682,105 +707,104 @@ const styles = {
     width: "100%",
     minHeight: "100vh",
     fontFamily: "Arial",
-    color: "white",
+    color: "#111827",
     background:
-      "radial-gradient(circle at top right,rgba(124,255,74,0.16),transparent 28%), linear-gradient(180deg,#020617,#05110a 35%,#07130d)",
-    padding: "4px",
-    boxSizing: "border-box"
-  },
-
-  extraGrid: {
-    display: "grid",
-    gridTemplateColumns:
-      "repeat(auto-fit,minmax(360px,1fr))",
-    gap: "22px",
-    marginBottom: "22px"
-  },
-
-  rankingGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))",
-    gap: "18px",
-    marginBottom: "22px"
-  },
-
-  rankingBox: {
-    background: "rgba(255,255,255,0.06)",
-    border: "1px solid rgba(255,255,255,0.10)",
-    borderRadius: "22px",
-    padding: "18px"
-  },
-
-  rankingTitle: {
-    margin: "0 0 12px",
-    color: "#dcfce7"
-  },
-
-  rankingItem: {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: "12px",
-    padding: "10px 0",
-    borderBottom: "1px solid rgba(255,255,255,0.08)",
-    color: "rgba(255,255,255,0.78)"
-  },
-
-  rankingEmpty: {
-    color: "rgba(255,255,255,0.52)",
-    margin: 0
+      "radial-gradient(circle at top right,rgba(168,85,247,0.16),transparent 30%), radial-gradient(circle at bottom left,rgba(59,130,246,0.08),transparent 28%), linear-gradient(180deg,#ffffff,#f8f5ff)",
+    padding: "6px",
+    boxSizing: "border-box",
+    position: "relative"
   },
 
   hero: {
     position: "relative",
     overflow: "hidden",
     background:
-      "radial-gradient(circle at top right,rgba(124,255,74,0.25),transparent 32%), linear-gradient(135deg,#020617,#05110a 42%,#07130d)",
-    borderRadius: "38px",
-    padding: "38px",
+      "radial-gradient(circle at top right,rgba(255,255,255,0.20),transparent 30%), radial-gradient(circle at bottom left,rgba(168,85,247,0.26),transparent 36%), linear-gradient(135deg,#2e1065,#4c1d95,#7c3aed)",
+    borderRadius: "44px",
+    padding: "42px",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    gap: "28px",
-    border: "1px solid rgba(124,255,74,0.18)",
+    gap: "32px",
+    border: "1px solid rgba(255,255,255,0.20)",
     boxShadow:
-      "0 30px 85px rgba(0,0,0,0.35), 0 0 55px rgba(124,255,74,0.10)",
-    marginBottom: "22px"
+      "0 34px 90px rgba(88,28,135,0.28), 0 0 65px rgba(168,85,247,0.20)",
+    marginBottom: "24px",
+    color: "white"
+  },
+
+  heroGrid: {
+    position: "absolute",
+    inset: 0,
+    backgroundImage:
+      "linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg,rgba(255,255,255,0.05) 1px, transparent 1px)",
+    backgroundSize: "42px 42px",
+    opacity: 0.45,
+    pointerEvents: "none"
   },
 
   heroGlow: {
     position: "absolute",
-    width: "260px",
-    height: "260px",
+    width: "320px",
+    height: "320px",
     borderRadius: "50%",
-    background: "rgba(124,255,74,0.15)",
-    filter: "blur(70px)",
-    right: "-60px",
-    top: "-60px"
+    background: "rgba(216,180,254,0.25)",
+    filter: "blur(85px)",
+    right: "-90px",
+    top: "-90px"
+  },
+
+  heroContent: {
+    position: "relative",
+    zIndex: 2,
+    flex: 1
+  },
+
+  brandRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "16px",
+    marginBottom: "16px"
+  },
+
+  logoImage: {
+    width: "96px",
+    height: "96px",
+    objectFit: "contain",
+    borderRadius: "30px",
+    background: "rgba(255,255,255,0.95)",
+    border: "1px solid rgba(255,255,255,0.28)",
+    boxShadow:
+      "0 18px 40px rgba(0,0,0,0.22), 0 0 32px rgba(216,180,254,0.30)",
+    padding: "8px",
+    boxSizing: "border-box"
   },
 
   heroBadge: {
     display: "inline-block",
-    background: "rgba(124,255,74,0.12)",
-    border: "1px solid rgba(124,255,74,0.28)",
-    color: "#b9ff8a",
-    padding: "9px 13px",
+    background: "rgba(255,255,255,0.14)",
+    border: "1px solid rgba(255,255,255,0.22)",
+    color: "#f5f3ff",
+    padding: "10px 14px",
     borderRadius: "999px",
     fontWeight: "900",
     fontSize: "12px",
-    marginBottom: "16px"
+    marginBottom: "12px"
   },
 
   title: {
     margin: 0,
-    fontSize: "48px",
+    fontSize: "50px",
     letterSpacing: "-1px",
-    color: "#ffffff"
+    color: "#ffffff",
+    fontWeight: "900"
   },
 
   subtitle: {
-    color: "rgba(255,255,255,0.68)",
+    color: "rgba(255,255,255,0.80)",
     maxWidth: "760px",
-    lineHeight: "1.6"
+    lineHeight: "1.6",
+    fontSize: "15px"
   },
 
   heroActions: {
@@ -798,22 +822,24 @@ const styles = {
 
   heroCard: {
     width: "100%",
-    maxWidth: "180px",
-    background: "rgba(255,255,255,0.07)",
-    border: "1px solid rgba(185,255,138,0.14)",
-    padding: "16px",
-    borderRadius: "20px"
+    maxWidth: "185px",
+    background: "rgba(255,255,255,0.12)",
+    border: "1px solid rgba(255,255,255,0.18)",
+    padding: "17px",
+    borderRadius: "22px",
+    color: "white",
+    boxShadow: "0 14px 30px rgba(0,0,0,0.14)"
   },
 
   heroCardNeon: {
     width: "100%",
-    maxWidth: "180px",
-    background: "rgba(124,255,74,0.12)",
-    border: "1px solid rgba(124,255,74,0.35)",
-    color: "#b9ff8a",
-    padding: "16px",
-    borderRadius: "20px",
-    boxShadow: "0 0 35px rgba(124,255,74,0.13)"
+    maxWidth: "185px",
+    background: "rgba(255,255,255,0.17)",
+    border: "1px solid rgba(255,255,255,0.25)",
+    color: "#ffffff",
+    padding: "17px",
+    borderRadius: "22px",
+    boxShadow: "0 0 35px rgba(216,180,254,0.22)"
   },
 
   tabs: {
@@ -824,38 +850,41 @@ const styles = {
   },
 
   tabButton: {
-    background: "rgba(255,255,255,0.05)",
-    border: "1px solid rgba(124,255,74,0.12)",
-    color: "white",
+    background: "#ffffff",
+    border: "1px solid #ddd6fe",
+    color: "#4c1d95",
     padding: "14px 18px",
-    borderRadius: "14px",
+    borderRadius: "16px",
     cursor: "pointer",
-    fontWeight: "800"
+    fontWeight: "900",
+    boxShadow: "0 12px 26px rgba(88,28,135,0.07)"
   },
 
   tabButtonActive: {
-    background: "linear-gradient(135deg,#7cff4a,#b9ff8a)",
-    color: "#07130d",
-    border: "1px solid rgba(124,255,74,0.4)"
+    background: "linear-gradient(135deg,#6d28d9,#8b5cf6,#a855f7)",
+    color: "white",
+    border: "1px solid rgba(124,58,237,0.40)",
+    boxShadow: "0 18px 34px rgba(124,58,237,0.24)"
   },
 
   commandBar: {
-    background: "rgba(7,19,13,0.92)",
-    border: "1px solid rgba(124,255,74,0.14)",
-    borderRadius: "28px",
-    padding: "16px",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    border: "1px solid #ddd6fe",
+    borderRadius: "30px",
+    padding: "18px",
     marginBottom: "22px",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
     gap: "18px",
     flexWrap: "wrap",
-    boxShadow: "0 18px 45px rgba(0,0,0,0.22)"
+    boxShadow: "0 18px 45px rgba(88,28,135,0.09)"
   },
 
   controlLabel: {
     margin: "0 0 8px",
-    color: "rgba(255,255,255,0.55)",
+    color: "#6d28d9",
     fontSize: "12px",
     fontWeight: "900",
     textTransform: "uppercase",
@@ -869,9 +898,9 @@ const styles = {
   },
 
   filterButton: {
-    background: "rgba(255,255,255,0.06)",
-    color: "rgba(255,255,255,0.72)",
-    border: "1px solid rgba(255,255,255,0.10)",
+    background: "#fbfaff",
+    color: "#6b7280",
+    border: "1px solid #ddd6fe",
     padding: "12px 15px",
     borderRadius: "15px",
     cursor: "pointer",
@@ -879,21 +908,21 @@ const styles = {
   },
 
   filterActive: {
-    background: "linear-gradient(135deg,#7cff4a,#b9ff8a)",
-    color: "#07130d",
-    border: "1px solid rgba(124,255,74,0.50)",
-    boxShadow: "0 0 28px rgba(124,255,74,0.20)"
+    background: "linear-gradient(135deg,#6d28d9,#a855f7)",
+    color: "white",
+    border: "1px solid rgba(124,58,237,0.50)",
+    boxShadow: "0 0 28px rgba(168,85,247,0.22)"
   },
 
   refreshButton: {
-    background: "linear-gradient(135deg,#7cff4a,#b9ff8a)",
-    color: "#07130d",
+    background: "linear-gradient(135deg,#6d28d9,#a855f7)",
+    color: "white",
     border: "none",
     padding: "13px 18px",
     borderRadius: "15px",
     cursor: "pointer",
     fontWeight: "900",
-    boxShadow: "0 0 28px rgba(124,255,74,0.18)"
+    boxShadow: "0 18px 34px rgba(124,58,237,0.24)"
   },
 
   compareGrid: {
@@ -910,6 +939,48 @@ const styles = {
     marginBottom: "22px"
   },
 
+  rankingGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))",
+    gap: "18px",
+    marginBottom: "22px"
+  },
+
+  rankingBox: {
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    border: "1px solid #ede9fe",
+    borderRadius: "24px",
+    padding: "18px",
+    boxShadow: "0 16px 38px rgba(88,28,135,0.08)"
+  },
+
+  rankingTitle: {
+    margin: "0 0 12px",
+    color: "#4c1d95"
+  },
+
+  rankingItem: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: "12px",
+    padding: "10px 0",
+    borderBottom: "1px solid #ede9fe",
+    color: "#6b7280"
+  },
+
+  rankingEmpty: {
+    color: "#6b7280",
+    margin: 0
+  },
+
+  extraGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit,minmax(360px,1fr))",
+    gap: "22px",
+    marginBottom: "22px"
+  },
+
   commandCenterGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
@@ -918,11 +989,12 @@ const styles = {
   },
 
   mainChartPanel: {
-    background: "rgba(7,19,13,0.94)",
-    border: "1px solid rgba(124,255,74,0.14)",
-    borderRadius: "32px",
+    background:
+      "linear-gradient(135deg,#4c1d95,#6d28d9)",
+    border: "1px solid rgba(255,255,255,0.18)",
+    borderRadius: "34px",
     padding: "26px",
-    boxShadow: "0 22px 60px rgba(0,0,0,0.24)",
+    boxShadow: "0 22px 60px rgba(88,28,135,0.18)",
     color: "white",
     minHeight: "470px",
     minWidth: 0
@@ -943,9 +1015,9 @@ const styles = {
   },
 
   chartTab: {
-    background: "rgba(255,255,255,0.06)",
-    color: "rgba(255,255,255,0.72)",
-    border: "1px solid rgba(255,255,255,0.10)",
+    background: "rgba(255,255,255,0.12)",
+    color: "rgba(255,255,255,0.82)",
+    border: "1px solid rgba(255,255,255,0.18)",
     padding: "10px 12px",
     borderRadius: "13px",
     cursor: "pointer",
@@ -954,26 +1026,26 @@ const styles = {
   },
 
   chartTabActive: {
-    background: "rgba(124,255,74,0.14)",
-    color: "#b9ff8a",
-    border: "1px solid rgba(124,255,74,0.34)"
+    background: "#22c55e",
+    color: "#052e16",
+    border: "1px solid rgba(255,255,255,0.34)"
   },
 
   healthPanel: {
     background:
-      "radial-gradient(circle at top right,rgba(124,255,74,0.13),transparent 35%), rgba(7,19,13,0.96)",
-    border: "1px solid rgba(124,255,74,0.16)",
-    borderRadius: "32px",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.13),transparent 35%), white",
+    border: "1px solid #ede9fe",
+    borderRadius: "34px",
     padding: "26px",
-    color: "white",
-    boxShadow: "0 22px 60px rgba(0,0,0,0.24)"
+    color: "#111827",
+    boxShadow: "0 22px 60px rgba(88,28,135,0.10)"
   },
 
   healthCircle: {
     width: "190px",
     height: "190px",
     borderRadius: "50%",
-    border: "10px solid #7cff4a",
+    border: "10px solid #22c55e",
     margin: "30px auto 20px",
     display: "flex",
     alignItems: "center",
@@ -981,11 +1053,12 @@ const styles = {
     flexDirection: "column",
     fontSize: "26px",
     fontWeight: "900",
-    boxShadow: "0 0 55px rgba(124,255,74,0.35)"
+    boxShadow: "0 0 55px rgba(34,197,94,0.24)",
+    color: "#16a34a"
   },
 
   healthText: {
-    color: "rgba(255,255,255,0.68)",
+    color: "#6b7280",
     lineHeight: "1.6",
     textAlign: "center"
   },
@@ -998,12 +1071,13 @@ const styles = {
   },
 
   miniMetric: {
-    background: "rgba(255,255,255,0.07)",
-    border: "1px solid rgba(124,255,74,0.12)",
+    background: "#fbfaff",
+    border: "1px solid #ede9fe",
     borderRadius: "16px",
     padding: "13px",
     display: "flex",
-    justifyContent: "space-between"
+    justifyContent: "space-between",
+    color: "#111827"
   },
 
   middleGrid: {
@@ -1015,20 +1089,22 @@ const styles = {
 
   executivePanel: {
     background:
-      "radial-gradient(circle at top right,rgba(124,255,74,0.13),transparent 35%), rgba(7,19,13,0.96)",
-    border: "1px solid rgba(124,255,74,0.14)",
-    borderRadius: "32px",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.13),transparent 35%), white",
+    border: "1px solid #ede9fe",
+    borderRadius: "34px",
     padding: "26px",
-    color: "white"
+    color: "#111827",
+    boxShadow: "0 22px 60px rgba(88,28,135,0.10)"
   },
 
   insightsPanel: {
     background:
-      "radial-gradient(circle at top right,rgba(250,204,21,0.12),transparent 35%), rgba(7,19,13,0.96)",
-    border: "1px solid rgba(124,255,74,0.14)",
-    borderRadius: "32px",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.13),transparent 35%), white",
+    border: "1px solid #ede9fe",
+    borderRadius: "34px",
     padding: "26px",
-    color: "white"
+    color: "#111827",
+    boxShadow: "0 22px 60px rgba(88,28,135,0.10)"
   },
 
   centralBox: {
@@ -1043,16 +1119,17 @@ const styles = {
   },
 
   insightItem: {
-    background: "rgba(255,255,255,0.07)",
-    border: "1px solid rgba(124,255,74,0.12)",
+    background: "#fbfaff",
+    border: "1px solid #ede9fe",
     borderRadius: "18px",
-    padding: "15px"
+    padding: "15px",
+    color: "#111827"
   },
 
   insightType: {
     display: "inline-block",
-    color: "#07130d",
-    background: "#b9ff8a",
+    color: "white",
+    background: "linear-gradient(135deg,#6d28d9,#a855f7)",
     padding: "5px 9px",
     borderRadius: "999px",
     fontSize: "11px",

@@ -525,9 +525,9 @@ function Moradores() {
   function corStatus(status) {
     if (status === "Ativo") {
       return {
-        background: "#dcfce7",
-        color: "#166534",
-        border: "#bbf7d0"
+        background: "#f3e8ff",
+        color: "#7c3aed",
+        border: "#ddd6fe"
       };
     }
 
@@ -852,8 +852,8 @@ function Moradores() {
                     onChange={(e) =>
                       setNovoMorador({
                         ...novoMorador,
-                        apto: e.target.value,
-                        apartamento: e.target.value,
+                        apto: e.target.value.replace(/\D/g, "").slice(0, 6),
+                        apartamento: e.target.value.replace(/\D/g, "").slice(0, 6),
                         apartamentoId: null
                       })
                     }
@@ -1034,100 +1034,115 @@ const styles = {
   container: {
     width: "100%",
     fontFamily: "Arial",
-    color: "#111827"
+    color: "#111827",
+    position: "relative"
   },
 
   hero: {
     background:
-      "linear-gradient(135deg,#02140b,#04351f 45%,#0f6b3d)",
-    borderRadius: "36px",
-    padding: "34px",
+      "radial-gradient(circle at top right,rgba(255,255,255,0.18),transparent 30%), radial-gradient(circle at bottom left,rgba(168,85,247,0.24),transparent 34%), linear-gradient(135deg,#2e1065,#4c1d95,#7c3aed)",
+    borderRadius: "42px",
+    padding: "38px",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    gap: "24px",
+    gap: "26px",
     color: "white",
-    boxShadow: "0 26px 70px rgba(6,78,59,0.30)",
-    marginBottom: "24px"
+    boxShadow:
+      "0 30px 80px rgba(88,28,135,0.26), 0 0 46px rgba(168,85,247,0.16)",
+    border: "1px solid rgba(255,255,255,0.18)",
+    marginBottom: "24px",
+    position: "relative",
+    overflow: "hidden"
   },
 
   heroLeft: {
-    maxWidth: "720px"
+    maxWidth: "720px",
+    position: "relative",
+    zIndex: 2
   },
 
   heroBadge: {
     display: "inline-block",
-    background: "rgba(255,255,255,0.13)",
-    border: "1px solid rgba(255,255,255,0.14)",
-    color: "#dcfce7",
+    background: "rgba(255,255,255,0.14)",
+    border: "1px solid rgba(255,255,255,0.22)",
+    color: "#f5f3ff",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
     fontWeight: "900",
-    marginBottom: "15px"
+    marginBottom: "15px",
+    boxShadow: "0 10px 26px rgba(0,0,0,0.10)"
   },
 
   title: {
     margin: 0,
-    fontSize: "44px",
-    letterSpacing: "-1px"
+    fontSize: "46px",
+    letterSpacing: "-1px",
+    fontWeight: "900"
   },
 
   subtitle: {
     margin: "10px 0 0",
-    color: "rgba(255,255,255,0.76)",
-    lineHeight: "1.55"
+    color: "rgba(255,255,255,0.78)",
+    lineHeight: "1.6"
   },
 
   heroRight: {
     display: "flex",
     alignItems: "center",
-    gap: "14px"
+    gap: "14px",
+    position: "relative",
+    zIndex: 2
   },
 
   heroCounter: {
-    background: "rgba(255,255,255,0.12)",
-    border: "1px solid rgba(255,255,255,0.14)",
-    borderRadius: "24px",
-    padding: "18px 22px",
-    textAlign: "center"
+    background: "rgba(255,255,255,0.13)",
+    border: "1px solid rgba(255,255,255,0.18)",
+    borderRadius: "26px",
+    padding: "19px 24px",
+    textAlign: "center",
+    boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)"
   },
 
   heroButton: {
-    background: "#dcfce7",
-    color: "#166534",
-    border: "none",
-    padding: "15px 20px",
-    borderRadius: "17px",
+    background: "linear-gradient(135deg,#ffffff,#f3e8ff)",
+    color: "#6d28d9",
+    border: "1px solid rgba(255,255,255,0.28)",
+    padding: "16px 22px",
+    borderRadius: "18px",
     cursor: "pointer",
     fontWeight: "900",
-    whiteSpace: "nowrap"
+    whiteSpace: "nowrap",
+    boxShadow: "0 16px 34px rgba(0,0,0,0.16)"
   },
 
   toolbar: {
-    background: "white",
-    border: "1px solid #e5e7eb",
-    borderRadius: "28px",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    border: "1px solid #ddd6fe",
+    borderRadius: "30px",
     padding: "18px",
     marginBottom: "24px",
     display: "flex",
     alignItems: "center",
     gap: "14px",
-    boxShadow: "0 14px 35px rgba(15,23,42,0.06)"
+    boxShadow: "0 18px 45px rgba(88,28,135,0.09)"
   },
 
   searchWrap: {
     flex: 1,
-    background: "#f8fafc",
-    border: "1px solid #d1d5db",
+    background: "#fbfaff",
+    border: "1px solid #c4b5fd",
     borderRadius: "18px",
     display: "flex",
     alignItems: "center",
-    padding: "0 14px"
+    padding: "0 14px",
+    boxShadow: "inset 0 0 0 1px rgba(168,85,247,0.04)"
   },
 
   searchIcon: {
-    color: "#166534",
+    color: "#7c3aed",
     fontSize: "20px",
     marginRight: "8px"
   },
@@ -1138,16 +1153,18 @@ const styles = {
     border: "none",
     outline: "none",
     background: "transparent",
-    fontSize: "14px"
+    fontSize: "14px",
+    color: "#111827"
   },
 
   filter: {
     width: "160px",
     padding: "15px",
     borderRadius: "18px",
-    border: "1px solid #d1d5db",
+    border: "1px solid #c4b5fd",
     outline: "none",
-    background: "#f8fafc"
+    background: "#fbfaff",
+    color: "#111827"
   },
 
   inlineNumbers: {
@@ -1155,15 +1172,16 @@ const styles = {
     gap: "10px",
     flexWrap: "wrap",
     fontSize: "12px",
-    color: "#374151"
+    color: "#4b5563"
   },
 
   registry: {
-    background: "white",
-    border: "1px solid #eef2f7",
-    borderRadius: "34px",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), linear-gradient(180deg,#ffffff,#fbfaff)",
+    border: "1px solid #ddd6fe",
+    borderRadius: "36px",
     padding: "28px",
-    boxShadow: "0 18px 55px rgba(15,23,42,0.08)"
+    boxShadow: "0 20px 60px rgba(88,28,135,0.10)"
   },
 
   registryHeader: {
@@ -1174,8 +1192,9 @@ const styles = {
   },
 
   registryLabel: {
-    background: "#dcfce7",
-    color: "#166534",
+    background: "#f3e8ff",
+    color: "#7c3aed",
+    border: "1px solid #ddd6fe",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "11px",
@@ -1184,14 +1203,15 @@ const styles = {
 
   registryTitle: {
     margin: "12px 0 0",
-    color: "#052e16",
-    fontSize: "28px"
+    color: "#4c1d95",
+    fontSize: "28px",
+    letterSpacing: "-0.4px"
   },
 
   resultBadge: {
-    background: "#f0fdf4",
-    color: "#166534",
-    border: "1px solid #bbf7d0",
+    background: "#faf5ff",
+    color: "#7c3aed",
+    border: "1px solid #ddd6fe",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1208,10 +1228,11 @@ const styles = {
     position: "relative",
     overflow: "hidden",
     background:
-      "linear-gradient(180deg,#ffffff,#f8fafc)",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), linear-gradient(180deg,#ffffff,#fbfaff)",
     borderRadius: "30px",
     padding: "22px",
-    boxShadow: "0 15px 38px rgba(15,23,42,0.06)"
+    boxShadow: "0 18px 42px rgba(88,28,135,0.10)",
+    border: "1px solid #ede9fe"
   },
 
   cardAccent: {
@@ -1219,7 +1240,7 @@ const styles = {
     inset: "0 auto 0 0",
     width: "7px",
     background:
-      "linear-gradient(180deg,#16a34a,#bbf7d0)"
+      "linear-gradient(180deg,#6d28d9,#a855f7,#ddd6fe)"
   },
 
   residentMain: {
@@ -1234,14 +1255,14 @@ const styles = {
     height: "62px",
     borderRadius: "23px",
     background:
-      "linear-gradient(135deg,#064e3b,#16a34a)",
+      "linear-gradient(135deg,#4c1d95,#7c3aed,#a855f7)",
     color: "white",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "27px",
     fontWeight: "900",
-    boxShadow: "0 14px 26px rgba(22,163,74,0.22)"
+    boxShadow: "0 16px 30px rgba(124,58,237,0.24)"
   },
 
   residentIdentity: {
@@ -1272,7 +1293,8 @@ const styles = {
     borderRadius: "999px",
     fontWeight: "900",
     fontSize: "12px",
-    whiteSpace: "nowrap"
+    whiteSpace: "nowrap",
+    border: "1px solid transparent"
   },
 
   residentData: {
@@ -1282,10 +1304,11 @@ const styles = {
   },
 
   dataPill: {
-    background: "white",
-    border: "1px solid #eef2f7",
+    background: "#ffffff",
+    border: "1px solid #ede9fe",
     borderRadius: "17px",
-    padding: "13px"
+    padding: "13px",
+    boxShadow: "0 8px 20px rgba(88,28,135,0.04)"
   },
 
   residentActions: {
@@ -1296,9 +1319,9 @@ const styles = {
 
   editButton: {
     flex: 1,
-    background: "#dcfce7",
-    color: "#166534",
-    border: "none",
+    background: "#f3e8ff",
+    color: "#7c3aed",
+    border: "1px solid #ddd6fe",
     padding: "12px",
     borderRadius: "15px",
     cursor: "pointer",
@@ -1309,7 +1332,7 @@ const styles = {
     flex: 1,
     background: "#fee2e2",
     color: "#dc2626",
-    border: "none",
+    border: "1px solid #fecaca",
     padding: "12px",
     borderRadius: "15px",
     cursor: "pointer",
@@ -1317,9 +1340,9 @@ const styles = {
   },
 
   empty: {
-    background: "#f8fafc",
-    border: "1px dashed #d1d5db",
-    borderRadius: "26px",
+    background: "#fbfaff",
+    border: "1px dashed #c4b5fd",
+    borderRadius: "28px",
     padding: "48px",
     textAlign: "center"
   },
@@ -1341,20 +1364,21 @@ const styles = {
 
   emptyButton: {
     background:
-      "linear-gradient(135deg,#064e3b,#16a34a)",
+      "linear-gradient(135deg,#6d28d9,#a855f7)",
     color: "white",
     border: "none",
     padding: "13px 18px",
     borderRadius: "15px",
     cursor: "pointer",
-    fontWeight: "900"
+    fontWeight: "900",
+    boxShadow: "0 16px 32px rgba(124,58,237,0.22)"
   },
 
   modalBackground: {
     position: "fixed",
     inset: 0,
     background: "rgba(15,23,42,0.62)",
-    backdropFilter: "blur(8px)",
+    backdropFilter: "blur(10px)",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
@@ -1364,25 +1388,29 @@ const styles = {
 
   modal: {
     width: "720px",
-    background: "#f8fafc",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), #fbfaff",
     padding: "26px",
     borderRadius: "36px",
-    boxShadow: "0 30px 80px rgba(0,0,0,0.28)"
+    boxShadow: "0 34px 90px rgba(88,28,135,0.30)",
+    border: "1px solid rgba(255,255,255,0.55)"
   },
 
   modalTop: {
     background:
-      "linear-gradient(135deg,#052e16,#166534)",
+      "radial-gradient(circle at top right,rgba(255,255,255,0.16),transparent 34%), linear-gradient(135deg,#4c1d95,#7c3aed)",
     color: "white",
     borderRadius: "28px",
     padding: "26px",
     display: "flex",
     justifyContent: "space-between",
-    marginBottom: "20px"
+    marginBottom: "20px",
+    boxShadow: "0 18px 38px rgba(88,28,135,0.18)"
   },
 
   modalBadge: {
     background: "rgba(255,255,255,0.14)",
+    border: "1px solid rgba(255,255,255,0.18)",
     padding: "8px 12px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1406,8 +1434,9 @@ const styles = {
   },
 
   formPanel: {
-    background: "white",
-    border: "1px solid #eef2f7",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
+    border: "1px solid #ede9fe",
     borderRadius: "26px",
     padding: "20px",
     display: "grid",
@@ -1437,10 +1466,12 @@ const styles = {
   input: {
     padding: "15px",
     borderRadius: "16px",
-    border: "1px solid #d1d5db",
+    border: "1px solid #c4b5fd",
     outline: "none",
     fontSize: "14px",
-    background: "#f9fafb"
+    background: "#fbfaff",
+    color: "#111827",
+    boxSizing: "border-box"
   },
 
   modalActions: {
@@ -1452,20 +1483,21 @@ const styles = {
   saveButton: {
     flex: 1,
     background:
-      "linear-gradient(135deg,#064e3b,#16a34a)",
+      "linear-gradient(135deg,#6d28d9,#8b5cf6,#a855f7)",
     color: "white",
     border: "none",
     padding: "14px",
     borderRadius: "17px",
     cursor: "pointer",
-    fontWeight: "900"
+    fontWeight: "900",
+    boxShadow: "0 18px 34px rgba(124,58,237,0.28), 0 0 28px rgba(168,85,247,0.18)"
   },
 
   cancelButton: {
     flex: 1,
-    background: "#f3f4f6",
-    color: "#374151",
-    border: "none",
+    background: "#f5f3ff",
+    color: "#4c1d95",
+    border: "1px solid #ddd6fe",
     padding: "14px",
     borderRadius: "17px",
     cursor: "pointer",

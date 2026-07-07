@@ -20,6 +20,8 @@ import OperationalDashboard from "../../components/BI/OperationalDashboard";
 import HeatMap from "../../components/BI/HeatMap";
 import TrendAnalysis from "../../components/BI/TrendAnalysis";
 
+import logoStar from "../../assets/images/logo-star-infinity.png";
+
 function BIMonitor() {
   const [hora, setHora] = useState("");
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState("");
@@ -152,19 +154,27 @@ function BIMonitor() {
         <div style={styles.scanLine}></div>
 
         <header style={styles.header}>
-          <div>
-            <span style={styles.badge}>
-              🔒 ÁREA RESTRITA
-            </span>
+          <div style={styles.headerBrand}>
+            <img
+              src={logoStar}
+              alt="Star Infinity Code"
+              style={styles.logoImage}
+            />
 
-            <h1 style={styles.title}>
-              BI Monitor
-            </h1>
+            <div>
+              <span style={styles.badge}>
+                🔒 ÁREA RESTRITA
+              </span>
 
-            <p style={styles.subtitle}>
-              A Central de Monitoramento está disponível apenas no Plano Completo.
-              Entre em contato com a Star Infinity Code para realizar o upgrade.
-            </p>
+              <h1 style={styles.title}>
+                BI Monitor
+              </h1>
+
+              <p style={styles.subtitle}>
+                A Central de Monitoramento está disponível apenas no Plano Completo.
+                Entre em contato com a Star Infinity Code para realizar o upgrade.
+              </p>
+            </div>
           </div>
 
           <div style={styles.headerRight}>
@@ -190,18 +200,26 @@ function BIMonitor() {
       <div style={styles.scanLine}></div>
 
       <header style={styles.header}>
-        <div>
-          <span style={styles.badge}>
-            GREENCONDO COMMAND CENTER
-          </span>
+        <div style={styles.headerBrand}>
+          <img
+            src={logoStar}
+            alt="Star Infinity Code"
+            style={styles.logoImage}
+          />
 
-          <h1 style={styles.title}>
-            Central de Monitoramento
-          </h1>
+          <div>
+            <span style={styles.badge}>
+              INFINITYCONDO COMMAND CENTER
+            </span>
 
-          <p style={styles.subtitle}>
-            Segunda tela controlada pelo BI principal.
-          </p>
+            <h1 style={styles.title}>
+              Central de Monitoramento
+            </h1>
+
+            <p style={styles.subtitle}>
+              Segunda tela controlada pelo BI principal.
+            </p>
+          </div>
         </div>
 
         <div style={styles.headerRight}>
@@ -475,7 +493,7 @@ function BIMonitor() {
       )}
 
       <footer style={styles.footer}>
-        <span>GreenCondo Monitor • modo independente</span>
+        <span>InfinityCondo Monitor • modo independente</span>
         <span>Rota: /bi-monitor</span>
         <span>Controlado pelo BIAnalytics</span>
       </footer>
@@ -532,8 +550,8 @@ const styles = {
     overflowX: "hidden",
     overflowY: "auto",
     background:
-      "radial-gradient(circle at top right,rgba(124,255,74,0.18),transparent 26%), radial-gradient(circle at bottom left,rgba(250,204,21,0.10),transparent 24%), linear-gradient(180deg,#020617,#041009 42%,#07130d)",
-    color: "white",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.18),transparent 26%), radial-gradient(circle at bottom left,rgba(59,130,246,0.08),transparent 24%), linear-gradient(180deg,#ffffff,#f8f5ff)",
+    color: "#111827",
     padding: "24px",
     boxSizing: "border-box",
     fontFamily: "Arial",
@@ -545,46 +563,52 @@ const styles = {
     top: 0,
     left: 0,
     width: "100%",
-    height: "2px",
-    background:
-      "linear-gradient(90deg,transparent,#7cff4a,transparent)",
-    boxShadow: "0 0 22px rgba(124,255,74,0.85)"
-  },
-
-  rankingMonitor: {
-    background: "rgba(255,255,255,0.06)",
-    border: "1px solid rgba(255,255,255,0.12)",
-    borderRadius: "22px",
-    padding: "18px"
-  },
-
-  rankingItem: {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: "12px",
-    padding: "10px 0",
-    borderBottom: "1px solid rgba(255,255,255,0.08)",
-    color: "rgba(255,255,255,0.76)"
-  },
-
-  rankingEmpty: {
-    color: "rgba(255,255,255,0.50)"
+    height: "3px",
+    background: "linear-gradient(90deg,transparent,#a855f7,transparent)",
+    boxShadow: "0 0 28px rgba(168,85,247,0.85)"
   },
 
   header: {
+    background:
+      "radial-gradient(circle at top right,rgba(255,255,255,0.18),transparent 30%), radial-gradient(circle at bottom left,rgba(168,85,247,0.26),transparent 34%), linear-gradient(135deg,#2e1065,#4c1d95,#7c3aed)",
+    border: "1px solid rgba(255,255,255,0.18)",
+    borderRadius: "40px",
+    padding: "30px",
+    boxShadow:
+      "0 34px 90px rgba(88,28,135,0.26), 0 0 60px rgba(168,85,247,0.18)",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: "20px",
     marginBottom: "20px",
-    flexWrap: "wrap"
+    flexWrap: "wrap",
+    color: "white",
+    overflow: "hidden"
+  },
+
+  headerBrand: {
+    display: "flex",
+    alignItems: "center",
+    gap: "18px"
+  },
+
+  logoImage: {
+    width: "94px",
+    height: "94px",
+    objectFit: "contain",
+    borderRadius: "28px",
+    background: "rgba(255,255,255,0.94)",
+    border: "1px solid rgba(255,255,255,0.28)",
+    boxShadow: "0 18px 40px rgba(0,0,0,0.22), 0 0 32px rgba(216,180,254,0.30)",
+    padding: "8px",
+    boxSizing: "border-box"
   },
 
   badge: {
     display: "inline-block",
-    background: "rgba(124,255,74,0.12)",
-    color: "#b9ff8a",
-    border: "1px solid rgba(124,255,74,0.24)",
+    background: "rgba(255,255,255,0.14)",
+    color: "#f5f3ff",
+    border: "1px solid rgba(255,255,255,0.22)",
     padding: "8px 14px",
     borderRadius: "999px",
     fontWeight: "900",
@@ -596,12 +620,13 @@ const styles = {
     margin: "12px 0 0",
     fontSize: "clamp(32px,4vw,52px)",
     lineHeight: "1",
-    letterSpacing: "-1px"
+    letterSpacing: "-1px",
+    color: "white"
   },
 
   subtitle: {
     margin: "10px 0 0",
-    color: "rgba(255,255,255,0.58)"
+    color: "rgba(255,255,255,0.72)"
   },
 
   headerRight: {
@@ -616,9 +641,9 @@ const styles = {
     display: "inline-flex",
     alignItems: "center",
     gap: "8px",
-    background: "rgba(124,255,74,0.12)",
-    color: "#b9ff8a",
-    border: "1px solid rgba(124,255,74,0.25)",
+    background: "rgba(255,255,255,0.14)",
+    color: "white",
+    border: "1px solid rgba(255,255,255,0.22)",
     padding: "8px 13px",
     borderRadius: "999px",
     fontWeight: "900",
@@ -629,18 +654,18 @@ const styles = {
     width: "9px",
     height: "9px",
     borderRadius: "50%",
-    background: "#7cff4a",
-    boxShadow: "0 0 0 6px rgba(124,255,74,0.12)"
+    background: "#22c55e",
+    boxShadow: "0 0 0 6px rgba(34,197,94,0.20)"
   },
 
   clock: {
-    color: "#ffffff",
+    color: "white",
     fontSize: "22px",
     fontWeight: "900"
   },
 
   updateText: {
-    color: "rgba(255,255,255,0.50)",
+    color: "rgba(255,255,255,0.62)",
     fontSize: "12px"
   },
 
@@ -652,19 +677,21 @@ const styles = {
   },
 
   monitorTab: {
-    background: "rgba(255,255,255,0.06)",
-    color: "rgba(255,255,255,0.72)",
-    border: "1px solid rgba(255,255,255,0.10)",
-    borderRadius: "14px",
+    background: "white",
+    color: "#4c1d95",
+    border: "1px solid #ddd6fe",
+    borderRadius: "16px",
     padding: "12px 16px",
     cursor: "pointer",
-    fontWeight: "900"
+    fontWeight: "900",
+    boxShadow: "0 12px 26px rgba(88,28,135,0.07)"
   },
 
   monitorTabActive: {
-    background: "linear-gradient(135deg,#7cff4a,#b9ff8a)",
-    color: "#07130d",
-    border: "1px solid rgba(124,255,74,0.40)"
+    background: "linear-gradient(135deg,#6d28d9,#8b5cf6,#a855f7)",
+    color: "white",
+    border: "1px solid rgba(124,58,237,0.40)",
+    boxShadow: "0 18px 34px rgba(124,58,237,0.24)"
   },
 
   kpis: {
@@ -676,11 +703,11 @@ const styles = {
 
   kpiCard: {
     background:
-      "linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.035))",
-    border: "1px solid rgba(124,255,74,0.14)",
-    borderRadius: "24px",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    border: "1px solid #ede9fe",
+    borderRadius: "26px",
     padding: "18px",
-    boxShadow: "0 18px 45px rgba(0,0,0,0.20)",
+    boxShadow: "0 18px 45px rgba(88,28,135,0.10)",
     minHeight: "118px"
   },
 
@@ -690,40 +717,41 @@ const styles = {
   },
 
   kpiLabel: {
-    color: "rgba(255,255,255,0.55)",
+    color: "#6b7280",
     fontWeight: "900",
     fontSize: "12px",
     textTransform: "uppercase"
   },
 
   kpiValue: {
-    color: "#7cff4a",
+    color: "#6d28d9",
     fontSize: "42px",
-    margin: "8px 0 4px",
-    textShadow: "0 0 20px rgba(124,255,74,0.22)"
+    margin: "8px 0 4px"
   },
 
   kpiDetail: {
     margin: 0,
-    color: "#b9ff8a",
-    fontSize: "12px"
+    color: "#7c3aed",
+    fontSize: "12px",
+    fontWeight: "800"
   },
 
   commandGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
+    gridTemplateColumns: "minmax(320px,1.4fr) minmax(300px,0.8fr)",
     gap: "20px",
     marginBottom: "20px",
     alignItems: "stretch"
   },
 
   mainPanel: {
-    background: "rgba(7,19,13,0.94)",
-    border: "1px solid rgba(124,255,74,0.16)",
-    borderRadius: "28px",
+    background: "linear-gradient(135deg,#4c1d95,#6d28d9)",
+    border: "1px solid rgba(255,255,255,0.18)",
+    borderRadius: "30px",
     padding: "22px",
-    boxShadow: "0 22px 60px rgba(0,0,0,0.26)",
-    minWidth: 0
+    boxShadow: "0 22px 60px rgba(88,28,135,0.18)",
+    minWidth: 0,
+    color: "white"
   },
 
   panelHeader: {
@@ -737,9 +765,9 @@ const styles = {
 
   panelBadge: {
     display: "inline-block",
-    background: "rgba(124,255,74,0.12)",
-    color: "#b9ff8a",
-    border: "1px solid rgba(124,255,74,0.25)",
+    background: "rgba(255,255,255,0.14)",
+    color: "white",
+    border: "1px solid rgba(255,255,255,0.22)",
     padding: "7px 11px",
     borderRadius: "999px",
     fontWeight: "900",
@@ -748,9 +776,9 @@ const styles = {
 
   panelBadgeGold: {
     display: "inline-block",
-    background: "rgba(250,204,21,0.13)",
-    color: "#facc15",
-    border: "1px solid rgba(250,204,21,0.26)",
+    background: "#f3e8ff",
+    color: "#6d28d9",
+    border: "1px solid #ddd6fe",
     padding: "7px 11px",
     borderRadius: "999px",
     fontWeight: "900",
@@ -759,12 +787,13 @@ const styles = {
 
   panelTitle: {
     margin: "10px 0 0",
-    fontSize: "27px"
+    fontSize: "27px",
+    color: "white"
   },
 
   panelSubtitle: {
     margin: "6px 0 0",
-    color: "rgba(255,255,255,0.54)"
+    color: "rgba(255,255,255,0.72)"
   },
 
   viewButtons: {
@@ -774,9 +803,9 @@ const styles = {
   },
 
   viewButton: {
-    background: "rgba(255,255,255,0.06)",
-    color: "rgba(255,255,255,0.68)",
-    border: "1px solid rgba(255,255,255,0.10)",
+    background: "rgba(255,255,255,0.12)",
+    color: "rgba(255,255,255,0.82)",
+    border: "1px solid rgba(255,255,255,0.18)",
     borderRadius: "13px",
     padding: "10px 12px",
     cursor: "pointer",
@@ -784,9 +813,9 @@ const styles = {
   },
 
   viewButtonActive: {
-    background: "linear-gradient(135deg,#7cff4a,#b9ff8a)",
-    color: "#07130d",
-    border: "1px solid rgba(124,255,74,0.40)"
+    background: "#22c55e",
+    color: "#052e16",
+    border: "1px solid rgba(255,255,255,0.34)"
   },
 
   bigChart: {
@@ -803,17 +832,18 @@ const styles = {
 
   healthBox: {
     background:
-      "radial-gradient(circle at top right,rgba(124,255,74,0.12),transparent 36%), rgba(7,19,13,0.94)",
-    border: "1px solid rgba(124,255,74,0.16)",
-    borderRadius: "28px",
-    padding: "20px"
+      "radial-gradient(circle at top right,rgba(168,85,247,0.12),transparent 36%), white",
+    border: "1px solid #ede9fe",
+    borderRadius: "30px",
+    padding: "20px",
+    boxShadow: "0 20px 50px rgba(88,28,135,0.10)"
   },
 
   healthCircle: {
     width: "160px",
     height: "160px",
     borderRadius: "50%",
-    border: "9px solid #7cff4a",
+    border: "9px solid #22c55e",
     margin: "20px auto 14px",
     display: "flex",
     alignItems: "center",
@@ -821,22 +851,24 @@ const styles = {
     flexDirection: "column",
     fontSize: "22px",
     fontWeight: "900",
-    boxShadow: "0 0 50px rgba(124,255,74,0.24)"
+    boxShadow: "0 0 50px rgba(34,197,94,0.24)",
+    color: "#16a34a"
   },
 
   healthText: {
     textAlign: "center",
-    color: "rgba(255,255,255,0.62)",
+    color: "#6b7280",
     fontSize: "13px",
     lineHeight: "1.45"
   },
 
   alertBox: {
     background:
-      "radial-gradient(circle at top right,rgba(250,204,21,0.10),transparent 36%), rgba(7,19,13,0.94)",
-    border: "1px solid rgba(250,204,21,0.18)",
-    borderRadius: "28px",
-    padding: "20px"
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 36%), white",
+    border: "1px solid #ede9fe",
+    borderRadius: "30px",
+    padding: "20px",
+    boxShadow: "0 20px 50px rgba(88,28,135,0.10)"
   },
 
   alertList: {
@@ -846,10 +878,11 @@ const styles = {
   },
 
   alertItem: {
-    background: "rgba(255,255,255,0.06)",
-    border: "1px solid rgba(255,255,255,0.08)",
+    background: "#fbfaff",
+    border: "1px solid #ede9fe",
     borderRadius: "15px",
-    padding: "11px"
+    padding: "11px",
+    color: "#111827"
   },
 
   analyticsGrid: {
@@ -857,6 +890,28 @@ const styles = {
     gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
     gap: "20px",
     marginBottom: "20px"
+  },
+
+  rankingMonitor: {
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    border: "1px solid #ede9fe",
+    borderRadius: "24px",
+    padding: "18px",
+    boxShadow: "0 18px 42px rgba(88,28,135,0.09)"
+  },
+
+  rankingItem: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: "12px",
+    padding: "10px 0",
+    borderBottom: "1px solid #ede9fe",
+    color: "#6b7280"
+  },
+
+  rankingEmpty: {
+    color: "#6b7280"
   },
 
   bottomGrid: {
@@ -867,10 +922,12 @@ const styles = {
   },
 
   summaryPanel: {
-    background: "rgba(7,19,13,0.94)",
-    border: "1px solid rgba(124,255,74,0.14)",
-    borderRadius: "28px",
-    padding: "20px"
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    border: "1px solid #ede9fe",
+    borderRadius: "30px",
+    padding: "20px",
+    boxShadow: "0 20px 50px rgba(88,28,135,0.10)"
   },
 
   summaryList: {
@@ -880,11 +937,11 @@ const styles = {
   },
 
   summaryItem: {
-    background: "rgba(255,255,255,0.06)",
-    border: "1px solid rgba(124,255,74,0.10)",
+    background: "#fbfaff",
+    border: "1px solid #ede9fe",
     borderRadius: "14px",
     padding: "11px",
-    color: "rgba(255,255,255,0.75)",
+    color: "#111827",
     fontSize: "13px"
   },
 
@@ -893,7 +950,7 @@ const styles = {
     justifyContent: "space-between",
     flexWrap: "wrap",
     gap: "10px",
-    color: "rgba(255,255,255,0.42)",
+    color: "#6b7280",
     fontSize: "12px",
     marginTop: "20px"
   }
