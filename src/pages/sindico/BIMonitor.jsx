@@ -11,7 +11,9 @@ import {
   gerarRankingModulos,
   buscarAtividadesRecentes,
   gerarComparativosBI,
-  gerarRankingsPremiumBI
+  gerarRankingsPremiumBI,
+  BI_MONITOR_SYNC_EVENT,
+  lerSincronizacaoBI
 } from "../../Services/biService";
 
 import DynamicCharts from "../../components/BI/DynamicCharts";
@@ -26,10 +28,16 @@ function BIMonitor() {
   const [hora, setHora] = useState("");
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState("");
   const [visaoAtiva, setVisaoAtiva] = useState(
-    () => localStorage.getItem("bi_monitor_visao") || "geral"
+    () => lerSincronizacaoBI().visao || "geral"
   );
   const [telaMonitor, setTelaMonitor] = useState(
-    () => localStorage.getItem("bi_monitor_tela") || "geral"
+    () => lerSincronizacaoBI().tela || "geral"
+  );
+  const [tipoGraficoMonitor, setTipoGraficoMonitor] = useState(
+    () => lerSincronizacaoBI().tipoGrafico || "barra"
+  );
+  const [periodoMonitor, setPeriodoMonitor] = useState(
+    () => lerSincronizacaoBI().periodo || "geral"
   );
 
   const [indicadores, setIndicadores] = useState({});
@@ -63,6 +71,7 @@ function BIMonitor() {
 
   useEffect(() => {
     carregarDados();
+    sincronizarComBIPrincipal();
 
     const refresh = setInterval(() => {
       carregarDados();
@@ -72,52 +81,112 @@ function BIMonitor() {
       setHora(new Date().toLocaleString("pt-BR"));
     }, 1000);
 
-    const sincronizador = setInterval(() => {
-      const visaoSalva = localStorage.getItem("bi_monitor_visao");
-      const telaSalva = localStorage.getItem("bi_monitor_tela");
+    function aoAlterarStorage(event) {
+      const chavesBI = [
+        "bi_monitor_sync",
+        "bi_monitor_tela",
+        "bi_monitor_visao",
+        "bi_monitor_tipo_grafico",
+        "bi_monitor_periodo"
+      ];
 
-      if (visaoSalva && visaoSalva !== visaoAtiva) {
-        setVisaoAtiva(visaoSalva);
+      if (!event.key || chavesBI.includes(event.key)) {
+        sincronizarComBIPrincipal();
+        carregarDados();
       }
+    }
 
-      if (telaSalva && telaSalva !== telaMonitor) {
-        setTelaMonitor(telaSalva);
-      }
-    }, 1000);
+    function aoSincronizarBI() {
+      sincronizarComBIPrincipal();
+      carregarDados();
+    }
+
+    window.addEventListener("storage", aoAlterarStorage);
+    window.addEventListener(BI_MONITOR_SYNC_EVENT, aoSincronizarBI);
+    window.addEventListener("focus", aoSincronizarBI);
 
     return () => {
       clearInterval(refresh);
       clearInterval(relogio);
-      clearInterval(sincronizador);
+      window.removeEventListener("storage", aoAlterarStorage);
+      window.removeEventListener(BI_MONITOR_SYNC_EVENT, aoSincronizarBI);
+      window.removeEventListener("focus", aoSincronizarBI);
     };
   }, []);
 
-  function carregarDados() {
-    setIndicadores(gerarIndicadoresBI("geral"));
-    setSaude(calcularSaudeCondominio("geral"));
-    setDistribuicao(gerarDistribuicaoGeral("geral"));
-    setCriticos(gerarIndicadoresCriticos("geral"));
-    setComparativo(gerarDadosComparativoGrafico("30dias"));
-    setComparativos(gerarComparativosBI("geral"));
-    setInsights(gerarInsightsBI("geral"));
-    setResumo(gerarResumoExecutivoBI("geral"));
-    setRanking(gerarRankingModulos("geral"));
-    setAtividades(buscarAtividadesRecentes("geral"));
-    setRankingsPremium(gerarRankingsPremiumBI("geral"));
+  function sincronizarComBIPrincipal() {
+    const sincronizacao = lerSincronizacaoBI();
+
+    setVisaoAtiva(sincronizacao.visao || "geral");
+    setTelaMonitor(sincronizacao.tela || "geral");
+    setTipoGraficoMonitor(sincronizacao.tipoGrafico || "barra");
+    setPeriodoMonitor(sincronizacao.periodo || "geral");
+  }
+
+  function carregarDados(periodoForcado) {
+    const sincronizacao = lerSincronizacaoBI();
+    const periodoAtual = periodoForcado || sincronizacao.periodo || "geral";
+    const periodoComparativo = periodoAtual === "geral" ? "30dias" : periodoAtual;
+
+    setPeriodoMonitor(periodoAtual);
+    setIndicadores(gerarIndicadoresBI(periodoAtual));
+    setSaude(calcularSaudeCondominio(periodoAtual));
+    setDistribuicao(gerarDistribuicaoGeral(periodoAtual));
+    setCriticos(gerarIndicadoresCriticos(periodoAtual));
+    setComparativo(gerarDadosComparativoGrafico(periodoComparativo));
+    setComparativos(gerarComparativosBI(periodoAtual));
+    setInsights(gerarInsightsBI(periodoAtual));
+    setResumo(gerarResumoExecutivoBI(periodoAtual));
+    setRanking(gerarRankingModulos(periodoAtual));
+    setAtividades(buscarAtividadesRecentes(periodoAtual));
+    setRankingsPremium(gerarRankingsPremiumBI(periodoAtual));
     setUltimaAtualizacao(new Date().toLocaleTimeString("pt-BR"));
+  }
+
+  function salvarSincronizacaoLocal(configuracao = {}) {
+    const atual = lerSincronizacaoBI();
+
+    const sincronizacao = {
+      ...atual,
+      ...configuracao,
+      atualizadoEm: Date.now()
+    };
+
+    localStorage.setItem("bi_monitor_tela", sincronizacao.tela || "geral");
+    localStorage.setItem("bi_monitor_visao", sincronizacao.visao || "geral");
+    localStorage.setItem(
+      "bi_monitor_tipo_grafico",
+      sincronizacao.tipoGrafico || tipoGraficoMonitor || "barra"
+    );
+    localStorage.setItem("bi_monitor_periodo", sincronizacao.periodo || periodoMonitor || "geral");
+    localStorage.setItem("bi_monitor_sync", JSON.stringify(sincronizacao));
   }
 
   function trocarTela(tela) {
     setTelaMonitor(tela);
-    localStorage.setItem("bi_monitor_tela", tela);
+
+    salvarSincronizacaoLocal({
+      tela,
+      visao: visaoAtiva,
+      tipoGrafico: tipoGraficoMonitor,
+      periodo: periodoMonitor
+    });
   }
 
   function trocarVisao(visao) {
     setTelaMonitor("geral");
     setVisaoAtiva(visao);
 
-    localStorage.setItem("bi_monitor_tela", "geral");
-    localStorage.setItem("bi_monitor_visao", visao);
+    salvarSincronizacaoLocal({
+      tela: "geral",
+      visao,
+      tipoGrafico: tipoGraficoMonitor,
+      periodo: periodoMonitor
+    });
+  }
+
+  function abrirCentralMonitor() {
+    window.open("/bi-monitor", "_blank");
   }
 
   const graficoPrincipal =
@@ -125,7 +194,7 @@ function BIMonitor() {
       ? {
           titulo: "Atual x período anterior",
           subtitulo: "Comparativo operacional dos últimos 30 dias",
-          tipo: "barra",
+          tipo: tipoGraficoMonitor,
           data: comparativo,
           dataKey: "atual",
           secondKey: "anterior"
@@ -134,7 +203,7 @@ function BIMonitor() {
       ? {
           titulo: "Indicadores críticos",
           subtitulo: "Pendências e sinais de atenção operacional",
-          tipo: "pizza",
+          tipo: tipoGraficoMonitor,
           data: criticos,
           dataKey: "total",
           secondKey: null
@@ -142,7 +211,7 @@ function BIMonitor() {
       : {
           titulo: "Distribuição geral",
           subtitulo: "Leitura consolidada dos principais módulos",
-          tipo: "barra",
+          tipo: tipoGraficoMonitor,
           data: distribuicao,
           dataKey: "total",
           secondKey: null
@@ -233,8 +302,16 @@ function BIMonitor() {
           </div>
 
           <div style={styles.updateText}>
-            Atualização automática: {ultimaAtualizacao || "--:--"}
+            Atualização automática: {ultimaAtualizacao || "--:--"} • {periodoMonitor} • {tipoGraficoMonitor}
           </div>
+
+          <button
+            type="button"
+            onClick={abrirCentralMonitor}
+            style={styles.centralButton}
+          >
+            🖥️ Abrir central
+          </button>
         </div>
       </header>
 
@@ -549,8 +626,7 @@ const styles = {
     width: "100%",
     overflowX: "hidden",
     overflowY: "auto",
-    background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.18),transparent 26%), radial-gradient(circle at bottom left,rgba(59,130,246,0.08),transparent 24%), linear-gradient(180deg,#ffffff,#f8f5ff)",
+    background: "radial-gradient(circle at top right,rgba(168,85,247,0.14),transparent 26%), radial-gradient(circle at bottom left,rgba(124,58,237,0.08),transparent 24%), linear-gradient(180deg,#ffffff,#f8f5ff)",
     color: "#111827",
     padding: "24px",
     boxSizing: "border-box",
@@ -565,17 +641,15 @@ const styles = {
     width: "100%",
     height: "3px",
     background: "linear-gradient(90deg,transparent,#a855f7,transparent)",
-    boxShadow: "0 0 28px rgba(168,85,247,0.85)"
+    boxShadow: "0 0 28px rgba(168,85,247,0.70)"
   },
 
   header: {
-    background:
-      "radial-gradient(circle at top right,rgba(255,255,255,0.18),transparent 30%), radial-gradient(circle at bottom left,rgba(168,85,247,0.26),transparent 34%), linear-gradient(135deg,#2e1065,#4c1d95,#7c3aed)",
+    background: "radial-gradient(circle at top right,rgba(255,255,255,0.18),transparent 30%), radial-gradient(circle at bottom left,rgba(168,85,247,0.24),transparent 34%), linear-gradient(135deg,#2e1065,#4c1d95,#7c3aed)",
     border: "1px solid rgba(255,255,255,0.18)",
     borderRadius: "40px",
     padding: "30px",
-    boxShadow:
-      "0 34px 90px rgba(88,28,135,0.26), 0 0 60px rgba(168,85,247,0.18)",
+    boxShadow: "0 30px 80px rgba(88,28,135,0.24), 0 0 55px rgba(168,85,247,0.16)",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "flex-start",
@@ -586,20 +660,16 @@ const styles = {
     overflow: "hidden"
   },
 
-  headerBrand: {
-    display: "flex",
-    alignItems: "center",
-    gap: "18px"
-  },
+  headerBrand: { display: "flex", alignItems: "center", gap: "18px" },
 
   logoImage: {
     width: "94px",
     height: "94px",
     objectFit: "contain",
     borderRadius: "28px",
-    background: "rgba(255,255,255,0.94)",
-    border: "1px solid rgba(255,255,255,0.28)",
-    boxShadow: "0 18px 40px rgba(0,0,0,0.22), 0 0 32px rgba(216,180,254,0.30)",
+    background: "rgba(255,255,255,0.96)",
+    border: "1px solid rgba(255,255,255,0.30)",
+    boxShadow: "0 18px 40px rgba(0,0,0,0.20), 0 0 30px rgba(216,180,254,0.28)",
     padding: "8px",
     boxSizing: "border-box"
   },
@@ -624,10 +694,7 @@ const styles = {
     color: "white"
   },
 
-  subtitle: {
-    margin: "10px 0 0",
-    color: "rgba(255,255,255,0.72)"
-  },
+  subtitle: { margin: "10px 0 0", color: "rgba(255,255,255,0.76)" },
 
   headerRight: {
     textAlign: "right",
@@ -654,19 +721,24 @@ const styles = {
     width: "9px",
     height: "9px",
     borderRadius: "50%",
-    background: "#22c55e",
-    boxShadow: "0 0 0 6px rgba(34,197,94,0.20)"
+    background: "#7cff4a",
+    boxShadow: "0 0 0 6px rgba(124,255,74,0.20)"
   },
 
-  clock: {
-    color: "white",
-    fontSize: "22px",
-    fontWeight: "900"
-  },
+  clock: { color: "white", fontSize: "22px", fontWeight: "900" },
 
-  updateText: {
-    color: "rgba(255,255,255,0.62)",
-    fontSize: "12px"
+  updateText: { color: "rgba(255,255,255,0.66)", fontSize: "12px" },
+
+  centralButton: {
+    marginTop: "6px",
+    background: "linear-gradient(135deg,#7cff4a,#b9ff8a)",
+    color: "#052e16",
+    border: "1px solid rgba(124,255,74,0.34)",
+    padding: "11px 15px",
+    borderRadius: "15px",
+    cursor: "pointer",
+    fontWeight: "900",
+    boxShadow: "0 0 24px rgba(124,255,74,0.24)"
   },
 
   monitorTabs: {
@@ -677,7 +749,7 @@ const styles = {
   },
 
   monitorTab: {
-    background: "white",
+    background: "#ffffff",
     color: "#4c1d95",
     border: "1px solid #ddd6fe",
     borderRadius: "16px",
@@ -702,13 +774,14 @@ const styles = {
   },
 
   kpiCard: {
-    background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
-    border: "1px solid #ede9fe",
+    background: "radial-gradient(circle at top right,rgba(168,85,247,0.09),transparent 34%), #ffffff",
+    border: "1px solid #ddd6fe",
     borderRadius: "26px",
     padding: "18px",
     boxShadow: "0 18px 45px rgba(88,28,135,0.10)",
-    minHeight: "118px"
+    minHeight: "118px",
+    position: "relative",
+    overflow: "hidden"
   },
 
   kpiDanger: {
@@ -717,39 +790,41 @@ const styles = {
   },
 
   kpiLabel: {
-    color: "#6b7280",
+    color: "#4b5563",
     fontWeight: "900",
     fontSize: "12px",
-    textTransform: "uppercase"
+    textTransform: "uppercase",
+    letterSpacing: "0.6px"
   },
 
   kpiValue: {
-    color: "#6d28d9",
+    color: "#16a34a",
     fontSize: "42px",
-    margin: "8px 0 4px"
+    margin: "8px 0 4px",
+    textShadow: "0 0 18px rgba(34,197,94,0.18)"
   },
 
   kpiDetail: {
     margin: 0,
-    color: "#7c3aed",
+    color: "#6b7280",
     fontSize: "12px",
     fontWeight: "800"
   },
 
   commandGrid: {
     display: "grid",
-    gridTemplateColumns: "minmax(320px,1.4fr) minmax(300px,0.8fr)",
+    gridTemplateColumns: "minmax(420px,1.35fr) minmax(320px,0.65fr)",
     gap: "20px",
     marginBottom: "20px",
     alignItems: "stretch"
   },
 
   mainPanel: {
-    background: "linear-gradient(135deg,#4c1d95,#6d28d9)",
+    background: "radial-gradient(circle at top right,rgba(255,255,255,0.14),transparent 34%), linear-gradient(135deg,#2e1065,#4c1d95,#6d28d9)",
     border: "1px solid rgba(255,255,255,0.18)",
     borderRadius: "30px",
     padding: "22px",
-    boxShadow: "0 22px 60px rgba(88,28,135,0.18)",
+    boxShadow: "0 24px 65px rgba(88,28,135,0.20)",
     minWidth: 0,
     color: "white"
   },
@@ -765,9 +840,9 @@ const styles = {
 
   panelBadge: {
     display: "inline-block",
-    background: "rgba(255,255,255,0.14)",
-    color: "white",
-    border: "1px solid rgba(255,255,255,0.22)",
+    background: "rgba(124,255,74,0.12)",
+    color: "#7cff4a",
+    border: "1px solid rgba(124,255,74,0.24)",
     padding: "7px 11px",
     borderRadius: "999px",
     fontWeight: "900",
@@ -776,35 +851,24 @@ const styles = {
 
   panelBadgeGold: {
     display: "inline-block",
-    background: "#f3e8ff",
-    color: "#6d28d9",
-    border: "1px solid #ddd6fe",
+    background: "rgba(250,204,21,0.14)",
+    color: "#facc15",
+    border: "1px solid rgba(250,204,21,0.24)",
     padding: "7px 11px",
     borderRadius: "999px",
     fontWeight: "900",
     fontSize: "11px"
   },
 
-  panelTitle: {
-    margin: "10px 0 0",
-    fontSize: "27px",
-    color: "white"
-  },
+  panelTitle: { margin: "10px 0 0", fontSize: "27px", color: "white" },
 
-  panelSubtitle: {
-    margin: "6px 0 0",
-    color: "rgba(255,255,255,0.72)"
-  },
+  panelSubtitle: { margin: "6px 0 0", color: "rgba(255,255,255,0.76)" },
 
-  viewButtons: {
-    display: "flex",
-    gap: "8px",
-    flexWrap: "wrap"
-  },
+  viewButtons: { display: "flex", gap: "8px", flexWrap: "wrap" },
 
   viewButton: {
     background: "rgba(255,255,255,0.12)",
-    color: "rgba(255,255,255,0.82)",
+    color: "rgba(255,255,255,0.86)",
     border: "1px solid rgba(255,255,255,0.18)",
     borderRadius: "13px",
     padding: "10px 12px",
@@ -813,27 +877,19 @@ const styles = {
   },
 
   viewButtonActive: {
-    background: "#22c55e",
+    background: "linear-gradient(135deg,#7cff4a,#b9ff8a)",
     color: "#052e16",
-    border: "1px solid rgba(255,255,255,0.34)"
+    border: "1px solid rgba(124,255,74,0.34)",
+    boxShadow: "0 0 24px rgba(124,255,74,0.22)"
   },
 
-  bigChart: {
-    minHeight: "520px",
-    width: "100%"
-  },
+  bigChart: { minHeight: "520px", width: "100%" },
 
-  sidePanel: {
-    display: "grid",
-    gridTemplateRows: "auto auto",
-    gap: "20px",
-    minWidth: 0
-  },
+  sidePanel: { display: "grid", gridTemplateRows: "auto auto", gap: "20px", minWidth: 0 },
 
   healthBox: {
-    background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.12),transparent 36%), white",
-    border: "1px solid #ede9fe",
+    background: "radial-gradient(circle at top right,rgba(168,85,247,0.09),transparent 36%), #ffffff",
+    border: "1px solid #ddd6fe",
     borderRadius: "30px",
     padding: "20px",
     boxShadow: "0 20px 50px rgba(88,28,135,0.10)"
@@ -843,7 +899,7 @@ const styles = {
     width: "160px",
     height: "160px",
     borderRadius: "50%",
-    border: "9px solid #22c55e",
+    border: "9px solid #7cff4a",
     margin: "20px auto 14px",
     display: "flex",
     alignItems: "center",
@@ -851,31 +907,21 @@ const styles = {
     flexDirection: "column",
     fontSize: "22px",
     fontWeight: "900",
-    boxShadow: "0 0 50px rgba(34,197,94,0.24)",
+    boxShadow: "0 0 45px rgba(124,255,74,0.18)",
     color: "#16a34a"
   },
 
-  healthText: {
-    textAlign: "center",
-    color: "#6b7280",
-    fontSize: "13px",
-    lineHeight: "1.45"
-  },
+  healthText: { textAlign: "center", color: "#4b5563", fontSize: "13px", lineHeight: "1.45" },
 
   alertBox: {
-    background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 36%), white",
-    border: "1px solid #ede9fe",
+    background: "radial-gradient(circle at top right,rgba(168,85,247,0.09),transparent 36%), #ffffff",
+    border: "1px solid #ddd6fe",
     borderRadius: "30px",
     padding: "20px",
     boxShadow: "0 20px 50px rgba(88,28,135,0.10)"
   },
 
-  alertList: {
-    marginTop: "14px",
-    display: "grid",
-    gap: "10px"
-  },
+  alertList: { marginTop: "14px", display: "grid", gap: "10px" },
 
   alertItem: {
     background: "#fbfaff",
@@ -893,9 +939,8 @@ const styles = {
   },
 
   rankingMonitor: {
-    background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
-    border: "1px solid #ede9fe",
+    background: "radial-gradient(circle at top right,rgba(168,85,247,0.09),transparent 34%), #ffffff",
+    border: "1px solid #ddd6fe",
     borderRadius: "24px",
     padding: "18px",
     boxShadow: "0 18px 42px rgba(88,28,135,0.09)"
@@ -907,12 +952,10 @@ const styles = {
     gap: "12px",
     padding: "10px 0",
     borderBottom: "1px solid #ede9fe",
-    color: "#6b7280"
+    color: "#374151"
   },
 
-  rankingEmpty: {
-    color: "#6b7280"
-  },
+  rankingEmpty: { color: "#6b7280" },
 
   bottomGrid: {
     display: "grid",
@@ -922,19 +965,14 @@ const styles = {
   },
 
   summaryPanel: {
-    background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
-    border: "1px solid #ede9fe",
+    background: "radial-gradient(circle at top right,rgba(168,85,247,0.09),transparent 34%), #ffffff",
+    border: "1px solid #ddd6fe",
     borderRadius: "30px",
     padding: "20px",
     boxShadow: "0 20px 50px rgba(88,28,135,0.10)"
   },
 
-  summaryList: {
-    marginTop: "14px",
-    display: "grid",
-    gap: "9px"
-  },
+  summaryList: { marginTop: "14px", display: "grid", gap: "9px" },
 
   summaryItem: {
     background: "#fbfaff",

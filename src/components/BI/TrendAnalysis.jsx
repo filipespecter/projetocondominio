@@ -63,8 +63,27 @@ function TrendAnalysis({ comparativos = {} }) {
           const positivo = item.percentual >= 0;
 
           return (
-            <div key={index} style={styles.card}>
-              <strong>{item.nome}</strong>
+            <div
+              key={index}
+              style={{
+                ...styles.card,
+                border: positivo
+                  ? "1px solid rgba(124,255,74,.22)"
+                  : "1px solid rgba(239,68,68,.20)"
+              }}
+            >
+              <div
+                style={{
+                  ...styles.topLine,
+                  background: positivo
+                    ? "linear-gradient(90deg,transparent,#7cff4a,transparent)"
+                    : "linear-gradient(90deg,transparent,#ef4444,transparent)"
+                }}
+              />
+
+              <span style={styles.label}>
+                {item.nome}
+              </span>
 
               <div
                 style={{
@@ -74,6 +93,12 @@ function TrendAnalysis({ comparativos = {} }) {
               >
                 {positivo ? "↗" : "↘"} {item.texto}
               </div>
+
+              <span style={styles.footer}>
+                {positivo
+                  ? "Tendência positiva"
+                  : "Tendência negativa"}
+              </span>
             </div>
           );
         })}
@@ -84,47 +109,120 @@ function TrendAnalysis({ comparativos = {} }) {
 
 const styles = {
   container: {
-    background: "rgba(7,19,13,0.95)",
-    border: "1px solid rgba(124,255,74,0.14)",
-    borderRadius: "24px",
-    padding: "22px"
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,.18),transparent 35%),linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.05))",
+
+    border: "1px solid rgba(216,180,254,.22)",
+
+    borderRadius: "28px",
+
+    padding: "24px",
+
+    boxShadow:
+      "0 22px 55px rgba(88,28,135,.20)",
+
+    backdropFilter: "blur(18px)"
   },
 
   header: {
-    marginBottom: "20px"
+    marginBottom: "22px"
   },
 
   badge: {
-    background: "rgba(124,255,74,0.12)",
-    color: "#b9ff8a",
-    padding: "7px 12px",
+    display: "inline-block",
+
+    background:
+      "rgba(124,255,74,.12)",
+
+    color: "#7cff4a",
+
+    border: "1px solid rgba(124,255,74,.25)",
+
+    padding: "8px 13px",
+
     borderRadius: "999px",
+
     fontSize: "12px",
-    fontWeight: "800"
+
+    fontWeight: "900"
   },
 
   title: {
-    color: "white",
-    marginTop: "12px"
+    color: "#1f2937",
+
+    marginTop: "14px",
+
+    fontSize: "28px"
   },
 
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
-    gap: "15px"
+
+    gridTemplateColumns:
+      "repeat(auto-fit,minmax(190px,1fr))",
+
+    gap: "18px"
   },
 
   card: {
-    background: "rgba(255,255,255,0.05)",
-    borderRadius: "18px",
-    padding: "16px",
-    border: "1px solid rgba(124,255,74,0.12)"
+    position: "relative",
+
+    overflow: "hidden",
+
+    background:
+      "rgba(255,255,255,.08)",
+
+    borderRadius: "22px",
+
+    padding: "18px",
+
+    backdropFilter: "blur(12px)"
+  },
+
+  topLine: {
+    position: "absolute",
+
+    top: 0,
+
+    left: "14px",
+
+    right: "14px",
+
+    height: "3px"
+  },
+
+  label: {
+    display: "block",
+
+    color: "#1f2937",
+
+    fontWeight: "900",
+
+    textTransform: "uppercase",
+
+    letterSpacing: ".8px",
+
+    fontSize: "12px"
   },
 
   value: {
+    marginTop: "16px",
+
+    fontSize: "30px",
+
+    fontWeight: "900"
+  },
+
+  footer: {
+    display: "block",
+
     marginTop: "12px",
-    fontSize: "26px",
-    fontWeight: "800"
+
+    color: "#4b5563",
+
+    fontSize: "12px",
+
+    fontWeight: "600"
   }
 };
 

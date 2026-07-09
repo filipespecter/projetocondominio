@@ -23,15 +23,28 @@ import {
   gerarComparativosBI,
   gerarDadosComparativoGrafico,
   gerarResumoExecutivoBI,
-  gerarRankingsPremiumBI
+  gerarRankingsPremiumBI,
+  emitirSincronizacaoBI,
+  lerSincronizacaoBI
 } from "../../Services/biService";
 
 import logoStar from "../../assets/images/logo-star-infinity.png";
 
 function BIAnalytics() {
-  const [periodo, setPeriodo] = useState("geral");
-  const [tipoGrafico, setTipoGrafico] = useState("barra");
-  const [graficoAtivo, setGraficoAtivo] = useState("distribuicao");
+  const [periodo, setPeriodo] = useState(
+    () => lerSincronizacaoBI().periodo || "geral"
+  );
+  const [tipoGrafico, setTipoGrafico] = useState(
+    () => lerSincronizacaoBI().tipoGrafico || "barra"
+  );
+  const [graficoAtivo, setGraficoAtivo] = useState(() => {
+    const visao = lerSincronizacaoBI().visao || "geral";
+
+    if (visao === "comparativo") return "comparativo";
+    if (visao === "criticos") return "criticos";
+
+    return "distribuicao";
+  });
   const [abaAtiva, setAbaAtiva] = useState(
     () => localStorage.getItem("bi_monitor_tela") || "geral"
   );
@@ -95,30 +108,68 @@ function BIAnalytics() {
     setUltimaAtualizacao(new Date().toLocaleString("pt-BR"));
   }
 
+  function obterVisaoMonitorPorGrafico(id) {
+    if (id === "comparativo") return "comparativo";
+    if (id === "criticos") return "criticos";
+
+    return "geral";
+  }
+
+  function notificarMonitor(configuracao = {}) {
+    emitirSincronizacaoBI({
+      tela: configuracao.tela || abaAtiva,
+      visao:
+        configuracao.visao || obterVisaoMonitorPorGrafico(graficoAtivo),
+      tipoGrafico: configuracao.tipoGrafico || tipoGrafico,
+      periodo: configuracao.periodo || periodo
+    });
+  }
+
+  function trocarPeriodo(id) {
+    setPeriodo(id);
+
+    emitirSincronizacaoBI({
+      tela: abaAtiva,
+      visao: obterVisaoMonitorPorGrafico(graficoAtivo),
+      tipoGrafico,
+      periodo: id
+    });
+  }
+
+  function trocarTipoGrafico(id) {
+    setTipoGrafico(id);
+
+    emitirSincronizacaoBI({
+      tela: abaAtiva,
+      visao: obterVisaoMonitorPorGrafico(graficoAtivo),
+      tipoGrafico: id,
+      periodo
+    });
+  }
+
   function trocarAba(id) {
     setAbaAtiva(id);
-    localStorage.setItem("bi_monitor_tela", id);
 
-    if (id === "geral") {
-      localStorage.setItem("bi_monitor_visao", "geral");
-    }
+    emitirSincronizacaoBI({
+      tela: id,
+      visao: id === "geral" ? "geral" : obterVisaoMonitorPorGrafico(graficoAtivo),
+      tipoGrafico,
+      periodo
+    });
   }
 
   function sincronizarMonitor(id) {
+    const visao = obterVisaoMonitorPorGrafico(id);
+
     setGraficoAtivo(id);
-    localStorage.setItem("bi_monitor_tela", "geral");
+    setAbaAtiva("geral");
 
-    if (id === "distribuicao") {
-      localStorage.setItem("bi_monitor_visao", "geral");
-    }
-
-    if (id === "comparativo") {
-      localStorage.setItem("bi_monitor_visao", "comparativo");
-    }
-
-    if (id === "criticos") {
-      localStorage.setItem("bi_monitor_visao", "criticos");
-    }
+    emitirSincronizacaoBI({
+      tela: "geral",
+      visao,
+      tipoGrafico,
+      periodo
+    });
   }
 
   const periodos = [
@@ -305,7 +356,7 @@ function BIAnalytics() {
             {periodos.map((item) => (
               <button
                 key={item.id}
-                onClick={() => setPeriodo(item.id)}
+                onClick={() => trocarPeriodo(item.id)}
                 style={{
                   ...styles.filterButton,
                   ...(periodo === item.id ? styles.filterActive : {})
@@ -324,7 +375,7 @@ function BIAnalytics() {
             {tiposGrafico.map((item) => (
               <button
                 key={item.id}
-                onClick={() => setTipoGrafico(item.id)}
+                onClick={() => trocarTipoGrafico(item.id)}
                 style={{
                   ...styles.filterButton,
                   ...(tipoGrafico === item.id ? styles.filterActive : {})
@@ -336,7 +387,7 @@ function BIAnalytics() {
           </div>
         </div>
 
-        <button style={styles.refreshButton} onClick={() => carregarBI()}>
+        <button style={styles.refreshButton} onClick={() => { carregarBI(); notificarMonitor(); }}>
           🔄 Atualizar BI
         </button>
       </section>
@@ -709,7 +760,7 @@ const styles = {
     fontFamily: "Arial",
     color: "#111827",
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.16),transparent 30%), radial-gradient(circle at bottom left,rgba(59,130,246,0.08),transparent 28%), linear-gradient(180deg,#ffffff,#f8f5ff)",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.14),transparent 28%), radial-gradient(circle at bottom left,rgba(124,58,237,0.08),transparent 28%), linear-gradient(180deg,#ffffff,#f8f5ff)",
     padding: "6px",
     boxSizing: "border-box",
     position: "relative"
@@ -719,16 +770,15 @@ const styles = {
     position: "relative",
     overflow: "hidden",
     background:
-      "radial-gradient(circle at top right,rgba(255,255,255,0.20),transparent 30%), radial-gradient(circle at bottom left,rgba(168,85,247,0.26),transparent 36%), linear-gradient(135deg,#2e1065,#4c1d95,#7c3aed)",
-    borderRadius: "44px",
-    padding: "42px",
+      "radial-gradient(circle at top right,rgba(255,255,255,0.20),transparent 30%), radial-gradient(circle at bottom left,rgba(168,85,247,0.24),transparent 36%), linear-gradient(135deg,#2e1065,#4c1d95,#7c3aed)",
+    borderRadius: "42px",
+    padding: "38px",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    gap: "32px",
+    gap: "28px",
     border: "1px solid rgba(255,255,255,0.20)",
-    boxShadow:
-      "0 34px 90px rgba(88,28,135,0.28), 0 0 65px rgba(168,85,247,0.20)",
+    boxShadow: "0 30px 80px rgba(88,28,135,0.24), 0 0 55px rgba(168,85,247,0.16)",
     marginBottom: "24px",
     color: "white"
   },
@@ -737,9 +787,9 @@ const styles = {
     position: "absolute",
     inset: 0,
     backgroundImage:
-      "linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg,rgba(255,255,255,0.05) 1px, transparent 1px)",
+      "linear-gradient(rgba(255,255,255,0.055) 1px, transparent 1px), linear-gradient(90deg,rgba(255,255,255,0.055) 1px, transparent 1px)",
     backgroundSize: "42px 42px",
-    opacity: 0.45,
+    opacity: 0.42,
     pointerEvents: "none"
   },
 
@@ -748,7 +798,7 @@ const styles = {
     width: "320px",
     height: "320px",
     borderRadius: "50%",
-    background: "rgba(216,180,254,0.25)",
+    background: "rgba(216,180,254,0.24)",
     filter: "blur(85px)",
     right: "-90px",
     top: "-90px"
@@ -768,14 +818,13 @@ const styles = {
   },
 
   logoImage: {
-    width: "96px",
-    height: "96px",
+    width: "92px",
+    height: "92px",
     objectFit: "contain",
-    borderRadius: "30px",
-    background: "rgba(255,255,255,0.95)",
-    border: "1px solid rgba(255,255,255,0.28)",
-    boxShadow:
-      "0 18px 40px rgba(0,0,0,0.22), 0 0 32px rgba(216,180,254,0.30)",
+    borderRadius: "28px",
+    background: "rgba(255,255,255,0.96)",
+    border: "1px solid rgba(255,255,255,0.30)",
+    boxShadow: "0 18px 40px rgba(0,0,0,0.20), 0 0 30px rgba(216,180,254,0.28)",
     padding: "8px",
     boxSizing: "border-box"
   },
@@ -794,22 +843,20 @@ const styles = {
 
   title: {
     margin: 0,
-    fontSize: "50px",
+    fontSize: "48px",
     letterSpacing: "-1px",
     color: "#ffffff",
     fontWeight: "900"
   },
 
   subtitle: {
-    color: "rgba(255,255,255,0.80)",
+    color: "rgba(255,255,255,0.82)",
     maxWidth: "760px",
     lineHeight: "1.6",
     fontSize: "15px"
   },
 
-  heroActions: {
-    marginTop: "22px"
-  },
+  heroActions: { marginTop: "22px" },
 
   heroStats: {
     display: "flex",
@@ -823,8 +870,8 @@ const styles = {
   heroCard: {
     width: "100%",
     maxWidth: "185px",
-    background: "rgba(255,255,255,0.12)",
-    border: "1px solid rgba(255,255,255,0.18)",
+    background: "rgba(255,255,255,0.13)",
+    border: "1px solid rgba(255,255,255,0.20)",
     padding: "17px",
     borderRadius: "22px",
     color: "white",
@@ -835,11 +882,11 @@ const styles = {
     width: "100%",
     maxWidth: "185px",
     background: "rgba(255,255,255,0.17)",
-    border: "1px solid rgba(255,255,255,0.25)",
+    border: "1px solid rgba(124,255,74,0.35)",
     color: "#ffffff",
     padding: "17px",
     borderRadius: "22px",
-    boxShadow: "0 0 35px rgba(216,180,254,0.22)"
+    boxShadow: "0 0 35px rgba(124,255,74,0.15)"
   },
 
   tabs: {
@@ -868,8 +915,7 @@ const styles = {
   },
 
   commandBar: {
-    background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    background: "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), #ffffff",
     border: "1px solid #ddd6fe",
     borderRadius: "30px",
     padding: "18px",
@@ -891,15 +937,11 @@ const styles = {
     letterSpacing: "1px"
   },
 
-  filterGroup: {
-    display: "flex",
-    gap: "10px",
-    flexWrap: "wrap"
-  },
+  filterGroup: { display: "flex", gap: "10px", flexWrap: "wrap" },
 
   filterButton: {
     background: "#fbfaff",
-    color: "#6b7280",
+    color: "#4b5563",
     border: "1px solid #ddd6fe",
     padding: "12px 15px",
     borderRadius: "15px",
@@ -947,18 +989,14 @@ const styles = {
   },
 
   rankingBox: {
-    background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
-    border: "1px solid #ede9fe",
+    background: "radial-gradient(circle at top right,rgba(168,85,247,0.09),transparent 34%), #ffffff",
+    border: "1px solid #ddd6fe",
     borderRadius: "24px",
     padding: "18px",
     boxShadow: "0 16px 38px rgba(88,28,135,0.08)"
   },
 
-  rankingTitle: {
-    margin: "0 0 12px",
-    color: "#4c1d95"
-  },
+  rankingTitle: { margin: "0 0 12px", color: "#4c1d95", fontWeight: "900" },
 
   rankingItem: {
     display: "flex",
@@ -966,13 +1004,10 @@ const styles = {
     gap: "12px",
     padding: "10px 0",
     borderBottom: "1px solid #ede9fe",
-    color: "#6b7280"
+    color: "#374151"
   },
 
-  rankingEmpty: {
-    color: "#6b7280",
-    margin: 0
-  },
+  rankingEmpty: { color: "#6b7280", margin: 0 },
 
   extraGrid: {
     display: "grid",
@@ -983,18 +1018,17 @@ const styles = {
 
   commandCenterGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
+    gridTemplateColumns: "minmax(420px,1.35fr) minmax(320px,0.65fr)",
     gap: "22px",
     marginBottom: "22px"
   },
 
   mainChartPanel: {
-    background:
-      "linear-gradient(135deg,#4c1d95,#6d28d9)",
+    background: "radial-gradient(circle at top right,rgba(255,255,255,0.14),transparent 34%), linear-gradient(135deg,#2e1065,#4c1d95,#6d28d9)",
     border: "1px solid rgba(255,255,255,0.18)",
     borderRadius: "34px",
     padding: "26px",
-    boxShadow: "0 22px 60px rgba(88,28,135,0.18)",
+    boxShadow: "0 24px 65px rgba(88,28,135,0.20)",
     color: "white",
     minHeight: "470px",
     minWidth: 0
@@ -1008,15 +1042,11 @@ const styles = {
     flexWrap: "wrap"
   },
 
-  chartTabs: {
-    display: "flex",
-    gap: "8px",
-    flexWrap: "wrap"
-  },
+  chartTabs: { display: "flex", gap: "8px", flexWrap: "wrap" },
 
   chartTab: {
     background: "rgba(255,255,255,0.12)",
-    color: "rgba(255,255,255,0.82)",
+    color: "rgba(255,255,255,0.86)",
     border: "1px solid rgba(255,255,255,0.18)",
     padding: "10px 12px",
     borderRadius: "13px",
@@ -1026,15 +1056,15 @@ const styles = {
   },
 
   chartTabActive: {
-    background: "#22c55e",
+    background: "linear-gradient(135deg,#7cff4a,#b9ff8a)",
     color: "#052e16",
-    border: "1px solid rgba(255,255,255,0.34)"
+    border: "1px solid rgba(124,255,74,0.34)",
+    boxShadow: "0 0 24px rgba(124,255,74,0.22)"
   },
 
   healthPanel: {
-    background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.13),transparent 35%), white",
-    border: "1px solid #ede9fe",
+    background: "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 35%), #ffffff",
+    border: "1px solid #ddd6fe",
     borderRadius: "34px",
     padding: "26px",
     color: "#111827",
@@ -1045,7 +1075,7 @@ const styles = {
     width: "190px",
     height: "190px",
     borderRadius: "50%",
-    border: "10px solid #22c55e",
+    border: "10px solid #7cff4a",
     margin: "30px auto 20px",
     display: "flex",
     alignItems: "center",
@@ -1053,22 +1083,13 @@ const styles = {
     flexDirection: "column",
     fontSize: "26px",
     fontWeight: "900",
-    boxShadow: "0 0 55px rgba(34,197,94,0.24)",
+    boxShadow: "0 0 45px rgba(124,255,74,0.18)",
     color: "#16a34a"
   },
 
-  healthText: {
-    color: "#6b7280",
-    lineHeight: "1.6",
-    textAlign: "center"
-  },
+  healthText: { color: "#4b5563", lineHeight: "1.6", textAlign: "center" },
 
-  healthList: {
-    marginTop: "18px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px"
-  },
+  healthList: { marginTop: "18px", display: "flex", flexDirection: "column", gap: "10px" },
 
   miniMetric: {
     background: "#fbfaff",
@@ -1088,9 +1109,8 @@ const styles = {
   },
 
   executivePanel: {
-    background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.13),transparent 35%), white",
-    border: "1px solid #ede9fe",
+    background: "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 35%), #ffffff",
+    border: "1px solid #ddd6fe",
     borderRadius: "34px",
     padding: "26px",
     color: "#111827",
@@ -1098,25 +1118,17 @@ const styles = {
   },
 
   insightsPanel: {
-    background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.13),transparent 35%), white",
-    border: "1px solid #ede9fe",
+    background: "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 35%), #ffffff",
+    border: "1px solid #ddd6fe",
     borderRadius: "34px",
     padding: "26px",
     color: "#111827",
     boxShadow: "0 22px 60px rgba(88,28,135,0.10)"
   },
 
-  centralBox: {
-    display: "grid",
-    gap: "10px",
-    marginBottom: "22px"
-  },
+  centralBox: { display: "grid", gap: "10px", marginBottom: "22px" },
 
-  insightsList: {
-    display: "grid",
-    gap: "12px"
-  },
+  insightsList: { display: "grid", gap: "12px" },
 
   insightItem: {
     background: "#fbfaff",
@@ -1128,8 +1140,8 @@ const styles = {
 
   insightType: {
     display: "inline-block",
-    color: "white",
-    background: "linear-gradient(135deg,#6d28d9,#a855f7)",
+    color: "#052e16",
+    background: "linear-gradient(135deg,#7cff4a,#b9ff8a)",
     padding: "5px 9px",
     borderRadius: "999px",
     fontSize: "11px",

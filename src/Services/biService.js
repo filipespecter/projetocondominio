@@ -6,6 +6,98 @@ function lerStorage(chave) {
   }
 }
 
+export const BI_MONITOR_SYNC_EVENT = "bi_sync_update";
+export const BI_MONITOR_SYNC_KEY = "bi_monitor_sync";
+
+const BI_SYNC_KEY = BI_MONITOR_SYNC_KEY;
+const BI_SYNC_EVENT = BI_MONITOR_SYNC_EVENT;
+
+export function lerSincronizacaoBI() {
+  try {
+    return JSON.parse(localStorage.getItem(BI_SYNC_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+
+export function emitirSincronizacaoBI(configuracao = {}) {
+  const dadosAtuais = lerSincronizacaoBI();
+
+  const novaConfiguracao = {
+    ...dadosAtuais,
+    ...configuracao,
+    atualizadoEm: Date.now()
+  };
+
+  try {
+    localStorage.setItem(
+      BI_SYNC_KEY,
+      JSON.stringify(novaConfiguracao)
+    );
+  } catch {
+    // Mantém o BI funcionando mesmo se o navegador bloquear storage.
+  }
+
+  try {
+    window.dispatchEvent(
+      new CustomEvent(BI_SYNC_EVENT, {
+        detail: novaConfiguracao
+      })
+    );
+  } catch {
+    // Compatibilidade com ambientes sem window/eventos.
+  }
+
+  return novaConfiguracao;
+}
+
+export function ouvirSincronizacaoBI(callback) {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+
+  const executarCallback = (dados = {}) => {
+    if (typeof callback === "function") {
+      callback({
+        ...lerSincronizacaoBI(),
+        ...dados
+      });
+    }
+  };
+
+  const eventoInterno = (event) => {
+    executarCallback(event.detail || {});
+  };
+
+  const eventoStorage = (event) => {
+    if (event.key === BI_SYNC_KEY) {
+      executarCallback(lerSincronizacaoBI());
+    }
+  };
+
+  window.addEventListener(BI_SYNC_EVENT, eventoInterno);
+  window.addEventListener("storage", eventoStorage);
+
+  return () => {
+    window.removeEventListener(BI_SYNC_EVENT, eventoInterno);
+    window.removeEventListener("storage", eventoStorage);
+  };
+}
+
+export function emitirAtualizacaoBI(origem = "bi") {
+  return emitirSincronizacaoBI({
+    origem
+  });
+}
+
+export function ouvirAtualizacaoBI(callback) {
+  return ouvirSincronizacaoBI(callback);
+}
+
+export function registrarMudancaBI(origem = "sistema") {
+  return emitirAtualizacaoBI(origem);
+}
+
 function normalizarTexto(valor) {
   return String(valor || "")
     .trim()
@@ -391,7 +483,7 @@ export function gerarIndicadoresBI(periodo = "geral", anterior = false) {
       status === "aberta" ||
       status === "pendente" ||
       status === "encaminhada" ||
-      status === "em tratamento" ||
+            status === "em tratamento" ||
       status === "em análise" ||
       status === "em analise" ||
       status === "novo" ||
@@ -644,7 +736,6 @@ export function gerarComparativosBI(periodo = "geral") {
     }
   };
 }
-
 export function gerarDadosComparativoGrafico(periodo = "geral") {
   const comparativos = gerarComparativosBI(periodo);
 
@@ -682,167 +773,125 @@ export function gerarDadosComparativoGrafico(periodo = "geral") {
   ];
 }
 
-export function gerarResumoExecutivoBI(periodo = "geral") {
-  const indicadores = gerarIndicadoresBI(periodo);
-  const comparativos = gerarComparativosBI(periodo);
-  const saude = calcularSaudeCondominio(periodo);
-
-  const mensagens = [];
-
-  if (periodo === "geral") {
-    mensagens.push("A visão geral mostra o acumulado completo do condomínio.");
-  } else {
-    const variacoes = [
-      comparativos.visitantes.variacao,
-      comparativos.encomendas.variacao,
-      comparativos.reservas.variacao,
-      comparativos.ocorrencias.variacao,
-      comparativos.sugestoes.variacao,
-      comparativos.reclamacoes.variacao
-    ];
-
-    const subidas = variacoes.filter((v) => v.direcao === "subiu").length;
-    const quedas = variacoes.filter((v) => v.direcao === "caiu").length;
-
-    if (subidas > quedas) {
-      mensagens.push(
-        "O período atual apresenta aumento operacional em relação ao período anterior."
-      );
-    } else if (quedas > subidas) {
-      mensagens.push(
-        "O período atual apresenta redução de movimentações em relação ao período anterior."
-      );
-    } else {
-      mensagens.push(
-        "O período atual está estável em comparação ao período anterior."
-      );
-    }
-  }
-
-  if (indicadores.totalPendentes > 0) {
-    mensagens.push(
-      `${indicadores.totalPendentes} encomenda(s) ainda aguardam retirada.`
-    );
-  }
-
-  if (indicadores.totalReservasPendentes > 0) {
-    mensagens.push(
-      `${indicadores.totalReservasPendentes} reserva(s) aguardam análise.`
-    );
-  }
-
-  if (indicadores.totalOcorrenciasAbertas > 0) {
-    mensagens.push(
-      `${indicadores.totalOcorrenciasAbertas} ocorrência(s) estão abertas e precisam de acompanhamento.`
-    );
-  }
-
-  if (indicadores.totalReclamacoesAbertas > 0) {
-    mensagens.push(
-      `${indicadores.totalReclamacoesAbertas} reclamação(ões) precisam de atenção.`
-    );
-  }
-
-  mensagens.push(
-    `Saúde operacional atual: ${saude.status} (${saude.pontuacao}%).`
-  );
-
-  return mensagens;
+export function gerarHeatMap(periodo = "geral") {
+  return gerarIndicadoresCriticos(periodo)
+    .sort((a, b) => b.total - a.total);
 }
 
-export function gerarInsightsBI(periodo = "geral") {
+export function gerarAtividadesRecentes(periodo = "geral") {
+  const dados = buscarDadosBI(periodo);
+
+  const ordenar = (lista = []) =>
+    [...lista]
+      .sort((a, b) => {
+        const dataA = obterDataRegistro(a)?.getTime() || 0;
+        const dataB = obterDataRegistro(b)?.getTime() || 0;
+
+        return dataB - dataA;
+      })
+      .slice(0, 5);
+
+  return {
+    visitantes: ordenar(dados.visitantes),
+    encomendas: ordenar(dados.encomendas),
+    reservas: ordenar(dados.reservas),
+    ocorrencias: ordenar(dados.ocorrencias),
+    prestadores: ordenar(dados.prestadores),
+    auditoria: ordenar(dados.auditoria)
+  };
+}
+
+export function gerarResumoExecutivo(periodo = "geral") {
   const indicadores = gerarIndicadoresBI(periodo);
-  const saude = calcularSaudeCondominio(periodo);
-  const comparativos = gerarComparativosBI(periodo);
+
+  const resumo = [];
+
+  resumo.push(
+    `O condomínio possui ${indicadores.totalMoradores} moradores cadastrados distribuídos em ${indicadores.totalApartamentos} apartamentos.`
+  );
+
+  resumo.push(
+    `Existem ${indicadores.totalVisitantesAtivos} visitantes ativos e ${indicadores.totalPendentes} encomendas aguardando retirada.`
+  );
+
+  resumo.push(
+    `Há ${indicadores.totalOcorrenciasAbertas} ocorrências abertas e ${indicadores.totalPendenciasSindico} pendências administrativas.`
+  );
+
+  resumo.push(
+    `${indicadores.totalPrestadoresExecucao} prestadores estão em execução e ${indicadores.totalAreasManutencao} áreas encontram-se em manutenção.`
+  );
+
+  return resumo;
+}
+
+export function gerarPainelOperacional(periodo = "geral") {
+  return {
+    indicadores: gerarIndicadoresBI(periodo),
+    ranking: gerarRankingModulos(periodo),
+    atividades: gerarAtividadesRecentes(periodo)
+  };
+}
+
+export function gerarPainelSeguranca(periodo = "geral") {
+  return {
+    indicadores: gerarIndicadoresBI(periodo),
+    saude: calcularSaudeCondominio(periodo),
+    insights: gerarInsights(periodo)
+  };
+}
+
+export function gerarInsights(periodo = "geral") {
+  const indicadores = gerarIndicadoresBI(periodo);
 
   const insights = [];
 
-  if (periodo !== "geral") {
+  if (indicadores.totalVisitantesAtivos > 10) {
     insights.push({
-      tipo: "tendência",
-      titulo: "Comparativo de visitantes",
-      texto: `Visitantes: ${comparativos.visitantes.variacao.texto} em relação ao período anterior.`
-    });
-
-    insights.push({
-      tipo: "tendência",
-      titulo: "Comparativo de reservas",
-      texto: `Reservas: ${comparativos.reservas.variacao.texto} em relação ao período anterior.`
-    });
-
-    insights.push({
-      tipo: "tendência",
-      titulo: "Sugestões e reclamações",
-      texto: `Sugestões: ${comparativos.sugestoes.variacao.texto} | Reclamações: ${comparativos.reclamacoes.variacao.texto}.`
+      tipo: "Atenção",
+      titulo: "Grande fluxo de visitantes",
+      texto: "O número de visitantes ativos está acima da média."
     });
   }
 
-  if (indicadores.totalPendentes > 0) {
+  if (indicadores.totalPendentes > 5) {
     insights.push({
-      tipo: "atenção",
-      titulo: "Encomendas pendentes",
-      texto: `${indicadores.totalPendentes} encomenda(s) aguardando retirada.`
-    });
-  }
-
-  if (indicadores.totalReservasPendentes > 0) {
-    insights.push({
-      tipo: "atenção",
-      titulo: "Reservas pendentes",
-      texto: `${indicadores.totalReservasPendentes} reserva(s) aguardam análise.`
+      tipo: "Crítico",
+      titulo: "Encomendas acumuladas",
+      texto: "Existem muitas encomendas aguardando retirada."
     });
   }
 
   if (indicadores.totalOcorrenciasAbertas > 0) {
     insights.push({
-      tipo: "crítico",
-      titulo: "Ocorrências abertas",
-      texto: `${indicadores.totalOcorrenciasAbertas} ocorrência(s) precisam de acompanhamento.`
+      tipo: "Crítico",
+      titulo: "Ocorrências em aberto",
+      texto: "Há registros aguardando resolução pelo síndico."
     });
   }
 
-  if (indicadores.totalReclamacoesAbertas > 0) {
+  if (indicadores.totalReservasPendentes > 0) {
     insights.push({
-      tipo: "crítico",
-      titulo: "Reclamações abertas",
-      texto: `${indicadores.totalReclamacoesAbertas} reclamação(ões) precisam de atenção.`
+      tipo: "Atenção",
+      titulo: "Reservas pendentes",
+      texto: "Existem reservas aguardando aprovação."
     });
   }
 
-  if (indicadores.totalSugestoesAbertas > 0) {
+  if (
+    indicadores.totalPendentes === 0 &&
+    indicadores.totalOcorrenciasAbertas === 0
+  ) {
     insights.push({
-      tipo: "gestão",
-      titulo: "Sugestões dos moradores",
-      texto: `${indicadores.totalSugestoesAbertas} sugestão(ões) estão abertas para análise.`
-    });
-  }
-
-  if (indicadores.totalReservasAtivas > 0) {
-    insights.push({
-      tipo: "positivo",
-      titulo: "Reservas ativas",
-      texto: `${indicadores.totalReservasAtivas} reserva(s) confirmadas no período.`
-    });
-  }
-
-  if (indicadores.totalVisitantesAtivos > 0) {
-    insights.push({
-      tipo: "operação",
-      titulo: "Visitantes ativos",
-      texto: `${indicadores.totalVisitantesAtivos} visitante(s) constam como ativos.`
-    });
-  }
-
-  if (insights.length === 0) {
-    insights.push({
-      tipo: "positivo",
-      titulo: "Operação tranquila",
-      texto: `Nenhuma pendência crítica encontrada. Saúde atual: ${saude.status}.`
+      tipo: "Positivo",
+      titulo: "Operação estável",
+      texto: "Nenhum indicador crítico foi encontrado."
     });
   }
 
   return insights;
 }
+
 
 export function buscarAtividadesRecentes(periodo = "geral") {
   const dados = buscarDadosBI(periodo);
@@ -857,3 +906,38 @@ export function buscarAtividadesRecentes(periodo = "geral") {
     operacional: dados.operacional.slice(-4).reverse()
   };
 }
+
+export function gerarResumoExecutivoBI(periodo = "geral") {
+  return gerarResumoExecutivo(periodo);
+}
+
+export function gerarInsightsBI(periodo = "geral") {
+  return gerarInsights(periodo);
+}
+
+export default {
+  emitirAtualizacaoBI,
+  ouvirAtualizacaoBI,
+  registrarMudancaBI,
+  emitirSincronizacaoBI,
+  lerSincronizacaoBI,
+  ouvirSincronizacaoBI,
+  buscarDadosBI,
+  gerarIndicadoresBI,
+  calcularSaudeCondominio,
+  gerarDistribuicaoGeral,
+  gerarIndicadoresCriticos,
+  gerarRankingsPremiumBI,
+  gerarRankingModulos,
+  gerarComparativosBI,
+  gerarDadosComparativoGrafico,
+  gerarHeatMap,
+  gerarAtividadesRecentes,
+  buscarAtividadesRecentes,
+  gerarResumoExecutivo,
+  gerarResumoExecutivoBI,
+  gerarPainelOperacional,
+  gerarPainelSeguranca,
+  gerarInsights,
+  gerarInsightsBI
+};

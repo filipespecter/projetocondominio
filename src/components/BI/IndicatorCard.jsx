@@ -1,11 +1,13 @@
 function IndicatorCard({ icon, title, value, detail }) {
   return (
     <div style={styles.indicatorCard}>
+      <div style={styles.topLine}></div>
+
       <div style={styles.indicatorIcon}>
         {icon}
       </div>
 
-      <div>
+      <div style={styles.content}>
         <p style={styles.indicatorLabel}>
           {title}
         </p>
@@ -24,48 +26,121 @@ function IndicatorCard({ icon, title, value, detail }) {
 
 const styles = {
   indicatorCard: {
-    background:
-      "linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.035))",
-    border: "1px solid rgba(124,255,74,0.14)",
-    borderRadius: "28px",
-    padding: "20px",
+    position: "relative",
+    overflow: "hidden",
+
     display: "flex",
     alignItems: "center",
-    gap: "14px",
-    boxShadow: "0 14px 35px rgba(0,0,0,0.18)",
-    backdropFilter: "blur(14px)"
+    gap: "18px",
+
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,.18),transparent 35%),linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.05))",
+
+    border: "1px solid rgba(216,180,254,.22)",
+
+    borderRadius: "28px",
+
+    padding: "22px",
+
+    backdropFilter: "blur(18px)",
+
+    boxShadow:
+      "0 24px 55px rgba(88,28,135,.18)"
+  },
+
+  topLine: {
+    position: "absolute",
+
+    top: 0,
+
+    left: "18px",
+
+    right: "18px",
+
+    height: "3px",
+
+    background:
+      "linear-gradient(90deg,transparent,#22c55e,transparent)",
+
+    boxShadow:
+      "0 0 20px rgba(34,197,94,.45)"
   },
 
   indicatorIcon: {
-    width: "58px",
-    height: "58px",
+    width: "64px",
+
+    height: "64px",
+
     borderRadius: "20px",
-    background: "linear-gradient(135deg,#07130d,#7cff4a)",
+
     display: "flex",
+
     alignItems: "center",
+
     justifyContent: "center",
+
     fontSize: "28px",
-    color: "white",
-    boxShadow: "0 0 30px rgba(124,255,74,0.18)"
+
+    color: "#052e16",
+
+    background:
+      "linear-gradient(135deg,#7cff4a,#22c55e)",
+
+    boxShadow:
+      "0 0 22px rgba(124,255,74,.30)"
+  },
+
+  content: {
+    flex: 1
   },
 
   indicatorLabel: {
     margin: 0,
-    color: "rgba(255,255,255,0.58)",
-    fontSize: "13px",
-    fontWeight: "900"
+
+    color: "#1f2937",
+
+    fontSize: "12px",
+
+    fontWeight: "900",
+
+    textTransform: "uppercase",
+
+    letterSpacing: "1px"
   },
 
   indicatorValue: {
-    margin: "4px 0",
+    margin: "8px 0",
+
     color: "#7cff4a",
-    fontSize: "34px",
-    textShadow: "0 0 20px rgba(124,255,74,0.20)"
+
+    fontSize: "40px",
+
+    fontWeight: "900",
+
+    textShadow:
+      "0 0 18px rgba(124,255,74,.22)"
   },
 
   indicatorDetail: {
-    color: "#b9ff8a",
-    fontSize: "12px"
+    display: "inline-block",
+
+    marginTop: "2px",
+
+    padding: "6px 12px",
+
+    borderRadius: "999px",
+
+    background:
+      "rgba(124,255,74,.10)",
+
+    border:
+      "1px solid rgba(124,255,74,.22)",
+
+    color: "#4b5563",
+
+    fontSize: "12px",
+
+    fontWeight: "700"
   }
 };
 

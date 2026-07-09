@@ -1,5 +1,15 @@
 import ActivityColumn from "./ActivityColumn";
 
+import {
+  FaCogs,
+  FaBoxOpen,
+  FaCalendarCheck,
+  FaUsers,
+  FaExclamationTriangle,
+  FaTrophy,
+  FaBolt
+} from "react-icons/fa";
+
 function OperationalDashboard({
   ranking = [],
   atividades = {},
@@ -9,7 +19,7 @@ function OperationalDashboard({
     <div style={styles.container}>
       <div style={styles.header}>
         <span style={styles.badge}>
-          ⚙ Operação do condomínio
+          <FaCogs /> Operação do condomínio
         </span>
 
         <h2 style={styles.title}>
@@ -22,35 +32,16 @@ function OperationalDashboard({
       </div>
 
       <div style={styles.kpiGrid}>
-        <MiniCard
-          title="Encomendas"
-          value={indicadores.totalEncomendas || 0}
-          detail={`${indicadores.totalPendentes || 0} pendentes`}
-        />
-
-        <MiniCard
-          title="Reservas"
-          value={indicadores.totalReservas || 0}
-          detail={`${indicadores.totalReservasAtivas || 0} ativas`}
-        />
-
-        <MiniCard
-          title="Visitantes"
-          value={indicadores.totalVisitantes || 0}
-          detail={`${indicadores.totalVisitantesAtivos || 0} ativos`}
-        />
-
-        <MiniCard
-          title="Ocorrências"
-          value={indicadores.totalOcorrencias || 0}
-          detail={`${indicadores.totalOcorrenciasAbertas || 0} abertas`}
-        />
+        <MiniCard title="Encomendas" value={indicadores.totalEncomendas || 0} detail={`${indicadores.totalPendentes || 0} pendentes`} />
+        <MiniCard title="Reservas" value={indicadores.totalReservas || 0} detail={`${indicadores.totalReservasAtivas || 0} ativas`} />
+        <MiniCard title="Visitantes" value={indicadores.totalVisitantes || 0} detail={`${indicadores.totalVisitantesAtivos || 0} ativos`} />
+        <MiniCard title="Ocorrências" value={indicadores.totalOcorrencias || 0} detail={`${indicadores.totalOcorrenciasAbertas || 0} abertas`} />
       </div>
 
       <div style={styles.mainGrid}>
         <div style={styles.rankingPanel}>
           <span style={styles.smallBadge}>
-            Ranking operacional
+            <FaTrophy /> Ranking operacional
           </span>
 
           <h3 style={styles.panelTitle}>
@@ -66,11 +57,8 @@ function OperationalDashboard({
               ranking.map((item, index) => (
                 <div key={item.nome} style={styles.rankingItem}>
                   <div>
-                    <span style={styles.position}>
-                      #{index + 1}
-                    </span>
-
-                    <strong>{item.nome}</strong>
+                    <span style={styles.position}>#{index + 1}</span>
+                    <strong style={styles.rankingName}>{item.nome}</strong>
                   </div>
 
                   <span style={styles.rankingValue}>
@@ -84,7 +72,7 @@ function OperationalDashboard({
 
         <div style={styles.activityPanel}>
           <span style={styles.smallBadgeGold}>
-            Tempo real
+            <FaBolt /> Tempo real
           </span>
 
           <h3 style={styles.panelTitle}>
@@ -92,33 +80,10 @@ function OperationalDashboard({
           </h3>
 
           <div style={styles.activityGrid}>
-            <ActivityColumn
-              title="Visitantes"
-              icon="🚶"
-              items={atividades.visitantes || []}
-              empty="Nenhum visitante recente"
-            />
-
-            <ActivityColumn
-              title="Encomendas"
-              icon="📦"
-              items={atividades.encomendas || []}
-              empty="Nenhuma encomenda recente"
-            />
-
-            <ActivityColumn
-              title="Reservas"
-              icon="📅"
-              items={atividades.reservas || []}
-              empty="Nenhuma reserva recente"
-            />
-
-            <ActivityColumn
-              title="Ocorrências"
-              icon="🚨"
-              items={atividades.ocorrencias || []}
-              empty="Nenhuma ocorrência recente"
-            />
+            <ActivityColumn title="Visitantes" icon={<FaUsers />} items={atividades.visitantes || []} empty="Nenhum visitante recente" />
+            <ActivityColumn title="Encomendas" icon={<FaBoxOpen />} items={atividades.encomendas || []} empty="Nenhuma encomenda recente" />
+            <ActivityColumn title="Reservas" icon={<FaCalendarCheck />} items={atividades.reservas || []} empty="Nenhuma reserva recente" />
+            <ActivityColumn title="Ocorrências" icon={<FaExclamationTriangle />} items={atividades.ocorrencias || []} empty="Nenhuma ocorrência recente" />
           </div>
         </div>
       </div>
@@ -129,6 +94,8 @@ function OperationalDashboard({
 function MiniCard({ title, value, detail }) {
   return (
     <div style={styles.miniCard}>
+      <div style={styles.topLine}></div>
+
       <span style={styles.miniLabel}>
         {title}
       </span>
@@ -153,16 +120,19 @@ const styles = {
 
   header: {
     background:
-      "radial-gradient(circle at top right,rgba(124,255,74,0.12),transparent 35%), rgba(7,19,13,0.95)",
-    border: "1px solid rgba(124,255,74,0.14)",
-    borderRadius: "28px",
-    padding: "26px"
+      "radial-gradient(circle at top right,rgba(168,85,247,0.18),transparent 35%), linear-gradient(135deg,#2e1065,#4c1d95,#7c3aed)",
+    border: "1px solid rgba(216,180,254,0.22)",
+    borderRadius: "30px",
+    padding: "28px",
+    boxShadow: "0 24px 60px rgba(88,28,135,0.22)"
   },
 
   badge: {
-    display: "inline-block",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "8px",
     background: "rgba(124,255,74,0.12)",
-    color: "#b9ff8a",
+    color: "#7cff4a",
     border: "1px solid rgba(124,255,74,0.28)",
     padding: "8px 12px",
     borderRadius: "999px",
@@ -173,77 +143,98 @@ const styles = {
   title: {
     margin: "14px 0 0",
     color: "white",
-    fontSize: "28px"
+    fontSize: "30px"
   },
 
   subtitle: {
     margin: "8px 0 0",
-    color: "rgba(255,255,255,0.62)"
+    color: "rgba(255,255,255,0.72)"
   },
 
   kpiGrid: {
     display: "grid",
-    gridTemplateColumns:
-      "repeat(auto-fit,minmax(220px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
     gap: "16px"
   },
 
   miniCard: {
+    position: "relative",
+    overflow: "hidden",
     background:
-      "linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.035))",
-    border: "1px solid rgba(124,255,74,0.14)",
-    borderRadius: "24px",
-    padding: "20px",
-    boxShadow: "0 18px 45px rgba(0,0,0,0.18)"
+      "radial-gradient(circle at top right,rgba(168,85,247,0.18),transparent 35%), linear-gradient(180deg,rgba(255,255,255,0.10),rgba(255,255,255,0.05))",
+    border: "1px solid rgba(216,180,254,0.22)",
+    borderRadius: "26px",
+    padding: "22px",
+    boxShadow: "0 22px 55px rgba(88,28,135,0.20)",
+    backdropFilter: "blur(16px)"
+  },
+
+  topLine: {
+    position: "absolute",
+    top: 0,
+    left: "18px",
+    right: "18px",
+    height: "3px",
+    background: "linear-gradient(90deg,transparent,#7cff4a,transparent)",
+    boxShadow: "0 0 20px rgba(124,255,74,0.55)"
   },
 
   miniLabel: {
-    color: "rgba(255,255,255,0.58)",
-    fontSize: "13px",
-    fontWeight: "900"
+    color: "#1f2937",
+    fontSize: "12px",
+    fontWeight: "900",
+    textTransform: "uppercase",
+    letterSpacing: "1px"
   },
 
   miniValue: {
     margin: "10px 0 4px",
-    fontSize: "38px",
+    fontSize: "40px",
     color: "#7cff4a",
-    textShadow: "0 0 20px rgba(124,255,74,0.18)"
+    textShadow: "0 0 20px rgba(124,255,74,0.35)"
   },
 
   miniDetail: {
     margin: 0,
-    color: "#b9ff8a",
-    fontSize: "13px"
+    color: "#4b5563",
+    fontSize: "13px",
+    fontWeight: "700"
   },
 
   mainGrid: {
     display: "grid",
-    gridTemplateColumns:
-      "minmax(300px,0.75fr) minmax(420px,1.25fr)",
+    gridTemplateColumns: "minmax(300px,0.75fr) minmax(420px,1.25fr)",
     gap: "22px"
   },
 
   rankingPanel: {
     background:
-      "radial-gradient(circle at top right,rgba(124,255,74,0.13),transparent 35%), rgba(7,19,13,0.96)",
-    border: "1px solid rgba(124,255,74,0.14)",
-    borderRadius: "28px",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.18),transparent 35%), linear-gradient(180deg,rgba(255,255,255,0.10),rgba(255,255,255,0.05))",
+    border: "1px solid rgba(216,180,254,0.22)",
+    borderRadius: "30px",
     padding: "26px",
-    color: "white"
+    color: "white",
+    boxShadow: "0 22px 55px rgba(88,28,135,0.20)",
+    backdropFilter: "blur(16px)"
   },
 
   activityPanel: {
-    background: "rgba(7,19,13,0.94)",
-    border: "1px solid rgba(124,255,74,0.14)",
-    borderRadius: "28px",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.16),transparent 35%), linear-gradient(180deg,rgba(255,255,255,0.09),rgba(255,255,255,0.045))",
+    border: "1px solid rgba(216,180,254,0.22)",
+    borderRadius: "30px",
     padding: "26px",
-    color: "white"
+    color: "white",
+    boxShadow: "0 22px 55px rgba(88,28,135,0.20)",
+    backdropFilter: "blur(16px)"
   },
 
   smallBadge: {
-    display: "inline-block",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "8px",
     background: "rgba(124,255,74,0.12)",
-    color: "#b9ff8a",
+    color: "#7cff4a",
     border: "1px solid rgba(124,255,74,0.24)",
     padding: "7px 11px",
     borderRadius: "999px",
@@ -252,7 +243,9 @@ const styles = {
   },
 
   smallBadgeGold: {
-    display: "inline-block",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "8px",
     background: "rgba(250,204,21,0.14)",
     color: "#facc15",
     border: "1px solid rgba(250,204,21,0.24)",
@@ -264,8 +257,9 @@ const styles = {
 
   panelTitle: {
     margin: "14px 0 18px",
-    color: "white",
-    fontSize: "24px"
+    color: "#1f2937",
+    fontSize: "24px",
+    fontWeight: "900"
   },
 
   rankingList: {
@@ -275,9 +269,9 @@ const styles = {
   },
 
   rankingItem: {
-    background: "rgba(255,255,255,0.08)",
-    border: "1px solid rgba(124,255,74,0.12)",
-    borderRadius: "16px",
+    background: "rgba(255,255,255,0.09)",
+    border: "1px solid rgba(216,180,254,0.16)",
+    borderRadius: "18px",
     padding: "14px",
     display: "flex",
     justifyContent: "space-between",
@@ -291,9 +285,15 @@ const styles = {
     fontWeight: "900"
   },
 
+  rankingName: {
+    color: "#1f2937",
+    fontWeight: "900"
+  },
+
   rankingValue: {
     background: "rgba(124,255,74,0.12)",
-    color: "#b9ff8a",
+    color: "#7cff4a",
+    border: "1px solid rgba(124,255,74,0.24)",
     padding: "7px 11px",
     borderRadius: "999px",
     fontWeight: "900"
@@ -301,16 +301,17 @@ const styles = {
 
   activityGrid: {
     display: "grid",
-    gridTemplateColumns:
-      "repeat(auto-fit,minmax(200px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))",
     gap: "16px"
   },
 
   empty: {
-    background: "rgba(255,255,255,0.06)",
+    background: "rgba(255,255,255,0.08)",
+    border: "1px solid rgba(216,180,254,0.14)",
     borderRadius: "16px",
     padding: "16px",
-    color: "rgba(255,255,255,0.55)"
+    color: "#4b5563",
+    fontWeight: "600"
   }
 };
 

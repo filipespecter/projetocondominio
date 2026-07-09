@@ -24,35 +24,78 @@ const styles = {
   panelHeader: {
     display: "flex",
     justifyContent: "space-between",
-    gap: "14px",
     alignItems: "flex-start",
-    marginBottom: "20px"
+    gap: "14px",
+    marginBottom: "22px",
+    position: "relative"
   },
 
   panelBadge: {
-    background: "rgba(124,255,74,0.12)",
-    color: "#b9ff8a",
-    border: "1px solid rgba(124,255,74,0.28)",
-    padding: "7px 11px",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "6px",
+
+    background:
+      "linear-gradient(135deg,rgba(124,255,74,.16),rgba(124,255,74,.08))",
+
+    color: "#7cff4a",
+
+    border: "1px solid rgba(124,255,74,.28)",
+
+    padding: "8px 14px",
+
     borderRadius: "999px",
+
     fontWeight: "900",
-    fontSize: "11px"
+
+    fontSize: "11px",
+
+    letterSpacing: ".7px",
+
+    textTransform: "uppercase",
+
+    boxShadow:
+      "0 0 18px rgba(124,255,74,.18)"
   },
 
   panelBadgeGold: {
-    background: "rgba(250,204,21,0.14)",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "6px",
+
+    background:
+      "linear-gradient(135deg,rgba(250,204,21,.18),rgba(250,204,21,.08))",
+
     color: "#facc15",
-    border: "1px solid rgba(250,204,21,0.28)",
-    padding: "7px 11px",
+
+    border: "1px solid rgba(250,204,21,.30)",
+
+    padding: "8px 14px",
+
     borderRadius: "999px",
+
     fontWeight: "900",
-    fontSize: "11px"
+
+    fontSize: "11px",
+
+    letterSpacing: ".7px",
+
+    textTransform: "uppercase",
+
+    boxShadow:
+      "0 0 18px rgba(250,204,21,.18)"
   },
 
   panelTitle: {
-    margin: "12px 0 0",
-    color: "white",
-    fontSize: "26px"
+    margin: "14px 0 0",
+
+    color: "#1f2937",
+
+    fontSize: "30px",
+
+    fontWeight: "900",
+
+    letterSpacing: "-.8px"
   }
 };
 
