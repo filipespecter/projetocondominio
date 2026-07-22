@@ -25,6 +25,25 @@ function ReservasMorador() {
     carregarSessao();
     carregarAreasComuns();
     carregarReservas();
+
+    const sincronizar = () => {
+      carregarAreasComuns();
+      carregarReservas();
+    };
+
+    window.addEventListener("storage", sincronizar);
+    window.addEventListener(
+      "infinitycondo:reservas",
+      sincronizar
+    );
+
+    return () => {
+      window.removeEventListener("storage", sincronizar);
+      window.removeEventListener(
+        "infinitycondo:reservas",
+        sincronizar
+      );
+    };
   }, []);
 
   function lerStorage(chave) {
@@ -38,6 +57,137 @@ function ReservasMorador() {
 
   function salvarStorage(chave, dados) {
     localStorage.setItem(chave, JSON.stringify(dados));
+
+    if (
+      chave === STORAGE_KEY ||
+      chave === "areasComuns"
+    ) {
+      window.dispatchEvent(
+        new CustomEvent("infinitycondo:reservas", {
+          detail: { chave }
+        })
+      );
+    }
+  }
+
+  function gerarIdUnico() {
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  }
+
+  function normalizarStatus(status) {
+    const valor = String(status || "")
+      .trim()
+      .toLowerCase();
+
+    if (
+      valor === "aprovada" ||
+      valor === "aprovado" ||
+      valor === "confirmada" ||
+      valor === "confirmado" ||
+      valor === "ativa" ||
+      valor === "ativo"
+    ) {
+      return "aprovada";
+    }
+
+    if (
+      valor === "recusada" ||
+      valor === "recusado" ||
+      valor === "rejeitada" ||
+      valor === "rejeitado"
+    ) {
+      return "recusada";
+    }
+
+    if (
+      valor === "cancelada" ||
+      valor === "cancelado"
+    ) {
+      return "cancelada";
+    }
+
+    if (
+      valor === "concluída" ||
+      valor === "concluida" ||
+      valor === "concluído" ||
+      valor === "concluido"
+    ) {
+      return "concluida";
+    }
+
+    return "pendente";
+  }
+
+  function reservaAtiva(reserva) {
+    return ![
+      "recusada",
+      "cancelada",
+      "concluida"
+    ].includes(normalizarStatus(reserva?.status));
+  }
+
+  function pertenceAoMorador(item, usuario) {
+    if (!usuario) return false;
+
+    if (item?.moradorId && usuario?.id) {
+      return String(item.moradorId) === String(usuario.id);
+    }
+
+    if (
+      item?.moradorUsuario &&
+      usuario?.usuario
+    ) {
+      return (
+        String(item.moradorUsuario) ===
+        String(usuario.usuario)
+      );
+    }
+
+    const nomeItem = String(
+      item?.moradorNome ||
+      item?.morador ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+    const nomeUsuario = String(usuario?.nome || "")
+      .trim()
+      .toLowerCase();
+
+    return (
+      Boolean(nomeItem) &&
+      nomeItem === nomeUsuario &&
+      String(item?.apartamento || item?.apto || "") ===
+        String(usuario?.apartamento || usuario?.apto || "")
+    );
+  }
+
+  function mesmaArea(reserva, areaSelecionada) {
+    if (reserva?.areaId && areaSelecionada?.id) {
+      return String(reserva.areaId) === String(areaSelecionada.id);
+    }
+
+    return (
+      String(reserva?.area || "").trim().toLowerCase() ===
+      String(areaSelecionada?.nome || areaSelecionada?.area || "")
+        .trim()
+        .toLowerCase()
+    );
+  }
+
+  function areaIndisponivel(areaSelecionada) {
+    const status = String(areaSelecionada?.status || "")
+      .trim()
+      .toLowerCase();
+
+    return (
+      status.includes("manutenção") ||
+      status.includes("manutencao") ||
+      status.includes("indisponível") ||
+      status.includes("indisponivel") ||
+      status.includes("inativa")
+    );
   }
 
   function carregarSessao() {
@@ -65,7 +215,12 @@ function ReservasMorador() {
 
   function carregarReservas() {
     const dataStorage = lerStorage(STORAGE_KEY);
-    setReservas(dataStorage);
+    setReservas(
+      dataStorage.map((reserva) => ({
+        ...reserva,
+        status: normalizarStatus(reserva.status)
+      }))
+    );
   }
 
   function limparFormulario() {
@@ -133,25 +288,36 @@ function ReservasMorador() {
     });
   }
 
-  function existeConflitoReserva(areaSelecionada, dataSelecionada, horarioSelecionado) {
-    return reservas.some((item) => {
-      const status = String(item.status || "").toLowerCase();
+  function existeConflitoReserva(
+    areaSelecionada,
+    dataSelecionada,
+    horarioSelecionado
+  ) {
+    const dadosArea = buscarAreaSelecionada(areaSelecionada);
 
-      return (
-        item.area === areaSelecionada &&
+    return reservas.some(
+      (item) =>
         item.data === dataSelecionada &&
         item.horario === horarioSelecionado &&
-        status !== "recusada" &&
-        status !== "cancelada"
-      );
-    });
+        reservaAtiva(item) &&
+        mesmaArea(item, dadosArea)
+    );
+  }
+
+  function moradorJaPossuiReservaNoDia(dataSelecionada) {
+    return reservas.some(
+      (item) =>
+        item.data === dataSelecionada &&
+        reservaAtiva(item) &&
+        pertenceAoMorador(item, morador)
+    );
   }
 
   function registrarAvisoSindico(reserva) {
     const avisos = lerStorage(STORAGE_AVISOS_SINDICO);
 
     const novo = {
-      id: Date.now() + 1,
+      id: gerarIdUnico(),
       reservaId: reserva.id,
       categoria: "Reserva",
       origem: "Morador",
@@ -185,7 +351,7 @@ function ReservasMorador() {
     const movimentacoes = lerStorage(STORAGE_MOVIMENTACOES);
 
     const nova = {
-      id: Date.now() + 2,
+      id: gerarIdUnico(),
       tipo: "Reserva",
       acao,
       origem: "Morador",
@@ -219,7 +385,7 @@ function ReservasMorador() {
     const relatorios = lerStorage(STORAGE_RELATORIOS);
 
     const novo = {
-      id: Date.now() + 3,
+      id: gerarIdUnico(),
       tipo: "Reserva",
       acao,
       origem: "Morador",
@@ -255,7 +421,7 @@ function ReservasMorador() {
     const notificacoes = lerStorage(STORAGE_NOTIFICACOES);
 
     const nova = {
-      id: Date.now() + 4,
+      id: gerarIdUnico(),
       categoria: "Reserva",
       origem: "Morador",
       titulo: "Solicitação de reserva enviada",
@@ -313,26 +479,44 @@ function ReservasMorador() {
       return;
     }
 
-    if (existeConflitoReserva(area, data, horario)) {
-      alert("Já existe uma reserva ativa para esta área, data e horário.");
+    const areaSelecionada = buscarAreaSelecionada(area);
+
+    if (areaIndisponivel(areaSelecionada)) {
+      alert(
+        "Esta área está indisponível ou em manutenção."
+      );
       return;
     }
 
-    const areaSelecionada = buscarAreaSelecionada(area);
+    if (moradorJaPossuiReservaNoDia(data)) {
+      alert(
+        "Você já possui uma reserva ativa nesta data. É permitida apenas uma reserva por morador por dia."
+      );
+      return;
+    }
+
+    if (existeConflitoReserva(area, data, horario)) {
+      alert(
+        "Já existe uma reserva ativa para esta área, data e horário."
+      );
+      return;
+    }
 
     const nova = {
-      id: Date.now(),
+      id: gerarIdUnico(),
 
       area,
       areaId: areaSelecionada.id || null,
 
       data,
       horario,
-      observacao,
+      observacao: String(observacao || "").trim(),
 
-      status: "Pendente",
+      status: "pendente",
 
       criadoEm: new Date().toLocaleString("pt-BR"),
+      criadoEmISO: new Date().toISOString(),
+      atualizadoEm: new Date().toISOString(),
 
       moradorId: morador?.id || null,
       moradorNome: morador?.nome || "Morador",
@@ -389,8 +573,9 @@ function ReservasMorador() {
 
         reservaCancelada = {
           ...r,
-          status: "Cancelada",
+          status: "cancelada",
           canceladaEm: new Date().toLocaleString("pt-BR"),
+          atualizadoEm: new Date().toISOString(),
           impactaBI: true,
           impactaRelatorio: true,
           exibirNaCentral: true,
@@ -405,11 +590,23 @@ function ReservasMorador() {
 
     if (reservaCancelada) {
       registrarFluxoReserva("cancelada", reservaCancelada);
+      registrarAuditoriaReserva(
+        "Cancelou reserva",
+        reservaCancelada
+      );
+      criarNotificacaoReservaSindico(
+        reservaCancelada,
+        "Reserva cancelada",
+        `${reservaCancelada.moradorNome} cancelou a reserva da área ${reservaCancelada.area}.`,
+        "alta"
+      );
     }
   }
 
   function obterStatus(status) {
-    if (status === "aprovada" || status === "Aprovada") {
+    const statusNormalizado = normalizarStatus(status);
+
+    if (statusNormalizado === "aprovada") {
       return {
         texto: "Aprovada",
         fundo: "#f3e8ff",
@@ -417,7 +614,7 @@ function ReservasMorador() {
       };
     }
 
-    if (status === "recusada" || status === "Recusada") {
+    if (statusNormalizado === "recusada") {
       return {
         texto: "Recusada",
         fundo: "#fee2e2",
@@ -425,7 +622,7 @@ function ReservasMorador() {
       };
     }
 
-    if (status === "cancelada" || status === "Cancelada") {
+    if (statusNormalizado === "cancelada") {
       return {
         texto: "Cancelada",
         fundo: "#f5f3ff",
@@ -442,14 +639,9 @@ function ReservasMorador() {
 
   const minhasReservas =
     reservas.filter((item) => {
-      const pertenceAoMorador =
-        item.moradorId === morador?.id ||
-        item.moradorUsuario === morador?.usuario ||
-        item.moradorNome === morador?.nome ||
-        String(item.apartamento) ===
-          String(morador?.apartamento);
-
-      if (!pertenceAoMorador) return false;
+      if (!pertenceAoMorador(item, morador)) {
+        return false;
+      }
 
       const texto = busca.toLowerCase();
 
@@ -863,12 +1055,15 @@ function ReservasMorador() {
 const styles = {
   container: {
     width: "100%",
+    minWidth: 0,
+    overflowX: "hidden",
     fontFamily: "Arial",
     color: "#111827",
     position: "relative"
   },
 
   hero: {
+    minWidth: 0,
     background:
       "linear-gradient(135deg,#2e1065,#4c1d95,#7c3aed)",
     borderRadius: "30px",
@@ -968,6 +1163,7 @@ const styles = {
   },
 
   resumeGrid: {
+    minWidth: 0,
     display: "grid",
     gridTemplateColumns:
       "repeat(auto-fit,minmax(220px,1fr))",
@@ -1087,6 +1283,7 @@ const styles = {
   },
 
   mainGrid: {
+    minWidth: 0,
     display: "grid",
     gridTemplateColumns: "390px 1fr",
     gap: "24px",
@@ -1094,6 +1291,7 @@ const styles = {
   },
 
   formCard: {
+    minWidth: 0,
     background:
       "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
     borderRadius: "28px",
@@ -1104,6 +1302,7 @@ const styles = {
   },
 
   listCard: {
+    minWidth: 0,
     background:
       "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
     borderRadius: "28px",
@@ -1216,6 +1415,7 @@ const styles = {
   },
 
   filters: {
+    minWidth: 0,
     display: "flex",
     gap: "10px"
   },

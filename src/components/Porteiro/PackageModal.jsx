@@ -22,6 +22,25 @@ function PackageModal({ apartamento, onClose }) {
     carregarSessao();
     carregarMorador();
     carregarEncomendas();
+
+    const sincronizar = () => {
+      carregarMorador();
+      carregarEncomendas();
+    };
+
+    window.addEventListener("storage", sincronizar);
+    window.addEventListener(
+      "infinitycondo:encomendas",
+      sincronizar
+    );
+
+    return () => {
+      window.removeEventListener("storage", sincronizar);
+      window.removeEventListener(
+        "infinitycondo:encomendas",
+        sincronizar
+      );
+    };
   }, []);
 
   function lerStorage(chave) {
@@ -35,6 +54,77 @@ function PackageModal({ apartamento, onClose }) {
 
   function salvarStorage(chave, dados) {
     localStorage.setItem(chave, JSON.stringify(dados));
+
+    if (
+      chave === "encomendas" ||
+      chave === "encomendas_esperadas" ||
+      chave === "encomendas_historico"
+    ) {
+      window.dispatchEvent(
+        new CustomEvent("infinitycondo:encomendas", {
+          detail: { chave }
+        })
+      );
+    }
+  }
+
+  function gerarIdUnico() {
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  }
+
+  function normalizarCodigo(valor) {
+    const limpo = String(valor || "")
+      .trim()
+      .replace(/\s+/g, "")
+      .replace(/[^a-zA-Z0-9._-]/g, "")
+      .toUpperCase();
+
+    return limpo;
+  }
+
+  function obterCodigoRastreio(item = {}) {
+    const valor =
+      item.codigoRastreio ||
+      item.rastreio ||
+      item.codigo ||
+      "";
+
+    if (
+      String(valor).toLowerCase() === "não informado" ||
+      String(valor).toLowerCase() === "nao informado"
+    ) {
+      return "";
+    }
+
+    return normalizarCodigo(valor);
+  }
+
+  function normalizarStatus(status) {
+    const valor = String(status || "")
+      .trim()
+      .toLowerCase();
+
+    if (
+      valor === "entregue" ||
+      valor === "retirada" ||
+      valor === "retirado"
+    ) {
+      return "Entregue";
+    }
+
+    if (valor === "atrasado") {
+      return "Atrasado";
+    }
+
+    if (
+      valor === "aguardando" ||
+      valor === "esperada" ||
+      valor === "esperado"
+    ) {
+      return "Aguardando";
+    }
+
+    return "Recebido";
   }
 
   function carregarSessao() {
@@ -69,7 +159,12 @@ function PackageModal({ apartamento, onClose }) {
       (e) => String(e.apartamento) === String(apartamento)
     );
 
-    filtradas.sort((a, b) => b.id - a.id);
+    filtradas.sort((a, b) => {
+      const dataA = new Date(a.criadoEm || a.atualizadoEm || 0).getTime();
+      const dataB = new Date(b.criadoEm || b.atualizadoEm || 0).getTime();
+
+      return dataB - dataA;
+    });
 
     setEncomendas(filtradas);
   }
@@ -85,7 +180,7 @@ function PackageModal({ apartamento, onClose }) {
     const avisos = lerStorage(STORAGE_AVISOS_SINDICO);
 
     const novoAviso = {
-      id: Date.now() + 1,
+      id: gerarIdUnico(),
       categoria: "Encomenda",
       origem: "Porteiro",
       titulo:
@@ -121,7 +216,7 @@ function PackageModal({ apartamento, onClose }) {
     const notificacoes = lerStorage(STORAGE_NOTIFICACOES);
 
     const novaNotificacao = {
-      id: Date.now() + 2,
+      id: gerarIdUnico(),
       tipo: "Encomenda",
       titulo:
         acao === "retirada"
@@ -155,7 +250,7 @@ function PackageModal({ apartamento, onClose }) {
     const historico = lerStorage(STORAGE_HISTORICO);
 
     const novoHistorico = {
-      id: Date.now() + 3,
+      id: gerarIdUnico(),
       encomendaId: encomenda.id,
       acao,
       origem: "Porteiro",
@@ -164,9 +259,13 @@ function PackageModal({ apartamento, onClose }) {
       apartamento: encomenda.apartamento,
       descricao: encomenda.descricao,
       tipo: encomenda.tipo,
-      codigo: encomenda.codigo,
+      codigo: obterCodigoRastreio(encomenda),
+      codigoRastreio: obterCodigoRastreio(encomenda),
+      rastreio: obterCodigoRastreio(encomenda),
+      codigoInterno: encomenda.codigoInterno || "",
       transportadora: encomenda.transportadora,
-      rastreio: encomenda.rastreio,
+      rastreio: obterCodigoRastreio(encomenda),
+      codigoRastreio: obterCodigoRastreio(encomenda),
       status: encomenda.status,
       retiradoPor: encomenda.retiradoPor || "",
       porteiro:
@@ -193,7 +292,7 @@ function PackageModal({ apartamento, onClose }) {
     const movimentacoes = lerStorage(STORAGE_MOVIMENTACOES);
 
     const novaMovimentacao = {
-      id: Date.now() + 4,
+      id: gerarIdUnico(),
       tipo: "Encomenda",
       acao,
       origem: "Porteiro",
@@ -230,7 +329,7 @@ function PackageModal({ apartamento, onClose }) {
     const relatorios = lerStorage(STORAGE_RELATORIOS);
 
     const novoRelatorio = {
-      id: Date.now() + 5,
+      id: gerarIdUnico(),
       tipo: "Encomenda",
       acao,
       origem: "Porteiro",
@@ -242,9 +341,13 @@ function PackageModal({ apartamento, onClose }) {
       morador: encomenda.morador || encomenda.nome || "",
       moradorId: encomenda.moradorId || null,
       descricao: encomenda.descricao,
-      codigo: encomenda.codigo,
+      codigo: obterCodigoRastreio(encomenda),
+      codigoRastreio: obterCodigoRastreio(encomenda),
+      rastreio: obterCodigoRastreio(encomenda),
+      codigoInterno: encomenda.codigoInterno || "",
       transportadora: encomenda.transportadora,
-      rastreio: encomenda.rastreio,
+      rastreio: obterCodigoRastreio(encomenda),
+      codigoRastreio: obterCodigoRastreio(encomenda),
       status: encomenda.status,
       retiradoPor: encomenda.retiradoPor || "",
       porteiro:
@@ -283,15 +386,36 @@ function PackageModal({ apartamento, onClose }) {
 
     const todas = lerStorage(STORAGE_ENCOMENDAS);
     const agora = new Date();
+    const rastreioNormalizado = normalizarCodigo(rastreio);
 
-    const codigo = `${apartamento}-${Date.now()
-      .toString()
-      .slice(-5)}`;
+    if (rastreioNormalizado) {
+      const duplicada = todas.some(
+        (item) =>
+          obterCodigoRastreio(item) === rastreioNormalizado &&
+          normalizarStatus(item.status) !== "Entregue"
+      );
+
+      if (duplicada) {
+        alert(
+          "Já existe uma encomenda pendente com este código de rastreio."
+        );
+        return;
+      }
+    }
+
+    const codigoInterno = `ENC-${String(
+      todas.length + 1
+    ).padStart(6, "0")}`;
+
+    const codigoRastreio = rastreioNormalizado;
 
     const nova = {
-      id: Date.now(),
+      id: gerarIdUnico(),
 
-      codigo,
+      codigoInterno,
+      codigoRastreio,
+      rastreio: codigoRastreio,
+      codigo: codigoRastreio,
       apartamento,
 
       moradorId: morador?.id || null,
@@ -301,9 +425,10 @@ function PackageModal({ apartamento, onClose }) {
       tipo,
       descricao,
       transportadora: transportadora || "Não informada",
-      rastreio: rastreio || "Não informado",
+      rastreio: codigoRastreio,
+      codigoRastreio,
 
-      status: "pendente",
+      status: "Recebido",
 
       data: agora.toLocaleString("pt-BR"),
       dataRecebimento: agora.toLocaleDateString("pt-BR"),
@@ -351,7 +476,8 @@ function PackageModal({ apartamento, onClose }) {
 
       encomendaAtualizada = {
         ...e,
-        status: "retirada",
+        status: "Entregue",
+        atualizadoEm: agora.toISOString(),
         retiradoPor: retiradoPor.trim(),
         retiradaEm: agora.toLocaleString("pt-BR"),
         dataRetirada: agora.toLocaleDateString("pt-BR"),
@@ -641,7 +767,7 @@ function PackageModal({ apartamento, onClose }) {
                   </span>
 
                   <strong>
-                    {item.rastreio || "Não informado"}
+                    {obterCodigoRastreio(item) || "Não informado"}
                   </strong>
                 </div>
 
@@ -722,6 +848,7 @@ function PackageModal({ apartamento, onClose }) {
 
 const styles = {
   overlay: {
+    minWidth: 0,
     position: "fixed",
     top: 0,
     left: 0,
@@ -738,6 +865,7 @@ const styles = {
   },
 
   modal: {
+    minWidth: 0,
     background: "#f8fafc",
     width: "920px",
     borderRadius: "32px",
@@ -779,6 +907,7 @@ const styles = {
     margin: "8px 0 16px",
     color: "rgba(255,255,255,0.75)",
     lineHeight: "1.5",
+    width: "100%",
     maxWidth: "540px"
   },
 
@@ -890,6 +1019,7 @@ const styles = {
   },
 
   formGrid: {
+    minWidth: 0,
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
     gap: "14px"
@@ -936,6 +1066,7 @@ const styles = {
   },
 
   tabs: {
+    minWidth: 0,
     display: "flex",
     gap: "8px",
     background: "#e5e7eb",
@@ -962,6 +1093,7 @@ const styles = {
   },
 
   list: {
+    minWidth: 0,
     display: "flex",
     flexDirection: "column",
     gap: "16px"

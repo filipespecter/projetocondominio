@@ -12,6 +12,10 @@ function salvarStorage(chave, dados) {
   localStorage.setItem(chave, JSON.stringify(dados));
 }
 
+function gerarIdUnico() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
 function obterUsuarioAtual() {
   const possiveisSessoes = [
     "sessaoSindico",
@@ -39,6 +43,7 @@ function obterUsuarioAtual() {
             usuario.perfil ||
             usuario.perfilAdmin ||
             "sistema",
+          condominioId: usuario.condominioId || null,
           chaveSessao: chave
         };
       }
@@ -51,6 +56,7 @@ function obterUsuarioAtual() {
     id: null,
     nome: "Sistema",
     perfil: "sistema",
+    condominioId: null,
     chaveSessao: null
   };
 }
@@ -70,11 +76,11 @@ export function registrarAuditoria({
   usuarioForcado = null
 }) {
   const logs = buscarAuditoria();
-
   const usuarioAtual = obterUsuarioAtual();
+  const agora = new Date();
 
   const novoLog = {
-    id: Date.now(),
+    id: gerarIdUnico(),
 
     usuarioId: usuarioForcado?.id || usuarioAtual.id,
     usuario: usuarioForcado?.nome || usuarioAtual.nome,
@@ -82,6 +88,10 @@ export function registrarAuditoria({
       perfilForcado ||
       usuarioForcado?.perfil ||
       usuarioAtual.perfil,
+    condominioId:
+      usuarioForcado?.condominioId ||
+      usuarioAtual.condominioId ||
+      null,
 
     acao,
     modulo,
@@ -91,15 +101,15 @@ export function registrarAuditoria({
     depois,
     referenciaId,
 
-    data: new Date().toLocaleDateString("pt-BR"),
-    hora: new Date().toLocaleTimeString("pt-BR", {
+    data: agora.toLocaleDateString("pt-BR"),
+    hora: agora.toLocaleTimeString("pt-BR", {
       hour: "2-digit",
       minute: "2-digit"
     }),
-    criadoEm: new Date().toISOString(),
+    criadoEm: agora.toISOString(),
 
     origem: "localStorage",
-    sistema: "GreenCondo"
+    sistema: "InfinityCondo"
   };
 
   salvarStorage(STORAGE_AUDITORIA, [

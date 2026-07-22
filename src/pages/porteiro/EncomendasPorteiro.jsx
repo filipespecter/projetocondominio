@@ -21,6 +21,25 @@ function EncomendasPorteiro() {
     carregarSessao();
     carregarEsperadas();
     carregarEncomendas();
+
+    const sincronizar = () => {
+      carregarEsperadas();
+      carregarEncomendas();
+    };
+
+    window.addEventListener("storage", sincronizar);
+    window.addEventListener(
+      "infinitycondo:encomendas",
+      sincronizar
+    );
+
+    return () => {
+      window.removeEventListener("storage", sincronizar);
+      window.removeEventListener(
+        "infinitycondo:encomendas",
+        sincronizar
+      );
+    };
   }, []);
 
   function lerStorage(chave) {
@@ -34,6 +53,77 @@ function EncomendasPorteiro() {
 
   function salvarStorage(chave, dados) {
     localStorage.setItem(chave, JSON.stringify(dados));
+
+    if (
+      chave === "encomendas" ||
+      chave === "encomendas_esperadas" ||
+      chave === "encomendas_historico"
+    ) {
+      window.dispatchEvent(
+        new CustomEvent("infinitycondo:encomendas", {
+          detail: { chave }
+        })
+      );
+    }
+  }
+
+  function gerarIdUnico() {
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  }
+
+  function normalizarCodigo(valor) {
+    const limpo = String(valor || "")
+      .trim()
+      .replace(/\s+/g, "")
+      .replace(/[^a-zA-Z0-9._-]/g, "")
+      .toUpperCase();
+
+    return limpo;
+  }
+
+  function obterCodigoRastreio(item = {}) {
+    const valor =
+      item.codigoRastreio ||
+      item.rastreio ||
+      item.codigo ||
+      "";
+
+    if (
+      String(valor).toLowerCase() === "não informado" ||
+      String(valor).toLowerCase() === "nao informado"
+    ) {
+      return "";
+    }
+
+    return normalizarCodigo(valor);
+  }
+
+  function normalizarStatus(status) {
+    const valor = String(status || "")
+      .trim()
+      .toLowerCase();
+
+    if (
+      valor === "entregue" ||
+      valor === "retirada" ||
+      valor === "retirado"
+    ) {
+      return "Entregue";
+    }
+
+    if (valor === "atrasado") {
+      return "Atrasado";
+    }
+
+    if (
+      valor === "aguardando" ||
+      valor === "esperada" ||
+      valor === "esperado"
+    ) {
+      return "Aguardando";
+    }
+
+    return "Recebido";
   }
 
   function carregarSessao() {
@@ -59,7 +149,10 @@ function EncomendasPorteiro() {
     setEncomendas(
       lista.map((item) => ({
         ...item,
-        status: item.status || "pendente"
+        codigoRastreio: obterCodigoRastreio(item),
+        rastreio: obterCodigoRastreio(item),
+        codigo: obterCodigoRastreio(item),
+        status: normalizarStatus(item.status)
       }))
     );
   }
@@ -163,7 +256,7 @@ function EncomendasPorteiro() {
     const notificacoes = lerStorage(STORAGE_NOTIFICACOES);
 
     const novaNotificacao = {
-      id: Date.now() + 1,
+      id: gerarIdUnico(),
       tipo: "Encomenda",
       titulo: "Encomenda recebida na portaria",
       descricao: `Sua encomenda ${encomenda.tipo || ""} foi recebida e está aguardando retirada na portaria.`,
@@ -186,7 +279,7 @@ function EncomendasPorteiro() {
     const historico = lerStorage(STORAGE_HISTORICO);
 
     const novoHistorico = {
-      id: Date.now() + 2,
+      id: gerarIdUnico(),
       encomendaId: encomenda.id,
       encomendaEsperadaId: origemEsperada?.id || null,
       acao: "recebimento_confirmado",
@@ -197,7 +290,10 @@ function EncomendasPorteiro() {
       apartamentoId: encomenda.apartamentoId || null,
       descricao: encomenda.descricao,
       tipo: encomenda.tipo,
-      codigo: encomenda.codigo,
+      codigo: obterCodigoRastreio(encomenda),
+      codigoRastreio: obterCodigoRastreio(encomenda),
+      rastreio: obterCodigoRastreio(encomenda),
+      codigoInterno: encomenda.codigoInterno || "",
       transportadora: encomenda.transportadora,
       status: encomenda.status,
       porteiro: encomenda.porteiroRecebimento,
@@ -215,7 +311,7 @@ function EncomendasPorteiro() {
     const movimentacoes = lerStorage(STORAGE_MOVIMENTACOES);
 
     const novaMovimentacao = {
-      id: Date.now() + 3,
+      id: gerarIdUnico(),
       tipo: "Encomenda",
       acao: "recebimento_confirmado",
       origem: "Porteiro",
@@ -240,7 +336,7 @@ function EncomendasPorteiro() {
     const relatorios = lerStorage(STORAGE_RELATORIOS);
 
     const novoRelatorio = {
-      id: Date.now() + 4,
+      id: gerarIdUnico(),
       tipo: "Encomenda",
       acao: "recebimento_confirmado",
       origem: "Porteiro",
@@ -249,7 +345,10 @@ function EncomendasPorteiro() {
       morador: encomenda.morador,
       moradorId: encomenda.moradorId || null,
       descricao: encomenda.descricao,
-      codigo: encomenda.codigo,
+      codigo: obterCodigoRastreio(encomenda),
+      codigoRastreio: obterCodigoRastreio(encomenda),
+      rastreio: obterCodigoRastreio(encomenda),
+      codigoInterno: encomenda.codigoInterno || "",
       transportadora: encomenda.transportadora,
       status: encomenda.status,
       porteiro: encomenda.porteiroRecebimento,
@@ -267,18 +366,23 @@ function EncomendasPorteiro() {
     const todasEncomendas = lerStorage(STORAGE_ENCOMENDAS);
     const agora = new Date();
 
-    const codigo = `${item.apartamento || "AP"}-${Date.now()
-      .toString()
-      .slice(-4)}`;
+    const codigoInterno = `ENC-${String(
+      todasEncomendas.length + 1
+    ).padStart(6, "0")}`;
+
+    const codigoRastreio = obterCodigoRastreio(item);
 
     const novaEncomenda = {
-      id: Date.now(),
+      id: gerarIdUnico(),
 
       encomendaEsperadaId: item.id || null,
 
       moradorId: item.moradorId || null,
 
-      codigo,
+      codigoInterno,
+      codigoRastreio,
+      rastreio: codigoRastreio,
+      codigo: codigoRastreio,
 
       apartamento: item.apartamento || "N/A",
       apto: item.apartamento || "N/A",
@@ -298,7 +402,7 @@ function EncomendasPorteiro() {
 
       transportadora: item.transportadora || "Não informada",
 
-      status: "recebido",
+      status: "Recebido",
 
       data: agora.toLocaleString("pt-BR"),
 
@@ -579,12 +683,15 @@ function EncomendasPorteiro() {
 const styles = {
   container: {
     width: "100%",
+    minWidth: 0,
+    overflowX: "hidden",
     fontFamily: "Arial",
     color: "#111827",
     position: "relative"
   },
 
   hero: {
+    minWidth: 0,
     background:
       "linear-gradient(135deg,#4c1d95,#6d28d9,#7c3aed)",
     borderRadius: "30px",
@@ -862,6 +969,7 @@ const styles = {
   },
 
   expectedCard: {
+    minWidth: 0,
     background: "#fbfaff",
     borderRadius: "22px",
     padding: "22px",

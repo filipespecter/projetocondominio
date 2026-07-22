@@ -3,6 +3,7 @@ import { registrarAuditoria } from "../../Services/auditoriaService";
 import { criarNotificacao } from "../../Services/notificacaoService";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 
 function Relatorios() {
   const STORAGE_KEYS = {
@@ -411,6 +412,66 @@ function Relatorios() {
     return String(valor);
   }
 
+  function formatarDataHoraExportacao(valor) {
+    if (valor === undefined || valor === null || valor === "") return "-";
+
+    if (valor instanceof Date && !isNaN(valor.getTime())) {
+      return valor.toLocaleString("pt-BR");
+    }
+
+    const texto = String(valor).trim();
+
+    if (!texto) return "-";
+
+    const dataBR = texto.match(
+      /^(\d{2})\/(\d{2})\/(\d{4})(?:[\s,]+(?:às\s*)?(\d{2}):(\d{2})(?::(\d{2}))?)?/i
+    );
+
+    if (dataBR) {
+      const [, dia, mes, ano, hora, minuto, segundo] = dataBR;
+      const data = new Date(
+        Number(ano),
+        Number(mes) - 1,
+        Number(dia),
+        Number(hora || 0),
+        Number(minuto || 0),
+        Number(segundo || 0)
+      );
+
+      if (!isNaN(data.getTime())) {
+        return hora
+          ? data.toLocaleString("pt-BR")
+          : data.toLocaleDateString("pt-BR");
+      }
+    }
+
+    const data = new Date(texto);
+
+    if (isNaN(data.getTime())) return texto;
+
+    const possuiHorario =
+      texto.includes("T") ||
+      /\d{1,2}:\d{2}/.test(texto) ||
+      data.getHours() !== 0 ||
+      data.getMinutes() !== 0 ||
+      data.getSeconds() !== 0;
+
+    return possuiHorario
+      ? data.toLocaleString("pt-BR")
+      : data.toLocaleDateString("pt-BR");
+  }
+
+  function criarNomeArquivo(extensao) {
+    const nomeBase = preview.titulo
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+    return `${nomeBase || "relatorio-infinitycondo"}.${extensao}`;
+  }
+
   function montarTabelaModulo(modulo) {
     const lista = filtrarPeriodo(dados[modulo] || []);
 
@@ -438,7 +499,7 @@ function Relatorios() {
           normalizarLinha(item.apartamento || item.apto),
           normalizarLinha(item.morador || item.responsavel),
           normalizarLinha(item.status || item.statusSindico),
-          normalizarLinha(item.data || item.dataEntrada || item.criadoEm)
+          formatarDataHoraExportacao(item.data || item.dataEntrada || item.criadoEm)
         ])
       };
     }
@@ -452,7 +513,7 @@ function Relatorios() {
           normalizarLinha(item.nome || item.destinatario || item.morador),
           normalizarLinha(item.apartamento || item.apto),
           normalizarLinha(item.status || item.statusSindico),
-          normalizarLinha(item.data || item.recebidoEm || item.criadoEm),
+          formatarDataHoraExportacao(item.data || item.recebidoEm || item.criadoEm),
           normalizarLinha(item.descricao || item.tipo || item.observacao)
         ])
       };
@@ -467,7 +528,7 @@ function Relatorios() {
           normalizarLinha(item.apartamento || item.apto),
           normalizarLinha(item.area || item.areaComum),
           normalizarLinha(item.status),
-          normalizarLinha(item.data || item.dataReserva)
+          formatarDataHoraExportacao(item.data || item.dataReserva)
         ])
       };
     }
@@ -482,7 +543,7 @@ function Relatorios() {
           normalizarLinha(item.prioridade),
           normalizarLinha(item.responsavel || item.criadoPor || item.porteiroNome),
           normalizarLinha(item.status),
-          normalizarLinha(item.data || item.criadoEm || item.registradoEm)
+          formatarDataHoraExportacao(item.data || item.criadoEm || item.registradoEm)
         ])
       };
     }
@@ -496,7 +557,7 @@ function Relatorios() {
           normalizarLinha(item.servico || item.tipo),
           normalizarLinha(item.telefone || item.contato),
           normalizarLinha(item.status),
-          normalizarLinha(item.data || item.criadoEm)
+          formatarDataHoraExportacao(item.data || item.criadoEm)
         ])
       };
     }
@@ -512,7 +573,7 @@ function Relatorios() {
           normalizarLinha(item.categoria || item.tipo),
           normalizarLinha(item.origem || item.responsavel),
           normalizarLinha(item.status),
-          normalizarLinha(item.data || item.criadoEm)
+          formatarDataHoraExportacao(item.data || item.criadoEm)
         ])
       };
     }
@@ -550,7 +611,7 @@ function Relatorios() {
           normalizarLinha(item.acao || item.titulo || item.descricao),
           normalizarLinha(item.origem || item.origemModulo || item.usuario),
           normalizarLinha(item.status),
-          normalizarLinha(item.data || item.criadoEm || item.registradoEm)
+          formatarDataHoraExportacao(item.data || item.criadoEm || item.registradoEm)
         ])
       };
     }
@@ -563,7 +624,7 @@ function Relatorios() {
           normalizarLinha(item.modulo),
           normalizarLinha(item.acao),
           normalizarLinha(item.usuario || item.usuarioNome || item.criadoPor),
-          normalizarLinha(item.data || item.criadoEm || item.registradoEm),
+          formatarDataHoraExportacao(item.data || item.criadoEm || item.registradoEm),
           normalizarLinha(item.detalhes || item.descricao)
         ])
       };
@@ -575,7 +636,7 @@ function Relatorios() {
       linhas: lista.map((item) => [
         normalizarLinha(item.nome || item.titulo || item.descricao),
         normalizarLinha(item.status),
-        normalizarLinha(item.data || item.criadoEm)
+        formatarDataHoraExportacao(item.data || item.criadoEm)
       ])
     };
   }
@@ -819,7 +880,8 @@ function Relatorios() {
 
     localStorage.setItem(STORAGE_KEYS.historico, JSON.stringify(atualizado));
   }
-    function gerarPDF() {
+
+  function gerarPDF() {
     const doc = new jsPDF();
     const dataGeracao = new Date().toLocaleString("pt-BR");
     const perfilCondominio = obterPerfilCondominio();
@@ -927,72 +989,111 @@ function Relatorios() {
     registrarAuditoriaRelatorio("Gerou PDF", `${preview.titulo} • ${nomePeriodo()}`);
     criarNotificacaoRelatorio("PDF");
 
-    doc.save(
-      `${preview.titulo
-        .toLowerCase()
-        .replaceAll(" ", "-")
-        .replace(/[^\w-]/g, "")}.pdf`
-    );
+    doc.save(criarNomeArquivo("pdf"));
   }
 
-  function exportarCSV() {
-    const linhas = [];
-
-    linhas.push(["Relatório", preview.titulo]);
-    linhas.push(["Período", nomePeriodo()]);
+  function exportarExcel() {
+    const workbook = XLSX.utils.book_new();
     const perfilCondominio = obterPerfilCondominio();
+    const nomesUsados = new Set();
 
-    linhas.push(["Gerado em", new Date().toLocaleString("pt-BR")]);
-    linhas.push(["Condomínio", perfilCondominio.nomeCondominio]);
-    linhas.push([]);
+    function limparNomeAba(nome, indice) {
+      const base = String(nome || `Relatorio ${indice + 1}`)
+        .replace(/[\\/?*\[\]:]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 31) || `Relatorio ${indice + 1}`;
 
-    preview.resumo.forEach((item) => {
-      linhas.push(["Resumo", item]);
+      let nomeFinal = base;
+      let contador = 2;
+
+      while (nomesUsados.has(nomeFinal.toLowerCase())) {
+        const sufixo = ` ${contador}`;
+        nomeFinal = `${base.slice(0, 31 - sufixo.length)}${sufixo}`;
+        contador += 1;
+      }
+
+      nomesUsados.add(nomeFinal.toLowerCase());
+      return nomeFinal;
+    }
+
+    function ajustarLarguras(worksheet, linhas) {
+      const maiorQuantidadeColunas = linhas.reduce(
+        (maior, linha) => Math.max(maior, linha.length),
+        0
+      );
+
+      worksheet["!cols"] = Array.from(
+        { length: maiorQuantidadeColunas },
+        (_, indiceColuna) => {
+          const maiorTexto = linhas.reduce((maior, linha) => {
+            const tamanho = String(linha[indiceColuna] ?? "").length;
+            return Math.max(maior, tamanho);
+          }, 10);
+
+          return { wch: Math.min(Math.max(maiorTexto + 2, 12), 45) };
+        }
+      );
+    }
+
+    const linhasResumo = [
+      ["Relatório", preview.titulo],
+      ["Período", nomePeriodo()],
+      ["Gerado em", new Date().toLocaleString("pt-BR")],
+      ["Condomínio", perfilCondominio.nomeCondominio],
+      ["CNPJ", perfilCondominio.cnpj || "-"],
+      ["Endereço", perfilCondominio.endereco || "-"],
+      [],
+      ["Resumo"],
+      ...preview.resumo.map((item) => [item])
+    ];
+
+    const resumoSheet = XLSX.utils.aoa_to_sheet(linhasResumo);
+    ajustarLarguras(resumoSheet, linhasResumo);
+    XLSX.utils.book_append_sheet(workbook, resumoSheet, "Resumo");
+    nomesUsados.add("resumo");
+
+    preview.tabelas.forEach((tabela, indice) => {
+      const linhasTabela = [
+        [tabela.titulo],
+        [],
+        tabela.colunas,
+        ...(tabela.linhas.length > 0
+          ? tabela.linhas.map((linha) =>
+              tabela.colunas.map((_, coluna) =>
+                normalizarLinha(linha[coluna])
+              )
+            )
+          : [tabela.colunas.map((_, coluna) =>
+              coluna === 0 ? "Sem registros" : ""
+            )])
+      ];
+
+      const worksheet = XLSX.utils.aoa_to_sheet(linhasTabela);
+      ajustarLarguras(worksheet, linhasTabela);
+      worksheet["!autofilter"] = {
+        ref: `A3:${XLSX.utils.encode_col(
+          Math.max(tabela.colunas.length - 1, 0)
+        )}3`
+      };
+
+      XLSX.utils.book_append_sheet(
+        workbook,
+        worksheet,
+        limparNomeAba(tabela.titulo, indice)
+      );
     });
 
-    preview.tabelas.forEach((tabela) => {
-      linhas.push([]);
-      linhas.push([tabela.titulo]);
-      linhas.push(tabela.colunas);
-
-      tabela.linhas.forEach((linha) => {
-        linhas.push(linha);
-      });
+    XLSX.writeFile(workbook, criarNomeArquivo("xlsx"), {
+      compression: true
     });
 
-    const csv = linhas
-      .map((linha) =>
-        linha
-          .map((celula) =>
-            `"${String(celula || "")
-              .replaceAll('"', '""')
-              .replace(/\r?\n|\r/g, " ")}"`
-          )
-          .join(";")
-      )
-      .join("\n");
-
-    const blob = new Blob([csv], {
-      type: "text/csv;charset=utf-8;"
-    });
-
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${preview.titulo
-      .toLowerCase()
-      .replaceAll(" ", "-")
-      .replace(/[^\w-]/g, "")}.csv`;
-    link.click();
-
-    setTimeout(() => {
-      URL.revokeObjectURL(url);
-    }, 100);
-
-    salvarHistorico("CSV");
-    registrarAuditoriaRelatorio("Gerou CSV", `${preview.titulo} • ${nomePeriodo()}`);
-    criarNotificacaoRelatorio("CSV");
+    salvarHistorico("Excel");
+    registrarAuditoriaRelatorio(
+      "Gerou Excel",
+      `${preview.titulo} • ${nomePeriodo()}`
+    );
+    criarNotificacaoRelatorio("Excel");
   }
 
   function atualizarPersonalizado(campo, valor) {
@@ -1199,8 +1300,8 @@ function Relatorios() {
               📄 Gerar PDF
             </button>
 
-            <button style={styles.secondaryButton} onClick={exportarCSV}>
-              CSV
+            <button style={styles.secondaryButton} onClick={exportarExcel}>
+              Excel
             </button>
 
             <button style={styles.secondaryButton} onClick={carregarDados}>
@@ -1293,7 +1394,7 @@ function Relatorios() {
               {tabela.linhas.length > 8 && (
                 <small style={styles.moreInfo}>
                   Mostrando 8 de {tabela.linhas.length} registros na prévia.
-                  O PDF/CSV inclui mais registros.
+                  O PDF/Excel inclui mais registros.
                 </small>
               )}
             </section>

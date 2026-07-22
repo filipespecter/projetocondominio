@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { registrarAuditoria } from "../../Services/auditoriaService";
 import { criarNotificacao } from "../../Services/notificacaoService";
 
@@ -21,6 +21,8 @@ function Encomendas() {
     moradorPrincipal: false,
     descricao: "",
     codigo: "",
+    codigoRastreio: "",
+    rastreio: "",
     codigoInterno: "",
     transportadora: "",
     status: "Recebido",
@@ -36,9 +38,12 @@ function Encomendas() {
 
     return lista.map((item, index) => ({
       ...item,
+      codigoRastreio: obterCodigoRastreio(item),
+      rastreio: obterCodigoRastreio(item),
+      codigo: obterCodigoRastreio(item),
       codigoInterno: item.codigoInterno || gerarCodigoEncomenda(index + 1),
       moradorId: item.moradorId || null,
-      status: item.status || "Recebido"
+      status: normalizarStatus(item.status)
     }));
   });
 
@@ -61,6 +66,37 @@ function Encomendas() {
   const [novaEncomenda, setNovaEncomenda] = useState(estadoInicialEncomenda);
   const [editId, setEditId] = useState(null);
 
+  useEffect(() => {
+    const sincronizar = () => {
+      const lista = lerStorage(STORAGE_KEY).map((item, index) => ({
+        ...item,
+        codigoRastreio: obterCodigoRastreio(item),
+        rastreio: obterCodigoRastreio(item),
+        codigo: obterCodigoRastreio(item),
+        codigoInterno:
+          item.codigoInterno ||
+          gerarCodigoEncomenda(index + 1),
+        status: normalizarStatus(item.status)
+      }));
+
+      setEncomendas(lista);
+    };
+
+    window.addEventListener("storage", sincronizar);
+    window.addEventListener(
+      "infinitycondo:encomendas",
+      sincronizar
+    );
+
+    return () => {
+      window.removeEventListener("storage", sincronizar);
+      window.removeEventListener(
+        "infinitycondo:encomendas",
+        sincronizar
+      );
+    };
+  }, []);
+
   function lerStorage(chave) {
     try {
       const dados = localStorage.getItem(chave);
@@ -72,6 +108,77 @@ function Encomendas() {
 
   function salvarStorage(chave, dados) {
     localStorage.setItem(chave, JSON.stringify(dados));
+
+    if (
+      chave === "encomendas" ||
+      chave === "encomendas_esperadas" ||
+      chave === "encomendas_historico"
+    ) {
+      window.dispatchEvent(
+        new CustomEvent("infinitycondo:encomendas", {
+          detail: { chave }
+        })
+      );
+    }
+  }
+
+  function gerarIdUnico() {
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  }
+
+  function normalizarCodigo(valor) {
+    const limpo = String(valor || "")
+      .trim()
+      .replace(/\s+/g, "")
+      .replace(/[^a-zA-Z0-9._-]/g, "")
+      .toUpperCase();
+
+    return limpo;
+  }
+
+  function obterCodigoRastreio(item = {}) {
+    const valor =
+      item.codigoRastreio ||
+      item.rastreio ||
+      item.codigo ||
+      "";
+
+    if (
+      String(valor).toLowerCase() === "não informado" ||
+      String(valor).toLowerCase() === "nao informado"
+    ) {
+      return "";
+    }
+
+    return normalizarCodigo(valor);
+  }
+
+  function normalizarStatus(status) {
+    const valor = String(status || "")
+      .trim()
+      .toLowerCase();
+
+    if (
+      valor === "entregue" ||
+      valor === "retirada" ||
+      valor === "retirado"
+    ) {
+      return "Entregue";
+    }
+
+    if (valor === "atrasado") {
+      return "Atrasado";
+    }
+
+    if (
+      valor === "aguardando" ||
+      valor === "esperada" ||
+      valor === "esperado"
+    ) {
+      return "Aguardando";
+    }
+
+    return "Recebido";
   }
 
 
@@ -151,7 +258,8 @@ function Encomendas() {
     mensagem,
     referenciaId = null,
     prioridade = "normal",
-    perfilDestino = "sindico"
+    perfilDestino = "sindico",
+    encomenda = null
   }) {
     criarNotificacao({
       titulo,
@@ -159,6 +267,18 @@ function Encomendas() {
       tipo: "Encomendas",
       origem: "Encomendas",
       perfilDestino,
+      usuarioDestinoId:
+        perfilDestino === "morador"
+          ? encomenda?.moradorId || null
+          : null,
+      usuarioDestinoNome:
+        perfilDestino === "morador"
+          ? encomenda?.morador || ""
+          : "",
+      apartamentoDestino:
+        perfilDestino === "morador"
+          ? encomenda?.apartamento || ""
+          : "",
       moduloOrigem: "Encomendas",
       referenciaId,
       prioridade
@@ -168,7 +288,7 @@ function Encomendas() {
   function validarEncomenda() {
     const descricao = String(novaEncomenda.descricao || "").trim();
     const transportadora = String(novaEncomenda.transportadora || "").trim();
-    const codigo = String(novaEncomenda.codigo || "").trim();
+    const codigo = obterCodigoRastreio(novaEncomenda);
 
     if (!novaEncomenda.morador) {
       alert("Selecione o morador destinatário.");
@@ -197,7 +317,7 @@ function Encomendas() {
         const statusAtual = item.status || "Recebido";
 
         return (
-          limparCodigo(item.codigo) === codigoNormalizado &&
+          obterCodigoRastreio(item) === codigoNormalizado &&
           item.id !== editId &&
           statusAtual !== "Entregue"
         );
@@ -224,7 +344,7 @@ function Encomendas() {
       e.morador?.toLowerCase().includes(texto) ||
       e.apartamento?.toLowerCase().includes(texto) ||
       e.descricao?.toLowerCase().includes(texto) ||
-      e.codigo?.toLowerCase().includes(texto) ||
+      obterCodigoRastreio(e).toLowerCase().includes(texto) ||
       e.codigoInterno?.toLowerCase().includes(texto) ||
       e.transportadora?.toLowerCase().includes(texto) ||
       e.status?.toLowerCase().includes(texto);
@@ -323,7 +443,9 @@ function Encomendas() {
       moradorId: encomenda.moradorId || null,
       apartamento: encomenda.apartamento || "",
       descricao: encomenda.descricao,
-      codigo: encomenda.codigo,
+      codigo: obterCodigoRastreio(encomenda),
+      codigoRastreio: obterCodigoRastreio(encomenda),
+      rastreio: obterCodigoRastreio(encomenda),
       codigoInterno: encomenda.codigoInterno,
       transportadora: encomenda.transportadora,
       status: encomenda.status,
@@ -352,7 +474,9 @@ function Encomendas() {
       moradorId: encomenda.moradorId || null,
       apartamento: encomenda.apartamento || "",
       descricao: encomenda.descricao,
-      codigo: encomenda.codigo,
+      codigo: obterCodigoRastreio(encomenda),
+      codigoRastreio: obterCodigoRastreio(encomenda),
+      rastreio: obterCodigoRastreio(encomenda),
       codigoInterno: encomenda.codigoInterno,
       transportadora: encomenda.transportadora,
       status: encomenda.status,
@@ -477,10 +601,14 @@ function Encomendas() {
       morador: String(novaEncomenda.morador || "").trim(),
       apartamento: String(novaEncomenda.apartamento || "").trim(),
       descricao: String(novaEncomenda.descricao || "").trim(),
-      codigo: limparCodigo(novaEncomenda.codigo),
-      codigoInterno: novaEncomenda.codigoInterno || proximoCodigoEncomenda(),
+      codigoRastreio: obterCodigoRastreio(novaEncomenda),
+      rastreio: obterCodigoRastreio(novaEncomenda),
+      codigo: obterCodigoRastreio(novaEncomenda),
+      codigoInterno:
+        novaEncomenda.codigoInterno ||
+        proximoCodigoEncomenda(),
       transportadora: String(novaEncomenda.transportadora || "").trim(),
-      status: novaEncomenda.status || "Recebido",
+      status: normalizarStatus(novaEncomenda.status),
       condominioId: perfilCondominio.condominioId,
       nomeCondominio: perfilCondominio.nomeCondominio,
       criadoPor: usuarioAtual.nome || usuarioAtual.usuario || "Sistema",
@@ -516,7 +644,7 @@ function Encomendas() {
       setEditId(null);
     } else {
       const nova = {
-        id: Date.now(),
+        id: gerarIdUnico(),
         ...encomendaFormatada,
         data: new Date().toLocaleString("pt-BR"),
         criadoEm: new Date().toISOString()
@@ -577,10 +705,10 @@ function Encomendas() {
       e.id === id
         ? {
             ...e,
-            status,
+            status: normalizarStatus(status),
             atualizadoEm: new Date().toISOString(),
             retiradaEm:
-              status === "Entregue"
+              normalizarStatus(status) === "Entregue"
                 ? new Date().toLocaleString("pt-BR")
                 : e.retiradaEm
           }
@@ -592,7 +720,11 @@ function Encomendas() {
     );
 
     if (encomenda) {
-      registrarFluxo(`status: ${status}`, encomenda, encomendaAntes);
+      registrarFluxo(
+        `status: ${normalizarStatus(status)}`,
+        encomenda,
+        encomendaAntes
+      );
     }
 
     setEncomendas(lista);
@@ -811,7 +943,9 @@ function Encomendas() {
 
                         <p style={styles.packageCode}>
                           Código: {e.codigoInterno || "Sem código interno"}{" "}
-                          {e.codigo ? `• Rastreio: ${e.codigo}` : ""}
+                          {obterCodigoRastreio(e)
+                            ? `• Rastreio: ${obterCodigoRastreio(e)}`
+                            : ""}
                         </p>
                       </div>
                     </div>
@@ -1104,6 +1238,8 @@ function Encomendas() {
 const styles = {
   container: {
     width: "100%",
+    minWidth: 0,
+    overflowX: "hidden",
     fontFamily: "Arial",
     color: "#111827",
     position: "relative"
@@ -1124,6 +1260,7 @@ const styles = {
   },
 
   heroLeft: {
+    width: "100%",
     maxWidth: "680px"
   },
 
@@ -1190,6 +1327,7 @@ const styles = {
   },
 
   controlStrip: {
+    minWidth: 0,
     background:
       "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
     border: "1px solid #ddd6fe",
@@ -1254,6 +1392,7 @@ const styles = {
   },
 
   panelHeader: {
+    minWidth: 0,
     display: "flex",
     justifyContent: "space-between",
     alignItems: "flex-start",
@@ -1286,6 +1425,7 @@ const styles = {
   },
 
   packageGrid: {
+    minWidth: 0,
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit,minmax(340px,1fr))",
     gap: "18px"
@@ -1472,6 +1612,7 @@ const styles = {
   },
 
   modal: {
+    minWidth: 0,
     width: "100%",
     maxWidth: "780px",
     maxHeight: "90vh",

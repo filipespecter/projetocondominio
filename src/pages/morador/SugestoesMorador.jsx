@@ -66,16 +66,31 @@ function SugestoesMorador() {
     setForm(estadoInicial);
   }
 
-  function pertenceAoApartamento(item) {
-    const apartamentoMorador = morador?.apartamento || morador?.apto || "";
-    const apartamentoIdMorador = morador?.apartamentoId || null;
+  function registroPertenceAoMorador(item) {
+    if (!morador) return false;
 
-    return (
-      String(item.apartamento || item.apto || "") === String(apartamentoMorador) ||
-      (
-        apartamentoIdMorador &&
-        String(item.apartamentoId || "") === String(apartamentoIdMorador)
-      )
+    if (item.moradorId && morador.id) {
+      return String(item.moradorId) === String(morador.id);
+    }
+
+    if (item.moradorUsuario && morador.usuario) {
+      return String(item.moradorUsuario) === String(morador.usuario);
+    }
+
+    const nomeItem = item.moradorNome || item.morador || "";
+    const nomeMorador = morador.nome || "";
+
+    const apartamentoItem = item.apartamento || item.apto || "";
+    const apartamentoMorador = morador.apartamento || morador.apto || "";
+
+    return Boolean(
+      nomeItem &&
+      nomeMorador &&
+      apartamentoItem &&
+      apartamentoMorador &&
+      String(nomeItem).trim().toLowerCase() ===
+        String(nomeMorador).trim().toLowerCase() &&
+      String(apartamentoItem) === String(apartamentoMorador)
     );
   }
 
@@ -118,6 +133,10 @@ function SugestoesMorador() {
       apartamento: registro.apartamento,
       apartamentoId: registro.apartamentoId || null,
       morador: registro.moradorNome,
+      moradorNome: registro.moradorNome,
+      moradorId: registro.moradorId || null,
+      moradorUsuario: registro.moradorUsuario || "",
+      condominioId: registro.condominioId || null,
       responsavel: registro.moradorNome,
       status: "Novo",
       respostaSindico: "",
@@ -280,11 +299,7 @@ function SugestoesMorador() {
     ocorrencias.filter((item) => {
       const mesmoMorador =
         item.origem === "morador" &&
-        (
-          item.moradorId === morador?.id ||
-          item.moradorUsuario === morador?.usuario ||
-          pertenceAoApartamento(item)
-        );
+        registroPertenceAoMorador(item);
 
       if (!mesmoMorador) return false;
 
@@ -777,12 +792,16 @@ function SugestoesMorador() {
 const styles = {
   container: {
     width: "100%",
+    minWidth: 0,
+    boxSizing: "border-box",
     fontFamily: "Arial",
     color: "#111827",
     position: "relative"
   },
 
   hero: {
+    minWidth: 0,
+    flexWrap: "wrap",
     background:
       "linear-gradient(135deg,#2e1065,#4c1d95,#7c3aed)",
     borderRadius: "30px",
@@ -883,6 +902,7 @@ const styles = {
 
   cards: {
     display: "grid",
+    minWidth: 0,
     gridTemplateColumns:
       "repeat(auto-fit,minmax(220px,1fr))",
     gap: "18px",
@@ -1002,12 +1022,15 @@ const styles = {
 
   mainGrid: {
     display: "grid",
-    gridTemplateColumns: "400px 1fr",
+    minWidth: 0,
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,400px),1fr))",
     gap: "24px",
     alignItems: "flex-start"
   },
 
   formCard: {
+    minWidth: 0,
+    overflow: "hidden",
     background:
       "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
     borderRadius: "28px",
@@ -1018,6 +1041,8 @@ const styles = {
   },
 
   listCard: {
+    minWidth: 0,
+    overflow: "hidden",
     background:
       "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
     borderRadius: "28px",
@@ -1029,6 +1054,7 @@ const styles = {
 
   sectionHeader: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: "18px",
@@ -1068,6 +1094,7 @@ const styles = {
 
   input: {
     width: "100%",
+    minWidth: 0,
     padding: "14px 15px",
     borderRadius: "15px",
     border: "1px solid #c4b5fd",
@@ -1080,6 +1107,8 @@ const styles = {
 
   textarea: {
     width: "100%",
+    minWidth: 0,
+    maxWidth: "100%",
     minHeight: "140px",
     padding: "14px 15px",
     borderRadius: "15px",
@@ -1118,6 +1147,7 @@ const styles = {
 
   listHeader: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: "18px",
@@ -1126,16 +1156,20 @@ const styles = {
 
   filters: {
     display: "flex",
+    flexWrap: "wrap",
     gap: "10px"
   },
 
   search: {
+    width: "100%",
+    minWidth: "180px",
+    flex: "1 1 210px",
     padding: "13px 14px",
     borderRadius: "15px",
     border: "1px solid #c4b5fd",
     outline: "none",
     background: "#fbfaff",
-    minWidth: "210px"
+    boxSizing: "border-box"
   },
 
   filter: {
@@ -1184,6 +1218,7 @@ const styles = {
 
   cardTop: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     gap: "18px",
     alignItems: "flex-start",
@@ -1192,6 +1227,7 @@ const styles = {
 
   badges: {
     display: "flex",
+    flexWrap: "wrap",
     flexWrap: "wrap",
     gap: "8px",
     marginBottom: "10px"

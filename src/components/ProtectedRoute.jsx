@@ -24,6 +24,9 @@ function ProtectedRoute({ children, tipoPermitido }) {
       localStorage.removeItem(chave);
       sessionStorage.removeItem(chave);
     });
+
+    localStorage.removeItem("usuarioLogado");
+    sessionStorage.removeItem("usuarioLogado");
   }
 
   function normalizarTipo(usuario) {
@@ -37,14 +40,16 @@ function ProtectedRoute({ children, tipoPermitido }) {
       usuario.tipoUsuario ||
       "";
 
-    return String(tipo).toLowerCase();
+    return String(tipo)
+      .trim()
+      .toLowerCase();
   }
 
   function usuarioEhValidoParaRota(usuario) {
     const tipoUsuario = normalizarTipo(usuario);
 
     if (!tipoUsuario) {
-      return true;
+      return false;
     }
 
     if (tipoPermitido === "morador") {
@@ -73,15 +78,14 @@ function ProtectedRoute({ children, tipoPermitido }) {
 
   const chavesSessao = obterChavesSessao();
 
-  const usuarioSalvo =
-    chavesSessao
-      .map((chave) => ({
-        chave,
-        valor:
-          localStorage.getItem(chave) ||
-          sessionStorage.getItem(chave)
-      }))
-      .find((item) => item.valor);
+  const usuarioSalvo = chavesSessao
+    .map((chave) => ({
+      chave,
+      valor:
+        localStorage.getItem(chave) ||
+        sessionStorage.getItem(chave)
+    }))
+    .find((item) => item.valor);
 
   if (!usuarioSalvo) {
     return (
@@ -103,15 +107,35 @@ function ProtectedRoute({ children, tipoPermitido }) {
     return (
       <Navigate
         to={`/login/${tipoPermitido}`}
+        state={{ from: location }}
+        replace
+      />
+    );
+  }
+
+  if (
+    !usuarioLogado ||
+    typeof usuarioLogado !== "object" ||
+    Array.isArray(usuarioLogado)
+  ) {
+    limparSessao(chavesSessao);
+
+    return (
+      <Navigate
+        to={`/login/${tipoPermitido}`}
+        state={{ from: location }}
         replace
       />
     );
   }
 
   if (!usuarioEhValidoParaRota(usuarioLogado)) {
+    limparSessao(chavesSessao);
+
     return (
       <Navigate
         to={`/login/${tipoPermitido}`}
+        state={{ from: location }}
         replace
       />
     );

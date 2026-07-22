@@ -33,6 +33,80 @@ function AvisosMorador() {
     localStorage.setItem(chave, JSON.stringify(dados));
   }
 
+  function obterMoradorAtual() {
+    const chaves = ["sessaoMorador", "usuarioMorador"];
+
+    for (const chave of chaves) {
+      try {
+        const valor =
+          localStorage.getItem(chave) ||
+          sessionStorage.getItem(chave);
+
+        if (valor) return JSON.parse(valor);
+      } catch {
+        continue;
+      }
+    }
+
+    return null;
+  }
+
+  function registroPertenceAoMorador(item, moradorAtual) {
+    if (!moradorAtual) return false;
+
+    const itemId =
+      item.usuarioDestinoId ||
+      item.moradorId ||
+      item.destinatarioMoradorId ||
+      null;
+
+    const moradorId = moradorAtual.id || null;
+
+    if (itemId && moradorId) {
+      return String(itemId) === String(moradorId);
+    }
+
+    const itemUsuario =
+      item.usuarioDestinoUsuario ||
+      item.moradorUsuario ||
+      "";
+
+    const moradorUsuario = moradorAtual.usuario || "";
+
+    if (itemUsuario && moradorUsuario) {
+      return String(itemUsuario) === String(moradorUsuario);
+    }
+
+    const itemNome =
+      item.usuarioDestinoNome ||
+      item.moradorNome ||
+      item.morador ||
+      "";
+
+    const moradorNome = moradorAtual.nome || "";
+
+    const itemApartamento =
+      item.apartamentoDestino ||
+      item.apartamento ||
+      item.apto ||
+      "";
+
+    const moradorApartamento =
+      moradorAtual.apartamento ||
+      moradorAtual.apto ||
+      "";
+
+    return Boolean(
+      itemNome &&
+      moradorNome &&
+      itemApartamento &&
+      moradorApartamento &&
+      String(itemNome).trim().toLowerCase() ===
+        String(moradorNome).trim().toLowerCase() &&
+      String(itemApartamento) === String(moradorApartamento)
+    );
+  }
+
   function carregarAvisos() {
     const avisosOficiais = lerStorage("avisos").map((item) => ({
       ...item,
@@ -42,19 +116,27 @@ function AvisosMorador() {
       lida: item.lidaMorador || false
     }));
 
-    const notificacoesMorador = lerStorage("notificacoesMorador").map((item) => ({
-      ...item,
-      titulo: item.titulo || "Notificação",
-      descricao: item.descricao || item.mensagem || "",
-      prioridade: item.prioridade || "Normal",
-      origem: "Síndico",
-      tipo: item.tipo || "Notificação",
-      status: item.status || "Novo",
-      lida: item.lida || false
-    }));
+    const moradorAtual = obterMoradorAtual();
+
+    const notificacoesMorador = lerStorage("notificacoesMorador")
+      .filter((item) => registroPertenceAoMorador(item, moradorAtual))
+      .map((item) => ({
+        ...item,
+        titulo: item.titulo || "Notificação",
+        descricao: item.descricao || item.mensagem || "",
+        prioridade: item.prioridade || "Normal",
+        origem: "Síndico",
+        tipo: item.tipo || "Notificação",
+        status: item.status || "Novo",
+        lida: item.lida || false
+      }));
 
     const sugestoesRespondidas = lerStorage("sugestoes_reclamacoes")
-      .filter((item) => item.respostaSindico || item.respostasSindico?.length > 0)
+      .filter(
+        (item) =>
+          registroPertenceAoMorador(item, moradorAtual) &&
+          (item.respostaSindico || item.respostasSindico?.length > 0)
+      )
       .map((item) => ({
         ...item,
         titulo: item.titulo || item.tipoRegistro || item.tipo || "Resposta do síndico",
@@ -383,12 +465,16 @@ function AvisosMorador() {
 const styles = {
   container: {
     width: "100%",
+    minWidth: 0,
+    boxSizing: "border-box",
     fontFamily: "Arial",
     color: "#111827",
     position: "relative"
   },
 
   hero: {
+    minWidth: 0,
+    flexWrap: "wrap",
     background:
       "linear-gradient(135deg,#2e1065,#4c1d95,#7c3aed)",
     borderRadius: "30px",
@@ -460,6 +546,7 @@ const styles = {
 
   resumeGrid: {
     display: "grid",
+    minWidth: 0,
     gridTemplateColumns:
       "repeat(auto-fit,minmax(220px,1fr))",
     gap: "18px",
@@ -578,6 +665,8 @@ const styles = {
   },
 
   listCard: {
+    minWidth: 0,
+    overflow: "hidden",
     background:
       "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
     borderRadius: "28px",
@@ -589,6 +678,7 @@ const styles = {
 
   listHeader: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: "18px",
@@ -610,16 +700,20 @@ const styles = {
 
   filters: {
     display: "flex",
+    flexWrap: "wrap",
     gap: "10px"
   },
 
   search: {
+    width: "100%",
+    minWidth: "180px",
+    flex: "1 1 230px",
     padding: "13px 14px",
     borderRadius: "15px",
     border: "1px solid #c4b5fd",
     outline: "none",
     background: "#fbfaff",
-    minWidth: "230px"
+    boxSizing: "border-box"
   },
 
   filter: {
@@ -670,6 +764,7 @@ const styles = {
 
   cardTop: {
     display: "flex",
+    flexWrap: "wrap",
     gap: "18px",
     alignItems: "flex-start"
   },
@@ -688,7 +783,8 @@ const styles = {
   },
 
   noticeContent: {
-    flex: 1
+    flex: "1 1 260px",
+    minWidth: 0
   },
 
   badges: {

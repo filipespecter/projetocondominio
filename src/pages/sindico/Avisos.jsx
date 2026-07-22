@@ -181,13 +181,30 @@ function Avisos() {
     });
   }
 
-  function criarNotificacaoGlobal({ titulo, mensagem, tipo = "Avisos", perfilDestino = "sindico", referenciaId = null, prioridade = "normal" }) {
+  function criarNotificacaoGlobal({
+    titulo,
+    mensagem,
+    tipo = "Avisos",
+    perfilDestino = "sindico",
+    usuarioDestinoId = null,
+    usuarioDestinoNome = "",
+    usuarioDestinoUsuario = "",
+    apartamentoDestino = "",
+    condominioId = null,
+    referenciaId = null,
+    prioridade = "normal"
+  }) {
     criarNotificacao({
       titulo,
       mensagem,
       tipo,
       origem: "Avisos",
       perfilDestino,
+      usuarioDestinoId,
+      usuarioDestinoNome,
+      usuarioDestinoUsuario,
+      apartamentoDestino,
+      condominioId,
       moduloOrigem: "Avisos",
       referenciaId,
       prioridade
@@ -441,6 +458,23 @@ function Avisos() {
           item.categoria === "Sugestão" || item.categoria === "Reclamação"
             ? "morador"
             : "sindico",
+        usuarioDestinoId:
+          item.categoria === "Sugestão" || item.categoria === "Reclamação"
+            ? item.moradorId || null
+            : null,
+        usuarioDestinoNome:
+          item.categoria === "Sugestão" || item.categoria === "Reclamação"
+            ? item.moradorNome || item.morador || ""
+            : "",
+        usuarioDestinoUsuario:
+          item.categoria === "Sugestão" || item.categoria === "Reclamação"
+            ? item.moradorUsuario || ""
+            : "",
+        apartamentoDestino:
+          item.categoria === "Sugestão" || item.categoria === "Reclamação"
+            ? item.apartamento || item.apto || ""
+            : "",
+        condominioId: item.condominioId || null,
         referenciaId: item.id,
         prioridade: novoStatus === "Resolvido" ? "baixa" : "normal"
       });
@@ -496,8 +530,13 @@ function Avisos() {
         tipo: item.categoria,
         titulo: `Resposta do síndico: ${item.titulo}`,
         descricao: respostaTexto,
-        apartamento: item.apartamento || "",
+        apartamento: item.apartamento || item.apto || "",
+        apartamentoId: item.apartamentoId || null,
         morador: item.morador || item.moradorNome || "",
+        moradorId: item.moradorId || null,
+        moradorUsuario: item.moradorUsuario || "",
+        condominioId: item.condominioId || null,
+        referenciaId: item.id,
         lida: false,
         data: agora.toLocaleDateString("pt-BR"),
         hora: agora.toLocaleTimeString([], {
@@ -547,6 +586,19 @@ function Avisos() {
       mensagem: respostaTexto,
       tipo: item.categoria,
       perfilDestino: item.categoria === "Ocorrência" ? "sindico" : "morador",
+      usuarioDestinoId:
+        item.categoria === "Ocorrência" ? null : item.moradorId || null,
+      usuarioDestinoNome:
+        item.categoria === "Ocorrência"
+          ? ""
+          : item.moradorNome || item.morador || "",
+      usuarioDestinoUsuario:
+        item.categoria === "Ocorrência" ? "" : item.moradorUsuario || "",
+      apartamentoDestino:
+        item.categoria === "Ocorrência"
+          ? ""
+          : item.apartamento || item.apto || "",
+      condominioId: item.condominioId || null,
       referenciaId: item.id
     });
 
@@ -781,17 +833,17 @@ function Avisos() {
                     </span>
                   </div>
 
-                  <div style={styles.badgeRow}>
-                    <span style={styles.categoryTag}>{aviso.categoria}</span>
-                    <span style={styles.originTag}>{aviso.origem}</span>
-                    <span style={styles.statusTag}>{aviso.status}</span>
+                  <div style={styles.badges}>
+                    <span style={styles.categoryBadge}>{aviso.categoria}</span>
+                    <span style={styles.originBadge}>{aviso.origem}</span>
+                    <span style={styles.statusBadge}>{aviso.status}</span>
                   </div>
 
                   <h3 style={styles.noticeTitle}>{aviso.titulo}</h3>
 
-                  <p style={styles.noticeDescription}>{aviso.descricao}</p>
+                  <p style={styles.description}>{aviso.descricao}</p>
 
-                  <div style={styles.dateBox}>
+                  <div style={styles.meta}>
                     <span>Registrado em</span>
                     <strong>{aviso.data}</strong>
                   </div>
@@ -804,7 +856,7 @@ function Avisos() {
                         placeholder="Resposta ou comentário do síndico..."
                         value={respostaTexto}
                         onChange={(e) => setRespostaTexto(e.target.value)}
-                        style={styles.responseTextarea}
+                        style={styles.responseInput}
                       />
 
                       <button
@@ -816,7 +868,7 @@ function Avisos() {
                     </div>
                   )}
 
-                  <div style={styles.actionRow}>
+                  <div style={styles.actions}>
                     {aviso.categoria === "Aviso" ? (
                       <>
                         <button
@@ -868,7 +920,7 @@ function Avisos() {
       </section>
 
       {mostrarModal && (
-        <div style={styles.modalBg}>
+        <div style={styles.modalBackground}>
           <div style={styles.modal}>
             <div style={styles.modalTop}>
               <div>
@@ -890,7 +942,7 @@ function Avisos() {
               <h3 style={styles.modalSectionTitle}>Conteúdo do aviso</h3>
 
               <div style={styles.formGrid}>
-                <div style={styles.formRowFull}>
+                <div style={styles.groupFull}>
                   <label style={styles.label}>Título</label>
 
                   <input
@@ -906,7 +958,7 @@ function Avisos() {
                   />
                 </div>
 
-                <div style={styles.formRowFull}>
+                <div style={styles.groupFull}>
                   <label style={styles.label}>Descrição</label>
 
                   <textarea
@@ -922,7 +974,7 @@ function Avisos() {
                   />
                 </div>
 
-                <div style={styles.formRowFull}>
+                <div style={styles.groupFull}>
                   <label style={styles.label}>Prioridade</label>
 
                   <select
@@ -944,11 +996,11 @@ function Avisos() {
             </div>
 
             <div style={styles.modalButtons}>
-              <button style={styles.saveBtn} onClick={salvarAviso}>
+              <button style={styles.saveButton} onClick={salvarAviso}>
                 Salvar aviso
               </button>
 
-              <button style={styles.cancelBtn} onClick={fecharModal}>
+              <button style={styles.cancelButton} onClick={fecharModal}>
                 Cancelar
               </button>
             </div>
@@ -962,12 +1014,16 @@ function Avisos() {
 const styles = {
   container: {
     width: "100%",
+    minWidth: 0,
     fontFamily: "Arial",
     color: "#111827",
-    position: "relative"
+    position: "relative",
+    boxSizing: "border-box"
   },
 
   hero: {
+    minWidth: 0,
+    flexWrap: "wrap",
     background:
       "radial-gradient(circle at top right,rgba(255,255,255,0.18),transparent 28%), radial-gradient(circle at bottom left,rgba(168,85,247,0.26),transparent 34%), linear-gradient(135deg,#2e1065,#4c1d95,#7c3aed)",
     borderRadius: "42px",
@@ -1064,6 +1120,8 @@ const styles = {
   },
 
   controlStrip: {
+    minWidth: 0,
+    flexWrap: "wrap",
     background:
       "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
     border: "1px solid #ddd6fe",
@@ -1077,7 +1135,8 @@ const styles = {
   },
 
   searchWrap: {
-    flex: 1,
+    flex: "1 1 320px",
+    minWidth: "220px",
     position: "relative"
   },
 
@@ -1127,6 +1186,8 @@ const styles = {
   },
 
   communicationPanel: {
+    minWidth: 0,
+    overflow: "hidden",
     background:
       "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), linear-gradient(180deg,#ffffff,#fbfaff)",
     border: "1px solid #ede9fe",
@@ -1137,6 +1198,7 @@ const styles = {
 
   panelHeader: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: "18px",
@@ -1373,6 +1435,14 @@ const styles = {
     marginTop: "12px"
   },
 
+  responseArea: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
+    marginTop: "14px",
+    minWidth: 0
+  },
+
   responseBox: {
     background: "#f3e8ff",
     border: "1px solid #ddd6fe",
@@ -1460,6 +1530,10 @@ const styles = {
 
   modal: {
     width: "620px",
+    maxWidth: "100%",
+    maxHeight: "calc(100vh - 40px)",
+    overflowY: "auto",
+    boxSizing: "border-box",
     background:
       "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), #fbfaff",
     padding: "26px",
@@ -1469,6 +1543,8 @@ const styles = {
   },
 
   modalTop: {
+    minWidth: 0,
+    flexWrap: "wrap",
     background:
       "radial-gradient(circle at top right,rgba(255,255,255,0.16),transparent 34%), linear-gradient(135deg,#4c1d95,#7c3aed)",
     color: "white",
@@ -1504,6 +1580,13 @@ const styles = {
     fontWeight: "900"
   },
 
+  modalSectionTitle: {
+    margin: "0 0 16px",
+    color: "#4c1d95",
+    fontSize: "18px",
+    fontWeight: "900"
+  },
+
   modalSection: {
     background: "white",
     border: "1px solid #ede9fe",
@@ -1513,7 +1596,7 @@ const styles = {
 
   formGrid: {
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
+    gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
     gap: "15px"
   },
 
@@ -1537,6 +1620,8 @@ const styles = {
   },
 
   input: {
+    width: "100%",
+    minWidth: 0,
     padding: "15px",
     borderRadius: "16px",
     border: "1px solid #c4b5fd",
@@ -1548,6 +1633,9 @@ const styles = {
   },
 
   textarea: {
+    width: "100%",
+    minWidth: 0,
+    maxWidth: "100%",
     minHeight: "120px",
     padding: "15px",
     borderRadius: "16px",
@@ -1563,6 +1651,7 @@ const styles = {
 
   modalButtons: {
     display: "flex",
+    flexWrap: "wrap",
     gap: "12px",
     marginTop: "18px"
   },

@@ -15,9 +15,22 @@ export default function ApartmentGrid({ onRefresh }) {
 
     const interval = setInterval(() => {
       carregarDados();
-    }, 3000);
+    }, 10000);
 
-    return () => clearInterval(interval);
+    window.addEventListener("storage", carregarDados);
+    window.addEventListener(
+      "infinitycondo:encomendas",
+      carregarDados
+    );
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("storage", carregarDados);
+      window.removeEventListener(
+        "infinitycondo:encomendas",
+        carregarDados
+      );
+    };
   }, []);
 
   function lerStorage(chave) {
@@ -36,13 +49,29 @@ export default function ApartmentGrid({ onRefresh }) {
     setOcorrencias(lerStorage("ocorrencias"));
   }
 
+  const apartamentosCadastrados = lerStorage("apartamentos");
+
   const apartamentos = [
     ...new Set(
-      moradores
-        .map((m) => String(m.apartamento || m.apto || "").trim())
-        .filter(Boolean)
+      [
+        ...apartamentosCadastrados.map((item) =>
+          String(
+            item.numero ||
+            item.apartamento ||
+            item.apto ||
+            ""
+          ).trim()
+        ),
+        ...moradores.map((m) =>
+          String(m.apartamento || m.apto || "").trim()
+        )
+      ].filter(Boolean)
     )
-  ].sort((a, b) => Number(a) - Number(b));
+  ].sort((a, b) =>
+    String(a).localeCompare(String(b), "pt-BR", {
+      numeric: true
+    })
+  );
 
   function obterMorador(ap) {
     const encontrado = moradores.find(
@@ -58,7 +87,9 @@ export default function ApartmentGrid({ onRefresh }) {
     return encomendas.filter(
       (e) =>
         String(e.apartamento) === String(ap) &&
-        e.status === "pendente"
+        ["recebido", "pendente", "aguardando", "atrasado"].includes(
+          String(e.status || "").toLowerCase()
+        )
     ).length;
   }
 
@@ -66,7 +97,9 @@ export default function ApartmentGrid({ onRefresh }) {
     return encomendas.filter(
       (e) =>
         String(e.apartamento) === String(ap) &&
-        e.status === "retirada"
+        ["retirada", "retirado", "entregue"].includes(
+          String(e.status || "").toLowerCase()
+        )
     ).length;
   }
 
@@ -359,6 +392,7 @@ export default function ApartmentGrid({ onRefresh }) {
 
 const styles = {
   panel: {
+    minWidth: 0,
     background: "linear-gradient(135deg,#ffffff,#f8fafc)",
     border: "1px solid #eef2f7",
     borderRadius: "24px",
@@ -444,6 +478,7 @@ const styles = {
   },
 
   topBar: {
+    minWidth: 0,
     display: "flex",
     justifyContent: "space-between",
     gap: "16px",
@@ -473,12 +508,14 @@ const styles = {
   },
 
   grid: {
+    minWidth: 0,
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))",
     gap: "18px"
   },
 
   card: {
+    minWidth: 0,
     position: "relative",
     overflow: "hidden",
     background: "white",

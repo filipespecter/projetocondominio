@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { registrarAuditoria } from "../../Services/auditoriaService";
 import { criarNotificacao } from "../../Services/notificacaoService";
 
@@ -38,6 +38,32 @@ function AreasComuns() {
   const [novaArea, setNovaArea] = useState(estadoInicialArea);
   const [editId, setEditId] = useState(null);
 
+  useEffect(() => {
+    const sincronizar = () => {
+      const lista = lerStorage(STORAGE_KEY).map((area) => ({
+        ...area,
+        capacidade: area.capacidade || "",
+        status: area.status || "Disponível"
+      }));
+
+      setAreas(lista);
+    };
+
+    window.addEventListener("storage", sincronizar);
+    window.addEventListener(
+      "infinitycondo:reservas",
+      sincronizar
+    );
+
+    return () => {
+      window.removeEventListener("storage", sincronizar);
+      window.removeEventListener(
+        "infinitycondo:reservas",
+        sincronizar
+      );
+    };
+  }, []);
+
   function lerStorage(chave) {
     try {
       const dados = localStorage.getItem(chave);
@@ -49,6 +75,72 @@ function AreasComuns() {
 
   function salvarStorage(chave, dados) {
     localStorage.setItem(chave, JSON.stringify(dados));
+
+    if (
+      chave === STORAGE_KEY ||
+      chave === "reservas"
+    ) {
+      window.dispatchEvent(
+        new CustomEvent("infinitycondo:reservas", {
+          detail: { chave }
+        })
+      );
+    }
+  }
+
+  function gerarIdUnico() {
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  }
+
+  function normalizarStatusReserva(status) {
+    const valor = String(status || "")
+      .trim()
+      .toLowerCase();
+
+    if (
+      valor === "recusada" ||
+      valor === "recusado" ||
+      valor === "cancelada" ||
+      valor === "cancelado" ||
+      valor === "concluída" ||
+      valor === "concluida"
+    ) {
+      return valor.includes("recus")
+        ? "recusada"
+        : valor.includes("cancel")
+        ? "cancelada"
+        : "concluida";
+    }
+
+    return valor === "aprovada" || valor === "aprovado"
+      ? "aprovada"
+      : "pendente";
+  }
+
+  function reservaAtiva(reserva) {
+    return ![
+      "recusada",
+      "cancelada",
+      "concluida"
+    ].includes(normalizarStatusReserva(reserva?.status));
+  }
+
+  function reservasAtivasDaArea(area) {
+    const reservas = lerStorage("reservas");
+
+    return reservas.filter((reserva) => {
+      const mesmaArea =
+        area?.id && reserva?.areaId
+          ? String(area.id) === String(reserva.areaId)
+          : String(area?.nome || "")
+              .trim()
+              .toLowerCase() ===
+            String(reserva?.area || "")
+              .trim()
+              .toLowerCase();
+
+      return mesmaArea && reservaAtiva(reserva);
+    });
   }
 
   function limparCapacidade(valor) {
@@ -153,7 +245,7 @@ function AreasComuns() {
     const movimentacoes = lerStorage(STORAGE_MOVIMENTACOES);
 
     const nova = {
-      id: Date.now(),
+      id: gerarIdUnico(),
       tipo: "Área Comum",
       acao,
       origem: "Síndico",
@@ -178,7 +270,7 @@ function AreasComuns() {
     const relatorios = lerStorage(STORAGE_RELATORIOS);
 
     const novo = {
-      id: Date.now() + 1,
+      id: gerarIdUnico(),
       tipo: "Área Comum",
       acao,
       origem: "Síndico",
@@ -204,7 +296,7 @@ function AreasComuns() {
     const avisos = lerStorage(STORAGE_AVISOS_SINDICO);
 
     const novo = {
-      id: Date.now() + 2,
+      id: gerarIdUnico(),
       categoria: "Aviso",
       origem: "Síndico",
       titulo: `Área comum ${acao} - ${area.nome}`,
@@ -337,7 +429,7 @@ function AreasComuns() {
       setEditId(null);
     } else {
       areaFinal = {
-        id: Date.now(),
+        id: gerarIdUnico(),
         ...areaFormatada,
         reservasAtivas: 0,
         impactaBI: true,
@@ -381,6 +473,21 @@ function AreasComuns() {
 
     const areaExcluida = areas.find((area) => area.id === id);
 
+    if (!areaExcluida) {
+      alert("Área comum não encontrada.");
+      return;
+    }
+
+    const reservasAtivas =
+      reservasAtivasDaArea(areaExcluida);
+
+    if (reservasAtivas.length > 0) {
+      alert(
+        "Não é possível excluir esta área porque existem reservas ativas vinculadas a ela. Cancele ou conclua as reservas primeiro."
+      );
+      return;
+    }
+
     const listaAtualizada = areas.filter(
       (area) => area.id !== id
     );
@@ -397,6 +504,24 @@ function AreasComuns() {
     let areaAtualizada = null;
     const areaAntes = areas.find((area) => area.id === id);
 
+    if (!areaAntes) {
+      alert("Área comum não encontrada.");
+      return;
+    }
+
+    if (status === "Manutenção") {
+      const reservasAtivas =
+        reservasAtivasDaArea(areaAntes);
+
+      if (reservasAtivas.length > 0) {
+        const confirmar = window.confirm(
+          `Esta área possui ${reservasAtivas.length} reserva(s) ativa(s). Ao colocá-la em manutenção, novas reservas e aprovações serão bloqueadas. Deseja continuar?`
+        );
+
+        if (!confirmar) return;
+      }
+    }
+
     const listaAtualizada = areas.map((area) => {
       if (area.id !== id) return area;
 
@@ -406,7 +531,8 @@ function AreasComuns() {
         impactaBI: true,
         impactaRelatorio: true,
         origemModulo: "AreasComuns",
-        atualizadoEm: new Date().toLocaleString("pt-BR")
+        atualizadoEm: new Date().toLocaleString("pt-BR"),
+        atualizadoEmISO: new Date().toISOString()
       };
 
       return areaAtualizada;
@@ -845,12 +971,15 @@ function AreasComuns() {
 const styles = {
   container: {
     width: "100%",
+    minWidth: 0,
+    overflowX: "hidden",
     fontFamily: "Arial",
     color: "#111827",
     position: "relative"
   },
 
   hero: {
+    minWidth: 0,
     background:
       "linear-gradient(135deg,#02140b,#5b21b6 55%,#15803d)",
     borderRadius: "36px",
@@ -931,6 +1060,7 @@ const styles = {
   },
 
   controlStrip: {
+    minWidth: 0,
     background:
       "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
     border: "1px solid #ddd6fe",
@@ -986,6 +1116,7 @@ const styles = {
   },
 
   catalogPanel: {
+    minWidth: 0,
     background:
       "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), linear-gradient(180deg,#ffffff,#fbfaff)",
     border: "1px solid #ede9fe",
@@ -1027,6 +1158,7 @@ const styles = {
   },
 
   areaGrid: {
+    minWidth: 0,
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit,minmax(340px,1fr))",
     gap: "18px"
@@ -1198,6 +1330,7 @@ const styles = {
   },
 
   modal: {
+    minWidth: 0,
     width: "720px",
     maxHeight: "90vh",
     overflowY: "auto",
@@ -1256,6 +1389,7 @@ const styles = {
   },
 
   formGrid: {
+    minWidth: 0,
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
     gap: "15px"

@@ -20,6 +20,7 @@ function EncomendasMorador() {
   const [tipoEntrega, setTipoEntrega] = useState("");
   const [descricaoEntrega, setDescricaoEntrega] = useState("");
   const [transportadora, setTransportadora] = useState("");
+  const [codigoRastreio, setCodigoRastreio] = useState("");
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("Todos");
 
@@ -27,6 +28,25 @@ function EncomendasMorador() {
     carregarSessao();
     carregarEncomendas();
     carregarEsperadas();
+
+    const sincronizar = () => {
+      carregarEncomendas();
+      carregarEsperadas();
+    };
+
+    window.addEventListener("storage", sincronizar);
+    window.addEventListener(
+      "infinitycondo:encomendas",
+      sincronizar
+    );
+
+    return () => {
+      window.removeEventListener("storage", sincronizar);
+      window.removeEventListener(
+        "infinitycondo:encomendas",
+        sincronizar
+      );
+    };
   }, []);
 
   function lerStorage(chave) {
@@ -40,6 +60,77 @@ function EncomendasMorador() {
 
   function salvarStorage(chave, dados) {
     localStorage.setItem(chave, JSON.stringify(dados));
+
+    if (
+      chave === "encomendas" ||
+      chave === "encomendas_esperadas" ||
+      chave === "encomendas_historico"
+    ) {
+      window.dispatchEvent(
+        new CustomEvent("infinitycondo:encomendas", {
+          detail: { chave }
+        })
+      );
+    }
+  }
+
+  function gerarIdUnico() {
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  }
+
+  function normalizarCodigo(valor) {
+    const limpo = String(valor || "")
+      .trim()
+      .replace(/\s+/g, "")
+      .replace(/[^a-zA-Z0-9._-]/g, "")
+      .toUpperCase();
+
+    return limpo;
+  }
+
+  function obterCodigoRastreio(item = {}) {
+    const valor =
+      item.codigoRastreio ||
+      item.rastreio ||
+      item.codigo ||
+      "";
+
+    if (
+      String(valor).toLowerCase() === "não informado" ||
+      String(valor).toLowerCase() === "nao informado"
+    ) {
+      return "";
+    }
+
+    return normalizarCodigo(valor);
+  }
+
+  function normalizarStatus(status) {
+    const valor = String(status || "")
+      .trim()
+      .toLowerCase();
+
+    if (
+      valor === "entregue" ||
+      valor === "retirada" ||
+      valor === "retirado"
+    ) {
+      return "Entregue";
+    }
+
+    if (valor === "atrasado") {
+      return "Atrasado";
+    }
+
+    if (
+      valor === "aguardando" ||
+      valor === "esperada" ||
+      valor === "esperado"
+    ) {
+      return "Aguardando";
+    }
+
+    return "Recebido";
   }
 
   function carregarSessao() {
@@ -56,11 +147,26 @@ function EncomendasMorador() {
   }
 
   function carregarEncomendas() {
-    setEncomendas(lerStorage(STORAGE_ENCOMENDAS));
+    setEncomendas(
+      lerStorage(STORAGE_ENCOMENDAS).map((item) => ({
+        ...item,
+        codigoRastreio: obterCodigoRastreio(item),
+        rastreio: obterCodigoRastreio(item),
+        codigo: obterCodigoRastreio(item),
+        status: normalizarStatus(item.status)
+      }))
+    );
   }
 
   function carregarEsperadas() {
-    setEsperadas(lerStorage(STORAGE_ESPERADAS));
+    setEsperadas(
+      lerStorage(STORAGE_ESPERADAS).map((item) => ({
+        ...item,
+        codigoRastreio: obterCodigoRastreio(item),
+        rastreio: obterCodigoRastreio(item),
+        codigo: obterCodigoRastreio(item)
+      }))
+    );
   }
 
   function pertenceAoApartamento(item) {
@@ -71,16 +177,49 @@ function EncomendasMorador() {
 
     const apartamentoIdMorador = morador?.apartamentoId || null;
 
+    if (item.moradorId && morador?.id) {
+      return String(item.moradorId) === String(morador.id);
+    }
+
+    if (item.usuario && morador?.usuario) {
+      return String(item.usuario) === String(morador.usuario);
+    }
+
+    if (
+      (item.morador || item.nome) &&
+      morador?.nome
+    ) {
+      return (
+        String(item.morador || item.nome)
+          .trim()
+          .toLowerCase() ===
+          String(morador.nome).trim().toLowerCase() &&
+        (
+          String(item.apartamento || item.apto || "") ===
+            String(apartamentoMorador) ||
+          (
+            apartamentoIdMorador &&
+            String(item.apartamentoId || "") ===
+              String(apartamentoIdMorador)
+          )
+        )
+      );
+    }
+
     return (
-      String(item.apartamento || item.apto || "") === String(apartamentoMorador) ||
+      !item.moradorId &&
+      !item.usuario &&
+      !item.morador &&
+      !item.nome &&
       (
-        apartamentoIdMorador &&
-        String(item.apartamentoId || "") === String(apartamentoIdMorador)
-      ) ||
-      item.moradorId === morador?.id ||
-      item.usuario === morador?.usuario ||
-      item.morador === morador?.nome ||
-      item.nome === morador?.nome
+        String(item.apartamento || item.apto || "") ===
+          String(apartamentoMorador) ||
+        (
+          apartamentoIdMorador &&
+          String(item.apartamentoId || "") ===
+            String(apartamentoIdMorador)
+        )
+      )
     );
   }
 
@@ -112,6 +251,7 @@ function EncomendasMorador() {
     setTipoEntrega("");
     setDescricaoEntrega("");
     setTransportadora("");
+    setCodigoRastreio("");
   }
 
   function registrarAvisoSindico(registro) {
@@ -147,7 +287,7 @@ function EncomendasMorador() {
     const movimentacoes = lerStorage(STORAGE_MOVIMENTACOES);
 
     const novaMovimentacao = {
-      id: Date.now() + 1,
+      id: gerarIdUnico(),
       tipo: "Encomenda Esperada",
       origem: "Morador",
       titulo: `Entrega aguardada - ${registro.tipo}`,
@@ -157,6 +297,9 @@ function EncomendasMorador() {
       morador: registro.morador,
       moradorId: registro.moradorId || null,
       transportadora: registro.transportadora,
+      codigo: obterCodigoRastreio(registro),
+      codigoRastreio: obterCodigoRastreio(registro),
+      rastreio: obterCodigoRastreio(registro),
       status: registro.status,
       data: registro.data,
       hora: registro.hora
@@ -172,7 +315,7 @@ function EncomendasMorador() {
     const relatorios = lerStorage(STORAGE_RELATORIOS);
 
     const novoRelatorio = {
-      id: Date.now() + 2,
+      id: gerarIdUnico(),
       tipo: "Encomenda Esperada",
       origem: "Morador",
       titulo: `Entrega aguardada - ${registro.tipo}`,
@@ -182,6 +325,9 @@ function EncomendasMorador() {
       morador: registro.morador,
       moradorId: registro.moradorId || null,
       transportadora: registro.transportadora,
+      codigo: obterCodigoRastreio(registro),
+      codigoRastreio: obterCodigoRastreio(registro),
+      rastreio: obterCodigoRastreio(registro),
       status: registro.status,
       data: registro.data,
       hora: registro.hora
@@ -213,7 +359,7 @@ function EncomendasMorador() {
     const todas = lerStorage(STORAGE_ESPERADAS);
 
     const nova = {
-      id: Date.now(),
+      id: gerarIdUnico(),
 
       moradorId: morador?.id || null,
       morador: morador?.nome || "Morador",
@@ -231,8 +377,12 @@ function EncomendasMorador() {
       nomeCondominio: morador?.nomeCondominio || "",
 
       tipo: tipoEntrega,
-      transportadora: transportadora || "Não informada",
-      descricao: descricaoEntrega,
+      transportadora:
+        transportadora.trim() || "Não informada",
+      descricao: descricaoEntrega.trim(),
+      codigoRastreio: normalizarCodigo(codigoRastreio),
+      rastreio: normalizarCodigo(codigoRastreio),
+      codigo: normalizarCodigo(codigoRastreio),
 
       status: "aguardando",
       etapa: "aguardando_portaria",
@@ -317,7 +467,8 @@ function EncomendasMorador() {
       const correspondeBusca =
         item.tipo?.toLowerCase().includes(texto) ||
         item.descricao?.toLowerCase().includes(texto) ||
-        item.codigo?.toLowerCase().includes(texto) ||
+        obterCodigoRastreio(item).toLowerCase().includes(texto) ||
+        item.codigoInterno?.toLowerCase().includes(texto) ||
         item.transportadora?.toLowerCase().includes(texto) ||
         item.status?.toLowerCase().includes(texto);
 
@@ -534,6 +685,21 @@ function EncomendasMorador() {
           />
 
           <label style={styles.label}>
+            Código de rastreio
+          </label>
+
+          <input
+            placeholder="Informe o código, se disponível"
+            value={codigoRastreio}
+            onChange={(e) =>
+              setCodigoRastreio(
+                normalizarCodigo(e.target.value)
+              )
+            }
+            style={styles.input}
+          />
+
+          <label style={styles.label}>
             Descrição
           </label>
 
@@ -647,7 +813,10 @@ function EncomendasMorador() {
                         </span>
 
                         <span style={styles.dateBadge}>
-                          🔖 {item.codigo || "Sem código"}
+                          🔖 {item.codigoInterno || "Sem código interno"}
+                          {obterCodigoRastreio(item)
+                            ? ` • Rastreio: ${obterCodigoRastreio(item)}`
+                            : ""}
                         </span>
                       </div>
 
@@ -752,6 +921,8 @@ function EncomendasMorador() {
 const styles = {
   container: {
     width: "100%",
+    minWidth: 0,
+    overflowX: "hidden",
     fontFamily: "Arial",
     color: "#111827",
     position: "relative"
@@ -959,6 +1130,7 @@ const styles = {
   },
 
   mainGrid: {
+    minWidth: 0,
     display: "grid",
     gridTemplateColumns: "390px 1fr",
     gap: "24px",
@@ -966,6 +1138,7 @@ const styles = {
   },
 
   formCard: {
+    minWidth: 0,
     background:
       "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
     borderRadius: "28px",
@@ -976,6 +1149,7 @@ const styles = {
   },
 
   listCard: {
+    minWidth: 0,
     background:
       "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
     borderRadius: "28px",
@@ -1075,6 +1249,7 @@ const styles = {
   },
 
   listHeader: {
+    minWidth: 0,
     display: "flex",
     justifyContent: "space-between",
     alignItems: "flex-start",
@@ -1083,6 +1258,7 @@ const styles = {
   },
 
   filters: {
+    minWidth: 0,
     display: "flex",
     gap: "10px"
   },
