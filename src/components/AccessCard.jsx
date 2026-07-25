@@ -5,12 +5,14 @@ function AccessCard({ icon, title, description, color, buttonColor }) {
         {`
           .access-card{
             position:relative;
-            width:300px;
+            width:100%;
+            max-width:300px;
             height:360px;
             border-radius:32px;
             padding:28px;
             overflow:hidden;
             cursor:pointer;
+            box-sizing:border-box;
 
             background:
               linear-gradient(
@@ -193,6 +195,31 @@ function AccessCard({ icon, title, description, color, buttonColor }) {
             box-shadow:
               0 20px 40px rgba(124,58,237,.34);
 
+          }
+
+          @media (max-width: 380px) {
+            .access-card{
+              height:auto;
+              min-height:300px;
+              padding:22px;
+            }
+            .access-icon{
+              width:72px;
+              height:72px;
+              font-size:34px;
+              margin-bottom:16px;
+            }
+            .access-title{
+              font-size:20px;
+              margin-bottom:10px;
+            }
+            .access-description{
+              min-height:0;
+              margin-bottom:20px;
+            }
+            .access-button{
+              padding:12px 28px;
+            }
           }
 
         `}

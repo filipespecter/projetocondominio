@@ -84,6 +84,7 @@ const styles = {
     overflow: "hidden",
 
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "flex-start",
     gap: "18px",
 
@@ -110,6 +111,7 @@ const styles = {
     borderRadius: "18px",
 
     display: "flex",
+    flexWrap: "wrap",
 
     alignItems: "center",
 

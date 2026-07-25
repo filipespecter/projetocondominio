@@ -563,7 +563,7 @@ const styles = {
   cards: {
     display: "grid",
     gridTemplateColumns:
-      "repeat(auto-fit,minmax(240px,1fr))",
+      "repeat(auto-fit,minmax(min(240px,100%),1fr))",
     gap: "20px",
     marginBottom: "30px"
   },
@@ -575,6 +575,7 @@ const styles = {
     padding: "24px",
     borderRadius: "22px",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "18px",
     boxShadow:

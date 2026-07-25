@@ -678,6 +678,7 @@ const styles = {
     padding: "32px",
     color: "white",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center",
     gap: "28px",
@@ -712,6 +713,7 @@ const styles = {
   userLine: {
     marginTop: "18px",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "10px",
     color: "#f3e8ff",
@@ -771,7 +773,7 @@ const styles = {
   cards: {
     display: "grid",
     gridTemplateColumns:
-      "repeat(auto-fit,minmax(230px,1fr))",
+      "repeat(auto-fit,minmax(min(230px,100%),1fr))",
     gap: "18px",
     marginBottom: "24px"
   },
@@ -783,6 +785,7 @@ const styles = {
     padding: "24px",
     color: "white",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center",
     boxShadow: "0 14px 35px rgba(124,58,237,0.18)"
@@ -799,6 +802,7 @@ const styles = {
 
   cardTop: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: "18px"
@@ -827,6 +831,7 @@ const styles = {
     borderRadius: "18px",
     background: "rgba(255,255,255,0.16)",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "29px"
@@ -838,6 +843,7 @@ const styles = {
     borderRadius: "17px",
     background: "#f3e8ff",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "24px"
@@ -849,6 +855,7 @@ const styles = {
     borderRadius: "17px",
     background: "#ede9fe",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "24px"
@@ -860,6 +867,7 @@ const styles = {
     borderRadius: "17px",
     background: "#fef3c7",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "24px"
@@ -906,7 +914,7 @@ const styles = {
 
   secondaryGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(320px,100%),1fr))",
     gap: "24px",
     marginBottom: "24px"
   },
@@ -918,6 +926,7 @@ const styles = {
     boxShadow: "0 14px 40px rgba(15,23,42,0.08)",
     border: "1px solid #ede9fe",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center",
     gap: "24px"
@@ -949,6 +958,7 @@ const styles = {
 
   operationNumbers: {
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "22px",
     background: "#fbfaff",
@@ -1004,6 +1014,7 @@ const styles = {
 
   statusItem: {
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "10px",
     color: "#374151",
@@ -1025,7 +1036,7 @@ const styles = {
 
   bottomGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(320px,100%),1fr))",
     gap: "24px"
   },
 
@@ -1039,6 +1050,7 @@ const styles = {
 
   sectionHeader: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "flex-start",
     marginBottom: "22px",
@@ -1092,6 +1104,7 @@ const styles = {
 
   historyItem: {
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "flex-start",
     gap: "14px",
     padding: "17px",
@@ -1108,6 +1121,7 @@ const styles = {
     borderRadius: "15px",
     background: "#f3e8ff",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "21px"

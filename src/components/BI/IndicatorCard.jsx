@@ -30,6 +30,7 @@ const styles = {
     overflow: "hidden",
 
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "18px",
 
@@ -74,6 +75,7 @@ const styles = {
     borderRadius: "20px",
 
     display: "flex",
+    flexWrap: "wrap",
 
     alignItems: "center",
 

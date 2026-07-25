@@ -764,6 +764,7 @@ const styles = {
     padding: "34px",
     color: "white",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center",
     gap: "30px",
@@ -801,6 +802,7 @@ const styles = {
   heroInfo: {
     marginTop: "18px",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "10px",
     color: "#f3e8ff",
@@ -849,7 +851,7 @@ const styles = {
 
   quickActions: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(230px,100%),1fr))",
     gap: "18px",
     marginBottom: "26px"
   },
@@ -862,6 +864,7 @@ const styles = {
     borderRadius: "26px",
     cursor: "pointer",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "16px",
     textAlign: "left",
@@ -877,6 +880,7 @@ const styles = {
     borderRadius: "26px",
     cursor: "pointer",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "16px",
     textAlign: "left",
@@ -889,6 +893,7 @@ const styles = {
     borderRadius: "18px",
     background: "rgba(255,255,255,0.16)",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "27px"
@@ -900,6 +905,7 @@ const styles = {
     borderRadius: "18px",
     background: "#f3e8ff",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "27px"
@@ -907,7 +913,7 @@ const styles = {
 
   cards: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(230px,100%),1fr))",
     gap: "18px",
     marginBottom: "26px"
   },
@@ -918,6 +924,7 @@ const styles = {
     padding: "24px",
     color: "white",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center",
     boxShadow: "0 16px 35px rgba(124,58,237,0.18)"
@@ -946,6 +953,7 @@ const styles = {
     borderRadius: "20px",
     background: "rgba(255,255,255,0.16)",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "30px"
@@ -957,6 +965,7 @@ const styles = {
     borderRadius: "26px",
     padding: "24px",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "18px",
     boxShadow: "0 16px 40px rgba(88,28,135,0.08)",
@@ -968,6 +977,7 @@ const styles = {
     height: "56px",
     borderRadius: "19px",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "27px",
@@ -987,7 +997,7 @@ const styles = {
 
   middleGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(320px,100%),1fr))",
     gap: "24px",
     marginBottom: "26px"
   },
@@ -1035,12 +1045,14 @@ const styles = {
     borderRadius: "17px",
     padding: "14px",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center"
   },
 
   priorityLeft: {
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "10px",
     color: "rgba(255,255,255,0.82)",
@@ -1073,6 +1085,7 @@ const styles = {
 
   sectionHeader: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: "18px",
@@ -1117,6 +1130,7 @@ const styles = {
 
   chartInfo: {
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "10px",
     color: "#374151",
@@ -1130,6 +1144,7 @@ const styles = {
     borderRadius: "12px",
     background: "#f3e8ff",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center"
   },
@@ -1163,6 +1178,7 @@ const styles = {
 
   activityHeader: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "flex-start",
     marginBottom: "22px"
@@ -1214,6 +1230,7 @@ const styles = {
 
   activityItem: {
     display: "flex",
+    flexWrap: "wrap",
     gap: "14px",
     background: "#fbfaff",
     border: "1px solid #ddd6fe",
@@ -1227,6 +1244,7 @@ const styles = {
     borderRadius: "16px",
     background: "#f3e8ff",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "22px",
@@ -1270,6 +1288,7 @@ const styles = {
     background: "rgba(15,23,42,0.62)",
     backdropFilter: "blur(8px)",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     zIndex: 999,
@@ -1281,6 +1300,7 @@ const styles = {
     maxWidth: "850px",
     maxHeight: "90vh",
     overflowY: "auto",
+    overflowX: "hidden",
     background: "#fbfaff",
     borderRadius: "34px",
     padding: "26px",
@@ -1294,6 +1314,7 @@ const styles = {
     borderRadius: "28px",
     padding: "28px",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     gap: "20px",
     marginBottom: "20px"
@@ -1330,7 +1351,7 @@ const styles = {
 
   manualGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(230px,100%),1fr))",
     gap: "16px"
   },
 
@@ -1367,6 +1388,7 @@ const styles = {
 
   brandRow: {
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "16px",
     marginBottom: "16px"

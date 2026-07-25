@@ -13,8 +13,12 @@ import {
 
 import { useState } from "react";
 import logoStar from "../assets/images/logo-star-infinity.png";
+import useResponsive from "../hooks/useResponsive";
 
 function Login() {
+  const { isMobile, isTablet } = useResponsive();
+  const loginShellStyleResponsiva =
+    isMobile || isTablet ? { gridTemplateColumns: "1fr" } : {};
   const { tipo } = useParams();
   const navigate = useNavigate();
 
@@ -386,7 +390,7 @@ function Login() {
         {"010101 110010 101101 001011 111000 010110 100101"}
       </div>
 
-      <div style={styles.loginShell}>
+      <div style={{ ...styles.loginShell, ...loginShellStyleResponsiva }}>
         <div style={styles.formSide}>
           <button
             style={styles.backButton}
@@ -616,6 +620,7 @@ const styles = {
     background:
       "radial-gradient(circle at top left,rgba(124,58,237,0.24),transparent 30%), radial-gradient(circle at bottom right,rgba(168,85,247,0.20),transparent 28%), radial-gradient(circle at center,rgba(59,130,246,0.10),transparent 36%), linear-gradient(135deg,#ffffff,#f8f5ff 48%,#ffffff)",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "center",
     alignItems: "center",
     padding: "32px",
@@ -676,7 +681,7 @@ const styles = {
   },
 
   loginShell: {
-    width: "1080px",
+    width: "min(1080px, 94vw)",
     minHeight: "650px",
     display: "grid",
     gridTemplateColumns: "1fr 0.95fr",
@@ -725,6 +730,7 @@ const styles = {
     borderRadius: "14px",
     cursor: "pointer",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "8px",
     fontWeight: "800",
@@ -749,6 +755,7 @@ const styles = {
     height: "88px",
     borderRadius: "28px",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     margin: "4px 0 16px",
@@ -811,6 +818,7 @@ const styles = {
   passwordWrap: {
     width: "100%",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     borderRadius: "17px",
     border: "1px solid #ddd6fe",
@@ -848,6 +856,7 @@ const styles = {
     cursor: "pointer",
     fontWeight: "900",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "8px",
     margin: "-3px 0 15px",
@@ -897,6 +906,7 @@ const styles = {
       "linear-gradient(135deg,rgba(255,255,255,0.22),rgba(255,255,255,0.08))",
     border: "1px solid rgba(255,255,255,0.20)",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "44px",
@@ -943,6 +953,7 @@ const styles = {
     borderRadius: "18px",
     padding: "14px",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "12px",
     fontWeight: "800",
@@ -963,6 +974,7 @@ const styles = {
     background: "rgba(2,6,23,0.72)",
     backdropFilter: "blur(10px)",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "center",
     alignItems: "center",
     zIndex: 20,
@@ -970,7 +982,7 @@ const styles = {
   },
 
   warningModal: {
-    width: "460px",
+    width: "min(460px, 92vw)",
     background: "linear-gradient(180deg,#ffffff,#fbfaff)",
     border: "1px solid #ddd6fe",
     borderRadius: "32px",
@@ -989,6 +1001,7 @@ const styles = {
     background: "linear-gradient(135deg,#6d28d9,#a855f7)",
     color: "white",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "34px"
@@ -1007,6 +1020,7 @@ const styles = {
 
   warningActions: {
     display: "flex",
+    flexWrap: "wrap",
     gap: "12px",
     marginTop: "24px"
   },

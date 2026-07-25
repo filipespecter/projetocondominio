@@ -1,0 +1,37 @@
+/* Base global de responsividade.
+   Não define nenhuma cor, fonte ou espaçamento visual do design:
+   apenas garante que a página não "estoure" horizontalmente em telas
+   pequenas e dá suporte a rolagem em tabelas largas. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+}
+
+img,
+svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Utilitário usado nas tabelas: em vez de encolher ou quebrar o design,
+   permite rolagem horizontal suave dentro da própria tabela em telas
+   estreitas, mantendo o layout de desktop intacto. */
+.tabela-responsiva {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}

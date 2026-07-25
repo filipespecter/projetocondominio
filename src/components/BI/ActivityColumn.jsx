@@ -93,6 +93,7 @@ const styles = {
 
   header: {
     display: "flex",
+    flexWrap: "wrap",
 
     alignItems: "center",
 
@@ -109,6 +110,7 @@ const styles = {
     borderRadius: "12px",
 
     display: "flex",
+    flexWrap: "wrap",
 
     alignItems: "center",
 

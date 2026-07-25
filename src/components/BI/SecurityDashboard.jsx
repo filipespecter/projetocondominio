@@ -1,4 +1,12 @@
+import useResponsive from "../../hooks/useResponsive";
+
 function SecurityDashboard({ indicadores = {}, saude = {}, insights = [] }) {
+  const { isMobile, isTablet } = useResponsive();
+  const bottomGridStyle =
+    isMobile || isTablet
+      ? { ...styles.bottomGrid, gridTemplateColumns: "1fr" }
+      : styles.bottomGrid;
+
   const alertasCriticos = insights.filter((item) => {
     const tipo = String(item.tipo || "").toLowerCase();
 
@@ -52,7 +60,7 @@ function SecurityDashboard({ indicadores = {}, saude = {}, insights = [] }) {
         />
       </div>
 
-      <div style={styles.bottomGrid}>
+      <div style={bottomGridStyle}>
         <div style={styles.healthPanel}>
           <span style={styles.smallBadge}>Saúde operacional</span>
 
@@ -170,7 +178,7 @@ const styles = {
 
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(230px,100%),1fr))",
     gap: "16px"
   },
 
