@@ -1,0 +1,283 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/**
+ * |--------------------------------------------------------------------------
+ * | ENUMS
+ * |--------------------------------------------------------------------------
+ */
+
+enum UserRole {
+  PLATFORM_ADMIN
+  CONDOMINIUM_ADMIN
+  MANAGER
+  DOORMAN
+  RESIDENT
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+  PENDING
+}
+
+enum CondominiumStatus {
+  TRIAL
+  ACTIVE
+  SUSPENDED
+  CANCELED
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  OVERDUE
+  SUSPENDED
+  CANCELED
+}
+
+enum BillingCycle {
+  MONTHLY
+  QUARTERLY
+  SEMIANNUAL
+  ANNUAL
+}
+
+enum FeatureValueType {
+  BOOLEAN
+  LIMIT
+  CONFIGURATION
+}
+
+/**
+ * |--------------------------------------------------------------------------
+ * | PLANOS
+ * |--------------------------------------------------------------------------
+ * |
+ * | Inicialmente serão cadastrados somente:
+ * |
+ * | ESSENTIAL
+ * | COMPLETE
+ * |
+ */
+
+model Plan {
+  id                  String       @id @default(uuid()) @db.Uuid
+  name                String
+  code                String       @unique
+  description         String?
+  monthlyPriceInCents Int
+  billingCycle        BillingCycle @default(MONTHLY)
+  active              Boolean      @default(true)
+  displayOrder        Int          @default(0)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  deletedAt           DateTime?
+
+  subscriptions Subscription[]
+  planFeatures  PlanFeature[]
+
+  @@index([active])
+  @@index([displayOrder])
+  @@index([deletedAt])
+}
+
+/**
+ * |--------------------------------------------------------------------------
+ * | RECURSOS DISPONÍVEIS
+ * |--------------------------------------------------------------------------
+ * |
+ * | Exemplos:
+ * |
+ * | BI_ANALYTICS
+ * | MONITOR_CENTER
+ * | ADVANCED_REPORTS
+ * | CUSTOM_BRANDING
+ * | PRIORITY_SUPPORT
+ * | MAX_UNITS
+ * | MAX_USERS
+ * | AUDIT_RETENTION_DAYS
+ * |
+ */
+
+model Feature {
+  id          String           @id @default(uuid()) @db.Uuid
+  code        String           @unique
+  name        String
+  description String?
+  valueType   FeatureValueType @default(BOOLEAN)
+  active      Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  deletedAt   DateTime?
+
+  planFeatures PlanFeature[]
+
+  @@index([active])
+  @@index([deletedAt])
+}
+
+/**
+ * |--------------------------------------------------------------------------
+ * | RECURSOS DE CADA PLANO
+ * |--------------------------------------------------------------------------
+ */
+
+model PlanFeature {
+  planId    String @db.Uuid
+  featureId String @db.Uuid
+
+  enabled    Boolean @default(true)
+  limitValue Int?
+  config     Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  plan    Plan    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  feature Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@id([planId, featureId])
+  @@index([featureId])
+  @@index([planId, enabled])
+}
+
+/**
+ * |--------------------------------------------------------------------------
+ * | CONDOMÍNIOS CLIENTES
+ * |--------------------------------------------------------------------------
+ */
+
+model Condominium {
+  id   String @id @default(uuid()) @db.Uuid
+  code String @unique
+
+  name      String
+  legalName String?
+  document  String? @unique
+
+  email String?
+  phone String?
+
+  postalCode    String?
+  addressLine   String?
+  addressNumber String?
+  addressExtra  String?
+  neighborhood  String?
+  city          String?
+  state         String?
+
+  logoUrl  String?
+  timezone String  @default("America/Recife")
+
+  status CondominiumStatus @default(TRIAL)
+
+  trialEndsAt DateTime?
+  activatedAt DateTime?
+  suspendedAt DateTime?
+  canceledAt  DateTime?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  users         User[]
+  subscriptions Subscription[]
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([deletedAt])
+}
+
+/**
+ * |--------------------------------------------------------------------------
+ * | ASSINATURAS DO INFINITYCONDO
+ * |--------------------------------------------------------------------------
+ * |
+ * | Representa a mensalidade paga pelo condomínio à Star Infinity Code.
+ * | Não representa a taxa condominial dos moradores.
+ * |
+ */
+
+model Subscription {
+  id            String @id @default(uuid()) @db.Uuid
+  condominiumId String @db.Uuid
+  planId        String @db.Uuid
+
+  status       SubscriptionStatus @default(TRIAL)
+  billingCycle BillingCycle       @default(MONTHLY)
+
+  priceInCents Int
+
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  trialEndsAt        DateTime?
+
+  suspendedAt        DateTime?
+  canceledAt         DateTime?
+  cancellationReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  condominium Condominium @relation(fields: [condominiumId], references: [id], onDelete: Restrict)
+  plan        Plan        @relation(fields: [planId], references: [id], onDelete: Restrict)
+
+  @@index([condominiumId, status])
+  @@index([planId])
+  @@index([currentPeriodEnd])
+  @@index([status, currentPeriodEnd])
+}
+
+/**
+ * |--------------------------------------------------------------------------
+ * | USUÁRIOS
+ * |--------------------------------------------------------------------------
+ * |
+ * | PLATFORM_ADMIN:
+ * | condominiumId = null
+ * |
+ * | Usuários de condomínios:
+ * | condominiumId preenchido
+ * |
+ */
+
+model User {
+  id            String  @id @default(uuid()) @db.Uuid
+  condominiumId String? @db.Uuid
+
+  name     String
+  username String
+  email    String? @unique
+  phone    String?
+
+  passwordHash String
+
+  role   UserRole
+  status UserStatus @default(ACTIVE)
+
+  mustChangePassword  Boolean @default(true)
+  failedLoginAttempts Int     @default(0)
+
+  lockedUntil       DateTime?
+  lastLoginAt       DateTime?
+  passwordChangedAt DateTime?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  condominium Condominium? @relation(fields: [condominiumId], references: [id], onDelete: Restrict)
+
+  @@unique([condominiumId, username])
+  @@index([condominiumId, role, status])
+  @@index([role, status])
+  @@index([deletedAt])
+}
