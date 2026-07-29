@@ -1769,6 +1769,7 @@ const styles = {
     borderRadius: "28px",
     padding: "34px",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     gap: "24px",
     alignItems: "center",
@@ -1907,7 +1908,7 @@ const styles = {
 
   formGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(240px,100%),1fr))",
     gap: "16px"
   },
 
@@ -1941,6 +1942,7 @@ const styles = {
 
   colorRow: {
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "12px",
     background: "#fbfaff",
@@ -2024,7 +2026,7 @@ const styles = {
 
   infoGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(220px,100%),1fr))",
     gap: "14px",
     marginBottom: "18px"
   },
@@ -2040,7 +2042,7 @@ const styles = {
 
   userGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(280px,100%),1fr))",
     gap: "16px",
     marginBottom: "24px"
   },
@@ -2055,6 +2057,7 @@ const styles = {
 
   userTop: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center"
   },
@@ -2066,6 +2069,7 @@ const styles = {
     background: "#8b5cf6",
     color: "white",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "26px"
@@ -2139,7 +2143,7 @@ const styles = {
 
   backupGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(280px,100%),1fr))",
     gap: "18px"
   },
 
@@ -2173,7 +2177,7 @@ const styles = {
 
   preferenceGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(260px,100%),1fr))",
     gap: "14px",
     marginTop: "18px"
   },
@@ -2184,6 +2188,7 @@ const styles = {
     borderRadius: "20px",
     padding: "18px",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     gap: "12px",
     alignItems: "center",

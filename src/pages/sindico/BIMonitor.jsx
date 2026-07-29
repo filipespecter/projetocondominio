@@ -23,8 +23,13 @@ import HeatMap from "../../components/BI/HeatMap";
 import TrendAnalysis from "../../components/BI/TrendAnalysis";
 
 import logoStar from "../../assets/images/logo-star-infinity.png";
+import useResponsive from "../../hooks/useResponsive";
 
 function BIMonitor() {
+  const { isMobile, isTablet } = useResponsive();
+  const commandGridStyleResponsiva =
+    isMobile || isTablet ? { gridTemplateColumns: "1fr" } : {};
+
   const [hora, setHora] = useState("");
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState("");
   const [visaoAtiva, setVisaoAtiva] = useState(
@@ -404,7 +409,7 @@ function BIMonitor() {
             />
           </section>
 
-          <main style={styles.commandGrid}>
+          <main style={{ ...styles.commandGrid, ...commandGridStyleResponsiva }}>
             <section style={styles.mainPanel}>
               <div style={styles.panelHeader}>
                 <div>
@@ -660,7 +665,8 @@ const styles = {
     overflow: "hidden"
   },
 
-  headerBrand: { display: "flex", alignItems: "center", gap: "18px" },
+  headerBrand: { display: "flex",
+    flexWrap: "wrap", alignItems: "center", gap: "18px" },
 
   logoImage: {
     width: "94px",
@@ -768,7 +774,7 @@ const styles = {
 
   kpis: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(210px,100%),1fr))",
     gap: "14px",
     marginBottom: "20px"
   },
@@ -933,7 +939,7 @@ const styles = {
 
   analyticsGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(320px,100%),1fr))",
     gap: "20px",
     marginBottom: "20px"
   },
@@ -948,6 +954,7 @@ const styles = {
 
   rankingItem: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     gap: "12px",
     padding: "10px 0",
@@ -959,7 +966,7 @@ const styles = {
 
   bottomGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(320px,100%),1fr))",
     gap: "20px",
     marginBottom: "20px"
   },

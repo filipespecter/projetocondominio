@@ -110,7 +110,7 @@ const styles = {
   grid: {
     display: "grid",
     gridTemplateColumns:
-      "repeat(auto-fit, minmax(280px, 1fr))",
+      "repeat(auto-fit, minmax(min(280px,100%), 1fr))",
     gap: "18px"
   },
 
@@ -124,6 +124,7 @@ const styles = {
 
   top: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: "14px"

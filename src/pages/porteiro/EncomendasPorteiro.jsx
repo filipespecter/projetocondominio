@@ -698,6 +698,7 @@ const styles = {
     padding: "32px",
     color: "white",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center",
     gap: "28px",
@@ -733,6 +734,7 @@ const styles = {
   userLine: {
     marginTop: "18px",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "10px",
     color: "#f3e8ff",
@@ -783,7 +785,7 @@ const styles = {
   cardsGrid: {
     display: "grid",
     gridTemplateColumns:
-      "repeat(auto-fit,minmax(220px,1fr))",
+      "repeat(auto-fit,minmax(min(220px,100%),1fr))",
     gap: "18px",
     marginBottom: "26px"
   },
@@ -795,6 +797,7 @@ const styles = {
     padding: "24px",
     color: "white",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center",
     boxShadow:
@@ -807,6 +810,7 @@ const styles = {
     borderRadius: "24px",
     padding: "24px",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "18px",
     boxShadow:
@@ -837,6 +841,7 @@ const styles = {
     borderRadius: "18px",
     background: "rgba(255,255,255,0.16)",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "29px"
@@ -848,6 +853,7 @@ const styles = {
     borderRadius: "18px",
     background: "#ede9fe",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "27px"
@@ -859,6 +865,7 @@ const styles = {
     borderRadius: "18px",
     background: "#f3e8ff",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "27px"
@@ -870,6 +877,7 @@ const styles = {
     borderRadius: "18px",
     background: "#fef3c7",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "27px"
@@ -922,6 +930,7 @@ const styles = {
 
   sectionHeader: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: "18px",
@@ -964,7 +973,7 @@ const styles = {
   expectedGrid: {
     display: "grid",
     gridTemplateColumns:
-      "repeat(auto-fit, minmax(280px, 1fr))",
+      "repeat(auto-fit, minmax(min(280px,100%), 1fr))",
     gap: "18px"
   },
 
@@ -978,6 +987,7 @@ const styles = {
 
   expectedTop: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "flex-start",
     marginBottom: "14px"
@@ -1006,6 +1016,7 @@ const styles = {
     borderRadius: "16px",
     background: "#ede9fe",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "23px"

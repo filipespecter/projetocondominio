@@ -35,6 +35,8 @@ const styles = {
     borderRadius: "30px",
     padding: "24px 26px",
     display: "flex",
+    flexWrap: "wrap",
+    gap: "16px",
     alignItems: "center",
     justifyContent: "space-between",
     boxShadow: "0 18px 45px rgba(88,28,135,0.10)",

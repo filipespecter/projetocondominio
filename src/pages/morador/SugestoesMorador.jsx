@@ -904,7 +904,7 @@ const styles = {
     display: "grid",
     minWidth: 0,
     gridTemplateColumns:
-      "repeat(auto-fit,minmax(220px,1fr))",
+      "repeat(auto-fit,minmax(min(220px,100%),1fr))",
     gap: "18px",
     marginBottom: "26px"
   },
@@ -916,6 +916,7 @@ const styles = {
     padding: "24px",
     color: "white",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center",
     boxShadow:
@@ -928,6 +929,7 @@ const styles = {
     borderRadius: "24px",
     padding: "24px",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "18px",
     boxShadow:
@@ -958,6 +960,7 @@ const styles = {
     borderRadius: "18px",
     background: "rgba(255,255,255,0.16)",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "29px"
@@ -969,6 +972,7 @@ const styles = {
     borderRadius: "18px",
     background: "#f3e8ff",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "27px"
@@ -980,6 +984,7 @@ const styles = {
     borderRadius: "18px",
     background: "#fef3c7",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "27px"
@@ -991,6 +996,7 @@ const styles = {
     borderRadius: "18px",
     background: "#ede9fe",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "27px"
@@ -1227,7 +1233,6 @@ const styles = {
 
   badges: {
     display: "flex",
-    flexWrap: "wrap",
     flexWrap: "wrap",
     gap: "8px",
     marginBottom: "10px"

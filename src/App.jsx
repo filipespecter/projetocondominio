@@ -14,6 +14,7 @@ import {
 import logoStar from "./assets/images/logo-star-infinity.png";
 
 import Login from "./pages/login";
+import useResponsive from "./hooks/useResponsive";
 
 import DashboardLayout from "./layout/DashboardLayout";
 import DashboardPorteiroLayout from "./layout/DashboardPorteiroLayout";
@@ -49,9 +50,19 @@ import SugestoesMorador from "./pages/morador/SugestoesMorador";
 
 function Home() {
   const navigate = useNavigate();
+  const { isMobile, isTablet } = useResponsive();
+  const isMenuBreakpoint = isMobile || isTablet;
+
+  const heroStyle = isMenuBreakpoint
+    ? { ...styles.hero, minHeight: "auto", padding: isMobile ? "26px" : "36px" }
+    : styles.hero;
+
+  const containerStyle = isMobile
+    ? { ...styles.container, padding: "16px" }
+    : styles.container;
 
   return (
-    <div style={styles.container}>
+    <div style={containerStyle}>
       <div style={styles.glowOne}></div>
       <div style={styles.glowTwo}></div>
       <div style={styles.grid}></div>
@@ -60,7 +71,7 @@ function Home() {
         010101 110010 101101 001011 111000 010110
       </div>
 
-      <section style={styles.hero}>
+      <section style={heroStyle}>
         <img
           src={logoStar}
           alt="Star Infinity Code"
@@ -203,10 +214,12 @@ const styles = {
     background:
       "radial-gradient(circle at top left,rgba(124,58,237,0.24),transparent 30%), radial-gradient(circle at bottom right,rgba(168,85,247,0.18),transparent 28%), linear-gradient(135deg,#ffffff,#f8f5ff 50%,#ffffff)",
     display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
+    flexWrap: "wrap",
+    alignItems: "safe center",
+    justifyContent: "safe center",
     fontFamily: "Arial",
-    overflow: "hidden",
+    overflowY: "auto",
+    overflowX: "hidden",
     position: "relative",
     padding: "34px",
     boxSizing: "border-box"
@@ -272,7 +285,7 @@ const styles = {
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    padding: "44px",
+    padding: "36px 44px",
     position: "relative",
     zIndex: 2,
     boxSizing: "border-box"
@@ -281,7 +294,7 @@ const styles = {
   logoImage: {
     width: "310px",
     maxWidth: "90%",
-    marginBottom: "18px",
+    marginBottom: "14px",
     filter: "drop-shadow(0 0 30px rgba(124,58,237,0.34))"
   },
 
@@ -297,16 +310,17 @@ const styles = {
   },
 
   title: {
-    fontSize: "58px",
+    fontSize: "clamp(30px, 8vw, 58px)",
     margin: "0",
     fontWeight: "900",
     letterSpacing: "-1px",
-    color: "#111827"
+    color: "#111827",
+    textAlign: "center"
   },
 
   subtitle: {
     marginTop: "14px",
-    marginBottom: "44px",
+    marginBottom: "30px",
     color: "#6b7280",
     fontSize: "16px",
     maxWidth: "720px",
@@ -317,14 +331,14 @@ const styles = {
   cards: {
     width: "100%",
     display: "grid",
-    gridTemplateColumns: "repeat(3, 280px)",
-    gap: "28px",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(280px,100%),1fr))",
+    gap: "24px",
     justifyContent: "center",
     alignItems: "stretch"
   },
 
   footer: {
-    margin: "34px 0 0",
+    margin: "22px 0 0",
     color: "#6b7280",
     fontSize: "13px"
   }

@@ -1252,6 +1252,7 @@ const styles = {
     padding: "34px",
     color: "white",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center",
     gap: "28px",
@@ -1290,12 +1291,14 @@ const styles = {
 
   heroRight: {
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "14px"
   },
 
   packageBoard: {
     display: "flex",
+    flexWrap: "wrap",
     gap: "10px",
     background: "rgba(255,255,255,0.10)",
     border: "1px solid rgba(255,255,255,0.14)",
@@ -1335,6 +1338,7 @@ const styles = {
     padding: "18px",
     marginBottom: "24px",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "14px",
     boxShadow: "0 14px 35px rgba(88,28,135,0.07)"
@@ -1346,6 +1350,7 @@ const styles = {
     border: "1px solid #c4b5fd",
     borderRadius: "18px",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     padding: "0 14px"
   },
@@ -1394,6 +1399,7 @@ const styles = {
   panelHeader: {
     minWidth: 0,
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "flex-start",
     marginBottom: "24px"
@@ -1427,7 +1433,7 @@ const styles = {
   packageGrid: {
     minWidth: 0,
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(340px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(340px,100%),1fr))",
     gap: "18px"
   },
 
@@ -1441,6 +1447,7 @@ const styles = {
 
   cardHeader: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: "12px",
@@ -1449,6 +1456,7 @@ const styles = {
 
   packageIdentity: {
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "14px"
   },
@@ -1461,6 +1469,7 @@ const styles = {
       "linear-gradient(135deg,#78350f,#8b5cf6)",
     color: "white",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "26px",
@@ -1494,6 +1503,7 @@ const styles = {
     borderRadius: "18px",
     padding: "13px",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "12px",
     color: "#7c3aed",
@@ -1520,7 +1530,7 @@ const styles = {
 
   actionRow: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(120px,100%),1fr))",
     gap: "8px",
     marginTop: "18px"
   },
@@ -1605,6 +1615,7 @@ const styles = {
     background: "rgba(15,23,42,0.62)",
     backdropFilter: "blur(8px)",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "center",
     alignItems: "center",
     zIndex: 999,
@@ -1617,6 +1628,7 @@ const styles = {
     maxWidth: "780px",
     maxHeight: "90vh",
     overflowY: "auto",
+    overflowX: "hidden",
     background: "#fbfaff",
     padding: "26px",
     borderRadius: "36px",
@@ -1630,6 +1642,7 @@ const styles = {
     borderRadius: "28px",
     padding: "26px",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     marginBottom: "20px"
   },
@@ -1674,7 +1687,7 @@ const styles = {
 
   formGrid: {
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(260px,100%),1fr))",
     gap: "15px"
   },
 
@@ -1708,6 +1721,7 @@ const styles = {
 
   modalButtons: {
     display: "flex",
+    flexWrap: "wrap",
     gap: "12px",
     marginTop: "18px"
   },

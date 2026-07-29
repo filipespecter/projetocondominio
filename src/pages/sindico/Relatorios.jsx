@@ -1467,6 +1467,7 @@ const styles = {
     borderRadius: "28px",
     padding: "34px",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     gap: "28px",
     alignItems: "center",
@@ -1528,7 +1529,7 @@ const styles = {
 
   layoutGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(320px,100%),1fr))",
     gap: "22px",
     alignItems: "flex-start",
     marginBottom: "24px"
@@ -1593,6 +1594,7 @@ const styles = {
     borderRadius: "16px",
     padding: "13px",
     display: "flex",
+    flexWrap: "wrap",
     gap: "12px",
     textAlign: "left",
     cursor: "pointer"
@@ -1653,6 +1655,7 @@ const styles = {
 
   checkOption: {
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "8px",
     color: "#374151",
@@ -1689,6 +1692,7 @@ const styles = {
 
   previewHeader: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     gap: "18px",
     alignItems: "flex-start",
@@ -1728,7 +1732,7 @@ const styles = {
 
   metaGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(180px,100%),1fr))",
     gap: "12px",
     marginBottom: "18px"
   },
@@ -1807,7 +1811,7 @@ const styles = {
 
   historyList: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(230px,100%),1fr))",
     gap: "12px"
   },
 
