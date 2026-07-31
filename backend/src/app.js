@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import morgan from "morgan";
+import compression from "compression";
 
 import { env } from "./config/env.js";
 import { router } from "./routes/index.js";
@@ -13,7 +15,11 @@ export const app = express();
 
 app.disable("x-powered-by");
 
+app.use(morgan("dev"));
+
 app.use(helmet());
+
+app.use(compression());
 
 app.use(
   cors({
@@ -43,7 +49,26 @@ app.use(
   })
 );
 
+/**
+ * Health Check
+ */
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    success: true,
+    status: "online",
+    service: "InfinityCondo API",
+    environment: env.NODE_ENV,
+    timestamp: new Date().toISOString()
+  });
+});
+
+/**
+ * Rotas da API
+ */
 app.use("/api", router);
 
+/**
+ * Tratamento de erros
+ */
 app.use(notFoundHandler);
 app.use(errorHandler);
