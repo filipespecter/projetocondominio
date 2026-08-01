@@ -873,6 +873,7 @@ const styles = {
     padding: "26px",
     maxHeight: "90vh",
     overflowY: "auto",
+    overflowX: "hidden",
     boxShadow: "0 30px 80px rgba(0,0,0,0.28)",
     border: "1px solid rgba(255,255,255,0.45)"
   },

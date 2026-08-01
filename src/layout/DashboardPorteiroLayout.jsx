@@ -26,7 +26,12 @@ function DashboardPorteiroLayout() {
 
   const location = useLocation();
 
-  const { isMobile, isTablet } = useResponsive();
+  const {
+    isMobileSmall,
+    isMobile,
+    isTabletSmall,
+    isTablet
+  } = useResponsive();
   const isMenuBreakpoint = isMobile || isTablet;
   const [menuAberto, setMenuAberto] = useState(false);
 
@@ -116,6 +121,39 @@ function DashboardPorteiroLayout() {
 
   }
 
+  function larguraPainel() {
+    if (isMobileSmall) return { width: "84%", maxWidth: "240px" };
+    if (isMobile) return { width: "72%", maxWidth: "270px" };
+    if (isTabletSmall) return { width: "48%", maxWidth: "300px" };
+    return { width: "36%", maxWidth: "320px" };
+  }
+
+  // Cabeçalho do painel (logo + status + avatar) mais compacto
+  // quando o menu é aberto em mobile/tablet, evitando texto espremido.
+  const compacto = {
+    logoBox: isMenuBreakpoint
+      ? { ...styles.logoBox, gap: "10px", padding: "10px" }
+      : styles.logoBox,
+    logoIcon: isMenuBreakpoint
+      ? { ...styles.logoIcon, width: "52px", height: "52px", borderRadius: "16px" }
+      : styles.logoIcon,
+    logo: isMenuBreakpoint
+      ? { ...styles.logo, fontSize: "17px" }
+      : styles.logo,
+    logoSub: isMenuBreakpoint
+      ? { ...styles.logoSub, fontSize: "10px" }
+      : styles.logoSub,
+    statusBox: isMenuBreakpoint
+      ? { ...styles.statusBox, padding: "7px 11px" }
+      : styles.statusBox,
+    userBox: isMenuBreakpoint
+      ? { ...styles.userBox, padding: "12px", gap: "10px" }
+      : styles.userBox,
+    avatar: isMenuBreakpoint
+      ? { ...styles.avatar, width: "42px", height: "42px", borderRadius: "14px" }
+      : styles.avatar
+  };
+
   const sidebarStyle = isMenuBreakpoint
     ? {
         ...styles.sidebar,
@@ -124,9 +162,10 @@ function DashboardPorteiroLayout() {
         left: 0,
         bottom: 0,
         zIndex: 60,
-        width: "82%",
-        maxWidth: "306px",
+        ...larguraPainel(),
         minWidth: "0",
+        padding: "14px",
+        paddingTop: "78px",
         transform: menuAberto ? "translateX(0)" : "translateX(-100%)",
         transition: "transform 0.28s ease"
       }
@@ -189,9 +228,9 @@ function DashboardPorteiroLayout() {
 
           {/* LOGO */}
 
-          <div style={styles.logoBox}>
+          <div style={compacto.logoBox}>
 
-            <div style={styles.logoIcon}>
+            <div style={compacto.logoIcon}>
               <img
                 src={logoStar}
                 alt="Star Infinity Code"
@@ -201,11 +240,11 @@ function DashboardPorteiroLayout() {
 
             <div>
 
-              <h2 style={styles.logo}>
+              <h2 style={compacto.logo}>
                 InfinityCondo
               </h2>
 
-              <p style={styles.logoSub}>
+              <p style={compacto.logoSub}>
                 Portaria Digital
               </p>
 
@@ -215,7 +254,7 @@ function DashboardPorteiroLayout() {
 
           {/* STATUS */}
 
-          <div style={styles.statusBox}>
+          <div style={compacto.statusBox}>
 
             <div style={styles.statusDot}></div>
 
@@ -227,9 +266,9 @@ function DashboardPorteiroLayout() {
 
           {/* USUÁRIO */}
 
-          <div style={styles.userBox}>
+          <div style={compacto.userBox}>
 
-            <div style={styles.avatar}>
+            <div style={compacto.avatar}>
               👤
             </div>
 
@@ -427,7 +466,8 @@ const styles = {
     boxShadow:
       "12px 0 44px rgba(88,28,135,0.22), inset -1px 0 0 rgba(255,255,255,0.10)",
     position: "relative",
-    overflow: "hidden",
+    overflowY: "auto",
+    overflowX: "hidden",
     boxSizing: "border-box"
   },
 
@@ -710,6 +750,7 @@ const styles = {
     flex: 1,
     padding: "30px",
     overflowY: "auto",
+    overflowX: "hidden",
     background:
       "radial-gradient(circle at top right,rgba(168,85,247,0.14),transparent 28%), radial-gradient(circle at bottom left,rgba(59,130,246,0.08),transparent 30%), linear-gradient(180deg,#ffffff,#f8f5ff)"
   },

@@ -17,15 +17,19 @@ function calcular() {
   if (typeof window === "undefined") {
     return {
       width: 1280,
+      height: 800,
       isMobileSmall: false,
       isMobile: false,
       isTabletSmall: false,
       isTablet: false,
-      isDesktop: true
+      isDesktop: true,
+      isShort: false,
+      isVeryShort: false
     };
   }
 
   const width = window.innerWidth;
+  const height = window.innerHeight;
 
   const isMobileSmall = width <= BREAKPOINTS.mobileSmall;
   const isMobileLarge = width > BREAKPOINTS.mobileSmall && width <= BREAKPOINTS.mobile;
@@ -34,6 +38,7 @@ function calcular() {
 
   return {
     width,
+    height,
     isMobileSmall,
     // isMobile continua cobrindo todo o intervalo de celular (compatibilidade)
     isMobile: isMobileSmall || isMobileLarge,
@@ -42,7 +47,11 @@ function calcular() {
     // isTablet continua cobrindo todo o intervalo de tablet (compatibilidade)
     isTablet: isTabletSmall || isTabletLarge,
     isTabletLarge,
-    isDesktop: width > BREAKPOINTS.tablet
+    isDesktop: width > BREAKPOINTS.tablet,
+    // pouca altura disponível (notebook com barra de endereços, tablet
+    // deitado, celular deitado etc.) — independe da largura da tela
+    isShort: height <= 850,
+    isVeryShort: height <= 650
   };
 }
 

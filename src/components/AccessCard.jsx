@@ -222,6 +222,74 @@ function AccessCard({ icon, title, description, color, buttonColor }) {
             }
           }
 
+          @media (max-height: 900px) {
+            .access-card{
+              height:320px;
+              padding:24px;
+            }
+            .access-icon{
+              width:80px;
+              height:80px;
+              font-size:38px;
+              margin-bottom:18px;
+            }
+            .access-title{
+              font-size:22px;
+              margin-bottom:12px;
+            }
+            .access-description{
+              min-height:0;
+              margin-bottom:22px;
+            }
+          }
+
+          @media (max-height: 760px) {
+            .access-card{
+              height:auto;
+              min-height:260px;
+              padding:20px;
+            }
+            .access-icon{
+              width:64px;
+              height:64px;
+              font-size:30px;
+              margin-bottom:12px;
+            }
+            .access-title{
+              font-size:19px;
+              margin-bottom:8px;
+            }
+            .access-description{
+              font-size:13px;
+              margin-bottom:16px;
+            }
+            .access-button{
+              padding:11px 26px;
+              font-size:14px;
+            }
+          }
+
+          @media (max-height: 600px) {
+            .access-card{
+              min-height:220px;
+              padding:16px;
+            }
+            .access-icon{
+              width:52px;
+              height:52px;
+              font-size:24px;
+              margin-bottom:8px;
+            }
+            .access-title{
+              font-size:16px;
+              margin-bottom:6px;
+            }
+            .access-description{
+              font-size:12px;
+              margin-bottom:12px;
+            }
+          }
+
         `}
       </style>
 
