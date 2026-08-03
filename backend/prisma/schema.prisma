@@ -7,12 +7,6 @@ datasource db {
   provider = "postgresql"
 }
 
-/**
- * |--------------------------------------------------------------------------
- * | ENUMS
- * |--------------------------------------------------------------------------
- */
-
 enum UserRole {
   PLATFORM_ADMIN
   CONDOMINIUM_ADMIN
@@ -56,17 +50,115 @@ enum FeatureValueType {
   CONFIGURATION
 }
 
-/**
- * |--------------------------------------------------------------------------
- * | PLANOS
- * |--------------------------------------------------------------------------
- * |
- * | Inicialmente serão cadastrados somente:
- * |
- * | ESSENTIAL
- * | COMPLETE
- * |
- */
+enum ApartmentStatus {
+  OCCUPIED
+  VACANT
+  INACTIVE
+}
+
+enum ResidentType {
+  OWNER
+  TENANT
+  DEPENDENT
+  OTHER
+}
+
+enum WorkShift {
+  MORNING
+  AFTERNOON
+  NIGHT
+  TWELVE_BY_THIRTY_SIX
+  OTHER
+}
+
+enum VisitorStatus {
+  WAITING
+  AUTHORIZED
+  INSIDE
+  EXITED
+  DENIED
+  CANCELED
+}
+
+enum PackageStatus {
+  EXPECTED
+  RECEIVED
+  DELIVERED
+  CANCELED
+}
+
+enum ReservationStatus {
+  PENDING
+  APPROVED
+  DENIED
+  CANCELED
+  COMPLETED
+}
+
+enum NoticeStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum NoticeAudience {
+  ALL
+  RESIDENTS
+  DOORMEN
+  MANAGERS
+  APARTMENT
+}
+
+enum OccurrenceOrigin {
+  RESIDENT
+  DOORMAN
+  MANAGER
+  SYSTEM
+}
+
+enum OccurrenceType {
+  OCCURRENCE
+  COMPLAINT
+  SUGGESTION
+  REQUEST
+}
+
+enum OccurrencePriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum OccurrenceStatus {
+  NEW
+  FORWARDED
+  IN_REVIEW
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+  CANCELED
+}
+
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum ServiceProviderStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+enum ProviderAccessStatus {
+  SCHEDULED
+  INSIDE
+  EXITED
+  CANCELED
+}
 
 model Plan {
   id                  String       @id @default(uuid()) @db.Uuid
@@ -89,24 +181,6 @@ model Plan {
   @@index([deletedAt])
 }
 
-/**
- * |--------------------------------------------------------------------------
- * | RECURSOS DISPONÍVEIS
- * |--------------------------------------------------------------------------
- * |
- * | Exemplos:
- * |
- * | BI_ANALYTICS
- * | MONITOR_CENTER
- * | ADVANCED_REPORTS
- * | CUSTOM_BRANDING
- * | PRIORITY_SUPPORT
- * | MAX_UNITS
- * | MAX_USERS
- * | AUDIT_RETENTION_DAYS
- * |
- */
-
 model Feature {
   id          String           @id @default(uuid()) @db.Uuid
   code        String           @unique
@@ -124,12 +198,6 @@ model Feature {
   @@index([deletedAt])
 }
 
-/**
- * |--------------------------------------------------------------------------
- * | RECURSOS DE CADA PLANO
- * |--------------------------------------------------------------------------
- */
-
 model PlanFeature {
   planId    String @db.Uuid
   featureId String @db.Uuid
@@ -137,9 +205,8 @@ model PlanFeature {
   enabled    Boolean @default(true)
   limitValue Int?
   config     Json?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   plan    Plan    @relation(fields: [planId], references: [id], onDelete: Cascade)
   feature Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
@@ -149,12 +216,6 @@ model PlanFeature {
   @@index([planId, enabled])
 }
 
-/**
- * |--------------------------------------------------------------------------
- * | CONDOMÍNIOS CLIENTES
- * |--------------------------------------------------------------------------
- */
-
 model Condominium {
   id   String @id @default(uuid()) @db.Uuid
   code String @unique
@@ -162,9 +223,8 @@ model Condominium {
   name      String
   legalName String?
   document  String? @unique
-
-  email String?
-  phone String?
+  email     String?
+  phone     String?
 
   postalCode    String?
   addressLine   String?
@@ -176,35 +236,39 @@ model Condominium {
 
   logoUrl  String?
   timezone String  @default("America/Recife")
+  rules    String?
+  settings Json?
 
-  status CondominiumStatus @default(TRIAL)
+  status       CondominiumStatus @default(TRIAL)
+  trialEndsAt  DateTime?
+  activatedAt  DateTime?
+  suspendedAt  DateTime?
+  canceledAt   DateTime?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  deletedAt    DateTime?
 
-  trialEndsAt DateTime?
-  activatedAt DateTime?
-  suspendedAt DateTime?
-  canceledAt  DateTime?
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-
-  users         User[]
-  subscriptions Subscription[]
+  users            User[]
+  subscriptions    Subscription[]
+  apartments       Apartment[]
+  residents        Resident[]
+  doormen           Doorman[]
+  visitors          Visitor[]
+  packages          Package[]
+  commonAreas       CommonArea[]
+  reservations      Reservation[]
+  notices           Notice[]
+  occurrences       Occurrence[]
+  occurrenceReplies OccurrenceReply[]
+  notifications     Notification[]
+  auditLogs         AuditLog[]
+  serviceProviders  ServiceProvider[]
+  providerAccesses  ProviderAccess[]
 
   @@index([status])
   @@index([createdAt])
   @@index([deletedAt])
 }
-
-/**
- * |--------------------------------------------------------------------------
- * | ASSINATURAS DO INFINITYCONDO
- * |--------------------------------------------------------------------------
- * |
- * | Representa a mensalidade paga pelo condomínio à Star Infinity Code.
- * | Não representa a taxa condominial dos moradores.
- * |
- */
 
 model Subscription {
   id            String @id @default(uuid()) @db.Uuid
@@ -213,19 +277,16 @@ model Subscription {
 
   status       SubscriptionStatus @default(TRIAL)
   billingCycle BillingCycle       @default(MONTHLY)
-
   priceInCents Int
 
   currentPeriodStart DateTime
   currentPeriodEnd   DateTime
   trialEndsAt        DateTime?
-
   suspendedAt        DateTime?
   canceledAt         DateTime?
   cancellationReason String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   condominium Condominium @relation(fields: [condominiumId], references: [id], onDelete: Restrict)
   plan        Plan        @relation(fields: [planId], references: [id], onDelete: Restrict)
@@ -236,48 +297,452 @@ model Subscription {
   @@index([status, currentPeriodEnd])
 }
 
-/**
- * |--------------------------------------------------------------------------
- * | USUÁRIOS
- * |--------------------------------------------------------------------------
- * |
- * | PLATFORM_ADMIN:
- * | condominiumId = null
- * |
- * | Usuários de condomínios:
- * | condominiumId preenchido
- * |
- */
-
 model User {
   id            String  @id @default(uuid()) @db.Uuid
   condominiumId String? @db.Uuid
 
   name     String
   username String
-  email    String? @unique
+  email    String?
   phone    String?
 
   passwordHash String
-
-  role   UserRole
-  status UserStatus @default(ACTIVE)
+  role         UserRole
+  status       UserStatus @default(ACTIVE)
 
   mustChangePassword  Boolean @default(true)
   failedLoginAttempts Int     @default(0)
+  lockedUntil         DateTime?
+  lastLoginAt         DateTime?
+  lastLogoutAt        DateTime?
+  passwordChangedAt   DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime?
 
-  lockedUntil       DateTime?
-  lastLoginAt       DateTime?
-  passwordChangedAt DateTime?
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-
-  condominium Condominium? @relation(fields: [condominiumId], references: [id], onDelete: Restrict)
+  condominium       Condominium?      @relation(fields: [condominiumId], references: [id], onDelete: Restrict)
+  resident          Resident?
+  doorman           Doorman?
+  registeredVisitors Visitor[]        @relation("VisitorRegisteredBy")
+  authorizedVisitors Visitor[]        @relation("VisitorAuthorizedBy")
+  receivedPackages  Package[]         @relation("PackageReceivedBy")
+  deliveredPackages Package[]         @relation("PackageDeliveredBy")
+  requestedReservations Reservation[] @relation("ReservationRequestedBy")
+  reviewedReservations  Reservation[] @relation("ReservationReviewedBy")
+  authoredNotices    Notice[]          @relation("NoticeAuthor")
+  createdOccurrences Occurrence[]      @relation("OccurrenceCreatedBy")
+  assignedOccurrences Occurrence[]     @relation("OccurrenceAssignedTo")
+  occurrenceReplies  OccurrenceReply[]
+  notifications      Notification[]    @relation("NotificationRecipient")
+  auditLogs           AuditLog[]        @relation("AuditLogUser")
+  providerEntries     ProviderAccess[]  @relation("ProviderEntryRegisteredBy")
+  providerExits       ProviderAccess[]  @relation("ProviderExitRegisteredBy")
 
   @@unique([condominiumId, username])
+  @@unique([condominiumId, email])
   @@index([condominiumId, role, status])
   @@index([role, status])
+  @@index([deletedAt])
+}
+
+model Apartment {
+  id            String @id @default(uuid()) @db.Uuid
+  condominiumId String @db.Uuid
+
+  block      String
+  number     String
+  floor      Int?
+  status     ApartmentStatus @default(OCCUPIED)
+  notes      String?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  deletedAt  DateTime?
+
+  condominium Condominium @relation(fields: [condominiumId], references: [id], onDelete: Restrict)
+  residents   Resident[]
+  visitors    Visitor[]
+  packages    Package[]
+  reservations Reservation[]
+  notices      Notice[]
+  occurrences  Occurrence[]
+  providerAccesses ProviderAccess[]
+
+  @@unique([condominiumId, block, number])
+  @@index([condominiumId, status])
+  @@index([condominiumId, number])
+  @@index([deletedAt])
+}
+
+model Resident {
+  id            String @id @default(uuid()) @db.Uuid
+  condominiumId String @db.Uuid
+  apartmentId   String @db.Uuid
+  userId        String @unique @db.Uuid
+
+  residentType ResidentType @default(OWNER)
+  isPrimary    Boolean      @default(false)
+  canReserve   Boolean      @default(true)
+  canOpenOccurrence Boolean @default(true)
+  canViewPackages Boolean   @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  deletedAt    DateTime?
+
+  condominium Condominium @relation(fields: [condominiumId], references: [id], onDelete: Restrict)
+  apartment   Apartment   @relation(fields: [apartmentId], references: [id], onDelete: Restrict)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  expectedPackages Package[] @relation("ExpectedPackageResident")
+
+  @@index([condominiumId, apartmentId])
+  @@index([condominiumId, isPrimary])
+  @@index([deletedAt])
+}
+
+model Doorman {
+  id            String @id @default(uuid()) @db.Uuid
+  condominiumId String @db.Uuid
+  userId        String @unique @db.Uuid
+
+  code          String
+  shift         WorkShift
+  customShift   String?
+  lastDutyAt    DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  condominium Condominium @relation(fields: [condominiumId], references: [id], onDelete: Restrict)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([condominiumId, code])
+  @@index([condominiumId, shift])
+  @@index([deletedAt])
+}
+
+model Visitor {
+  id            String @id @default(uuid()) @db.Uuid
+  condominiumId String @db.Uuid
+  apartmentId   String @db.Uuid
+
+  name       String
+  document   String?
+  phone      String?
+  visitType  String?
+  vehicle    String?
+  plate      String?
+  notes      String?
+  status     VisitorStatus @default(WAITING)
+
+  expectedAt   DateTime?
+  enteredAt    DateTime?
+  exitedAt     DateTime?
+  authorizedAt DateTime?
+  deniedAt     DateTime?
+
+  registeredByUserId String? @db.Uuid
+  authorizedByUserId String? @db.Uuid
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  deletedAt          DateTime?
+
+  condominium     Condominium @relation(fields: [condominiumId], references: [id], onDelete: Restrict)
+  apartment       Apartment   @relation(fields: [apartmentId], references: [id], onDelete: Restrict)
+  registeredBy    User?       @relation("VisitorRegisteredBy", fields: [registeredByUserId], references: [id], onDelete: SetNull)
+  authorizedBy    User?       @relation("VisitorAuthorizedBy", fields: [authorizedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([condominiumId, status])
+  @@index([condominiumId, apartmentId, createdAt])
+  @@index([document])
+  @@index([deletedAt])
+}
+
+model Package {
+  id            String @id @default(uuid()) @db.Uuid
+  condominiumId String @db.Uuid
+  apartmentId   String @db.Uuid
+  expectedByResidentId String? @db.Uuid
+
+  type          String
+  description   String?
+  carrier       String?
+  trackingCode  String?
+  status        PackageStatus @default(RECEIVED)
+  withdrawnBy   String?
+  notes         String?
+
+  expectedAt    DateTime?
+  receivedAt    DateTime?
+  deliveredAt   DateTime?
+  canceledAt    DateTime?
+  receivedByUserId  String? @db.Uuid
+  deliveredByUserId String? @db.Uuid
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  condominium Condominium @relation(fields: [condominiumId], references: [id], onDelete: Restrict)
+  apartment   Apartment   @relation(fields: [apartmentId], references: [id], onDelete: Restrict)
+  expectedByResident Resident? @relation("ExpectedPackageResident", fields: [expectedByResidentId], references: [id], onDelete: SetNull)
+  receivedBy  User?       @relation("PackageReceivedBy", fields: [receivedByUserId], references: [id], onDelete: SetNull)
+  deliveredBy User?       @relation("PackageDeliveredBy", fields: [deliveredByUserId], references: [id], onDelete: SetNull)
+
+  @@index([condominiumId, status])
+  @@index([condominiumId, apartmentId, status])
+  @@index([trackingCode])
+  @@index([createdAt])
+  @@index([deletedAt])
+}
+
+model CommonArea {
+  id            String @id @default(uuid()) @db.Uuid
+  condominiumId String @db.Uuid
+
+  name                String
+  description         String?
+  capacity            Int?
+  openingTime         String?
+  closingTime         String?
+  reservationRequired Boolean @default(true)
+  active              Boolean @default(true)
+  rules               String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  deletedAt           DateTime?
+
+  condominium Condominium @relation(fields: [condominiumId], references: [id], onDelete: Restrict)
+  reservations Reservation[]
+
+  @@unique([condominiumId, name])
+  @@index([condominiumId, active])
+  @@index([deletedAt])
+}
+
+model Reservation {
+  id            String @id @default(uuid()) @db.Uuid
+  condominiumId String @db.Uuid
+  commonAreaId  String @db.Uuid
+  apartmentId   String @db.Uuid
+  requestedByUserId String @db.Uuid
+  reviewedByUserId  String? @db.Uuid
+
+  reservationDate DateTime @db.Date
+  startTime       String
+  endTime         String
+  guestsCount     Int?
+  purpose         String?
+  notes           String?
+  status          ReservationStatus @default(PENDING)
+  reviewReason    String?
+  reviewedAt      DateTime?
+  canceledAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  condominium Condominium @relation(fields: [condominiumId], references: [id], onDelete: Restrict)
+  commonArea  CommonArea  @relation(fields: [commonAreaId], references: [id], onDelete: Restrict)
+  apartment  Apartment   @relation(fields: [apartmentId], references: [id], onDelete: Restrict)
+  requestedBy User       @relation("ReservationRequestedBy", fields: [requestedByUserId], references: [id], onDelete: Restrict)
+  reviewedBy  User?      @relation("ReservationReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([condominiumId, reservationDate, status])
+  @@index([condominiumId, commonAreaId, reservationDate])
+  @@index([apartmentId, reservationDate])
+  @@index([deletedAt])
+}
+
+model Notice {
+  id            String @id @default(uuid()) @db.Uuid
+  condominiumId String @db.Uuid
+  authorUserId  String @db.Uuid
+  apartmentId   String? @db.Uuid
+
+  title       String
+  message     String
+  category    String?
+  priority    NotificationPriority @default(NORMAL)
+  audience    NoticeAudience       @default(ALL)
+  status      NoticeStatus         @default(PUBLISHED)
+  publishedAt DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  condominium Condominium @relation(fields: [condominiumId], references: [id], onDelete: Restrict)
+  author      User        @relation("NoticeAuthor", fields: [authorUserId], references: [id], onDelete: Restrict)
+  apartment   Apartment?  @relation(fields: [apartmentId], references: [id], onDelete: SetNull)
+
+  @@index([condominiumId, status, publishedAt])
+  @@index([condominiumId, audience])
+  @@index([apartmentId])
+  @@index([deletedAt])
+}
+
+model Occurrence {
+  id            String @id @default(uuid()) @db.Uuid
+  condominiumId String @db.Uuid
+  apartmentId   String? @db.Uuid
+  createdByUserId String? @db.Uuid
+  assignedToUserId String? @db.Uuid
+
+  origin      OccurrenceOrigin
+  type        OccurrenceType
+  category    String
+  priority    OccurrencePriority @default(MEDIUM)
+  title       String
+  description String
+  status      OccurrenceStatus @default(NEW)
+  shift       String?
+  dutyDate    DateTime? @db.Date
+  resolution  String?
+  resolvedAt  DateTime?
+  closedAt    DateTime?
+  readByManagerAt DateTime?
+  readByDoormanAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  condominium Condominium @relation(fields: [condominiumId], references: [id], onDelete: Restrict)
+  apartment   Apartment?  @relation(fields: [apartmentId], references: [id], onDelete: SetNull)
+  createdBy   User?       @relation("OccurrenceCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  assignedTo  User?       @relation("OccurrenceAssignedTo", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  replies     OccurrenceReply[]
+
+  @@index([condominiumId, status, priority])
+  @@index([condominiumId, type, createdAt])
+  @@index([apartmentId])
+  @@index([createdByUserId])
+  @@index([deletedAt])
+}
+
+model OccurrenceReply {
+  id            String @id @default(uuid()) @db.Uuid
+  condominiumId String @db.Uuid
+  occurrenceId  String @db.Uuid
+  authorUserId  String @db.Uuid
+
+  message   String
+  internal  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  condominium Condominium @relation(fields: [condominiumId], references: [id], onDelete: Restrict)
+  occurrence  Occurrence  @relation(fields: [occurrenceId], references: [id], onDelete: Cascade)
+  author      User        @relation(fields: [authorUserId], references: [id], onDelete: Restrict)
+
+  @@index([condominiumId, occurrenceId, createdAt])
+  @@index([authorUserId])
+  @@index([deletedAt])
+}
+
+model Notification {
+  id            String @id @default(uuid()) @db.Uuid
+  condominiumId String @db.Uuid
+  recipientUserId String? @db.Uuid
+
+  title       String
+  message     String
+  type        String
+  origin      String?
+  targetRole  UserRole?
+  module      String?
+  referenceId String?
+  apartmentLabel String?
+  priority    NotificationPriority @default(NORMAL)
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+  deletedAt   DateTime?
+
+  condominium Condominium @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
+  recipient   User?       @relation("NotificationRecipient", fields: [recipientUserId], references: [id], onDelete: Cascade)
+
+  @@index([condominiumId, recipientUserId, readAt])
+  @@index([condominiumId, targetRole, readAt])
+  @@index([module, referenceId])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id            String @id @default(uuid()) @db.Uuid
+  condominiumId String? @db.Uuid
+  userId        String? @db.Uuid
+
+  userName    String?
+  userRole    UserRole?
+  action      String
+  module      String
+  details     String?
+  referenceId String?
+  beforeData  Json?
+  afterData   Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  condominium Condominium? @relation(fields: [condominiumId], references: [id], onDelete: SetNull)
+  user        User?        @relation("AuditLogUser", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([condominiumId, createdAt])
+  @@index([condominiumId, module, createdAt])
+  @@index([userId, createdAt])
+  @@index([referenceId])
+}
+
+model ServiceProvider {
+  id            String @id @default(uuid()) @db.Uuid
+  condominiumId String @db.Uuid
+
+  name        String
+  companyName String?
+  document    String?
+  phone       String?
+  email       String?
+  serviceType String
+  notes       String?
+  status      ServiceProviderStatus @default(ACTIVE)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  condominium Condominium @relation(fields: [condominiumId], references: [id], onDelete: Restrict)
+  accesses    ProviderAccess[]
+
+  @@index([condominiumId, status])
+  @@index([condominiumId, document])
+  @@index([deletedAt])
+}
+
+model ProviderAccess {
+  id                String @id @default(uuid()) @db.Uuid
+  condominiumId     String @db.Uuid
+  serviceProviderId String @db.Uuid
+  apartmentId       String? @db.Uuid
+
+  serviceDescription String?
+  scheduledDate      DateTime? @db.Date
+  scheduledStartTime String?
+  scheduledEndTime   String?
+  status             ProviderAccessStatus @default(SCHEDULED)
+  enteredAt          DateTime?
+  exitedAt           DateTime?
+  entryRegisteredByUserId String? @db.Uuid
+  exitRegisteredByUserId  String? @db.Uuid
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  deletedAt          DateTime?
+
+  condominium    Condominium    @relation(fields: [condominiumId], references: [id], onDelete: Restrict)
+  serviceProvider ServiceProvider @relation(fields: [serviceProviderId], references: [id], onDelete: Restrict)
+  apartment      Apartment?     @relation(fields: [apartmentId], references: [id], onDelete: SetNull)
+  entryRegisteredBy User?       @relation("ProviderEntryRegisteredBy", fields: [entryRegisteredByUserId], references: [id], onDelete: SetNull)
+  exitRegisteredBy  User?       @relation("ProviderExitRegisteredBy", fields: [exitRegisteredByUserId], references: [id], onDelete: SetNull)
+
+  @@index([condominiumId, status, scheduledDate])
+  @@index([serviceProviderId, createdAt])
+  @@index([apartmentId])
   @@index([deletedAt])
 }
