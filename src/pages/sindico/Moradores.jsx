@@ -1044,6 +1044,7 @@ const styles = {
     borderRadius: "42px",
     padding: "38px",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center",
     gap: "26px",
@@ -1090,6 +1091,7 @@ const styles = {
 
   heroRight: {
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "14px",
     position: "relative",
@@ -1125,6 +1127,7 @@ const styles = {
     padding: "18px",
     marginBottom: "24px",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "14px",
     boxShadow: "0 18px 45px rgba(88,28,135,0.09)"
@@ -1136,6 +1139,7 @@ const styles = {
     border: "1px solid #c4b5fd",
     borderRadius: "18px",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     padding: "0 14px",
     boxShadow: "inset 0 0 0 1px rgba(168,85,247,0.04)"
@@ -1186,6 +1190,7 @@ const styles = {
 
   registryHeader: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "flex-start",
     marginBottom: "24px"
@@ -1220,7 +1225,7 @@ const styles = {
 
   roster: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(330px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(330px,100%),1fr))",
     gap: "18px"
   },
 
@@ -1245,6 +1250,7 @@ const styles = {
 
   residentMain: {
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "14px",
     marginBottom: "18px"
@@ -1258,6 +1264,7 @@ const styles = {
       "linear-gradient(135deg,#4c1d95,#7c3aed,#a855f7)",
     color: "white",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "27px",
@@ -1271,6 +1278,7 @@ const styles = {
 
   nameLine: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     gap: "10px",
     alignItems: "center"
@@ -1313,6 +1321,7 @@ const styles = {
 
   residentActions: {
     display: "flex",
+    flexWrap: "wrap",
     gap: "10px",
     marginTop: "18px"
   },
@@ -1380,6 +1389,7 @@ const styles = {
     background: "rgba(15,23,42,0.62)",
     backdropFilter: "blur(10px)",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "center",
     alignItems: "center",
     zIndex: 999,
@@ -1387,7 +1397,7 @@ const styles = {
   },
 
   modal: {
-    width: "720px",
+    width: "min(720px, 94vw)",
     background:
       "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), #fbfaff",
     padding: "26px",
@@ -1403,6 +1413,7 @@ const styles = {
     borderRadius: "28px",
     padding: "26px",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     marginBottom: "20px",
     boxShadow: "0 18px 38px rgba(88,28,135,0.18)"
@@ -1440,7 +1451,7 @@ const styles = {
     borderRadius: "26px",
     padding: "20px",
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(260px,100%),1fr))",
     gap: "15px"
   },
 
@@ -1476,6 +1487,7 @@ const styles = {
 
   modalActions: {
     display: "flex",
+    flexWrap: "wrap",
     gap: "12px",
     marginTop: "18px"
   },

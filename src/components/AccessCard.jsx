@@ -5,12 +5,14 @@ function AccessCard({ icon, title, description, color, buttonColor }) {
         {`
           .access-card{
             position:relative;
-            width:300px;
+            width:100%;
+            max-width:300px;
             height:360px;
             border-radius:32px;
             padding:28px;
             overflow:hidden;
             cursor:pointer;
+            box-sizing:border-box;
 
             background:
               linear-gradient(
@@ -193,6 +195,99 @@ function AccessCard({ icon, title, description, color, buttonColor }) {
             box-shadow:
               0 20px 40px rgba(124,58,237,.34);
 
+          }
+
+          @media (max-width: 380px) {
+            .access-card{
+              height:auto;
+              min-height:300px;
+              padding:22px;
+            }
+            .access-icon{
+              width:72px;
+              height:72px;
+              font-size:34px;
+              margin-bottom:16px;
+            }
+            .access-title{
+              font-size:20px;
+              margin-bottom:10px;
+            }
+            .access-description{
+              min-height:0;
+              margin-bottom:20px;
+            }
+            .access-button{
+              padding:12px 28px;
+            }
+          }
+
+          @media (max-height: 900px) {
+            .access-card{
+              height:320px;
+              padding:24px;
+            }
+            .access-icon{
+              width:80px;
+              height:80px;
+              font-size:38px;
+              margin-bottom:18px;
+            }
+            .access-title{
+              font-size:22px;
+              margin-bottom:12px;
+            }
+            .access-description{
+              min-height:0;
+              margin-bottom:22px;
+            }
+          }
+
+          @media (max-height: 760px) {
+            .access-card{
+              height:auto;
+              min-height:260px;
+              padding:20px;
+            }
+            .access-icon{
+              width:64px;
+              height:64px;
+              font-size:30px;
+              margin-bottom:12px;
+            }
+            .access-title{
+              font-size:19px;
+              margin-bottom:8px;
+            }
+            .access-description{
+              font-size:13px;
+              margin-bottom:16px;
+            }
+            .access-button{
+              padding:11px 26px;
+              font-size:14px;
+            }
+          }
+
+          @media (max-height: 600px) {
+            .access-card{
+              min-height:220px;
+              padding:16px;
+            }
+            .access-icon{
+              width:52px;
+              height:52px;
+              font-size:24px;
+              margin-bottom:8px;
+            }
+            .access-title{
+              font-size:16px;
+              margin-bottom:6px;
+            }
+            .access-description{
+              font-size:12px;
+              margin-bottom:12px;
+            }
           }
 
         `}

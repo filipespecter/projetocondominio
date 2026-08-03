@@ -857,6 +857,7 @@ const styles = {
     background: "rgba(15,23,42,0.62)",
     backdropFilter: "blur(8px)",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "center",
     alignItems: "center",
     zIndex: 999,
@@ -867,11 +868,12 @@ const styles = {
   modal: {
     minWidth: 0,
     background: "#f8fafc",
-    width: "920px",
+    width: "min(920px, 94vw)",
     borderRadius: "32px",
     padding: "26px",
     maxHeight: "90vh",
     overflowY: "auto",
+    overflowX: "hidden",
     boxShadow: "0 30px 80px rgba(0,0,0,0.28)",
     border: "1px solid rgba(255,255,255,0.45)"
   },
@@ -882,6 +884,7 @@ const styles = {
     padding: "28px",
     color: "white",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     gap: "24px",
     marginBottom: "22px"
@@ -917,6 +920,7 @@ const styles = {
     borderRadius: "18px",
     padding: "13px",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "11px",
     maxWidth: "360px"
@@ -928,6 +932,7 @@ const styles = {
     borderRadius: "15px",
     background: "rgba(255,255,255,0.14)",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center"
   },
@@ -991,6 +996,7 @@ const styles = {
 
   sectionHeader: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     gap: "15px",
     marginBottom: "18px"
@@ -1021,7 +1027,7 @@ const styles = {
   formGrid: {
     minWidth: 0,
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(260px,100%),1fr))",
     gap: "14px"
   },
 
@@ -1068,6 +1074,7 @@ const styles = {
   tabs: {
     minWidth: 0,
     display: "flex",
+    flexWrap: "wrap",
     gap: "8px",
     background: "#e5e7eb",
     padding: "7px",
@@ -1133,6 +1140,7 @@ const styles = {
 
   packageTop: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     gap: "18px",
     marginBottom: "14px"
@@ -1179,7 +1187,7 @@ const styles = {
 
   infoGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(180px,100%),1fr))",
     gap: "12px",
     marginBottom: "16px"
   },
@@ -1239,6 +1247,7 @@ const styles = {
 
   actions: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "flex-end",
     marginTop: "14px"
   },

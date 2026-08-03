@@ -10,11 +10,19 @@ import {
   FaBolt
 } from "react-icons/fa";
 
+import useResponsive from "../../hooks/useResponsive";
+
 function OperationalDashboard({
   ranking = [],
   atividades = {},
   indicadores = {}
 }) {
+  const { isMobile, isTablet } = useResponsive();
+  const mainGridStyle =
+    isMobile || isTablet
+      ? { ...styles.mainGrid, gridTemplateColumns: "1fr" }
+      : styles.mainGrid;
+
   return (
     <div style={styles.container}>
       <div style={styles.header}>
@@ -38,7 +46,7 @@ function OperationalDashboard({
         <MiniCard title="Ocorrências" value={indicadores.totalOcorrencias || 0} detail={`${indicadores.totalOcorrenciasAbertas || 0} abertas`} />
       </div>
 
-      <div style={styles.mainGrid}>
+      <div style={mainGridStyle}>
         <div style={styles.rankingPanel}>
           <span style={styles.smallBadge}>
             <FaTrophy /> Ranking operacional
@@ -153,7 +161,7 @@ const styles = {
 
   kpiGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(220px,100%),1fr))",
     gap: "16px"
   },
 
@@ -274,6 +282,7 @@ const styles = {
     borderRadius: "18px",
     padding: "14px",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center"
   },
@@ -301,7 +310,7 @@ const styles = {
 
   activityGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))",
     gap: "16px"
   },
 

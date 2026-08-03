@@ -11,17 +11,33 @@ import {
   FaUsers,
   FaSignOutAlt,
   FaBook,
-  FaChartPie
+  FaChartPie,
+  FaBars,
+  FaTimes
 } from "react-icons/fa";
 
 import { useEffect, useState } from "react";
 import logoStar from "../assets/images/logo-star-infinity.png";
+import useResponsive from "../hooks/useResponsive";
 
 function DashboardPorteiroLayout() {
 
   const navigate = useNavigate();
 
   const location = useLocation();
+
+  const {
+    isMobileSmall,
+    isMobile,
+    isTabletSmall,
+    isTablet
+  } = useResponsive();
+  const isMenuBreakpoint = isMobile || isTablet;
+  const [menuAberto, setMenuAberto] = useState(false);
+
+  useEffect(() => {
+    setMenuAberto(false);
+  }, [location.pathname]);
 
   const [usuarioLogado, setUsuarioLogado] =
     useState(null);
@@ -105,13 +121,105 @@ function DashboardPorteiroLayout() {
 
   }
 
+  function larguraPainel() {
+    if (isMobileSmall) return { width: "84%", maxWidth: "240px" };
+    if (isMobile) return { width: "72%", maxWidth: "270px" };
+    if (isTabletSmall) return { width: "48%", maxWidth: "300px" };
+    return { width: "36%", maxWidth: "320px" };
+  }
+
+  // Cabeçalho do painel (logo + status + avatar) mais compacto
+  // quando o menu é aberto em mobile/tablet, evitando texto espremido.
+  const compacto = {
+    logoBox: isMenuBreakpoint
+      ? { ...styles.logoBox, gap: "10px", padding: "10px" }
+      : styles.logoBox,
+    logoIcon: isMenuBreakpoint
+      ? { ...styles.logoIcon, width: "52px", height: "52px", borderRadius: "16px" }
+      : styles.logoIcon,
+    logo: isMenuBreakpoint
+      ? { ...styles.logo, fontSize: "17px" }
+      : styles.logo,
+    logoSub: isMenuBreakpoint
+      ? { ...styles.logoSub, fontSize: "10px" }
+      : styles.logoSub,
+    statusBox: isMenuBreakpoint
+      ? { ...styles.statusBox, padding: "7px 11px" }
+      : styles.statusBox,
+    userBox: isMenuBreakpoint
+      ? { ...styles.userBox, padding: "12px", gap: "10px" }
+      : styles.userBox,
+    avatar: isMenuBreakpoint
+      ? { ...styles.avatar, width: "42px", height: "42px", borderRadius: "14px" }
+      : styles.avatar
+  };
+
+  const sidebarStyle = isMenuBreakpoint
+    ? {
+        ...styles.sidebar,
+        position: "fixed",
+        top: 0,
+        left: 0,
+        bottom: 0,
+        zIndex: 60,
+        ...larguraPainel(),
+        minWidth: "0",
+        padding: "14px",
+        paddingTop: "78px",
+        transform: menuAberto ? "translateX(0)" : "translateX(-100%)",
+        transition: "transform 0.28s ease"
+      }
+    : styles.sidebar;
+
+  const contentStyle = isMenuBreakpoint
+    ? {
+        ...styles.content,
+        padding: isMobile ? "18px" : "26px",
+        paddingTop: "84px"
+      }
+    : styles.content;
+
   return (
 
-    <div style={styles.container}>
+    <div
+      style={
+        isMenuBreakpoint
+          ? { ...styles.container, flexDirection: "column" }
+          : styles.container
+      }
+    >
+
+      {isMenuBreakpoint && (
+        <header style={styles.mobileBar}>
+          <button
+            type="button"
+            style={styles.menuToggle}
+            onClick={() => setMenuAberto((v) => !v)}
+            aria-label={menuAberto ? "Fechar menu" : "Abrir menu"}
+          >
+            {menuAberto ? <FaTimes /> : <FaBars />}
+          </button>
+
+          <img
+            src={logoStar}
+            alt="Star Infinity Code"
+            style={styles.mobileLogo}
+          />
+
+          <span style={styles.mobileTitle}>InfinityCondo</span>
+        </header>
+      )}
+
+      {isMenuBreakpoint && menuAberto && (
+        <div
+          style={styles.overlay}
+          onClick={() => setMenuAberto(false)}
+        ></div>
+      )}
 
       {/* SIDEBAR */}
 
-      <aside style={styles.sidebar}>
+      <aside style={sidebarStyle}>
 
         <div style={styles.sidebarGlow}></div>
         <div style={styles.sidebarGrid}></div>
@@ -120,9 +228,9 @@ function DashboardPorteiroLayout() {
 
           {/* LOGO */}
 
-          <div style={styles.logoBox}>
+          <div style={compacto.logoBox}>
 
-            <div style={styles.logoIcon}>
+            <div style={compacto.logoIcon}>
               <img
                 src={logoStar}
                 alt="Star Infinity Code"
@@ -132,11 +240,11 @@ function DashboardPorteiroLayout() {
 
             <div>
 
-              <h2 style={styles.logo}>
+              <h2 style={compacto.logo}>
                 InfinityCondo
               </h2>
 
-              <p style={styles.logoSub}>
+              <p style={compacto.logoSub}>
                 Portaria Digital
               </p>
 
@@ -146,7 +254,7 @@ function DashboardPorteiroLayout() {
 
           {/* STATUS */}
 
-          <div style={styles.statusBox}>
+          <div style={compacto.statusBox}>
 
             <div style={styles.statusDot}></div>
 
@@ -158,9 +266,9 @@ function DashboardPorteiroLayout() {
 
           {/* USUÁRIO */}
 
-          <div style={styles.userBox}>
+          <div style={compacto.userBox}>
 
-            <div style={styles.avatar}>
+            <div style={compacto.avatar}>
               👤
             </div>
 
@@ -322,7 +430,7 @@ function DashboardPorteiroLayout() {
 
       {/* CONTEÚDO */}
 
-      <main style={styles.content}>
+      <main style={contentStyle}>
 
         <Outlet />
 
@@ -358,7 +466,8 @@ const styles = {
     boxShadow:
       "12px 0 44px rgba(88,28,135,0.22), inset -1px 0 0 rgba(255,255,255,0.10)",
     position: "relative",
-    overflow: "hidden",
+    overflowY: "auto",
+    overflowX: "hidden",
     boxSizing: "border-box"
   },
 
@@ -641,8 +750,63 @@ const styles = {
     flex: 1,
     padding: "30px",
     overflowY: "auto",
+    overflowX: "hidden",
     background:
       "radial-gradient(circle at top right,rgba(168,85,247,0.14),transparent 28%), radial-gradient(circle at bottom left,rgba(59,130,246,0.08),transparent 30%), linear-gradient(180deg,#ffffff,#f8f5ff)"
+  },
+
+  mobileBar: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: "64px",
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    padding: "0 16px",
+    background: "linear-gradient(135deg,#2e1065,#5b21b6,#7c3aed)",
+    boxShadow: "0 8px 24px rgba(88,28,135,0.24)",
+    zIndex: 70,
+    boxSizing: "border-box"
+  },
+
+  menuToggle: {
+    width: "40px",
+    height: "40px",
+    minWidth: "40px",
+    borderRadius: "12px",
+    border: "1px solid rgba(255,255,255,0.22)",
+    background: "rgba(255,255,255,0.14)",
+    color: "white",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "18px",
+    cursor: "pointer"
+  },
+
+  mobileLogo: {
+    width: "32px",
+    height: "32px",
+    objectFit: "contain",
+    flexShrink: 0
+  },
+
+  mobileTitle: {
+    color: "white",
+    fontWeight: "900",
+    fontSize: "16px",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis"
+  },
+
+  overlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(17,11,32,0.55)",
+    zIndex: 55
   }
 
 };

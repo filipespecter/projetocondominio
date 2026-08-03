@@ -957,6 +957,7 @@ const styles = {
     padding: "32px",
     color: "white",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center",
     gap: "30px",
@@ -1022,7 +1023,7 @@ const styles = {
 
   cards: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(220px,100%),1fr))",
     gap: "18px",
     marginBottom: "26px"
   },
@@ -1034,6 +1035,7 @@ const styles = {
     padding: "24px",
     color: "white",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center",
     boxShadow: "0 14px 35px rgba(124,58,237,0.18)"
@@ -1066,6 +1068,7 @@ const styles = {
     borderRadius: "18px",
     background: "rgba(255,255,255,0.16)",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "28px"
@@ -1097,7 +1100,7 @@ const styles = {
 
   mainGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(380px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(380px,100%),1fr))",
     gap: "24px",
     alignItems: "flex-start"
   },
@@ -1122,6 +1125,7 @@ const styles = {
 
   sectionTop: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: "12px",
@@ -1210,6 +1214,7 @@ const styles = {
 
   listHeader: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: "18px",
@@ -1228,6 +1233,7 @@ const styles = {
 
   tabs: {
     display: "flex",
+    flexWrap: "wrap",
     background: "#f5f3ff",
     padding: "6px",
     borderRadius: "18px",
@@ -1307,6 +1313,7 @@ const styles = {
 
   occurrenceTop: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     gap: "18px",
     alignItems: "flex-start"
@@ -1429,6 +1436,7 @@ const styles = {
 
   actions: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "flex-end",
     marginTop: "14px"
   },

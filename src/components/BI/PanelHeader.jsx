@@ -23,6 +23,7 @@ function PanelHeader({ badge, title, gold }) {
 const styles = {
   panelHeader: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: "14px",

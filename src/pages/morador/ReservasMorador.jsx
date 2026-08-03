@@ -1,8 +1,12 @@
 import { useEffect, useState } from "react";
 import { registrarAuditoria } from "../../Services/auditoriaService";
 import { criarNotificacao } from "../../Services/notificacaoService";
+import useResponsive from "../../hooks/useResponsive";
 
 function ReservasMorador() {
+  const { isMobile, isTablet } = useResponsive();
+  const mainGridStyleResponsiva =
+    isMobile || isTablet ? { gridTemplateColumns: "1fr" } : {};
   const STORAGE_KEY = "reservas";
   const STORAGE_AVISOS_SINDICO = "avisos_sindico";
   const STORAGE_MOVIMENTACOES = "movimentacoes";
@@ -799,7 +803,7 @@ function ReservasMorador() {
         </div>
       </div>
 
-      <div style={styles.mainGrid}>
+      <div style={{ ...styles.mainGrid, ...mainGridStyleResponsiva }}>
         {/* FORM */}
 
         <div style={styles.formCard}>
@@ -1070,6 +1074,7 @@ const styles = {
     padding: "32px",
     color: "white",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center",
     gap: "28px",
@@ -1166,7 +1171,7 @@ const styles = {
     minWidth: 0,
     display: "grid",
     gridTemplateColumns:
-      "repeat(auto-fit,minmax(220px,1fr))",
+      "repeat(auto-fit,minmax(min(220px,100%),1fr))",
     gap: "18px",
     marginBottom: "26px"
   },
@@ -1178,6 +1183,7 @@ const styles = {
     padding: "24px",
     color: "white",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center",
     boxShadow:
@@ -1207,6 +1213,7 @@ const styles = {
     borderRadius: "18px",
     background: "rgba(255,255,255,0.16)",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "29px"
@@ -1218,6 +1225,7 @@ const styles = {
     borderRadius: "24px",
     padding: "24px",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "18px",
     boxShadow:
@@ -1231,6 +1239,7 @@ const styles = {
     borderRadius: "18px",
     background: "#f3e8ff",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "27px"
@@ -1242,6 +1251,7 @@ const styles = {
     borderRadius: "18px",
     background: "#fee2e2",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "27px"
@@ -1253,6 +1263,7 @@ const styles = {
     borderRadius: "18px",
     background: "#ede9fe",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "27px"
@@ -1314,6 +1325,7 @@ const styles = {
 
   sectionHeader: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: "18px",
@@ -1408,6 +1420,7 @@ const styles = {
 
   listHeader: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: "18px",
@@ -1417,6 +1430,7 @@ const styles = {
   filters: {
     minWidth: 0,
     display: "flex",
+    flexWrap: "wrap",
     gap: "10px"
   },
 
@@ -1477,6 +1491,7 @@ const styles = {
 
   cardTop: {
     display: "flex",
+    flexWrap: "wrap",
     gap: "18px",
     alignItems: "flex-start"
   },
@@ -1488,6 +1503,7 @@ const styles = {
     background: "white",
     border: "1px solid #ede9fe",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "27px",
@@ -1546,6 +1562,7 @@ const styles = {
     paddingTop: "16px",
     borderTop: "1px solid #ddd6fe",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center",
     gap: "14px"

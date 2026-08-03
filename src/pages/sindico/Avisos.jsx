@@ -1090,7 +1090,7 @@ const styles = {
     borderRadius: "30px",
     padding: "18px",
     display: "grid",
-    gridTemplateColumns: "repeat(3,1fr)",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(220px,100%),1fr))",
     gap: "12px",
     backdropFilter: "blur(16px)",
     boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)"
@@ -1179,6 +1179,7 @@ const styles = {
     padding: "12px 14px",
     borderRadius: "18px",
     display: "flex",
+    flexWrap: "wrap",
     gap: "14px",
     fontSize: "13px",
     fontWeight: "800",
@@ -1271,25 +1272,25 @@ const styles = {
 
   noticeGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(330px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(330px,100%),1fr))",
     gap: "18px"
   },
 
   avisosGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(330px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(330px,100%),1fr))",
     gap: "18px"
   },
 
   list: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(330px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(330px,100%),1fr))",
     gap: "18px"
   },
 
   timeline: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(330px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(330px,100%),1fr))",
     gap: "18px"
   },
 
@@ -1317,6 +1318,7 @@ const styles = {
 
   cardTop: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     gap: "14px",
     alignItems: "flex-start",
@@ -1331,6 +1333,7 @@ const styles = {
     border: "1px solid #ddd6fe",
     color: "#6d28d9",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "28px",
@@ -1344,6 +1347,7 @@ const styles = {
     background: "linear-gradient(135deg,#f3e8ff,#faf5ff)",
     border: "1px solid #ddd6fe",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "28px",
@@ -1521,6 +1525,7 @@ const styles = {
     background: "rgba(15,23,42,0.62)",
     backdropFilter: "blur(10px)",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "center",
     alignItems: "center",
     zIndex: 999,
@@ -1533,6 +1538,7 @@ const styles = {
     maxWidth: "100%",
     maxHeight: "calc(100vh - 40px)",
     overflowY: "auto",
+    overflowX: "hidden",
     boxSizing: "border-box",
     background:
       "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), #fbfaff",
@@ -1596,7 +1602,7 @@ const styles = {
 
   formGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(220px,100%),1fr))",
     gap: "15px"
   },
 

@@ -29,8 +29,13 @@ import {
 } from "../../Services/biService";
 
 import logoStar from "../../assets/images/logo-star-infinity.png";
+import useResponsive from "../../hooks/useResponsive";
 
 function BIAnalytics() {
+  const { isMobile, isTablet } = useResponsive();
+  const commandCenterGridStyleResponsiva =
+    isMobile || isTablet ? { gridTemplateColumns: "1fr" } : {};
+
   const [periodo, setPeriodo] = useState(
     () => lerSincronizacaoBI().periodo || "geral"
   );
@@ -551,7 +556,7 @@ function BIAnalytics() {
             <TrendAnalysis comparativos={comparativos} />
           </div>
 
-          <section style={styles.commandCenterGrid}>
+          <section style={{ ...styles.commandCenterGrid, ...commandCenterGridStyleResponsiva }}>
             <div style={styles.mainChartPanel}>
               <div style={styles.chartTop}>
                 <PanelHeader
@@ -774,6 +779,7 @@ const styles = {
     borderRadius: "42px",
     padding: "38px",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center",
     gap: "28px",
@@ -812,6 +818,7 @@ const styles = {
 
   brandRow: {
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "16px",
     marginBottom: "16px"
@@ -969,21 +976,21 @@ const styles = {
 
   compareGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(220px,100%),1fr))",
     gap: "16px",
     marginBottom: "22px"
   },
 
   indicatorsGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(230px,100%),1fr))",
     gap: "16px",
     marginBottom: "22px"
   },
 
   rankingGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(240px,100%),1fr))",
     gap: "18px",
     marginBottom: "22px"
   },
@@ -1000,6 +1007,7 @@ const styles = {
 
   rankingItem: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     gap: "12px",
     padding: "10px 0",
@@ -1011,7 +1019,7 @@ const styles = {
 
   extraGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(360px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(360px,100%),1fr))",
     gap: "22px",
     marginBottom: "22px"
   },
@@ -1097,13 +1105,14 @@ const styles = {
     borderRadius: "16px",
     padding: "13px",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     color: "#111827"
   },
 
   middleGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(360px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(360px,100%),1fr))",
     gap: "22px",
     marginBottom: "22px"
   },

@@ -1,8 +1,12 @@
 import { useState } from "react";
 import { registrarAuditoria } from "../../Services/auditoriaService";
 import { criarNotificacao } from "../../Services/notificacaoService";
+import useResponsive from "../../hooks/useResponsive";
 
 function Apartamentos() {
+  const { isMobile, isTablet } = useResponsive();
+  const premiumGridStyleResponsiva =
+    isMobile || isTablet ? { gridTemplateColumns: "1fr" } : {};
   const STORAGE_KEY = "apartamentos";
   const STORAGE_MOVIMENTACOES = "movimentacoes";
   const STORAGE_RELATORIOS = "relatorios_operacionais";
@@ -722,7 +726,7 @@ function Apartamentos() {
         </div>
       </div>
 
-      <div style={styles.premiumGrid}>
+      <div style={{ ...styles.premiumGrid, ...premiumGridStyleResponsiva }}>
         <div style={styles.apartmentsPanel}>
           <div style={styles.tableHeader}>
             <div>
@@ -1096,6 +1100,7 @@ const styles = {
     padding: "40px",
     color: "white",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center",
     gap: "34px",
@@ -1171,6 +1176,7 @@ const styles = {
     background: "rgba(255,255,255,0.15)",
     margin: "0 auto 14px",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "32px"
@@ -1204,6 +1210,7 @@ const styles = {
     borderRadius: "30px",
     padding: "20px",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     gap: "18px",
     marginBottom: "26px",
@@ -1212,6 +1219,7 @@ const styles = {
 
   searchBox: {
     display: "flex",
+    flexWrap: "wrap",
     gap: "12px",
     flex: 1
   },
@@ -1247,6 +1255,7 @@ const styles = {
     fontWeight: "900",
     boxShadow: "0 18px 34px rgba(124,58,237,0.28), 0 0 28px rgba(168,85,247,0.18)",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "9px"
   },
@@ -1257,7 +1266,7 @@ const styles = {
 
   resumeGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(220px,100%),1fr))",
     gap: "18px",
     marginBottom: "26px"
   },
@@ -1269,6 +1278,7 @@ const styles = {
     padding: "24px",
     color: "white",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center",
     boxShadow: "0 18px 38px rgba(124,58,237,0.22)"
@@ -1297,6 +1307,7 @@ const styles = {
     borderRadius: "22px",
     background: "rgba(255,255,255,0.16)",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "31px"
@@ -1308,6 +1319,7 @@ const styles = {
     borderRadius: "30px",
     padding: "24px",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "18px",
     boxShadow: "0 16px 40px rgba(88,28,135,0.08)",
@@ -1320,6 +1332,7 @@ const styles = {
     borderRadius: "20px",
     background: "#f3e8ff",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "28px"
@@ -1331,6 +1344,7 @@ const styles = {
     borderRadius: "20px",
     background: "#ede9fe",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "28px"
@@ -1342,6 +1356,7 @@ const styles = {
     borderRadius: "20px",
     background: "#fee2e2",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "28px"
@@ -1389,6 +1404,7 @@ const styles = {
 
   tableHeader: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: "18px",
@@ -1431,7 +1447,7 @@ const styles = {
 
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(310px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(310px,100%),1fr))",
     gap: "18px"
   },
 
@@ -1456,6 +1472,7 @@ const styles = {
 
   apCardTop: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: "18px"
@@ -1468,6 +1485,7 @@ const styles = {
     background:
       "linear-gradient(135deg,#f3e8ff,#faf5ff)",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "28px",
@@ -1532,6 +1550,7 @@ const styles = {
   cardFooter: {
     marginTop: "18px",
     display: "flex",
+    flexWrap: "wrap",
     gap: "10px"
   },
 
@@ -1594,6 +1613,7 @@ const styles = {
     background:
       "conic-gradient(#c084fc 0deg, #a855f7 220deg, rgba(255,255,255,0.16) 220deg)",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "34px",
@@ -1634,6 +1654,7 @@ const styles = {
 
   blockItem: {
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: "12px",
     background: "#fbfaff",
@@ -1648,6 +1669,7 @@ const styles = {
     borderRadius: "15px",
     background: "#f3e8ff",
     display: "flex",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center"
   },
@@ -1698,6 +1720,7 @@ const styles = {
     background: "rgba(15,23,42,0.62)",
     backdropFilter: "blur(8px)",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "center",
     alignItems: "center",
     zIndex: 999,
@@ -1706,7 +1729,7 @@ const styles = {
   },
 
   modal: {
-    width: "620px",
+    width: "min(620px, 94vw)",
     background:
       "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), #fbfaff",
     padding: "26px",
@@ -1722,6 +1745,7 @@ const styles = {
     borderRadius: "28px",
     padding: "26px",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     gap: "20px",
     marginBottom: "20px"
@@ -1763,7 +1787,7 @@ const styles = {
     borderRadius: "26px",
     padding: "20px",
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(260px,100%),1fr))",
     gap: "15px"
   },
 
@@ -1822,6 +1846,7 @@ const styles = {
 
   modalButtons: {
     display: "flex",
+    flexWrap: "wrap",
     gap: "12px",
     marginTop: "18px"
   },
