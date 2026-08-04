@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import logoStar from "../../assets/images/logo-star-infinity.png";
-
 function DashboardSindico() {
   const navigate = useNavigate();
 
@@ -10,7 +8,7 @@ function DashboardSindico() {
 
   const [perfilCondominio, setPerfilCondominio] = useState({
     condominioId: null,
-    nomeCondominio: "Condomínio",
+    nomeCondominio: "InfinityCondo",
     plano: "Plano Completo",
     statusComercial: "Ativo",
     quantidadeUnidades: ""
@@ -90,7 +88,7 @@ function DashboardSindico() {
 
     setPerfilCondominio({
       condominioId,
-      nomeCondominio: perfil.nomeCondominio || "Condomínio",
+      nomeCondominio: perfil.nomeCondominio || "InfinityCondo",
       plano: perfil.plano || "Plano Completo",
       statusComercial: perfil.statusComercial || "Ativo",
       quantidadeUnidades: perfil.quantidadeUnidades || ""
@@ -386,10 +384,7 @@ function DashboardSindico() {
     <div style={styles.container}>
       <div style={styles.hero}>
         <div>
-          <div style={styles.brandRow}>
-            <img src={logoStar} alt="Star Infinity Code" style={styles.logoImage} />
-            <span style={styles.heroBadge}>👑 Central de comando Star Infinity</span>
-          </div>
+          <span style={styles.heroBadge}>👑 Central de gestão</span>
 
           <h1 style={styles.title}>Painel Executivo InfinityCondo</h1>
 
@@ -483,19 +478,19 @@ function DashboardSindico() {
           <div style={styles.cardIconLight}>👥</div>
         </div>
 
-        <KpiCard icon="🏢" label="Apartamentos" value={dados.apartamentos} color="#7c3aed" bg="#f3e8ff" />
-        <KpiCard icon="🏠" label="Aptos ocupados" value={dados.apartamentosOcupados} color="#7c3aed" bg="#f3e8ff" />
+        <KpiCard icon="🏢" label="Apartamentos" value={dados.apartamentos} color="#6d28d9" bg="#f3e8ff" />
+        <KpiCard icon="🏠" label="Aptos ocupados" value={dados.apartamentosOcupados} color="#6d28d9" bg="#f3e8ff" />
         <KpiCard icon="👑" label="Moradores principais" value={dados.moradoresPrincipais} color="#6d28d9" bg="#ede9fe" />
         <KpiCard icon="👨‍👩‍👧" label="Dependentes" value={dados.dependentes} color="#7c3aed" bg="#ede9fe" />
         <KpiCard icon="🛡️" label="Porteiros" value={dados.porteiros} color="#6d28d9" bg="#ede9fe" />
         <KpiCard icon="🧰" label="Prestadores" value={dados.prestadores} color="#92400e" bg="#fef3c7" />
         <KpiCard icon="🔧" label="Prestadores em execução" value={dados.prestadoresExecucao} color="#92400e" bg="#fef3c7" />
-        <KpiCard icon="✅" label="Prestadores finalizados" value={dados.prestadoresFinalizados} color="#7c3aed" bg="#f3e8ff" />
+        <KpiCard icon="✅" label="Prestadores finalizados" value={dados.prestadoresFinalizados} color="#6d28d9" bg="#f3e8ff" />
         <KpiCard icon="📦" label="Encomendas pendentes" value={dados.encomendas} color="#7c2d12" bg="#ffedd5" />
         <KpiCard icon="👤" label="Visitantes" value={dados.visitantes} color="#7c3aed" bg="#ede9fe" />
         <KpiCard icon="📅" label="Reservas pendentes" value={dados.reservas} color="#be123c" bg="#ffe4e6" />
         <KpiCard icon="💬" label="Ocorrências abertas" value={dados.ocorrencias} color="#dc2626" bg="#fee2e2" />
-        <KpiCard icon="💡" label="Sugestões abertas" value={dados.sugestoes} color="#7c3aed" bg="#f3e8ff" />
+        <KpiCard icon="💡" label="Sugestões abertas" value={dados.sugestoes} color="#6d28d9" bg="#f3e8ff" />
         <KpiCard icon="⚠️" label="Reclamações abertas" value={dados.reclamacoes} color="#b91c1c" bg="#fee2e2" />
         <KpiCard icon="📢" label="Central do síndico" value={dados.avisos} color="#92400e" bg="#fef3c7" />
         <KpiCard icon="🔔" label="Notificações pendentes" value={dados.notificacoes} color="#92400e" bg="#fef3c7" />
@@ -722,7 +717,7 @@ function PriorityItem({ icon, label, value, alert }) {
       <strong
         style={{
           ...styles.priorityValue,
-          color: alert ? "#dc2626" : "#7c3aed"
+          color: alert ? "#dc2626" : "#6d28d9"
         }}
       >
         {value}
@@ -753,13 +748,12 @@ const styles = {
   container: {
     width: "100%",
     fontFamily: "Arial",
-    color: "#111827",
-    position: "relative"
+    color: "#111827"
   },
 
   hero: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.22),transparent 36%), linear-gradient(135deg,#2e1065,#5b21b6,#7c3aed)",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.22),transparent 36%), linear-gradient(135deg,#2e1065,#4c1d95,#6d28d9)",
     borderRadius: "34px",
     padding: "34px",
     color: "white",
@@ -768,10 +762,9 @@ const styles = {
     alignItems: "center",
     gap: "30px",
     marginBottom: "26px",
-    boxShadow: "0 24px 60px rgba(124,58,237,0.24)",
+    boxShadow: "0 24px 60px rgba(124,58,237,0.20)",
     position: "relative",
-    overflow: "hidden",
-    border: "1px solid rgba(255,255,255,0.18)"
+    overflow: "hidden"
   },
 
   heroBadge: {
@@ -813,7 +806,7 @@ const styles = {
     height: "9px",
     borderRadius: "50%",
     background: "#a855f7",
-    boxShadow: "0 0 0 5px rgba(168,85,247,0.18)"
+    boxShadow: "0 0 0 5px rgba(34,197,94,0.16)"
   },
 
   heroPanel: {
@@ -840,7 +833,7 @@ const styles = {
 
   heroStatus: {
     background: "#f3e8ff",
-    color: "#7c3aed",
+    color: "#6d28d9",
     padding: "8px 12px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -855,7 +848,7 @@ const styles = {
   },
 
   quickPrimary: {
-    background: "linear-gradient(135deg,#5b21b6,#8b5cf6)",
+    background: "linear-gradient(135deg,#4c1d95,#7c3aed)",
     color: "white",
     border: "none",
     padding: "22px",
@@ -865,14 +858,13 @@ const styles = {
     alignItems: "center",
     gap: "16px",
     textAlign: "left",
-    boxShadow: "0 16px 35px rgba(124,58,237,0.22)"
+    boxShadow: "0 16px 35px rgba(124,58,237,0.20)"
   },
 
   quickButton: {
-    background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    background: "white",
     color: "#111827",
-    border: "1px solid #ddd6fe",
+    border: "1px solid #eef2f7",
     padding: "22px",
     borderRadius: "26px",
     cursor: "pointer",
@@ -880,7 +872,7 @@ const styles = {
     alignItems: "center",
     gap: "16px",
     textAlign: "left",
-    boxShadow: "0 12px 35px rgba(88,28,135,0.08)"
+    boxShadow: "0 12px 35px rgba(15,23,42,0.07)"
   },
 
   quickIconLight: {
@@ -913,7 +905,7 @@ const styles = {
   },
 
   cardPrimary: {
-    background: "linear-gradient(135deg,#5b21b6,#8b5cf6)",
+    background: "linear-gradient(135deg,#4c1d95,#7c3aed)",
     borderRadius: "26px",
     padding: "24px",
     color: "white",
@@ -952,15 +944,14 @@ const styles = {
   },
 
   kpiCard: {
-    background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
+    background: "white",
     borderRadius: "26px",
     padding: "24px",
     display: "flex",
     alignItems: "center",
     gap: "18px",
-    boxShadow: "0 16px 40px rgba(88,28,135,0.08)",
-    border: "1px solid #ddd6fe"
+    boxShadow: "0 12px 35px rgba(15,23,42,0.07)",
+    border: "1px solid #eef2f7"
   },
 
   kpiIcon: {
@@ -993,17 +984,16 @@ const styles = {
   },
 
   chartCard: {
-    background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
+    background: "white",
     borderRadius: "30px",
     padding: "28px",
-    boxShadow: "0 18px 48px rgba(88,28,135,0.09)",
-    border: "1px solid #ddd6fe"
+    boxShadow: "0 16px 45px rgba(15,23,42,0.08)",
+    border: "1px solid #eef2f7"
   },
 
   controlPanel: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.18),transparent 34%), linear-gradient(135deg,#4c1d95,#6d28d9)",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.18),transparent 34%), linear-gradient(135deg,#4c1d95,#5b21b6)",
     color: "white",
     borderRadius: "30px",
     padding: "28px",
@@ -1053,8 +1043,7 @@ const styles = {
   },
 
   priorityValue: {
-    background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    background: "white",
     padding: "6px 10px",
     borderRadius: "12px"
   },
@@ -1063,7 +1052,7 @@ const styles = {
     width: "100%",
     marginTop: "20px",
     background: "#f3e8ff",
-    color: "#7c3aed",
+    color: "#6d28d9",
     border: "none",
     padding: "14px",
     borderRadius: "16px",
@@ -1094,7 +1083,7 @@ const styles = {
 
   sectionBadge: {
     background: "#f3e8ff",
-    color: "#7c3aed",
+    color: "#6d28d9",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1136,14 +1125,14 @@ const styles = {
 
   chartTrack: {
     height: "13px",
-    background: "#f5f3ff",
+    background: "#f3f4f6",
     borderRadius: "999px",
     overflow: "hidden"
   },
 
   chartFill: {
     height: "100%",
-    background: "linear-gradient(135deg,#8b5cf6,#a855f7)",
+    background: "linear-gradient(135deg,#7c3aed,#a855f7)",
     borderRadius: "999px"
   },
 
@@ -1153,12 +1142,11 @@ const styles = {
   },
 
   activityCard: {
-    background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
+    background: "white",
     borderRadius: "30px",
     padding: "28px",
-    boxShadow: "0 18px 48px rgba(88,28,135,0.09)",
-    border: "1px solid #ddd6fe"
+    boxShadow: "0 16px 45px rgba(15,23,42,0.08)",
+    border: "1px solid #eef2f7"
   },
 
   activityHeader: {
@@ -1175,7 +1163,7 @@ const styles = {
   },
 
   viewAll: {
-    color: "#7c3aed",
+    color: "#6d28d9",
     fontSize: "13px",
     fontWeight: "900",
     background: "#f3e8ff",
@@ -1184,8 +1172,8 @@ const styles = {
   },
 
   empty: {
-    background: "#fbfaff",
-    border: "1px dashed #c4b5fd",
+    background: "#f9fafb",
+    border: "1px dashed #d1d5db",
     borderRadius: "24px",
     padding: "40px",
     textAlign: "center"
@@ -1215,8 +1203,8 @@ const styles = {
   activityItem: {
     display: "flex",
     gap: "14px",
-    background: "#fbfaff",
-    border: "1px solid #ddd6fe",
+    background: "#f9fafb",
+    border: "1px solid #eef2f7",
     borderRadius: "20px",
     padding: "16px"
   },
@@ -1239,10 +1227,9 @@ const styles = {
 
   activityType: {
     display: "inline-block",
-    background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
-    border: "1px solid #ddd6fe",
-    color: "#7c3aed",
+    background: "white",
+    border: "1px solid #e5e7eb",
+    color: "#6d28d9",
     padding: "5px 9px",
     borderRadius: "999px",
     fontSize: "11px",
@@ -1281,7 +1268,7 @@ const styles = {
     maxWidth: "850px",
     maxHeight: "90vh",
     overflowY: "auto",
-    background: "#fbfaff",
+    background: "#f8fafc",
     borderRadius: "34px",
     padding: "26px",
     boxShadow: "0 30px 80px rgba(0,0,0,0.28)"
@@ -1289,7 +1276,7 @@ const styles = {
 
   modalHero: {
     background:
-      "linear-gradient(135deg,#4c1d95,#7c3aed)",
+      "linear-gradient(135deg,#4c1d95,#6d28d9)",
     color: "white",
     borderRadius: "28px",
     padding: "28px",
@@ -1335,9 +1322,8 @@ const styles = {
   },
 
   manualItem: {
-    background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
-    border: "1px solid #ddd6fe",
+    background: "white",
+    border: "1px solid #eef2f7",
     borderRadius: "22px",
     padding: "20px"
   },
@@ -1345,7 +1331,7 @@ const styles = {
   manualNumber: {
     display: "inline-block",
     background: "#f3e8ff",
-    color: "#7c3aed",
+    color: "#6d28d9",
     padding: "7px 10px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1363,26 +1349,7 @@ const styles = {
     color: "#6b7280",
     lineHeight: "1.5",
     fontSize: "14px"
-  },
-
-  brandRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: "16px",
-    marginBottom: "16px"
-  },
-
-  logoImage: {
-    width: "88px",
-    height: "88px",
-    objectFit: "contain",
-    borderRadius: "28px",
-    background: "rgba(255,255,255,0.95)",
-    border: "1px solid rgba(255,255,255,0.28)",
-    boxShadow: "0 18px 40px rgba(0,0,0,0.18), 0 0 32px rgba(216,180,254,0.30)",
-    padding: "8px",
-    boxSizing: "border-box"
-  },
+  }
 };
 
 export default DashboardSindico;
