@@ -12,6 +12,7 @@ import {
 } from "react-icons/fa";
 
 import { useState } from "react";
+import logoStar from "../assets/images/logo-star-infinity.png";
 
 function Login() {
   const { tipo } = useParams();
@@ -257,9 +258,9 @@ function Login() {
       const porteirosAtualizados = porteiros.map((p) =>
         p.id === encontrado.id
           ? {
-            ...p,
-            ultimoLogin: new Date().toISOString()
-          }
+              ...p,
+              ultimoLogin: new Date().toISOString()
+            }
           : p
       );
 
@@ -304,9 +305,9 @@ function Login() {
       const moradoresAtualizados = moradores.map((m) =>
         m.id === encontrado.id
           ? {
-            ...m,
-            ultimoLogin: new Date().toISOString()
-          }
+              ...m,
+              ultimoLogin: new Date().toISOString()
+            }
           : m
       );
 
@@ -361,8 +362,9 @@ function Login() {
   }
 
   function abrirRecuperacaoSenha() {
-    setRecuperarSenha(true);
     setErro("");
+    setAvisoPadrao(null);
+    setRecuperarSenha(true);
   }
 
   function fecharRecuperacaoSenha() {
@@ -379,6 +381,10 @@ function Login() {
     <div style={styles.container}>
       <div style={styles.glowGreen}></div>
       <div style={styles.glowGold}></div>
+      <div style={styles.gridOverlay}></div>
+      <div style={styles.codeRain}>
+        {"010101 110010 101101 001011 111000 010110 100101"}
+      </div>
 
       <div style={styles.loginShell}>
         <div style={styles.formSide}>
@@ -389,6 +395,14 @@ function Login() {
             <FaArrowLeft />
             Voltar
           </button>
+
+          <div style={styles.logoBox}>
+            <img
+              src={logoStar}
+              alt="Star Infinity Code"
+              style={styles.logoImage}
+            />
+          </div>
 
           <div
             style={{
@@ -470,7 +484,7 @@ function Login() {
             style={styles.button}
             onClick={fazerLogin}
           >
-            Acessar Plataforma
+            Entrar no InfinityCondo →
           </button>
 
           <p style={styles.footerText}>
@@ -480,6 +494,8 @@ function Login() {
 
         <div style={styles.infoSide}>
           <div>
+            <div style={styles.infoLogoMark}>✦</div>
+
             <span style={styles.systemBadge}>
               InfinityCondo
             </span>
@@ -598,7 +614,7 @@ const styles = {
   container: {
     minHeight: "100vh",
     background:
-      "radial-gradient(circle at top left,rgba(124,58,237,0.22),transparent 32%), radial-gradient(circle at bottom right,rgba(168,85,247,0.16),transparent 28%), radial-gradient(circle at center,rgba(59,130,246,0.08),transparent 38%), linear-gradient(135deg,#ffffff,#f8f5ff 48%,#ffffff)",
+      "radial-gradient(circle at top left,rgba(124,58,237,0.24),transparent 30%), radial-gradient(circle at bottom right,rgba(168,85,247,0.20),transparent 28%), radial-gradient(circle at center,rgba(59,130,246,0.10),transparent 36%), linear-gradient(135deg,#ffffff,#f8f5ff 48%,#ffffff)",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
@@ -611,36 +627,65 @@ const styles = {
 
   glowGreen: {
     position: "absolute",
-    width: "360px",
-    height: "360px",
+    width: "430px",
+    height: "430px",
     borderRadius: "50%",
-    background: "rgba(124,58,237,0.12)",
-    filter: "blur(70px)",
-    top: "-80px",
-    left: "-80px"
+    background: "rgba(124,58,237,0.15)",
+    filter: "blur(80px)",
+    top: "-120px",
+    left: "-100px"
   },
 
   glowGold: {
     position: "absolute",
-    width: "320px",
-    height: "320px",
+    width: "380px",
+    height: "380px",
     borderRadius: "50%",
-    background: "rgba(168,85,247,0.10)",
-    filter: "blur(75px)",
-    bottom: "-80px",
-    right: "-80px"
+    background: "rgba(168,85,247,0.12)",
+    filter: "blur(85px)",
+    bottom: "-110px",
+    right: "-90px"
+  },
+
+  gridOverlay: {
+    position: "absolute",
+    inset: 0,
+    backgroundImage:
+      "linear-gradient(rgba(124,58,237,0.08) 1px, transparent 1px), linear-gradient(90deg,rgba(124,58,237,0.08) 1px, transparent 1px)",
+    backgroundSize: "44px 44px",
+    maskImage:
+      "linear-gradient(to bottom,transparent,black 24%,black 76%,transparent)",
+    opacity: 0.55
+  },
+
+  codeRain: {
+    position: "absolute",
+    left: "50%",
+    bottom: "7%",
+    transform: "translateX(-50%)",
+    width: "900px",
+    maxWidth: "86%",
+    color: "rgba(109,40,217,0.13)",
+    fontSize: "18px",
+    fontWeight: "900",
+    letterSpacing: "12px",
+    textAlign: "center",
+    userSelect: "none",
+    pointerEvents: "none",
+    filter: "blur(0.2px)"
   },
 
   loginShell: {
-    width: "980px",
-    minHeight: "610px",
+    width: "1080px",
+    minHeight: "650px",
     display: "grid",
     gridTemplateColumns: "1fr 0.95fr",
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.12),transparent 35%), linear-gradient(180deg,#ffffff,#fbfaff)",
-    border: "1px solid rgba(124,58,237,0.14)",
-    borderRadius: "38px",
-    boxShadow: "0 35px 90px rgba(88,28,135,0.14)",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.13),transparent 35%), linear-gradient(180deg,rgba(255,255,255,0.95),rgba(251,250,255,0.88))",
+    border: "1px solid rgba(124,58,237,0.18)",
+    borderRadius: "40px",
+    boxShadow:
+      "0 35px 90px rgba(88,28,135,0.16), inset 0 0 0 1px rgba(255,255,255,0.75)",
     backdropFilter: "blur(22px)",
     overflow: "hidden",
     position: "relative",
@@ -648,23 +693,26 @@ const styles = {
   },
 
   formSide: {
-    padding: "48px",
+    padding: "50px",
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
     position: "relative",
-    background: "rgba(255,255,255,0.92)"
+    background:
+      "radial-gradient(circle at top left,rgba(124,58,237,0.08),transparent 32%), rgba(255,255,255,0.94)"
   },
 
   infoSide: {
-    padding: "48px",
+    padding: "50px",
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.18),transparent 38%), linear-gradient(145deg,#4c1d95,#7c3aed)",
-    borderLeft: "1px solid rgba(255,255,255,0.14)",
-    color: "#111827",
+      "radial-gradient(circle at top right,rgba(255,255,255,0.20),transparent 34%), radial-gradient(circle at bottom left,rgba(168,85,247,0.24),transparent 38%), linear-gradient(145deg,#2e1065,#4c1d95,#7c3aed)",
+    borderLeft: "1px solid rgba(255,255,255,0.18)",
+    color: "white",
     display: "flex",
     flexDirection: "column",
-    justifyContent: "space-between"
+    justifyContent: "space-between",
+    position: "relative",
+    overflow: "hidden"
   },
 
   backButton: {
@@ -681,26 +729,38 @@ const styles = {
     gap: "8px",
     fontWeight: "800",
     color: "#6d28d9",
-    backdropFilter: "blur(12px)"
+    boxShadow: "0 10px 24px rgba(124,58,237,0.10)"
+  },
+
+  logoBox: {
+    width: "230px",
+    maxWidth: "78%",
+    margin: "18px 0 18px"
+  },
+
+  logoImage: {
+    width: "100%",
+    display: "block",
+    filter: "drop-shadow(0 0 24px rgba(124,58,237,0.30))"
   },
 
   iconCircle: {
-    width: "98px",
-    height: "98px",
-    borderRadius: "32px",
+    width: "88px",
+    height: "88px",
+    borderRadius: "28px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    margin: "20px 0 18px",
+    margin: "4px 0 16px",
     boxShadow:
-      "0 18px 40px rgba(22,163,74,0.24), 0 0 35px rgba(250,204,21,0.10)"
+      "0 18px 40px rgba(124,58,237,0.24), 0 0 35px rgba(168,85,247,0.18)"
   },
 
   profileBadge: {
     width: "fit-content",
-    background: "rgba(250,204,21,0.16)",
-    color: "#facc15",
-    border: "1px solid rgba(250,204,21,0.28)",
+    background: "#f3e8ff",
+    color: "#6d28d9",
+    border: "1px solid #ddd6fe",
     padding: "8px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -744,7 +804,8 @@ const styles = {
     outline: "none",
     background: "#ffffff",
     color: "#111827",
-    boxSizing: "border-box"
+    boxSizing: "border-box",
+    boxShadow: "0 10px 26px rgba(124,58,237,0.06)"
   },
 
   passwordWrap: {
@@ -755,7 +816,8 @@ const styles = {
     border: "1px solid #ddd6fe",
     background: "#ffffff",
     boxSizing: "border-box",
-    overflow: "hidden"
+    overflow: "hidden",
+    boxShadow: "0 10px 26px rgba(124,58,237,0.06)"
   },
 
   passwordInput: {
@@ -794,14 +856,15 @@ const styles = {
 
   errorBox: {
     width: "100%",
-    background: "rgba(254,226,226,0.96)",
+    background: "#fee2e2",
     color: "#dc2626",
     padding: "13px",
     borderRadius: "14px",
     marginBottom: "16px",
     textAlign: "center",
     fontWeight: "800",
-    boxSizing: "border-box"
+    boxSizing: "border-box",
+    border: "1px solid #fecaca"
   },
 
   button: {
@@ -814,26 +877,41 @@ const styles = {
     fontSize: "15px",
     cursor: "pointer",
     marginTop: "8px",
-    background:
-      "linear-gradient(135deg,#6d28d9,#a855f7)",
+    background: "linear-gradient(135deg,#6d28d9,#a855f7)",
     boxShadow:
-      "0 16px 34px rgba(124,58,237,0.24)"
+      "0 18px 38px rgba(124,58,237,0.28), 0 0 32px rgba(168,85,247,0.18)"
   },
 
   footerText: {
     margin: "22px 0 0",
-    color: "rgba(255,255,255,0.46)",
-    fontSize: "12px"
+    color: "#7c3aed",
+    fontSize: "12px",
+    fontWeight: "800"
+  },
+
+  infoLogoMark: {
+    width: "74px",
+    height: "74px",
+    borderRadius: "24px",
+    background:
+      "linear-gradient(135deg,rgba(255,255,255,0.22),rgba(255,255,255,0.08))",
+    border: "1px solid rgba(255,255,255,0.20)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "44px",
+    marginBottom: "18px",
+    boxShadow: "0 20px 45px rgba(0,0,0,0.18)"
   },
 
   systemBadge: {
     display: "inline-block",
     width: "fit-content",
     background: "rgba(255,255,255,0.12)",
-    border: "1px solid rgba(255,255,255,0.16)",
+    border: "1px solid rgba(255,255,255,0.18)",
     padding: "9px 13px",
     borderRadius: "999px",
-    color: "#dcfce7",
+    color: "#f5f3ff",
     fontSize: "12px",
     fontWeight: "900",
     marginBottom: "18px"
@@ -842,11 +920,12 @@ const styles = {
   infoTitle: {
     margin: 0,
     fontSize: "38px",
-    letterSpacing: "-0.8px"
+    letterSpacing: "-0.8px",
+    color: "white"
   },
 
   infoText: {
-    color: "#6b7280",
+    color: "rgba(255,255,255,0.72)",
     lineHeight: "1.6",
     marginTop: "12px"
   },
@@ -859,22 +938,23 @@ const styles = {
   },
 
   featureItem: {
-    background: "#ffffff",
-    border: "1px solid rgba(255,255,255,0.13)",
+    background: "rgba(255,255,255,0.10)",
+    border: "1px solid rgba(255,255,255,0.14)",
     borderRadius: "18px",
     padding: "14px",
     display: "flex",
     alignItems: "center",
     gap: "12px",
-    fontWeight: "800"
+    fontWeight: "800",
+    boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.04)"
   },
 
   secureBox: {
-    background: "rgba(250,204,21,0.12)",
-    border: "1px solid rgba(250,204,21,0.28)",
+    background: "rgba(255,255,255,0.11)",
+    border: "1px solid rgba(255,255,255,0.18)",
     borderRadius: "22px",
     padding: "18px",
-    color: "#4c1d95"
+    color: "#f5f3ff"
   },
 
   modalOverlay: {
@@ -893,11 +973,12 @@ const styles = {
     width: "460px",
     background: "linear-gradient(180deg,#ffffff,#fbfaff)",
     border: "1px solid #ddd6fe",
-    borderRadius: "30px",
-    padding: "30px",
+    borderRadius: "32px",
+    padding: "34px",
+    color: "#111827",
     textAlign: "center",
-    boxShadow: "0 30px 80px rgba(88,28,135,0.22)",
-    color: "#111827"
+    boxShadow:
+      "0 35px 90px rgba(88,28,135,0.26), 0 0 40px rgba(168,85,247,0.14)"
   },
 
   warningIcon: {
@@ -905,7 +986,8 @@ const styles = {
     height: "74px",
     borderRadius: "24px",
     margin: "0 auto 18px",
-    background: "linear-gradient(135deg,#92400e,#facc15)",
+    background: "linear-gradient(135deg,#6d28d9,#a855f7)",
+    color: "white",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -914,11 +996,12 @@ const styles = {
 
   warningTitle: {
     margin: "0 0 12px",
-    fontSize: "28px"
+    fontSize: "28px",
+    color: "#111827"
   },
 
   warningText: {
-    color: "#6d28d9",
+    color: "#4b5563",
     lineHeight: "1.6"
   },
 
@@ -941,9 +1024,9 @@ const styles = {
 
   continueButton: {
     flex: 1,
-    background: "#6d28d9",
-    color: "white",
-    border: "1px solid #ddd6fe",
+    background: "#ffffff",
+    color: "#6d28d9",
+    border: "1px solid #c4b5fd",
     padding: "14px",
     borderRadius: "16px",
     cursor: "pointer",

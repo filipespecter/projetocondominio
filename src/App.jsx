@@ -11,6 +11,8 @@ import {
   Navigate
 } from "react-router-dom";
 
+import logoStar from "./assets/images/logo-star-infinity.png";
+
 import Login from "./pages/login";
 
 import DashboardLayout from "./layout/DashboardLayout";
@@ -50,20 +52,30 @@ function Home() {
 
   return (
     <div style={styles.container}>
-      <div style={styles.bgOrbOne}></div>
-      <div style={styles.bgOrbTwo}></div>
+      <div style={styles.glowOne}></div>
+      <div style={styles.glowTwo}></div>
+      <div style={styles.grid}></div>
 
-      <div style={styles.homeBox}>
-        <div style={styles.brandMark}>✦</div>
+      <div style={styles.codeRain}>
+        010101 110010 101101 001011 111000 010110
+      </div>
 
-        <span style={styles.brandBadge}>
-          Star Infinity Code
+      <section style={styles.hero}>
+        <img
+          src={logoStar}
+          alt="Star Infinity Code"
+          style={styles.logoImage}
+        />
+
+        <span style={styles.badge}>
+          Produto da Star Infinity Code
         </span>
 
         <h1 style={styles.title}>InfinityCondo</h1>
 
         <p style={styles.subtitle}>
-          Plataforma inteligente de gestão condominial.
+          Plataforma inteligente para gestão condominial, operação de portaria,
+          reservas, encomendas e comunicação integrada.
         </p>
 
         <div style={styles.cards}>
@@ -92,12 +104,16 @@ function Home() {
               icon={<FaUser />}
               title="Morador"
               description="Acesso para acompanhar encomendas, reservas e avisos"
-              color="#8b5cf6"
-              buttonColor="#8b5cf6"
+              color="#a855f7"
+              buttonColor="#a855f7"
             />
           </div>
         </div>
-      </div>
+
+        <p style={styles.footer}>
+          Powered by <strong>Star Infinity Code</strong> © 2026
+        </p>
+      </section>
     </div>
   );
 }
@@ -185,86 +201,103 @@ const styles = {
   container: {
     minHeight: "100vh",
     background:
-      "radial-gradient(circle at top left, rgba(124,58,237,0.18), transparent 32%), radial-gradient(circle at bottom right, rgba(168,85,247,0.14), transparent 30%), linear-gradient(135deg,#ffffff,#f8f5ff 45%,#ffffff)",
+      "radial-gradient(circle at top left,rgba(124,58,237,0.24),transparent 30%), radial-gradient(circle at bottom right,rgba(168,85,247,0.18),transparent 28%), linear-gradient(135deg,#ffffff,#f8f5ff 50%,#ffffff)",
     display: "flex",
-    flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    color: "#111827",
     fontFamily: "Arial",
     overflow: "hidden",
     position: "relative",
-    padding: "40px",
+    padding: "34px",
     boxSizing: "border-box"
   },
 
-  bgOrbOne: {
+  glowOne: {
     position: "absolute",
-    width: "360px",
-    height: "360px",
+    width: "420px",
+    height: "420px",
     borderRadius: "50%",
-    background: "rgba(124,58,237,0.12)",
-    filter: "blur(70px)",
-    top: "-100px",
-    left: "-80px"
+    background: "rgba(124,58,237,0.15)",
+    filter: "blur(85px)",
+    top: "-120px",
+    left: "-100px"
   },
 
-  bgOrbTwo: {
+  glowTwo: {
     position: "absolute",
-    width: "320px",
-    height: "320px",
+    width: "380px",
+    height: "380px",
     borderRadius: "50%",
-    background: "rgba(59,130,246,0.10)",
-    filter: "blur(80px)",
-    right: "-80px",
-    bottom: "-100px"
+    background: "rgba(168,85,247,0.12)",
+    filter: "blur(85px)",
+    bottom: "-110px",
+    right: "-100px"
   },
 
-  homeBox: {
+  grid: {
+    position: "absolute",
+    inset: 0,
+    backgroundImage:
+      "linear-gradient(rgba(124,58,237,0.07) 1px, transparent 1px), linear-gradient(90deg,rgba(124,58,237,0.07) 1px, transparent 1px)",
+    backgroundSize: "44px 44px",
+    opacity: 0.55,
+    pointerEvents: "none"
+  },
+
+  codeRain: {
+    position: "absolute",
+    bottom: "7%",
+    left: "50%",
+    transform: "translateX(-50%)",
+    color: "rgba(109,40,217,0.12)",
+    fontSize: "18px",
+    fontWeight: "900",
+    letterSpacing: "12px",
+    whiteSpace: "nowrap",
+    pointerEvents: "none"
+  },
+
+  hero: {
     width: "100%",
     maxWidth: "1280px",
     minHeight: "720px",
-    background: "rgba(255,255,255,0.82)",
-    border: "1px solid rgba(124,58,237,0.12)",
-    boxShadow: "0 30px 80px rgba(88,28,135,0.12)",
-    borderRadius: "42px",
+    background:
+      "radial-gradient(circle at top right,rgba(168,85,247,0.13),transparent 34%), linear-gradient(180deg,rgba(255,255,255,0.94),rgba(251,250,255,0.86))",
+    border: "1px solid rgba(124,58,237,0.16)",
+    borderRadius: "44px",
+    boxShadow:
+      "0 34px 90px rgba(88,28,135,0.14), inset 0 0 0 1px rgba(255,255,255,0.75)",
+    backdropFilter: "blur(22px)",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
     padding: "44px",
-    boxSizing: "border-box",
     position: "relative",
-    zIndex: 2
+    zIndex: 2,
+    boxSizing: "border-box"
   },
 
-  brandMark: {
-    width: "92px",
-    height: "92px",
-    borderRadius: "30px",
-    background: "linear-gradient(135deg,#4c1d95,#7c3aed,#a855f7)",
-    color: "white",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "56px",
+  logoImage: {
+    width: "310px",
+    maxWidth: "90%",
     marginBottom: "18px",
-    boxShadow: "0 22px 50px rgba(124,58,237,0.28)"
+    filter: "drop-shadow(0 0 30px rgba(124,58,237,0.34))"
   },
 
-  brandBadge: {
+  badge: {
     background: "#f3e8ff",
-    color: "#6d28d9",
     border: "1px solid #ddd6fe",
-    padding: "9px 14px",
+    color: "#6d28d9",
+    padding: "9px 15px",
     borderRadius: "999px",
     fontSize: "12px",
     fontWeight: "900",
-    marginBottom: "14px"
+    marginBottom: "16px"
   },
 
   title: {
-    fontSize: "56px",
+    fontSize: "58px",
     margin: "0",
     fontWeight: "900",
     letterSpacing: "-1px",
@@ -273,9 +306,12 @@ const styles = {
 
   subtitle: {
     marginTop: "14px",
-    marginBottom: "46px",
+    marginBottom: "44px",
     color: "#6b7280",
-    fontSize: "16px"
+    fontSize: "16px",
+    maxWidth: "720px",
+    lineHeight: "1.6",
+    textAlign: "center"
   },
 
   cards: {
@@ -285,6 +321,12 @@ const styles = {
     gap: "28px",
     justifyContent: "center",
     alignItems: "stretch"
+  },
+
+  footer: {
+    margin: "34px 0 0",
+    color: "#6b7280",
+    fontSize: "13px"
   }
 };
 
