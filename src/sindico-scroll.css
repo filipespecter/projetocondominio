@@ -1,0 +1,69 @@
+/* ===================================================
+   SCROLLBAR CUSTOMIZADA — SÍNDICO
+   Aplicada via className="scroll-sindico" nos elementos
+   com overflow (painel lateral, conteúdo, modais, tabelas).
+   Troca a barra de rolagem genérica do navegador por uma
+   fina, arredondada, no roxo da identidade visual.
+=================================================== */
+
+/* Firefox */
+.scroll-sindico {
+  scrollbar-width: thin;
+  scrollbar-color: #8b5cf6 rgba(124, 58, 237, 0.08);
+}
+
+/* Chrome, Edge, Safari */
+.scroll-sindico::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+.scroll-sindico::-webkit-scrollbar-track {
+  background: rgba(124, 58, 237, 0.06);
+  border-radius: 999px;
+}
+
+.scroll-sindico::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #7c3aed, #a855f7);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.scroll-sindico::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #6d28d9, #9333ea);
+  background-clip: padding-box;
+}
+
+.scroll-sindico::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Variante para fundos escuros (painel lateral roxo) —
+   trilho mais translúcido para não "sumir" no fundo escuro */
+.scroll-sindico-escuro {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.55) rgba(255, 255, 255, 0.08);
+}
+
+.scroll-sindico-escuro::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+.scroll-sindico-escuro::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+}
+
+.scroll-sindico-escuro::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.45);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.scroll-sindico-escuro::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.65);
+  background-clip: padding-box;
+}

@@ -632,7 +632,7 @@ function DashboardSindico() {
       </div>
             {mostrarManual && (
         <div style={styles.overlay}>
-          <div style={styles.modal}>
+          <div style={styles.modal} className="scroll-sindico">
             <div style={styles.modalHero}>
               <div>
                 <span style={styles.modalBadge}>

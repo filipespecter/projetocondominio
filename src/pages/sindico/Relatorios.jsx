@@ -1357,7 +1357,7 @@ function Relatorios() {
             <section key={`${tabela.titulo}-${tabelaIndex}`} style={styles.tableBox}>
               <h3>{tabela.titulo}</h3>
 
-              <div style={styles.tableWrapper}>
+              <div style={styles.tableWrapper} className="scroll-sindico">
                 <table style={styles.table}>
                   <thead>
                     <tr>

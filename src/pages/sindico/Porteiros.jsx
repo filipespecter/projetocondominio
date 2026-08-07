@@ -724,7 +724,7 @@ function Porteiros() {
 
       {mostrarModal && (
         <div style={styles.modalBg}>
-          <div style={styles.modal}>
+          <div style={styles.modal} className="scroll-sindico">
             <div style={styles.modalTop}>
               <div>
                 <span style={styles.modalBadge}>
@@ -1261,6 +1261,10 @@ const styles = {
 
   modal: {
     width: "min(760px, 94vw)",
+    maxHeight: "90vh",
+    overflowY: "auto",
+    overflowX: "hidden",
+    boxSizing: "border-box",
     background: "#fbfaff",
     padding: "26px",
     borderRadius: "36px",

@@ -1135,6 +1135,7 @@ function Reservas() {
         >
           <div
             style={styles.modal}
+            className="scroll-sindico"
             onClick={(e) => e.stopPropagation()}
           >
             <div style={styles.modalTop}>

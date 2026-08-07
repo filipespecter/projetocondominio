@@ -906,7 +906,7 @@ function Apartamentos() {
 
       {mostrarModal && (
         <div style={styles.modalBackground}>
-          <div style={styles.modal}>
+          <div style={styles.modal} className="scroll-sindico">
             <div style={styles.modalHero}>
               <div>
                 <span style={styles.modalBadge}>
@@ -1730,6 +1730,10 @@ const styles = {
 
   modal: {
     width: "min(620px, 94vw)",
+    maxHeight: "90vh",
+    overflowY: "auto",
+    overflowX: "hidden",
+    boxSizing: "border-box",
     background:
       "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), #fbfaff",
     padding: "26px",

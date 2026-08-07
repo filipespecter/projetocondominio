@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import "../sindico-scroll.css";
 
 import {
   Link,
@@ -238,7 +239,7 @@ function DashboardLayout() {
         ></div>
       )}
 
-      <aside style={sidebarStyle}>
+      <aside style={sidebarStyle} className="scroll-sindico-escuro">
         <div style={styles.sidebarGlow}></div>
         <div style={styles.sidebarGrid}></div>
 
@@ -431,7 +432,7 @@ function DashboardLayout() {
         </div>
       </aside>
 
-      <main style={contentStyle}>
+      <main style={contentStyle} className="scroll-sindico">
         <Outlet />
       </main>
     </div>

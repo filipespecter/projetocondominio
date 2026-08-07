@@ -1031,7 +1031,7 @@ function Encomendas() {
 
       {mostrarModal && (
         <div style={styles.modalBackground}>
-          <div style={styles.modal}>
+          <div style={styles.modal} className="scroll-sindico">
             <div style={styles.modalTop}>
               <div>
                 <span style={styles.modalBadge}>
