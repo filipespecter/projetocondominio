@@ -1,3 +1,4 @@
+import { useAlerta } from "../../components/Alerta/AlertaProvider";
 import { useEffect, useState } from "react";
 import { registrarAuditoria } from "../../Services/auditoriaService";
 import { criarNotificacao } from "../../Services/notificacaoService";
@@ -5,6 +6,7 @@ import { criarNotificacao } from "../../Services/notificacaoService";
 import logoStar from "../../assets/images/logo-star-infinity.png";
 
 function Encomendas() {
+  const { mostrarAlerta, confirmarAcao } = useAlerta();
   const STORAGE_KEY = "encomendas";
   const STORAGE_MOVIMENTACOES = "movimentacoes";
   const STORAGE_RELATORIOS = "relatorios_operacionais";
@@ -291,22 +293,22 @@ function Encomendas() {
     const codigo = obterCodigoRastreio(novaEncomenda);
 
     if (!novaEncomenda.morador) {
-      alert("Selecione o morador destinatário.");
+      mostrarAlerta("Selecione o morador destinatário.");
       return false;
     }
 
     if (!novaEncomenda.apartamento) {
-      alert("O apartamento do destinatário é obrigatório.");
+      mostrarAlerta("O apartamento do destinatário é obrigatório.");
       return false;
     }
 
     if (descricao.length < 3) {
-      alert("Informe uma descrição válida para a encomenda.");
+      mostrarAlerta("Informe uma descrição válida para a encomenda.");
       return false;
     }
 
     if (transportadora.length < 2) {
-      alert("Informe a transportadora ou origem da encomenda.");
+      mostrarAlerta("Informe a transportadora ou origem da encomenda.");
       return false;
     }
 
@@ -324,13 +326,13 @@ function Encomendas() {
       });
 
       if (duplicada) {
-        alert("Já existe uma encomenda pendente com este código de rastreio.");
+        mostrarAlerta("Já existe uma encomenda pendente com este código de rastreio.");
         return false;
       }
     }
 
     if (!novaEncomenda.status) {
-      alert("Selecione o status da encomenda.");
+      mostrarAlerta("Selecione o status da encomenda.");
       return false;
     }
 
@@ -675,8 +677,8 @@ function Encomendas() {
     setMostrarModal(true);
   }
 
-  function excluirEncomenda(id) {
-    const confirmar = window.confirm(
+  async function excluirEncomenda(id) {
+    const confirmar = await confirmarAcao(
       "Deseja excluir esta encomenda?"
     );
 

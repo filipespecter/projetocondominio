@@ -1,8 +1,10 @@
+import { useAlerta } from "../../components/Alerta/AlertaProvider";
 import { useEffect, useState } from "react";
 import { registrarAuditoria } from "../../Services/auditoriaService";
 import { criarNotificacao } from "../../Services/notificacaoService";
 
 function AreasComuns() {
+  const { mostrarAlerta, confirmarAcao } = useAlerta();
   const STORAGE_KEY = "areasComuns";
   const STORAGE_MOVIMENTACOES = "movimentacoes";
   const STORAGE_RELATORIOS = "relatorios_operacionais";
@@ -219,22 +221,22 @@ function AreasComuns() {
     const capacidade = String(novaArea.capacidade || "").trim();
 
     if (nome.length < 3) {
-      alert("Informe um nome válido para a área comum.");
+      mostrarAlerta("Informe um nome válido para a área comum.");
       return false;
     }
 
     if (capacidade && limparCapacidade(capacidade).length === 0) {
-      alert("A capacidade deve conter apenas números ou ficar em branco.");
+      mostrarAlerta("A capacidade deve conter apenas números ou ficar em branco.");
       return false;
     }
 
     if (!horario) {
-      alert("Informe o horário de funcionamento.");
+      mostrarAlerta("Informe o horário de funcionamento.");
       return false;
     }
 
     if (!novaArea.status) {
-      alert("Selecione o status da área.");
+      mostrarAlerta("Selecione o status da área.");
       return false;
     }
 
@@ -387,7 +389,7 @@ function AreasComuns() {
     );
 
     if (areaExiste) {
-      alert("Essa área já existe");
+      mostrarAlerta("Essa área já existe");
       return;
     }
 
@@ -464,8 +466,8 @@ function AreasComuns() {
     setMostrarModal(true);
   }
 
-  function excluirArea(id) {
-    const confirmar = window.confirm(
+  async function excluirArea(id) {
+    const confirmar = await confirmarAcao(
       "Deseja excluir essa área?"
     );
 
@@ -474,7 +476,7 @@ function AreasComuns() {
     const areaExcluida = areas.find((area) => area.id === id);
 
     if (!areaExcluida) {
-      alert("Área comum não encontrada.");
+      mostrarAlerta("Área comum não encontrada.");
       return;
     }
 
@@ -482,7 +484,7 @@ function AreasComuns() {
       reservasAtivasDaArea(areaExcluida);
 
     if (reservasAtivas.length > 0) {
-      alert(
+      mostrarAlerta(
         "Não é possível excluir esta área porque existem reservas ativas vinculadas a ela. Cancele ou conclua as reservas primeiro."
       );
       return;
@@ -500,12 +502,12 @@ function AreasComuns() {
     }
   }
 
-  function alterarStatus(id, status) {
+  async function alterarStatus(id, status) {
     let areaAtualizada = null;
     const areaAntes = areas.find((area) => area.id === id);
 
     if (!areaAntes) {
-      alert("Área comum não encontrada.");
+      mostrarAlerta("Área comum não encontrada.");
       return;
     }
 
@@ -514,7 +516,7 @@ function AreasComuns() {
         reservasAtivasDaArea(areaAntes);
 
       if (reservasAtivas.length > 0) {
-        const confirmar = window.confirm(
+        const confirmar = await confirmarAcao(
           `Esta área possui ${reservasAtivas.length} reserva(s) ativa(s). Ao colocá-la em manutenção, novas reservas e aprovações serão bloqueadas. Deseja continuar?`
         );
 

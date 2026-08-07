@@ -1,8 +1,10 @@
+import { useAlerta } from "../../components/Alerta/AlertaProvider";
 import { useState } from "react";
 import { registrarAuditoria } from "../../Services/auditoriaService";
 import { criarNotificacao } from "../../Services/notificacaoService";
 
 function Moradores() {
+  const { mostrarAlerta, confirmarAcao } = useAlerta();
   const STORAGE_KEY = "moradores";
   const STORAGE_MOVIMENTACOES = "movimentacoes";
 
@@ -262,47 +264,47 @@ function Moradores() {
     const senha = String(novoMorador.senha || "").trim();
 
     if (nome.length < 3) {
-      alert("Informe um nome válido com pelo menos 3 caracteres.");
+      mostrarAlerta("Informe um nome válido com pelo menos 3 caracteres.");
       return false;
     }
 
     if (!apartamento) {
-      alert("Selecione ou informe o apartamento do morador.");
+      mostrarAlerta("Selecione ou informe o apartamento do morador.");
       return false;
     }
 
     if (telefone.length < 10 || telefone.length > 11) {
-      alert("Informe um telefone válido com DDD. Use apenas números.");
+      mostrarAlerta("Informe um telefone válido com DDD. Use apenas números.");
       return false;
     }
 
     if (!validarEmail(email)) {
-      alert("Informe um e-mail válido. Exemplo: morador@email.com");
+      mostrarAlerta("Informe um e-mail válido. Exemplo: morador@email.com");
       return false;
     }
 
     if (usuario.length < 4) {
-      alert("O usuário de login deve ter pelo menos 4 caracteres.");
+      mostrarAlerta("O usuário de login deve ter pelo menos 4 caracteres.");
       return false;
     }
 
     if (/\s/.test(usuario)) {
-      alert("O usuário de login não pode conter espaços.");
+      mostrarAlerta("O usuário de login não pode conter espaços.");
       return false;
     }
 
     if (senha.length < 4) {
-      alert("A senha deve ter pelo menos 4 caracteres.");
+      mostrarAlerta("A senha deve ter pelo menos 4 caracteres.");
       return false;
     }
 
     if (!novoMorador.tipoMorador) {
-      alert("Selecione o tipo de morador.");
+      mostrarAlerta("Selecione o tipo de morador.");
       return false;
     }
 
     if (!novoMorador.status) {
-      alert("Selecione o status do morador.");
+      mostrarAlerta("Selecione o status do morador.");
       return false;
     }
 
@@ -315,7 +317,7 @@ function Moradores() {
       );
 
       if (principalExistente) {
-        alert("Este apartamento já possui um morador principal.");
+        mostrarAlerta("Este apartamento já possui um morador principal.");
         return false;
       }
     }
@@ -348,7 +350,7 @@ function Moradores() {
     );
 
     if (usuarioExistente) {
-      alert("Esse usuário já existe");
+      mostrarAlerta("Esse usuário já existe");
       return;
     }
 
@@ -453,8 +455,8 @@ function Moradores() {
     setMostrarModal(false);
   }
 
-  function excluirMorador(id) {
-    const confirmar = window.confirm(
+  async function excluirMorador(id) {
+    const confirmar = await confirmarAcao(
       "Deseja realmente excluir este morador?"
     );
 

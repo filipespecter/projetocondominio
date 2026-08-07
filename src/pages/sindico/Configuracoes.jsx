@@ -1,8 +1,10 @@
+import { useAlerta } from "../../components/Alerta/AlertaProvider";
 import { useEffect, useState } from "react";
 import { registrarAuditoria } from "../../Services/auditoriaService";
 import { criarNotificacao } from "../../Services/notificacaoService";
 
 function Configuracoes() {
+  const { mostrarAlerta, confirmarAcao } = useAlerta();
   const [abaAtiva, setAbaAtiva] = useState("dados");
   const [salvo, setSalvo] = useState(false);
   const [mensagem, setMensagem] = useState("");
@@ -394,12 +396,12 @@ function Configuracoes() {
 
   function salvarUsuarioAdministrativo() {
     if (!isMestre) {
-      alert("Apenas o Síndico Mestre pode gerenciar usuários.");
+      mostrarAlerta("Apenas o Síndico Mestre pode gerenciar usuários.");
       return;
     }
 
     if (!novoUsuario.nome || !novoUsuario.usuario || !novoUsuario.senha) {
-      alert("Preencha nome, usuário e senha.");
+      mostrarAlerta("Preencha nome, usuário e senha.");
       return;
     }
 
@@ -410,7 +412,7 @@ function Configuracoes() {
     );
 
     if (usuarioRepetido) {
-      alert("Este usuário já existe.");
+      mostrarAlerta("Este usuário já existe.");
       return;
     }
 
@@ -474,20 +476,20 @@ function Configuracoes() {
     setEditId(usuario.id);
   }
 
-  function excluirUsuario(id) {
+  async function excluirUsuario(id) {
     if (!isMestre) {
-      alert("Apenas o Síndico Mestre pode excluir usuários.");
+      mostrarAlerta("Apenas o Síndico Mestre pode excluir usuários.");
       return;
     }
 
     const usuario = usuariosSindico.find((u) => u.id === id);
 
     if (usuario?.perfil === "mestre") {
-      alert("O usuário mestre não pode ser excluído.");
+      mostrarAlerta("O usuário mestre não pode ser excluído.");
       return;
     }
 
-    const confirmar = window.confirm(
+    const confirmar = await confirmarAcao(
       "Deseja excluir este usuário administrativo?"
     );
 
@@ -515,7 +517,7 @@ function Configuracoes() {
 
   function alterarStatusUsuario(id) {
     if (!isMestre) {
-      alert("Apenas o Síndico Mestre pode alterar status.");
+      mostrarAlerta("Apenas o Síndico Mestre pode alterar status.");
       return;
     }
 
@@ -546,12 +548,12 @@ function Configuracoes() {
 
   function alterarCredenciaisMestre() {
     if (!isMestre) {
-      alert("Apenas o Síndico Mestre pode alterar estas credenciais.");
+      mostrarAlerta("Apenas o Síndico Mestre pode alterar estas credenciais.");
       return;
     }
 
     if (!credenciaisMestre.usuario) {
-      alert("Informe o novo usuário.");
+      mostrarAlerta("Informe o novo usuário.");
       return;
     }
 
@@ -559,7 +561,7 @@ function Configuracoes() {
       credenciaisMestre.senha &&
       credenciaisMestre.senha !== credenciaisMestre.confirmarSenha
     ) {
-      alert("As senhas não conferem.");
+      mostrarAlerta("As senhas não conferem.");
       return;
     }
 
@@ -574,7 +576,7 @@ function Configuracoes() {
     );
 
     if (usuarioRepetido) {
-      alert("Este usuário já está em uso.");
+      mostrarAlerta("Este usuário já está em uso.");
       return;
     }
 
@@ -628,7 +630,7 @@ function Configuracoes() {
   }
     function gerarBackup() {
     if (!isMestre) {
-      alert("Apenas o Síndico Mestre pode gerar backup.");
+      mostrarAlerta("Apenas o Síndico Mestre pode gerar backup.");
       return;
     }
 
@@ -737,9 +739,9 @@ function Configuracoes() {
     feedback("Backup completo gerado com sucesso.");
   }
 
-  function restaurarBackup(event) {
+  async function restaurarBackup(event) {
     if (!isMestre) {
-      alert("Apenas o Síndico Mestre pode restaurar backup.");
+      mostrarAlerta("Apenas o Síndico Mestre pode restaurar backup.");
       return;
     }
 
@@ -747,7 +749,7 @@ function Configuracoes() {
 
     if (!arquivo) return;
 
-    const confirmar = window.confirm(
+    const confirmar = await confirmarAcao(
       "Restaurar um backup pode sobrescrever os dados atuais. Deseja continuar?"
     );
 
@@ -760,7 +762,7 @@ function Configuracoes() {
         const conteudo = JSON.parse(e.target.result);
 
         if (!conteudo.dados) {
-          alert("Arquivo de backup inválido.");
+          mostrarAlerta("Arquivo de backup inválido.");
           return;
         }
 
@@ -803,7 +805,7 @@ function Configuracoes() {
         carregarTudo();
         feedback("Backup restaurado com sucesso. Recarregue o sistema se necessário.");
       } catch {
-        alert("Erro ao restaurar backup.");
+        mostrarAlerta("Erro ao restaurar backup.");
       }
     };
 

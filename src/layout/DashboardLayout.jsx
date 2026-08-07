@@ -30,6 +30,7 @@ import {
 import { contarNaoLidas } from "../Services/notificacaoService";
 import logoStar from "../assets/images/logo-star-infinity.png";
 import useResponsive from "../hooks/useResponsive";
+import { AlertaProvider } from "../components/Alerta/AlertaProvider";
 
 function DashboardLayout() {
   const {
@@ -204,6 +205,7 @@ function DashboardLayout() {
     : styles.content;
 
   return (
+    <AlertaProvider>
     <div
       style={
         isMenuBreakpoint
@@ -436,6 +438,7 @@ function DashboardLayout() {
         <Outlet />
       </main>
     </div>
+    </AlertaProvider>
   );
 }
 

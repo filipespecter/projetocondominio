@@ -1,3 +1,4 @@
+import { useAlerta } from "../../components/Alerta/AlertaProvider";
 import { useState } from "react";
 import { registrarAuditoria } from "../../Services/auditoriaService";
 import { criarNotificacao } from "../../Services/notificacaoService";
@@ -5,6 +6,7 @@ import { criarNotificacao } from "../../Services/notificacaoService";
 import logoStar from "../../assets/images/logo-star-infinity.png";
 
 function Prestadores() {
+  const { mostrarAlerta, confirmarAcao } = useAlerta();
   const STORAGE_KEYS = {
     prestadores: "condominio_prestadores",
     particulares: "prestadores_particulares_v2",
@@ -308,43 +310,43 @@ function Prestadores() {
     const servico = String(novoPrestador.servico || "").trim();
 
     if (nome.length < 3) {
-      alert("Informe o nome do prestador com pelo menos 3 caracteres.");
+      mostrarAlerta("Informe o nome do prestador com pelo menos 3 caracteres.");
       return false;
     }
 
     if (telefone.length < 10 || telefone.length > 11) {
-      alert("Informe um telefone válido com DDD.");
+      mostrarAlerta("Informe um telefone válido com DDD.");
       return false;
     }
 
     if (novoPrestador.cpf && !validarCPF(novoPrestador.cpf)) {
-      alert("Informe um CPF válido ou deixe o campo em branco.");
+      mostrarAlerta("Informe um CPF válido ou deixe o campo em branco.");
       return false;
     }
 
     if (servico.length < 3) {
-      alert("Informe o serviço executado.");
+      mostrarAlerta("Informe o serviço executado.");
       return false;
     }
 
     if (!novoPrestador.dataEntrada) {
-      alert("Informe a data de entrada.");
+      mostrarAlerta("Informe a data de entrada.");
       return false;
     }
 
     if (!novoPrestador.horaEntrada) {
-      alert("Informe a hora de entrada.");
+      mostrarAlerta("Informe a hora de entrada.");
       return false;
     }
 
     if (abaAtiva === "particular") {
       if (!novoPrestador.apartamento) {
-        alert("Informe ou selecione o apartamento.");
+        mostrarAlerta("Informe ou selecione o apartamento.");
         return false;
       }
 
       if (!novoPrestador.responsavel) {
-        alert("Informe ou selecione o morador responsável.");
+        mostrarAlerta("Informe ou selecione o morador responsável.");
         return false;
       }
     }
@@ -359,7 +361,7 @@ function Prestadores() {
       );
 
       if (!isNaN(entrada.getTime()) && !isNaN(saida.getTime()) && saida < entrada) {
-        alert("A data/hora de saída não pode ser anterior à entrada.");
+        mostrarAlerta("A data/hora de saída não pode ser anterior à entrada.");
         return false;
       }
     }
@@ -465,8 +467,8 @@ function Prestadores() {
     setNovoPrestador(estadoInicialPrestador);
   }
 
-  function excluirPrestador(id) {
-    const confirmar = window.confirm(
+  async function excluirPrestador(id) {
+    const confirmar = await confirmarAcao(
       "Deseja excluir este cadastro?"
     );
 
@@ -534,7 +536,7 @@ function Prestadores() {
       );
 
       if (cpfDuplicado) {
-        alert("Já existe um prestador cadastrado com este CPF nesta aba.");
+        mostrarAlerta("Já existe um prestador cadastrado com este CPF nesta aba.");
         return;
       }
     }
@@ -769,7 +771,7 @@ function Prestadores() {
       !novoOperacional.horario ||
       !novoOperacional.porteiro
     ) {
-      alert("Preencha data, horário e porteiro responsável.");
+      mostrarAlerta("Preencha data, horário e porteiro responsável.");
       return;
     }
 
@@ -785,7 +787,7 @@ function Prestadores() {
       novoOperacional.leituraAtual &&
       !consumoCalculado
     ) {
-      alert("A leitura atual não pode ser menor que a leitura anterior.");
+      mostrarAlerta("A leitura atual não pode ser menor que a leitura anterior.");
       return;
     }
 
@@ -827,8 +829,8 @@ function Prestadores() {
     setNovoOperacional(estadoInicialOperacional);
   }
 
-  function excluirOperacional(id) {
-    const confirmar = window.confirm(
+  async function excluirOperacional(id) {
+    const confirmar = await confirmarAcao(
       "Deseja excluir este registro operacional?"
     );
 

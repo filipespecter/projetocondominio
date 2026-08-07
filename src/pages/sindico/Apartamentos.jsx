@@ -1,9 +1,11 @@
+import { useAlerta } from "../../components/Alerta/AlertaProvider";
 import { useState } from "react";
 import { registrarAuditoria } from "../../Services/auditoriaService";
 import { criarNotificacao } from "../../Services/notificacaoService";
 import useResponsive from "../../hooks/useResponsive";
 
 function Apartamentos() {
+  const { mostrarAlerta, confirmarAcao } = useAlerta();
   const { isMobile, isTablet } = useResponsive();
   const premiumGridStyleResponsiva =
     isMobile || isTablet ? { gridTemplateColumns: "1fr" } : {};
@@ -224,32 +226,32 @@ function Apartamentos() {
     const andar = String(novoAp.andar || "").trim();
 
     if (!bloco) {
-      alert("Informe o bloco do apartamento.");
+      mostrarAlerta("Informe o bloco do apartamento.");
       return false;
     }
 
     if (!numero) {
-      alert("Informe o número do apartamento.");
+      mostrarAlerta("Informe o número do apartamento.");
       return false;
     }
 
     if (!/^[0-9A-Za-z-]+$/.test(numero)) {
-      alert("O número do apartamento deve conter apenas letras, números ou hífen.");
+      mostrarAlerta("O número do apartamento deve conter apenas letras, números ou hífen.");
       return false;
     }
 
     if (!andar) {
-      alert("Informe o andar do apartamento.");
+      mostrarAlerta("Informe o andar do apartamento.");
       return false;
     }
 
     if (!/^\d+$/.test(andar)) {
-      alert("O andar deve conter apenas números.");
+      mostrarAlerta("O andar deve conter apenas números.");
       return false;
     }
 
     if (!novoAp.status) {
-      alert("Selecione o status do apartamento.");
+      mostrarAlerta("Selecione o status do apartamento.");
       return false;
     }
 
@@ -326,7 +328,7 @@ function Apartamentos() {
     );
 
     if (apartamentoExiste) {
-      alert("Esse apartamento já existe");
+      mostrarAlerta("Esse apartamento já existe");
       return;
     }
 
@@ -458,8 +460,8 @@ function Apartamentos() {
     setMostrarModal(true);
   }
 
-  function excluirApartamento(id) {
-    const confirmar = window.confirm(
+  async function excluirApartamento(id) {
+    const confirmar = await confirmarAcao(
       "Deseja excluir esse apartamento?"
     );
 

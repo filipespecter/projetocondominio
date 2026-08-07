@@ -1,8 +1,10 @@
+import { useAlerta } from "../../components/Alerta/AlertaProvider";
 import { useState } from "react";
 import { registrarAuditoria } from "../../Services/auditoriaService";
 import { criarNotificacao } from "../../Services/notificacaoService";
 
 function Visitantes() {
+  const { mostrarAlerta, confirmarAcao } = useAlerta();
   const STORAGE_KEY = "visitantes";
   const STORAGE_AVISOS_SINDICO = "avisos_sindico";
   const STORAGE_MOVIMENTACOES = "movimentacoes";
@@ -226,42 +228,42 @@ function Visitantes() {
     const entrada = String(novoVisitante.entrada || "").trim();
 
     if (nome.length < 3) {
-      alert("Informe o nome do visitante com pelo menos 3 caracteres.");
+      mostrarAlerta("Informe o nome do visitante com pelo menos 3 caracteres.");
       return false;
     }
 
     if (!documento) {
-      alert("Informe o documento do visitante.");
+      mostrarAlerta("Informe o documento do visitante.");
       return false;
     }
 
     if (!validarDocumento(documento)) {
-      alert("Informe um CPF com 11 números ou um RG válido.");
+      mostrarAlerta("Informe um CPF com 11 números ou um RG válido.");
       return false;
     }
 
     if (telefone && (telefone.length < 10 || telefone.length > 11)) {
-      alert("Informe um telefone válido com DDD ou deixe em branco.");
+      mostrarAlerta("Informe um telefone válido com DDD ou deixe em branco.");
       return false;
     }
 
     if (!novoVisitante.tipo) {
-      alert("Selecione o tipo do visitante.");
+      mostrarAlerta("Selecione o tipo do visitante.");
       return false;
     }
 
     if (entrada && !validarHora(entrada)) {
-      alert("Informe a hora no formato HH:mm. Exemplo: 14:35");
+      mostrarAlerta("Informe a hora no formato HH:mm. Exemplo: 14:35");
       return false;
     }
 
     if (!novoVisitante.morador) {
-      alert("Selecione o morador responsável.");
+      mostrarAlerta("Selecione o morador responsável.");
       return false;
     }
 
     if (!novoVisitante.apartamento) {
-      alert("O apartamento do morador responsável é obrigatório.");
+      mostrarAlerta("O apartamento do morador responsável é obrigatório.");
       return false;
     }
 
@@ -283,7 +285,7 @@ function Visitantes() {
     });
 
     if (visitanteDuplicado) {
-      alert("Já existe um visitante ativo/pendente com este documento.");
+      mostrarAlerta("Já existe um visitante ativo/pendente com este documento.");
       return false;
     }
 
@@ -549,8 +551,8 @@ function Visitantes() {
     setMostrarModal(false);
   }
 
-  function excluirVisitante(id) {
-    const confirmar = window.confirm(
+  async function excluirVisitante(id) {
+    const confirmar = await confirmarAcao(
       "Deseja realmente excluir este visitante?"
     );
 

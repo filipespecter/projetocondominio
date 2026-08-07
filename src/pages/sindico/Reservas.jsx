@@ -1,8 +1,10 @@
+import { useAlerta } from "../../components/Alerta/AlertaProvider";
 import { useEffect, useState } from "react";
 import { registrarAuditoria } from "../../Services/auditoriaService";
 import { criarNotificacao } from "../../Services/notificacaoService";
 
 function Reservas() {
+  const { mostrarAlerta, confirmarAcao } = useAlerta();
   const STORAGE_KEY = "reservas";
   const STORAGE_MOVIMENTACOES = "movimentacoes";
   const STORAGE_RELATORIOS = "relatorios_operacionais";
@@ -287,41 +289,41 @@ function Reservas() {
 
   function validarReserva() {
     if (!novaReserva.area) {
-      alert("Selecione a área comum.");
+      mostrarAlerta("Selecione a área comum.");
       return false;
     }
 
     const areaSelecionada = buscarAreaSelecionada(novaReserva.area);
 
     if (areaSelecionada && areaIndisponivel(areaSelecionada)) {
-      alert("Esta área está indisponível ou em manutenção.");
+      mostrarAlerta("Esta área está indisponível ou em manutenção.");
       return false;
     }
 
     if (!novaReserva.morador) {
-      alert("Selecione o morador responsável pela reserva.");
+      mostrarAlerta("Selecione o morador responsável pela reserva.");
       return false;
     }
 
     if (!novaReserva.apartamento) {
-      alert("O apartamento é obrigatório.");
+      mostrarAlerta("O apartamento é obrigatório.");
       return false;
     }
 
     if (!novaReserva.data) {
-      alert("Informe a data da reserva.");
+      mostrarAlerta("Informe a data da reserva.");
       return false;
     }
 
     if (!novaReserva.horario) {
-      alert("Informe o horário da reserva.");
+      mostrarAlerta("Informe o horário da reserva.");
       return false;
     }
 
     const dataSelecionada = new Date(`${novaReserva.data}T${novaReserva.horario}`);
 
     if (!isNaN(dataSelecionada.getTime()) && dataSelecionada < new Date()) {
-      alert("Não é permitido criar reserva em data ou horário passado.");
+      mostrarAlerta("Não é permitido criar reserva em data ou horário passado.");
       return false;
     }
 
@@ -342,7 +344,7 @@ function Reservas() {
     );
 
     if (reservaDoMesmoMoradorNoDia) {
-      alert(
+      mostrarAlerta(
         "Este morador já possui uma reserva ativa nesta data. É permitida apenas uma reserva por morador por dia."
       );
       return false;
@@ -358,7 +360,7 @@ function Reservas() {
     );
 
     if (conflito) {
-      alert(
+      mostrarAlerta(
         "Já existe uma reserva ativa para esta área, data e horário."
       );
       return false;
@@ -631,8 +633,8 @@ function Reservas() {
     setMostrarModal(false);
   }
 
-  function excluirReserva(id) {
-    const confirmar = window.confirm(
+  async function excluirReserva(id) {
+    const confirmar = await confirmarAcao(
       "Deseja realmente excluir esta reserva?"
     );
 
@@ -675,7 +677,7 @@ function Reservas() {
     const reservaAntes = reservas.find((r) => r.id === id);
 
     if (!reservaAntes) {
-      alert("Reserva não encontrada.");
+      mostrarAlerta("Reserva não encontrada.");
       return;
     }
 
@@ -694,7 +696,7 @@ function Reservas() {
         ) || null;
 
       if (areaSelecionada && areaIndisponivel(areaSelecionada)) {
-        alert(
+        mostrarAlerta(
           "Não é possível aprovar a reserva porque a área está indisponível ou em manutenção."
         );
         return;
@@ -710,7 +712,7 @@ function Reservas() {
       );
 
       if (conflito) {
-        alert(
+        mostrarAlerta(
           "Não é possível aprovar: já existe uma reserva ativa para esta área, data e horário."
         );
         return;
@@ -725,7 +727,7 @@ function Reservas() {
       );
 
       if (outraDoMorador) {
-        alert(
+        mostrarAlerta(
           "Não é possível aprovar: o morador já possui outra reserva ativa nesta data."
         );
         return;

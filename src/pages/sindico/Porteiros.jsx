@@ -1,3 +1,4 @@
+import { useAlerta } from "../../components/Alerta/AlertaProvider";
 import { useState } from "react";
 import { registrarAuditoria } from "../../Services/auditoriaService";
 import { criarNotificacao } from "../../Services/notificacaoService";
@@ -5,6 +6,7 @@ import { criarNotificacao } from "../../Services/notificacaoService";
 import logoStar from "../../assets/images/logo-star-infinity.png";
 
 function Porteiros() {
+  const { mostrarAlerta, confirmarAcao } = useAlerta();
   const STORAGE_KEY = "porteiros";
   const STORAGE_MOVIMENTACOES = "movimentacoes";
   const STORAGE_RELATORIOS = "relatorios_operacionais";
@@ -217,37 +219,37 @@ function Porteiros() {
     const senha = String(novoPorteiro.senha || "").trim();
 
     if (nome.length < 3) {
-      alert("Informe um nome válido com pelo menos 3 caracteres.");
+      mostrarAlerta("Informe um nome válido com pelo menos 3 caracteres.");
       return false;
     }
 
     if (!novoPorteiro.turno) {
-      alert("Selecione o turno do porteiro.");
+      mostrarAlerta("Selecione o turno do porteiro.");
       return false;
     }
 
     if (telefone.length < 10 || telefone.length > 11) {
-      alert("Informe um telefone válido com DDD. Use apenas números.");
+      mostrarAlerta("Informe um telefone válido com DDD. Use apenas números.");
       return false;
     }
 
     if (usuario.length < 4) {
-      alert("O usuário de login deve ter pelo menos 4 caracteres.");
+      mostrarAlerta("O usuário de login deve ter pelo menos 4 caracteres.");
       return false;
     }
 
     if (/\s/.test(usuario)) {
-      alert("O usuário de login não pode conter espaços.");
+      mostrarAlerta("O usuário de login não pode conter espaços.");
       return false;
     }
 
     if (senha.length < 4) {
-      alert("A senha deve ter pelo menos 4 caracteres.");
+      mostrarAlerta("A senha deve ter pelo menos 4 caracteres.");
       return false;
     }
 
     if (!novoPorteiro.status) {
-      alert("Selecione o status do porteiro.");
+      mostrarAlerta("Selecione o status do porteiro.");
       return false;
     }
 
@@ -273,7 +275,7 @@ function Porteiros() {
     );
 
     if (usuarioExistente) {
-      alert("Esse usuário já existe");
+      mostrarAlerta("Esse usuário já existe");
       return;
     }
 
@@ -379,8 +381,8 @@ function Porteiros() {
     setMostrarModal(true);
   }
 
-  function excluirPorteiro(id) {
-    const confirmar = window.confirm(
+  async function excluirPorteiro(id) {
+    const confirmar = await confirmarAcao(
       "Deseja excluir este porteiro?"
     );
 

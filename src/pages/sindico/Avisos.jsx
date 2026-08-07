@@ -1,8 +1,10 @@
+import { useAlerta } from "../../components/Alerta/AlertaProvider";
 import { useState } from "react";
 import { registrarAuditoria } from "../../Services/auditoriaService";
 import { criarNotificacao } from "../../Services/notificacaoService";
 
 function Avisos() {
+  const { mostrarAlerta, confirmarAcao } = useAlerta();
   const STORAGE_AVISOS = "avisos";
   const STORAGE_CENTRAL = "avisos_sindico";
   const STORAGE_SUGESTOES = "sugestoes_reclamacoes";
@@ -238,7 +240,7 @@ function Avisos() {
 
   function salvarAviso() {
     if (!novoAviso.titulo || !novoAviso.descricao) {
-      alert("Preencha todos os campos");
+      mostrarAlerta("Preencha todos os campos");
       return;
     }
 
@@ -325,7 +327,7 @@ function Avisos() {
 
   function editarAviso(aviso) {
     if (aviso.categoria !== "Aviso") {
-      alert("Apenas avisos oficiais podem ser editados por este botão.");
+      mostrarAlerta("Apenas avisos oficiais podem ser editados por este botão.");
       return;
     }
 
@@ -338,8 +340,8 @@ function Avisos() {
     setMostrarModal(true);
   }
 
-  function excluirAviso(id) {
-    const confirmar = window.confirm("Deseja realmente excluir este aviso?");
+  async function excluirAviso(id) {
+    const confirmar = await confirmarAcao("Deseja realmente excluir este aviso?");
 
     if (!confirmar) return;
 
@@ -488,7 +490,7 @@ function Avisos() {
 
   function responderItem(item) {
     if (!respostaTexto.trim()) {
-      alert("Digite uma resposta antes de salvar.");
+      mostrarAlerta("Digite uma resposta antes de salvar.");
       return;
     }
 
