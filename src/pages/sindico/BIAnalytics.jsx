@@ -273,12 +273,12 @@ function BIAnalytics() {
 
           <div style={styles.heroStats}>
             <div style={styles.heroCardNeon}>
-              <span>Plano atual</span>
+              <span>Plano atual: </span>
               <strong>Básico</strong>
             </div>
 
             <div style={styles.heroCard}>
-              <span>Recurso</span>
+              <span>Recurso: </span>
               <strong>Premium</strong>
             </div>
           </div>
@@ -322,17 +322,17 @@ function BIAnalytics() {
 
         <div style={styles.heroStats}>
           <div style={styles.heroCard}>
-            <span>Sistema</span>
+            <span>Sistema: </span>
             <strong>Online</strong>
           </div>
 
           <div style={styles.heroCardNeon}>
-            <span>Saúde</span>
+            <span>Saúde: </span>
             <strong>{saude.pontuacao || 100}%</strong>
           </div>
 
           <div style={styles.heroCard}>
-            <span>Atualizado</span>
+            <span>Atualizado: </span>
             <strong>{ultimaAtualizacao || "Agora"}</strong>
           </div>
         </div>

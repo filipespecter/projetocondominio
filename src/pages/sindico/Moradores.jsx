@@ -723,33 +723,33 @@ function Moradores() {
 
                   <div style={styles.residentData}>
                     <div style={styles.dataPill}>
-                      <span>Apto</span>
+                      <span>Apto: </span>
                       <strong>
                         {morador.apto || morador.apartamento || "-"}
                       </strong>
                     </div>
 
                     <div style={styles.dataPill}>
-                      <span>Tipo</span>
+                      <span>Tipo: </span>
                       <strong>
                         {morador.tipoMorador || "Proprietário"}
                       </strong>
                     </div>
 
                     <div style={styles.dataPill}>
-                      <span>Perfil</span>
+                      <span>Perfil: </span>
                       <strong>
                         {morador.moradorPrincipal ? "Principal" : "Dependente"}
                       </strong>
                     </div>
 
                     <div style={styles.dataPill}>
-                      <span>Telefone</span>
+                      <span>Telefone: </span>
                       <strong>{morador.telefone || "-"}</strong>
                     </div>
 
                     <div style={styles.dataPill}>
-                      <span>Login</span>
+                      <span>Login: </span>
                       <strong>{morador.usuario || "-"}</strong>
                     </div>
                   </div>

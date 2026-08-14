@@ -773,12 +773,12 @@ function AreasComuns() {
 
                     <div style={styles.infoGrid}>
                       <div style={styles.infoItem}>
-                        <span>Capacidade</span>
+                        <span>Capacidade: </span>
                         <strong>{area.capacidade || "Opcional"}</strong>
                       </div>
 
                       <div style={styles.infoItem}>
-                        <span>Funcionamento</span>
+                        <span>Funcionamento: </span>
                         <strong>{area.horario}</strong>
                       </div>
                     </div>

@@ -967,29 +967,29 @@ function Visitantes() {
 
                   <div style={styles.infoGrid}>
                     <div style={styles.infoItem}>
-                      <span>Morador responsável</span>
+                      <span>Morador responsável: </span>
                       <strong>{v.morador || "N/A"}</strong>
                     </div>
 
                     <div style={styles.infoItem}>
-                      <span>Apartamento</span>
+                      <span>Apartamento: </span>
                       <strong>{v.apartamento || "-"}</strong>
                     </div>
 
                     <div style={styles.infoItem}>
-                      <span>Telefone</span>
+                      <span>Telefone: </span>
                       <strong>{v.telefone || "-"}</strong>
                     </div>
 
                     <div style={styles.infoItem}>
-                      <span>Entrada</span>
+                      <span>Entrada: </span>
                       <strong>
                         {v.entrada || v.horarioEntrada || v.hora || "-"}
                       </strong>
                     </div>
 
                     <div style={styles.infoItem}>
-                      <span>Data</span>
+                      <span>Data: </span>
                       <strong>{v.data || "-"}</strong>
                     </div>
                   </div>

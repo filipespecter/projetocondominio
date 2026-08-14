@@ -976,17 +976,17 @@ function Encomendas() {
 
                   <div style={styles.infoGrid}>
                     <div style={styles.infoItem}>
-                      <span>Recebida em</span>
+                      <span>Recebida em: </span>
                       <strong>{e.data || "-"}</strong>
                     </div>
 
                     <div style={styles.infoItem}>
-                      <span>Transportadora</span>
+                      <span>Transportadora: </span>
                       <strong>{e.transportadora || "Não informada"}</strong>
                     </div>
 
                     <div style={styles.infoItem}>
-                      <span>Retirada</span>
+                      <span>Retirada: </span>
                       <strong>{e.retiradaEm || "Pendente"}</strong>
                     </div>
                   </div>

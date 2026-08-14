@@ -682,22 +682,22 @@ function Porteiros() {
 
                   <div style={styles.operatorData}>
                     <div style={styles.dataItem}>
-                      <span>Código</span>
+                      <span>Código: </span>
                       <strong>{p.codigoPorteiro || "P---"}</strong>
                     </div>
 
                     <div style={styles.dataItem}>
-                      <span>Telefone</span>
+                      <span>Telefone: </span>
                       <strong>{p.telefone || "-"}</strong>
                     </div>
 
                     <div style={styles.dataItem}>
-                      <span>Usuário</span>
+                      <span>Usuário: </span>
                       <strong>{p.usuario || "-"}</strong>
                     </div>
 
                     <div style={styles.dataItem}>
-                      <span>Último acesso</span>
+                      <span>Último acesso: </span>
                       <strong>{p.ultimoLogin || "Ainda sem acesso"}</strong>
                     </div>
                   </div>

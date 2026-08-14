@@ -846,7 +846,7 @@ function Avisos() {
                   <p style={styles.description}>{aviso.descricao}</p>
 
                   <div style={styles.meta}>
-                    <span>Registrado em</span>
+                    <span>Registrado em: </span>
                     <strong>{aviso.data}</strong>
                   </div>
 

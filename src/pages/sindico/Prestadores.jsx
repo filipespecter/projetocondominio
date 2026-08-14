@@ -1095,19 +1095,19 @@ function Prestadores() {
 
             <div style={styles.operationalResume}>
               <div style={styles.yellowMetric}>
-                <span>Registros</span>
+                <span>Registros: </span>
                 <strong>{operacional.length}</strong>
               </div>
 
               <div style={styles.yellowMetric}>
-                <span>Último consumo</span>
+                <span>Último consumo: </span>
                 <strong>
                   {ultimoRegistroOperacional?.consumo || "0"} m³
                 </strong>
               </div>
 
               <div style={styles.yellowMetric}>
-                <span>Poço</span>
+                <span>Poço: </span>
                 <strong>
                   {ultimoRegistroOperacional?.poco || "Sem registro"}
                 </strong>
@@ -1214,7 +1214,7 @@ function Prestadores() {
               </div>
 
               <div style={styles.consumptionBox}>
-                <span>Consumo calculado</span>
+                <span>Consumo calculado: </span>
 
                 <strong>
                   {novoOperacional.consumo || "0"} m³
@@ -1299,17 +1299,17 @@ function Prestadores() {
 
                       <div style={styles.meterGrid}>
                         <div style={styles.meterItem}>
-                          <span>Anterior</span>
+                          <span>Anterior: </span>
                           <strong>{o.leituraAnterior || "-"}</strong>
                         </div>
 
                         <div style={styles.meterItem}>
-                          <span>Atual</span>
+                          <span>Atual: </span>
                           <strong>{o.leituraAtual || "-"}</strong>
                         </div>
 
                         <div style={styles.meterItemYellow}>
-                          <span>Consumo</span>
+                          <span>Consumo: </span>
                           <strong>{o.consumo || "0"} m³</strong>
                         </div>
                       </div>
@@ -1420,34 +1420,34 @@ function Prestadores() {
 
                     <div style={styles.infoGrid}>
                       <div style={styles.infoItem}>
-                        <span>Telefone</span>
+                        <span>Telefone: </span>
                         <strong>{p.telefone || "-"}</strong>
                       </div>
 
                       <div style={styles.infoItem}>
-                        <span>CPF</span>
+                        <span>CPF: </span>
                         <strong>{p.cpf || "-"}</strong>
                       </div>
 
                       <div style={styles.infoItem}>
-                        <span>Tipo</span>
+                        <span>Tipo: </span>
                         <strong>{p.tipoServico || "-"}</strong>
                       </div>
 
                       <div style={styles.infoItem}>
-                        <span>Área</span>
+                        <span>Área: </span>
                         <strong>{p.areaRelacionada || "-"}</strong>
                       </div>
 
                       {abaAtiva === "particular" && (
                         <>
                           <div style={styles.infoItem}>
-                            <span>Apartamento</span>
+                            <span>Apartamento: </span>
                             <strong>{p.apartamento || "-"}</strong>
                           </div>
 
                           <div style={styles.infoItem}>
-                            <span>Responsável</span>
+                            <span>Responsável: </span>
                             <strong>{p.responsavel || "-"}</strong>
                           </div>
                         </>
@@ -1456,14 +1456,14 @@ function Prestadores() {
 
                     <div style={styles.timeBox}>
                       <div>
-                        <span>Entrada</span>
+                        <span>Entrada: </span>
                         <strong>
                           {formatarData(p.dataEntrada)} {p.horaEntrada || ""}
                         </strong>
                       </div>
 
                       <div>
-                        <span>Saída</span>
+                        <span>Saída: </span>
                         <strong>
                           {formatarData(p.dataSaida)} {p.horaSaida || ""}
                         </strong>

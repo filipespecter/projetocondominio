@@ -830,17 +830,17 @@ function Configuracoes() {
 
         <div style={styles.heroInfo}>
           <div style={styles.heroCard}>
-            <span>Perfil atual</span>
+            <span>Perfil atual: </span>
             <strong>{isMestre ? "Síndico Mestre" : "Subsíndico"}</strong>
           </div>
 
           <div style={styles.heroCard}>
-            <span>Usuários</span>
+            <span>Usuários: </span>
             <strong>{totalUsuarios}</strong>
           </div>
 
           <div style={styles.heroCardGold}>
-            <span>Segurança</span>
+            <span>Segurança: </span>
             <strong>{usandoPadrao ? "Atenção" : "Protegido"}</strong>
           </div>
         </div>

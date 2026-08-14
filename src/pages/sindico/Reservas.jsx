@@ -1046,29 +1046,29 @@ function Reservas() {
 
                   <div style={styles.scheduleBox}>
                     <div>
-                      <span>Data</span>
+                      <span>Data: </span>
                       <strong>{formatarData(r.data)}</strong>
                     </div>
 
                     <div>
-                      <span>Horário</span>
+                      <span>Horário: </span>
                       <strong>{r.horario || "-"}</strong>
                     </div>
                   </div>
 
                   <div style={styles.infoGrid}>
                     <div style={styles.infoItem}>
-                      <span>Morador</span>
+                      <span>Morador: </span>
                       <strong>{r.morador || "-"}</strong>
                     </div>
 
                     <div style={styles.infoItem}>
-                      <span>Apartamento</span>
+                      <span>Apartamento: </span>
                       <strong>{r.apartamento || "-"}</strong>
                     </div>
 
                     <div style={styles.infoItem}>
-                      <span>Perfil</span>
+                      <span>Perfil: </span>
                       <strong>
                         {r.moradorPrincipal ? "Principal" : r.tipoMorador || "Morador"}
                       </strong>

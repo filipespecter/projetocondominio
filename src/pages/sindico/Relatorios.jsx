@@ -1119,17 +1119,17 @@ function Relatorios() {
 
         <div style={styles.heroStats}>
           <div style={styles.heroStat}>
-            <span>Relatório</span>
+            <span>Relatório: </span>
             <strong>{relatorioSelecionado.nome}</strong>
           </div>
 
           <div style={styles.heroStat}>
-            <span>Período</span>
+            <span>Período: </span>
             <strong>{nomePeriodo()}</strong>
           </div>
 
           <div style={styles.heroStatGreen}>
-            <span>Atualizado</span>
+            <span>Atualizado: </span>
             <strong>{ultimaAtualizacao || "Agora"}</strong>
           </div>
         </div>
@@ -1325,12 +1325,12 @@ function Relatorios() {
 
           <div style={styles.metaGrid}>
             <div>
-              <span>Período</span>
+              <span>Período: </span>
               <strong>{nomePeriodo()}</strong>
             </div>
 
             <div>
-              <span>Registros</span>
+              <span>Registros: </span>
               <strong>
                 {preview.tabelas.reduce(
                   (total, tabela) => total + tabela.linhas.length,
@@ -1340,7 +1340,7 @@ function Relatorios() {
             </div>
 
             <div>
-              <span>Emitido por</span>
+              <span>Emitido por: </span>
               <strong>{assinatura || "-"}</strong>
             </div>
           </div>
