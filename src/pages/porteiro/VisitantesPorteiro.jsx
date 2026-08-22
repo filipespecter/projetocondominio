@@ -1,15 +1,8 @@
 import { useEffect, useState } from "react";
-import { registrarAuditoria } from "../../Services/auditoriaService";
-import { criarNotificacao } from "../../Services/notificacaoService";
+import authApi from "../../Services/authApi.js";
+import visitorApi from "../../Services/visitorApi.js";
 
 function VisitantesPorteiro() {
-  const STORAGE_KEY = "visitantes";
-  const STORAGE_AVISOS_SINDICO = "avisos_sindico";
-  const STORAGE_MOVIMENTACOES = "movimentacoes";
-  const STORAGE_RELATORIOS = "relatorios_operacionais";
-  const STORAGE_HISTORICO = "visitantes_historico";
-  const STORAGE_NOTIFICACOES_MORADOR = "notificacoesMorador";
-
   const estadoInicial = {
     nome: "",
     apartamento: "",
@@ -20,465 +13,242 @@ function VisitantesPorteiro() {
 
   const [visitantes, setVisitantes] = useState([]);
   const [apartamentos, setApartamentos] = useState([]);
+  const [moradores, setMoradores] = useState([]);
   const [form, setForm] = useState(estadoInicial);
   const [porteiro, setPorteiro] = useState(null);
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("Todos");
 
+  const statusFront = {
+    WAITING: "Aguardando",
+    AUTHORIZED: "Autorizado",
+    INSIDE: "Em Visita",
+    EXITED: "Saiu",
+    DENIED: "Bloqueado",
+    CANCELED: "Bloqueado",
+  };
+
+  function mapResident(r) {
+    return {
+      ...r,
+      nome: r.user?.name ?? r.name ?? "",
+      apartamento:
+        r.apartment?.number ?? "",
+      apartamentoId:
+        r.apartmentId ??
+        r.apartment?.id ??
+        null,
+      moradorPrincipal:
+        Boolean(r.isPrimary),
+    };
+  }
+
+  function mapVisitor(v, residentList = moradores) {
+    const resident =
+      residentList.find(
+        (r) =>
+          String(r.apartamentoId) ===
+            String(v.apartmentId) &&
+          r.moradorPrincipal
+      ) ??
+      residentList.find(
+        (r) =>
+          String(r.apartamentoId) ===
+          String(v.apartmentId)
+      );
+
+    return {
+      ...v,
+      nome: v.name ?? "",
+      documento: v.document ?? "",
+      apartamento:
+        v.apartment?.number ??
+        resident?.apartamento ??
+        "",
+      apartamentoId:
+        v.apartmentId ??
+        v.apartment?.id ??
+        null,
+      morador:
+        resident?.nome ?? "",
+      tipoVisitante:
+        v.visitType ??
+        "Pessoa comum",
+      observacao:
+        v.notes ?? "",
+      status:
+        statusFront[v.status] ??
+        v.status ??
+        "Aguardando",
+      data:
+        v.createdAt
+          ? new Date(v.createdAt).toLocaleString("pt-BR")
+          : "",
+    };
+  }
+
+  async function carregarDados() {
+    try {
+      const [
+        user,
+        visitorData,
+        apartmentData,
+        residentData,
+      ] = await Promise.all([
+        authApi.me(),
+        visitorApi.list(),
+        visitorApi.apartmentsDirectory(),
+        visitorApi.residentsDirectory(),
+      ]);
+
+      const mappedResidents =
+        (residentData ?? []).map(mapResident);
+
+      setPorteiro({
+        ...user,
+        nome:
+          user?.name ??
+          "Porteiro",
+      });
+
+      setMoradores(
+        mappedResidents
+      );
+
+      setApartamentos(
+        (apartmentData ?? []).map(
+          (ap) => ({
+            id: ap.id,
+            numero: ap.number ?? "",
+            bloco: ap.block ?? "",
+          })
+        )
+      );
+
+      setVisitantes(
+        (visitorData ?? []).map((v) =>
+          mapVisitor(
+            v,
+            mappedResidents
+          )
+        )
+      );
+    } catch (error) {
+      alert(
+        error?.message ??
+        "Não foi possível carregar a portaria."
+      );
+    }
+  }
+
   useEffect(() => {
-    carregarSessao();
-    carregarVisitantes();
-    carregarApartamentos();
+    carregarDados();
   }, []);
-
-  function lerStorage(chave) {
-    try {
-      const dados = localStorage.getItem(chave);
-      return dados ? JSON.parse(dados) : [];
-    } catch {
-      return [];
-    }
-  }
-
-  function salvarStorage(chave, dados) {
-    localStorage.setItem(chave, JSON.stringify(dados));
-  }
-
-  function carregarSessao() {
-    const sessao =
-      localStorage.getItem("sessaoPorteiro") ||
-      sessionStorage.getItem("sessaoPorteiro");
-
-    try {
-      const usuario = sessao ? JSON.parse(sessao) : null;
-      setPorteiro(usuario);
-    } catch {
-      setPorteiro(null);
-    }
-  }
-
-  function carregarVisitantes() {
-    setVisitantes(lerStorage(STORAGE_KEY));
-  }
-
-  function carregarApartamentos() {
-    const listaApartamentos = lerStorage("apartamentos");
-    const moradores = lerStorage("moradores");
-
-    const apartamentosDosMoradores = moradores
-      .map((m) => m.apartamento || m.apto)
-      .filter(Boolean);
-
-    const apartamentosCadastrados = listaApartamentos
-      .map((a) => a.numero || a.apartamento || a.apto)
-      .filter(Boolean);
-
-    const listaFinal = [
-      ...new Set([
-        ...apartamentosCadastrados,
-        ...apartamentosDosMoradores
-      ])
-    ].sort((a, b) => Number(a) - Number(b));
-
-    setApartamentos(listaFinal);
-  }
 
   function limparFormulario() {
     setForm(estadoInicial);
   }
 
-  function buscarMoradorPorApartamento(apartamento) {
-    const moradores = lerStorage("moradores");
-
-    return (
-      moradores.find(
-        (m) =>
-          String(m.apartamento || m.apto) === String(apartamento) &&
-          m.moradorPrincipal
-      ) ||
-      moradores.find(
-        (m) =>
-          String(m.apartamento || m.apto) === String(apartamento)
-      ) ||
-      {}
-    );
-  }
-
   function buscarApartamento(apartamento) {
-    const apartamentos = lerStorage("apartamentos");
-
     return (
       apartamentos.find(
         (ap) =>
-          String(ap.numero || ap.apartamento || ap.apto) === String(apartamento)
-      ) || {}
+          String(ap.numero) ===
+          String(apartamento)
+      ) ?? {}
     );
   }
 
-  function registrarAuditoriaVisitante(acao, visitante, antes = null) {
-    registrarAuditoria({
-      acao,
-      modulo: "Visitantes Porteiro",
-      detalhes: `${visitante?.nome || "Visitante"} • Apto ${visitante?.apartamento || "-"}`,
-      antes,
-      depois: visitante,
-      referenciaId: visitante?.id || null
-    });
-  }
-
-  function criarNotificacaoSindicoVisitante(visitante, titulo, mensagem, prioridade = "normal") {
-    criarNotificacao({
-      titulo,
-      mensagem,
-      tipo: "Visitantes",
-      origem: "Porteiro",
-      perfilDestino: "sindico",
-      moduloOrigem: "VisitantesPorteiro",
-      referenciaId: visitante?.id || null,
-      prioridade
-    });
-  }
-
-  function registrarAvisoSindico(acao, visitante) {
-    const avisos = lerStorage(STORAGE_AVISOS_SINDICO);
-    const moradorResponsavel = buscarMoradorPorApartamento(
-      visitante.apartamento
-    );
-
-    const novo = {
-      id: Date.now() + 1,
-      visitanteId: visitante.id,
-      categoria: "Visitante",
-      origem: "Porteiro",
-      titulo: `Visitante ${acao} - ${visitante.nome}`,
-      descricao:
-        visitante.observacao ||
-        `Visitante ${visitante.nome} para o apartamento ${visitante.apartamento}`,
-      apartamento: visitante.apartamento,
-      apartamentoId: visitante.apartamentoId || null,
-      morador: moradorResponsavel.nome || visitante.morador || "",
-      responsavel: visitante.porteiro || "Porteiro",
-      status: visitante.status,
-      respostaSindico: "",
-      cienciaSindico: false,
-      data: visitante.data,
-      impactaBI: true,
-      impactaRelatorio: true,
-      exibirNaCentral: true,
-      origemModulo: "Visitantes",
-      criadoEm: agora.toISOString(),
-      atualizadoEm: agora.toISOString()
-    };
-
-    salvarStorage(STORAGE_AVISOS_SINDICO, [
-      novo,
-      ...avisos
-    ]);
-  }
-
-  function registrarMovimentacao(acao, visitante) {
-    const movimentacoes = lerStorage(STORAGE_MOVIMENTACOES);
-
-    const nova = {
-      id: Date.now() + 2,
-      tipo: "Visitante",
-      acao,
-      origem: "Porteiro",
-      titulo: `Visitante ${visitante.nome}`,
-      visitanteId: visitante.id,
-      apartamento: visitante.apartamento,
-      descricao: visitante.observacao,
-      status: visitante.status,
-      porteiro: visitante.porteiro || "Porteiro",
-      data: new Date().toLocaleDateString("pt-BR"),
-      hora: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      }),
-      timestamp: Date.now(),
-      impactaBI: true,
-      origemModulo: "Visitantes"
-    };
-
-    salvarStorage(STORAGE_MOVIMENTACOES, [
-      nova,
-      ...movimentacoes
-    ]);
-  }
-
-  function registrarRelatorio(acao, visitante) {
-    const relatorios = lerStorage(STORAGE_RELATORIOS);
-
-    const novo = {
-      id: Date.now() + 3,
-      tipo: "Visitante",
-      acao,
-      origem: "Porteiro",
-      titulo: `Visitante ${visitante.nome}`,
-      visitanteId: visitante.id,
-      nome: visitante.nome,
-      apartamento: visitante.apartamento,
-      documento: visitante.documento,
-      tipoVisitante: visitante.tipoVisitante,
-      observacao: visitante.observacao,
-      status: visitante.status,
-      porteiro: visitante.porteiro || "Porteiro",
-      data: visitante.data,
-      horarioEntrada: visitante.horarioEntrada,
-      horarioSaida: visitante.horarioSaida || "",
-      impactaRelatorio: true,
-      origemModulo: "Visitantes"
-    };
-
-    salvarStorage(STORAGE_RELATORIOS, [
-      novo,
-      ...relatorios
-    ]);
-  }
-
-  function registrarHistorico(acao, visitante) {
-    const historico = lerStorage(STORAGE_HISTORICO);
-
-    const novo = {
-      id: Date.now() + 4,
-      visitanteId: visitante.id,
-      acao,
-      origem: "Porteiro",
-      nome: visitante.nome,
-      apartamento: visitante.apartamento,
-      documento: visitante.documento,
-      tipoVisitante: visitante.tipoVisitante,
-      observacao: visitante.observacao,
-      status: visitante.status,
-      porteiro: visitante.porteiro || "Porteiro",
-      data: visitante.data,
-      horarioEntrada: visitante.horarioEntrada,
-      horarioSaida: visitante.horarioSaida || "",
-      registradoEm: new Date().toLocaleString("pt-BR"),
-      origemModulo: "Visitantes"
-    };
-
-    salvarStorage(STORAGE_HISTORICO, [
-      novo,
-      ...historico
-    ]);
-  }
-
-  function registrarNotificacaoMorador(acao, visitante) {
-    const moradorResponsavel = buscarMoradorPorApartamento(
-      visitante.apartamento
-    );
-
-    if (!moradorResponsavel.nome) return;
-
-    const notificacoes = lerStorage(STORAGE_NOTIFICACOES_MORADOR);
-
-    const nova = {
-      id: Date.now() + 5,
-      categoria: "Visitante",
-      origem: "Porteiro",
-      titulo: `Atualização de visitante`,
-      descricao: `O visitante ${visitante.nome} está com status: ${visitante.status}`,
-      visitanteId: visitante.id,
-      apartamento: visitante.apartamento,
-      apartamentoId: visitante.apartamentoId || null,
-      morador: moradorResponsavel.nome,
-      moradorId: moradorResponsavel.id || "",
-      status: visitante.status,
-      acao,
-      lida: false,
-      data: new Date().toLocaleDateString("pt-BR"),
-      hora: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      }),
-      origemModulo: "Visitantes"
-    };
-
-    salvarStorage(STORAGE_NOTIFICACOES_MORADOR, [
-      nova,
-      ...notificacoes
-    ]);
-  }
-
-  function registrarFluxo(acao, visitante) {
-    registrarAvisoSindico(acao, visitante);
-    registrarMovimentacao(acao, visitante);
-    registrarRelatorio(acao, visitante);
-    registrarHistorico(acao, visitante);
-    registrarAuditoriaVisitante(`Visitante - ${acao}`, visitante);
-
+  async function cadastrarVisitante() {
     if (
-      visitante.status === "Autorizado" ||
-      visitante.status === "Em Visita" ||
-      visitante.status === "Saiu"
+      form.nome.trim().length < 2 ||
+      !form.apartamento
     ) {
-      registrarNotificacaoMorador(acao, visitante);
+      alert(
+        "Informe nome e apartamento."
+      );
+      return;
+    }
+
+    const apartment =
+      buscarApartamento(
+        form.apartamento
+      );
+
+    if (!apartment?.id) {
+      alert(
+        "Apartamento não encontrado."
+      );
+      return;
+    }
+
+    try {
+      await visitorApi.create({
+        apartmentId:
+          apartment.id,
+        name:
+          form.nome.trim(),
+        document:
+          form.documento?.trim() ||
+          null,
+        phone: null,
+        visitType:
+          form.tipoVisitante?.trim() ||
+          null,
+        vehicle: null,
+        plate: null,
+        notes:
+          form.observacao?.trim() ||
+          null,
+        expectedAt: null,
+      });
+
+      limparFormulario();
+      await carregarDados();
+    } catch (error) {
+      alert(
+        error?.message ??
+        "Não foi possível cadastrar o visitante."
+      );
     }
   }
 
-  function cadastrarVisitante() {
-    if (!form.nome || !form.apartamento) {
-      alert("Preencha o nome do visitante e o apartamento");
-      return;
-    }
-
-    if (form.nome.trim().length < 3) {
-      alert("Informe um nome válido para o visitante.");
-      return;
-    }
-
-    if (
-      form.tipoVisitante === "Prestador de serviço" &&
-      !form.documento
-    ) {
-      alert("Documento obrigatório para prestador de serviço");
-      return;
-    }
-
-    const agora = new Date();
-    const moradorResponsavel = buscarMoradorPorApartamento(
-      form.apartamento
-    );
-
-    const apartamentoSelecionado = buscarApartamento(form.apartamento);
-
-    const novo = {
-      id: Date.now(),
-      nome: form.nome.trim(),
-      apartamento: form.apartamento,
-      apto: form.apartamento,
-      apartamentoId: apartamentoSelecionado.id || moradorResponsavel.apartamentoId || null,
-      morador: moradorResponsavel.nome || "",
-      moradorId: moradorResponsavel.id || "",
-      observacao: form.observacao,
-      tipoVisitante: form.tipoVisitante,
-      documento: form.documento,
-      horarioEntrada: agora.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      }),
-      horarioSaida: "",
-      data: agora.toLocaleDateString("pt-BR"),
-      status: "Aguardando",
-      cienciaSindico: false,
-      porteiro: porteiro?.nome || "Porteiro",
-      porteiroUsuario: porteiro?.usuario || "",
-      turno: porteiro?.turno || "-",
-      porteiroId: porteiro?.id || null,
-      impactaBI: true,
-      impactaRelatorio: true,
-      exibirNaCentral: true,
-      origemModulo: "Visitantes"
-    };
-
-    const atualizados = [
-      novo,
-      ...visitantes
-    ];
-
-    salvarStorage(STORAGE_KEY, atualizados);
-    setVisitantes(atualizados);
-
-    registrarFluxo("cadastro", novo);
-    criarNotificacaoSindicoVisitante(
-      novo,
-      "Novo visitante registrado",
-      `${novo.nome} foi registrado para o apto ${novo.apartamento}.`
-    );
-
-    limparFormulario();
-  }
-
-  function alterarStatus(id, novoStatus) {
-    const agora = new Date();
-
-    let visitanteAtualizado = null;
-
-    const atualizados = visitantes.map((v) => {
-      if (v.id !== id) return v;
-
-      visitanteAtualizado = {
-        ...v,
-        status: novoStatus,
-        statusSindico: novoStatus,
-        cienciaSindico: true,
-        autorizado:
-          novoStatus === "Autorizado" || novoStatus === "Em Visita"
-            ? true
-            : v.autorizado,
-        bloqueado:
-          novoStatus === "Bloqueado"
-            ? true
-            : novoStatus === "Autorizado" || novoStatus === "Em Visita"
-            ? false
-            : v.bloqueado,
-        impactaBI: true,
-        impactaRelatorio: true,
-        exibirNaCentral: true,
-        origemModulo: "Visitantes",
-        atualizadoEm: agora.toISOString()
-      };
-
-      if (novoStatus === "Saiu") {
-        visitanteAtualizado.horarioSaida =
-          agora.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit"
-          });
-
-        visitanteAtualizado.saidaEm =
-          agora.toLocaleString("pt-BR");
-      }
-
-      return visitanteAtualizado;
-    });
-
-    salvarStorage(STORAGE_KEY, atualizados);
-    setVisitantes(atualizados);
-
-    if (visitanteAtualizado) {
-      registrarFluxo(`status_${novoStatus}`, visitanteAtualizado);
-
+  async function alterarStatus(
+    id,
+    novoStatus
+  ) {
+    try {
       if (
-        novoStatus === "Em Visita" ||
-        novoStatus === "Saiu" ||
+        novoStatus === "Autorizado"
+      ) {
+        await visitorApi.authorize(id);
+      } else if (
+        novoStatus === "Em Visita"
+      ) {
+        await visitorApi.registerEntry(id);
+      } else if (
+        novoStatus === "Saiu"
+      ) {
+        await visitorApi.registerExit(id);
+      } else if (
         novoStatus === "Bloqueado"
       ) {
-        criarNotificacaoSindicoVisitante(
-          visitanteAtualizado,
-          `Visitante ${novoStatus}`,
-          `${visitanteAtualizado.nome} agora está com status ${novoStatus}.`,
-          novoStatus === "Bloqueado" ? "alta" : "normal"
-        );
+        await visitorApi.deny(id);
       }
+
+      await carregarDados();
+    } catch (error) {
+      alert(
+        error?.message ??
+        "Não foi possível alterar o status."
+      );
     }
   }
 
-  function excluirVisitante(id) {
-    const confirmar = window.confirm(
-      "Deseja excluir este visitante?"
+  function excluirVisitante() {
+    alert(
+      "A exclusão de visitante é restrita ao síndico/administrador."
     );
-
-    if (!confirmar) return;
-
-    const visitante = visitantes.find(
-      (v) => v.id === id
-    );
-
-    const atualizados = visitantes.filter(
-      (v) => v.id !== id
-    );
-
-    salvarStorage(STORAGE_KEY, atualizados);
-    setVisitantes(atualizados);
-
-    if (visitante) {
-      registrarHistorico("exclusao", visitante);
-      registrarMovimentacao("exclusao", visitante);
-      registrarRelatorio("exclusao", visitante);
-      registrarAuditoriaVisitante("Excluiu visitante", visitante, visitante);
-    }
   }
 
   function obterStatus(status) {
@@ -493,24 +263,24 @@ function VisitantesPorteiro() {
     if (status === "Autorizado") {
       return {
         texto: "Autorizado",
-        fundo: "#ede9fe",
-        cor: "#6d28d9"
+        fundo: "#dcfce7",
+        cor: "#166534"
       };
     }
 
     if (status === "Em Visita") {
       return {
-        texto: "Dentro do condomínio",
-        fundo: "#f3e8ff",
-        cor: "#7c3aed"
+        texto: "Em Visita",
+        fundo: "#dbeafe",
+        cor: "#1d4ed8"
       };
     }
 
     if (status === "Saiu") {
       return {
         texto: "Saiu",
-        fundo: "#f5f3ff",
-        cor: "#374151"
+        fundo: "#f3f4f6",
+        cor: "#4b5563"
       };
     }
 
@@ -529,37 +299,46 @@ function VisitantesPorteiro() {
     };
   }
 
-  const visitantesFiltrados = visitantes.filter((item) => {
-    const texto = busca.toLowerCase();
+  const visitantesFiltrados =
+    visitantes.filter((item) => {
+      const texto =
+        busca.toLowerCase();
 
-    const correspondeBusca =
-      item.nome?.toLowerCase().includes(texto) ||
-      item.apartamento?.toLowerCase().includes(texto) ||
-      item.tipoVisitante?.toLowerCase().includes(texto) ||
-      item.documento?.toLowerCase().includes(texto);
+      const correspondeBusca =
+        item.nome?.toLowerCase().includes(texto) ||
+        item.apartamento?.toLowerCase().includes(texto) ||
+        item.tipoVisitante?.toLowerCase().includes(texto) ||
+        item.documento?.toLowerCase().includes(texto);
 
-    const correspondeStatus =
-      filtroStatus === "Todos" ||
-      item.status === filtroStatus;
+      return (
+        correspondeBusca &&
+        (
+          filtroStatus === "Todos" ||
+          item.status === filtroStatus
+        )
+      );
+    });
 
-    return correspondeBusca && correspondeStatus;
-  });
+  const aguardando =
+    visitantes.filter(
+      (v) => v.status === "Aguardando"
+    ).length;
 
-  const aguardando = visitantes.filter(
-    (v) => v.status === "Aguardando"
-  ).length;
+  const liberados =
+    visitantes.filter(
+      (v) => v.status === "Autorizado"
+    ).length;
 
-  const liberados = visitantes.filter(
-    (v) => v.status === "Autorizado"
-  ).length;
+  const dentro =
+    visitantes.filter(
+      (v) => v.status === "Em Visita"
+    ).length;
 
-  const dentro = visitantes.filter(
-    (v) => v.status === "Em Visita"
-  ).length;
+  const saiu =
+    visitantes.filter(
+      (v) => v.status === "Saiu"
+    ).length;
 
-  const saiu = visitantes.filter(
-    (v) => v.status === "Saiu"
-  ).length;
     return (
     <div style={styles.container}>
       <div style={styles.hero}>

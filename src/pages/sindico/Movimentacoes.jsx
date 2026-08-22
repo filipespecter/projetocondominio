@@ -20,6 +20,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
 import { useEffect, useState } from "react";
+import { carregarDadosBI } from "../../Services/biService.js";
 
 function Movimentacoes() {
 
@@ -52,74 +53,43 @@ function Movimentacoes() {
 
   }, [mesSelecionado]);
 
-  function carregarDados() {
+  async function carregarDados() {
+    try {
+      const base = await carregarDadosBI();
+      const visitantes = Array.isArray(base.visitantes) ? base.visitantes : [];
+      const encomendas = Array.isArray(base.encomendas) ? base.encomendas : [];
+      const reservas = Array.isArray(base.reservas) ? base.reservas : [];
+      const avisos = Array.isArray(base.avisos) ? base.avisos : [];
 
-    const visitantes =
-      JSON.parse(
-        localStorage.getItem("visitantes")
-      ) || [];
+      setTotais({ visitantes: visitantes.length, encomendas: encomendas.length, reservas: reservas.length, avisos: avisos.length });
+      const tipos = [
+        { name: "Visitantes", value: visitantes.length },
+        { name: "Encomendas", value: encomendas.length },
+        { name: "Reservas", value: reservas.length },
+        { name: "Avisos", value: avisos.length }
+      ];
+      setDadosBar(tipos);
+      setDadosPie(tipos);
 
-    const encomendas =
-      JSON.parse(
-        localStorage.getItem("encomendas")
-      ) || [];
-
-    const reservas =
-      JSON.parse(
-        localStorage.getItem("reservas")
-      ) || [];
-
-    const avisos =
-      JSON.parse(
-        localStorage.getItem("avisos")
-      ) || [];
-
-    setTotais({
-      visitantes: visitantes.length,
-      encomendas: encomendas.length,
-      reservas: reservas.length,
-      avisos: avisos.length
-    });
-
-    const total =
-      visitantes.length +
-      encomendas.length +
-      reservas.length +
-      avisos.length;
-
-    setDadosLine([
-      { dia: "Seg", valor: total * 0.1 },
-      { dia: "Ter", valor: total * 0.15 },
-      { dia: "Qua", valor: total * 0.08 },
-      { dia: "Qui", valor: total * 0.2 },
-      { dia: "Sex", valor: total * 0.25 },
-      { dia: "Sab", valor: total * 0.12 },
-      { dia: "Dom", valor: total * 0.1 }
-    ]);
-
-    const tipos = [
-      {
-        name: "Visitantes",
-        value: visitantes.length
-      },
-      {
-        name: "Encomendas",
-        value: encomendas.length
-      },
-      {
-        name: "Reservas",
-        value: reservas.length
-      },
-      {
-        name: "Avisos",
-        value: avisos.length
-      }
-    ];
-
-    setDadosBar(tipos);
-
-    setDadosPie(tipos);
-
+      const movimentos = [
+        ...visitantes.map((x) => ({ ...x, __tipo: "Visitante" })),
+        ...encomendas.map((x) => ({ ...x, __tipo: "Encomenda" })),
+        ...reservas.map((x) => ({ ...x, __tipo: "Reserva" })),
+        ...avisos.map((x) => ({ ...x, __tipo: "Aviso" }))
+      ];
+      const dias = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
+      const contagem = Object.fromEntries(dias.map((d) => [d, 0]));
+      movimentos.forEach((item) => {
+        const raw = item.createdAt || item.criadoEm || item.data || item.dataReserva || item.recebidoEm;
+        const d = raw ? new Date(raw) : null;
+        if (d && !Number.isNaN(d.getTime())) contagem[dias[d.getDay()]] += 1;
+      });
+      setDadosLine(["Seg","Ter","Qua","Qui","Sex","Sab","Dom"].map((dia) => ({ dia, valor: contagem[dia] || 0 })));
+    } catch (error) {
+      console.error("Erro ao carregar movimentações:", error);
+      setTotais({ visitantes: 0, encomendas: 0, reservas: 0, avisos: 0 });
+      setDadosLine([]); setDadosBar([]); setDadosPie([]);
+    }
   }
 
   function exportarPDF() {

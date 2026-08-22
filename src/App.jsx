@@ -1,7 +1,8 @@
 import AccessCard from "./components/AccessCard";
 import ProtectedRoute from "./components/ProtectedRoute";
+import PlatformProtectedRoute from "./components/PlatformProtectedRoute";
 
-import { FaUserShield, FaBuilding, FaUser } from "react-icons/fa";
+import { FaUserShield, FaBuilding, FaUser, FaShieldAlt } from "react-icons/fa";
 
 import {
   BrowserRouter,
@@ -14,10 +15,12 @@ import {
 import logoStar from "./assets/images/logo-star-infinity.png";
 
 import Login from "./pages/login";
+import CadastroCondominio from "./pages/CadastroCondominio";
 
 import DashboardLayout from "./layout/DashboardLayout";
 import DashboardPorteiroLayout from "./layout/DashboardPorteiroLayout";
 import DashboardMoradorLayout from "./layout/DashboardMoradorLayout";
+import PlatformLayout from "./layout/PlatformLayout";
 
 import DashboardSindico from "./pages/sindico/DashboardSindico";
 import Prestadores from "./pages/sindico/Prestadores";
@@ -40,6 +43,16 @@ import EncomendasPorteiro from "./pages/porteiro/EncomendasPorteiro";
 import VisitantesPorteiro from "./pages/porteiro/VisitantesPorteiro";
 import MoradoresPorteiro from "./pages/porteiro/MoradoresPorteiro";
 import OcorrenciasPorteiro from "./pages/porteiro/OcorrenciasPorteiro";
+
+import PlatformDashboard from "./pages/platform/PlatformDashboard";
+import PlatformCondominiums from "./pages/platform/PlatformCondominiums";
+import PlatformUsers from "./pages/platform/PlatformUsers";
+import PlatformPlans from "./pages/platform/PlatformPlans";
+import PlatformFinance from "./pages/platform/PlatformFinance";
+import PlatformAudit from "./pages/platform/PlatformAudit";
+import PlatformSystemEvents from "./pages/platform/PlatformSystemEvents";
+import PlatformSupport from "./pages/platform/PlatformSupport";
+import PlatformOperations from "./pages/platform/PlatformOperations";
 
 import DashboardMorador from "./pages/morador/DashboardMorador";
 import AvisosMorador from "./pages/morador/AvisosMorador";
@@ -108,7 +121,27 @@ function Home() {
               buttonColor="#a855f7"
             />
           </div>
+
         </div>
+
+        <button
+          type="button"
+          onClick={() =>
+            navigate(
+              "/login/platform"
+            )
+          }
+          style={
+            styles.centralStarButton
+          }
+          aria-label="Acessar Central Star Infinity Code"
+        >
+          <FaShieldAlt />
+
+          <span>
+            Acesso Central Star
+          </span>
+        </button>
 
         <p style={styles.footer}>
           Powered by <strong>Star Infinity Code</strong> © 2026
@@ -124,7 +157,86 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
 
+        {/*
+         * =====================================================
+         * CADASTRO PÚBLICO DE CONDOMÍNIO
+         * =====================================================
+         *
+         * Esta rota precisa ser pública porque o condomínio
+         * e o administrador ainda não existem no momento
+         * em que o onboarding é iniciado.
+         */}
+        <Route
+          path="/cadastro-condominio"
+          element={<CadastroCondominio />}
+        />
+
         <Route path="/login/:tipo" element={<Login />} />
+
+        {/*
+         * =====================================================
+         * CENTRAL STAR INFINITY CODE
+         * =====================================================
+         *
+         * Área exclusiva de usuários internos da plataforma:
+         * PLATFORM_OWNER, PLATFORM_ADMIN e PLATFORM_SUPPORT.
+         *
+         * Não reutiliza a proteção legada dos perfis do
+         * condomínio. A sessão é confirmada pela API.
+         */}
+        <Route
+          path="/platform"
+          element={
+            <PlatformProtectedRoute>
+              <PlatformLayout />
+            </PlatformProtectedRoute>
+          }
+        >
+          <Route
+            index
+            element={<PlatformDashboard />}
+          />
+
+          <Route
+            path="condominios"
+            element={<PlatformCondominiums />}
+          />
+
+          <Route
+            path="usuarios"
+            element={<PlatformUsers />}
+          />
+
+          <Route
+            path="planos"
+            element={<PlatformPlans />}
+          />
+
+          <Route
+            path="financeiro"
+            element={<PlatformFinance />}
+          />
+
+          <Route
+            path="auditoria"
+            element={<PlatformAudit />}
+          />
+
+          <Route
+            path="eventos"
+            element={<PlatformSystemEvents />}
+          />
+
+          <Route
+            path="suporte"
+            element={<PlatformSupport />}
+          />
+
+          <Route
+            path="operacoes"
+            element={<PlatformOperations />}
+          />
+        </Route>
 
         <Route
           path="/dashboard"
@@ -321,6 +433,25 @@ const styles = {
     gap: "28px",
     justifyContent: "center",
     alignItems: "stretch"
+  },
+
+  centralStarButton: {
+    marginTop: "22px",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "9px",
+    minHeight: "40px",
+    padding: "0 18px",
+    borderRadius: "999px",
+    border: "1px solid rgba(76,29,149,0.22)",
+    background: "rgba(76,29,149,0.07)",
+    color: "#4c1d95",
+    fontSize: "12px",
+    fontWeight: "900",
+    letterSpacing: "0.2px",
+    cursor: "pointer",
+    boxShadow: "0 8px 22px rgba(76,29,149,0.08)"
   },
 
   footer: {

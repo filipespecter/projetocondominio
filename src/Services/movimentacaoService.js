@@ -1,46 +1,9 @@
-export function salvarMovimentacao(
-  tipo,
-  mensagem,
-  dados = {}
-) {
+import operationalRecordApi from "./operationalRecordApi.js";
 
-  const movimentacoes =
-    JSON.parse(
-      localStorage.getItem("movimentacoes")
-    ) || [];
-
-  const novaMovimentacao = {
-
-    id: Date.now(),
-
-    tipo,
-
-    mensagem,
-
-    data:
-      new Date().toLocaleString(),
-
-    ...dados
-
-  };
-
-  movimentacoes.unshift(
-    novaMovimentacao
-  );
-
-  localStorage.setItem(
-    "movimentacoes",
-    JSON.stringify(movimentacoes)
-  );
-
+export async function salvarMovimentacao(tipo, mensagem, dados = {}) {
+  return operationalRecordApi.create({ tipo, mensagem, ...dados });
 }
 
-export function buscarMovimentacoes() {
-
-  return (
-    JSON.parse(
-      localStorage.getItem("movimentacoes")
-    ) || []
-  );
-
+export async function buscarMovimentacoes() {
+  return operationalRecordApi.list();
 }

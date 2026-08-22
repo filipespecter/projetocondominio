@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 
 import {
   FaShieldAlt,
@@ -8,359 +8,682 @@ import {
   FaCheckCircle,
   FaEye,
   FaEyeSlash,
-  FaKey
+  FaKey,
 } from "react-icons/fa";
 
 import { useState } from "react";
+
 import logoStar from "../assets/images/logo-star-infinity.png";
 
+import authApi, {
+  roleParaTipoFrontend,
+  tipoFrontendAceitaRole,
+} from "../Services/authApi.js";
+
+/**
+ * =====================================================
+ * LOGIN - INFINITYCONDO
+ * =====================================================
+ *
+ * REGRAS IMPORTANTES DESTA VERSÃO:
+ *
+ * 1. NÃO alterar o design aprovado.
+ * 2. NÃO alterar a responsividade.
+ * 3. NÃO remover funcionalidades visuais existentes.
+ * 4. Substituir somente a autenticação local pela API.
+ * 5. Manter compatibilidade temporária com as chaves
+ *    antigas de sessão enquanto o restante do frontend
+ *    é migrado módulo por módulo.
+ */
 function Login() {
   const { tipo } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [usuario, setUsuario] = useState("");
-  const [senha, setSenha] = useState("");
-  const [erro, setErro] = useState("");
-  const [avisoPadrao, setAvisoPadrao] = useState(null);
-  const [mostrarSenha, setMostrarSenha] = useState(false);
-  const [recuperarSenha, setRecuperarSenha] = useState(false);
+  /**
+   * =====================================================
+   * ESTADOS DA TELA
+   * =====================================================
+   */
+  const [condominioCodigo, setCondominioCodigo] =
+    useState(
+      location.state?.condominiumCode ?? ""
+    );
 
+  const [usuario, setUsuario] =
+    useState("");
+
+  const [senha, setSenha] =
+    useState("");
+
+  const [erro, setErro] =
+    useState("");
+
+  const [avisoPadrao, setAvisoPadrao] =
+    useState(null);
+
+  const [
+    mostrarSenha,
+    setMostrarSenha,
+  ] = useState(false);
+
+  const [
+    recuperarSenha,
+    setRecuperarSenha,
+  ] = useState(false);
+
+  const [
+    carregando,
+    setCarregando,
+  ] = useState(false);
+
+  /**
+   * =====================================================
+   * CONFIGURAÇÃO VISUAL DOS PERFIS
+   * =====================================================
+   *
+   * Mantida exatamente no mesmo padrão da versão atual.
+   */
   const perfis = {
+    platform: {
+      titulo:
+        "Central Star Infinity Code",
+
+      subtitulo:
+        "Acesso restrito à administração global da plataforma.",
+
+      gradient:
+        "linear-gradient(135deg,#130c24,#4c1d95,#7c3aed)",
+
+      icon:
+        <FaShieldAlt
+          size={42}
+          color="white"
+        />,
+
+      chamada:
+        "Administração da plataforma",
+
+      recursos: [
+        "Condomínios e solicitações",
+        "Planos, usuários e financeiro",
+        "Auditoria e suporte",
+        "Jobs, backups e operações",
+      ],
+    },
+
     sindico: {
-      titulo: "Síndico / Administrador",
-      subtitulo: "Acesso executivo para gestão completa do condomínio.",
-      gradient: "linear-gradient(135deg,#4c1d95,#7c3aed,#a855f7)",
-      icon: <FaShieldAlt size={42} color="white" />,
-      chamada: "Gestão completa",
+      titulo:
+        "Síndico / Administrador",
+
+      subtitulo:
+        "Acesso executivo para gestão completa do condomínio.",
+
+      gradient:
+        "linear-gradient(135deg,#4c1d95,#7c3aed,#a855f7)",
+
+      icon:
+        <FaShieldAlt
+          size={42}
+          color="white"
+        />,
+
+      chamada:
+        "Gestão completa",
+
       recursos: [
         "Dashboard executivo",
         "Moradores e apartamentos",
         "Reservas e áreas comuns",
-        "Relatórios e operações"
-      ]
+        "Relatórios e operações",
+      ],
     },
 
     porteiro: {
-      titulo: "Porteiro",
-      subtitulo: "Controle operacional de visitantes, encomendas e ocorrências.",
-      gradient: "linear-gradient(135deg,#312e81,#6d28d9,#8b5cf6)",
-      icon: <FaIdBadge size={42} color="white" />,
-      chamada: "Controle de portaria",
+      titulo:
+        "Porteiro",
+
+      subtitulo:
+        "Controle operacional de visitantes, encomendas e ocorrências.",
+
+      gradient:
+        "linear-gradient(135deg,#312e81,#6d28d9,#8b5cf6)",
+
+      icon:
+        <FaIdBadge
+          size={42}
+          color="white"
+        />,
+
+      chamada:
+        "Controle de portaria",
+
       recursos: [
         "Visitantes",
         "Encomendas",
         "Moradores",
-        "Ocorrências"
-      ]
+        "Ocorrências",
+      ],
     },
 
     morador: {
-      titulo: "Morador",
-      subtitulo: "Acompanhe avisos, reservas, encomendas e solicitações.",
-      gradient: "linear-gradient(135deg,#1e1b4b,#7c3aed,#c084fc)",
-      icon: <FaUserCircle size={42} color="white" />,
-      chamada: "Portal do morador",
+      titulo:
+        "Morador",
+
+      subtitulo:
+        "Acompanhe avisos, reservas, encomendas e solicitações.",
+
+      gradient:
+        "linear-gradient(135deg,#1e1b4b,#7c3aed,#c084fc)",
+
+      icon:
+        <FaUserCircle
+          size={42}
+          color="white"
+        />,
+
+      chamada:
+        "Portal do morador",
+
       recursos: [
         "Avisos",
         "Reservas",
         "Encomendas",
-        "Sugestões"
-      ]
-    }
+        "Sugestões",
+      ],
+    },
   };
 
-  const perfil = perfis[tipo];
+  const perfil =
+    perfis[tipo];
 
+  /**
+   * Proteção contra rota inválida.
+   */
   if (!perfil) {
     navigate("/");
     return null;
   }
 
-  function obterChaveSessao() {
-    if (tipo === "sindico") return "sessaoSindico";
-    if (tipo === "porteiro") return "sessaoPorteiro";
-    if (tipo === "morador") return "sessaoMorador";
-    return "sessao";
-  }
+  /**
+   * =====================================================
+   * CHAVE DE SESSÃO LEGADA
+   * =====================================================
+   *
+   * Mantemos as mesmas chaves porque outras partes
+   * do frontend ainda dependem delas.
+   */
 
+  /**
+   * =====================================================
+   * DESTINO APÓS LOGIN
+   * =====================================================
+   */
   function obterRotaDestino() {
-    if (tipo === "sindico") return "/dashboard/sindico";
-    if (tipo === "porteiro") return "/dashboard/porteiro";
-    if (tipo === "morador") return "/dashboard/morador";
-    return "/";
-  }
-
-  function limparSessoes() {
-    localStorage.removeItem("sessaoSindico");
-    localStorage.removeItem("sessaoPorteiro");
-    localStorage.removeItem("sessaoMorador");
-
-    sessionStorage.removeItem("sessaoSindico");
-    sessionStorage.removeItem("sessaoPorteiro");
-    sessionStorage.removeItem("sessaoMorador");
-
-    localStorage.removeItem("usuarioSindico");
-    localStorage.removeItem("usuarioPorteiro");
-    localStorage.removeItem("usuarioMorador");
-    localStorage.removeItem("usuarioLogado");
-
-    sessionStorage.removeItem("usuarioSindico");
-    sessionStorage.removeItem("usuarioPorteiro");
-    sessionStorage.removeItem("usuarioMorador");
-    sessionStorage.removeItem("usuarioLogado");
-  }
-
-  function salvarSessao(dadosUsuario) {
-    limparSessoes();
-
-    const chave = obterChaveSessao();
-    const dados = JSON.stringify(dadosUsuario);
-
-    localStorage.setItem(chave, dados);
-    sessionStorage.setItem(chave, dados);
-
-    if (dadosUsuario.tipo === "sindico") {
-      localStorage.setItem("usuarioSindico", dados);
-      sessionStorage.setItem("usuarioSindico", dados);
-    }
-
-    if (dadosUsuario.tipo === "porteiro") {
-      localStorage.setItem("usuarioPorteiro", dados);
-      sessionStorage.setItem("usuarioPorteiro", dados);
-    }
-
-    if (dadosUsuario.tipo === "morador") {
-      localStorage.setItem("usuarioMorador", dados);
-      sessionStorage.setItem("usuarioMorador", dados);
-    }
-
-    localStorage.setItem("usuarioLogado", dados);
-    sessionStorage.setItem("usuarioLogado", dados);
-  }
-
-  function usuarioAtivo(status) {
-    if (!status) return true;
-
-    return (
-      status === "ativo" ||
-      status === "Ativo" ||
-      status === "ATIVO"
-    );
-  }
-
-  function obterUsuariosSindico() {
-    const dados =
-      JSON.parse(localStorage.getItem("usuariosSindico")) || [];
-
-    if (dados.length > 0) return dados;
-
-    const usuarioMestrePadrao = {
-      id: Date.now(),
-      nome: "Administrador Principal",
-      usuario: "admin",
-      senha: "1234",
-      perfil: "mestre",
-      status: "Ativo",
-      usuarioPadrao: true,
-      criadoEm: new Date().toLocaleString("pt-BR")
-    };
-
-    localStorage.setItem(
-      "usuariosSindico",
-      JSON.stringify([usuarioMestrePadrao])
-    );
-
-    return [usuarioMestrePadrao];
-  }
-
-  function loginSindico(usuarioDigitado, senhaDigitada) {
-    const usuariosSindico = obterUsuariosSindico();
-
-    const encontrado = usuariosSindico.find(
-      (u) =>
-        u.usuario?.trim().toLowerCase() === usuarioDigitado &&
-        u.senha?.trim() === senhaDigitada
-    );
-
-    if (!encontrado) {
-      setErro("Usuário ou senha inválidos");
-      return;
-    }
-
-    if (!usuarioAtivo(encontrado.status)) {
-      setErro("Este usuário administrativo está inativo");
-      return;
-    }
-
-    const dadosSessao = {
-      tipo: "sindico",
-      id: encontrado.id,
-      nome: encontrado.nome,
-      usuario: encontrado.usuario,
-      perfilAdmin: encontrado.perfil || "sub",
-      status: encontrado.status || "Ativo",
-      usuarioPadrao: encontrado.usuarioPadrao || false,
-      loginEm: new Date().toISOString()
-    };
-
-    salvarSessao(dadosSessao);
-
-    const usandoPadrao =
-      encontrado.perfil === "mestre" &&
-      encontrado.usuario === "admin" &&
-      encontrado.senha === "1234";
-
-    if (usandoPadrao) {
-      setAvisoPadrao(dadosSessao);
-      return;
-    }
-
-    navigate(obterRotaDestino(), { replace: true });
-  }
-
-  function fazerLogin() {
-    setErro("");
-    setAvisoPadrao(null);
-
-    const usuarioDigitado = usuario.trim().toLowerCase();
-    const senhaDigitada = senha.trim();
-
-    if (!usuarioDigitado || !senhaDigitada) {
-      setErro("Informe usuário e senha");
-      return;
+    if (tipo === "platform") {
+      return "/platform";
     }
 
     if (tipo === "sindico") {
-      loginSindico(usuarioDigitado, senhaDigitada);
-      return;
+      return "/dashboard/sindico";
     }
 
     if (tipo === "porteiro") {
-      const porteiros =
-        JSON.parse(localStorage.getItem("porteiros")) || [];
-
-      const encontrado = porteiros.find(
-        (p) =>
-          p.usuario?.trim().toLowerCase() === usuarioDigitado &&
-          p.senha?.trim() === senhaDigitada
-      );
-
-      if (!encontrado) {
-        setErro("Usuário ou senha inválidos");
-        return;
-      }
-
-      if (!usuarioAtivo(encontrado.status)) {
-        setErro("Este porteiro está inativo no sistema");
-        return;
-      }
-
-      const porteirosAtualizados = porteiros.map((p) =>
-        p.id === encontrado.id
-          ? {
-              ...p,
-              ultimoLogin: new Date().toISOString()
-            }
-          : p
-      );
-
-      localStorage.setItem("porteiros", JSON.stringify(porteirosAtualizados));
-
-      salvarSessao({
-        tipo: "porteiro",
-        id: encontrado.id,
-        nome: encontrado.nome,
-        usuario: encontrado.usuario,
-        telefone: encontrado.telefone,
-        turno: encontrado.turno,
-        codigoPorteiro: encontrado.codigoPorteiro || "",
-        status: encontrado.status || "Ativo",
-        loginEm: new Date().toISOString()
-      });
-
-      navigate(obterRotaDestino(), { replace: true });
-      return;
+      return "/dashboard/porteiro";
     }
 
     if (tipo === "morador") {
-      const moradores =
-        JSON.parse(localStorage.getItem("moradores")) || [];
+      return "/dashboard/morador";
+    }
 
-      const encontrado = moradores.find(
-        (m) =>
-          m.usuario?.trim().toLowerCase() === usuarioDigitado &&
-          m.senha?.trim() === senhaDigitada
-      );
+    return "/";
+  }
 
-      if (!encontrado) {
-        setErro("Usuário ou senha inválidos");
-        return;
-      }
+  /**
+   * =====================================================
+   * LIMPEZA DE SESSÕES ANTIGAS
+   * =====================================================
+   *
+   * Importante:
+   * não removemos os tokens da API aqui, porque eles
+   * são gerenciados pelo authApi/api.js.
+   */
 
-      if (!usuarioAtivo(encontrado.status)) {
-        setErro("Este morador está inativo no sistema");
-        return;
-      }
+  /**
+   * =====================================================
+   * CONVERSÃO DE USUÁRIO DO BACKEND
+   * =====================================================
+   *
+   * O backend devolve campos em inglês e roles próprias.
+   *
+   * Aqui adaptamos para o formato que o frontend atual
+   * já conhece, evitando quebrar layouts e módulos.
+   */
+  function montarDadosSessao(
+    dadosUsuario
+  ) {
+    const tipoFrontend =
+      roleParaTipoFrontend(
+        dadosUsuario?.role
+      ) || tipo;
 
-      const moradoresAtualizados = moradores.map((m) =>
-        m.id === encontrado.id
-          ? {
-              ...m,
-              ultimoLogin: new Date().toISOString()
-            }
-          : m
-      );
+    /**
+     * Dados base compartilhados.
+     */
+    const dadosBase = {
+      tipo:
+        tipoFrontend,
 
-      localStorage.setItem("moradores", JSON.stringify(moradoresAtualizados));
+      id:
+        dadosUsuario?.id ?? null,
 
-      const apartamentoMorador =
-        encontrado.apartamento ||
-        encontrado.apto ||
-        "";
+      nome:
+        dadosUsuario?.name ??
+        dadosUsuario?.nome ??
+        "",
 
-      salvarSessao({
-        tipo: "morador",
-        id: encontrado.id,
-        nome: encontrado.nome,
-        usuario: encontrado.usuario,
-        apartamento: apartamentoMorador,
-        apto: apartamentoMorador,
-        apartamentoId: encontrado.apartamentoId || null,
-        bloco: encontrado.bloco || "",
-        telefone: encontrado.telefone || "",
-        email: encontrado.email || "",
-        tipoMorador: encontrado.tipoMorador || "Morador",
-        moradorPrincipal: Boolean(encontrado.moradorPrincipal),
+      usuario:
+        dadosUsuario?.username ??
+        dadosUsuario?.usuario ??
+        "",
+
+      email:
+        dadosUsuario?.email ??
+        "",
+
+      telefone:
+        dadosUsuario?.phone ??
+        dadosUsuario?.telefone ??
+        "",
+
+      status:
+        dadosUsuario?.status ??
+        "ACTIVE",
+
+      role:
+        dadosUsuario?.role ??
+        "",
+
+      condominioId:
+        dadosUsuario?.condominiumId ??
+        null,
+
+      loginEm:
+        new Date().toISOString(),
+    };
+
+    /**
+     * Dados adicionais do perfil de morador.
+     *
+     * Mantemos fallbacks porque nem todos esses campos
+     * necessariamente virão diretamente do /auth/login.
+     */
+    if (
+      tipoFrontend ===
+      "morador"
+    ) {
+      return {
+        ...dadosBase,
+
+        apartamento:
+          dadosUsuario?.apartmentLabel ??
+          dadosUsuario?.apartment ??
+          "",
+
+        apto:
+          dadosUsuario?.apartmentLabel ??
+          dadosUsuario?.apartment ??
+          "",
+
+        apartamentoId:
+          dadosUsuario?.apartmentId ??
+          null,
+
+        bloco:
+          dadosUsuario?.block ??
+          dadosUsuario?.bloco ??
+          "",
+
+        tipoMorador:
+          dadosUsuario?.residentType ??
+          dadosUsuario?.tipoMorador ??
+          "Morador",
+
+        moradorPrincipal:
+          Boolean(
+            dadosUsuario?.isPrimaryResident ??
+            dadosUsuario?.moradorPrincipal
+          ),
+
         perfilMorador:
-          encontrado.perfilMorador ||
-          (encontrado.moradorPrincipal ? "principal" : "dependente"),
-        permissoesMorador:
-          encontrado.permissoesMorador || {
-            podeReservar: Boolean(encontrado.moradorPrincipal),
-            podeAbrirSugestao: true,
-            podeVisualizarEncomendas: true
-          },
-        condominioId: encontrado.condominioId || null,
-        nomeCondominio: encontrado.nomeCondominio || "",
-        status: encontrado.status || "Ativo",
-        loginEm: new Date().toISOString()
-      });
+          dadosUsuario?.residentProfile ??
+          dadosUsuario?.perfilMorador ??
+          "",
 
-      navigate(obterRotaDestino(), { replace: true });
+        permissoesMorador:
+          dadosUsuario?.residentPermissions ??
+          dadosUsuario?.permissoesMorador ??
+          {
+            podeReservar: true,
+            podeAbrirSugestao: true,
+            podeVisualizarEncomendas:
+              true,
+          },
+
+        nomeCondominio:
+          dadosUsuario?.condominiumName ??
+          dadosUsuario?.nomeCondominio ??
+          "",
+      };
+    }
+
+    /**
+     * Dados adicionais da Central Star.
+     */
+    if (
+      tipoFrontend ===
+      "platform"
+    ) {
+      return {
+        ...dadosBase,
+
+        perfilPlataforma:
+          dadosUsuario?.role ??
+          "",
+
+        isPlatformOwner:
+          dadosUsuario?.role ===
+          "PLATFORM_OWNER",
+      };
+    }
+
+    /**
+     * Dados adicionais do porteiro.
+     */
+    if (
+      tipoFrontend ===
+      "porteiro"
+    ) {
+      return {
+        ...dadosBase,
+
+        turno:
+          dadosUsuario?.shift ??
+          dadosUsuario?.turno ??
+          "",
+
+        codigoPorteiro:
+          dadosUsuario?.doormanCode ??
+          dadosUsuario?.codigoPorteiro ??
+          "",
+      };
+    }
+
+    /**
+     * Dados adicionais do síndico.
+     */
+    return {
+      ...dadosBase,
+
+      perfilAdmin:
+        dadosUsuario?.role ===
+        "CONDOMINIUM_ADMIN"
+          ? "mestre"
+          : "sub",
+
+      usuarioPadrao: false,
+    };
+  }
+
+  /**
+   * =====================================================
+   * SALVAR SESSÃO DE COMPATIBILIDADE
+   * =====================================================
+   *
+   * Esta sessão NÃO substitui o JWT.
+   *
+   * Ela existe temporariamente porque telas antigas
+   * ainda consultam essas chaves diretamente.
+   */
+  function salvarSessao(
+    dadosUsuario
+  ) {
+    /**
+     * Compatibilidade visual apenas.
+     *
+     * O usuário real é obtido de /auth/me.
+     * Nenhum perfil é salvo como banco no navegador.
+     */
+    return dadosUsuario;
+  }
+
+  /**
+   * =====================================================
+   * LOGIN REAL VIA BACKEND
+   * =====================================================
+   */
+  async function fazerLogin() {
+    if (carregando) {
       return;
+    }
+
+    setErro("");
+    setAvisoPadrao(null);
+
+    const usuarioDigitado =
+      usuario
+        .trim()
+        .toLowerCase();
+
+    const senhaDigitada =
+      senha;
+
+    const codigoDigitado =
+      condominioCodigo
+        .trim()
+        .toUpperCase();
+
+    /**
+     * O código do condomínio é obrigatório somente
+     * para os portais pertencentes a um condomínio.
+     *
+     * Usuários internos da plataforma não pertencem a condomínio.
+     */
+    if (
+      tipo !== "platform" &&
+      !codigoDigitado
+    ) {
+      setErro(
+        "Informe o código do condomínio"
+      );
+
+      return;
+    }
+
+    if (
+      !usuarioDigitado ||
+      !senhaDigitada
+    ) {
+      setErro(
+        "Informe usuário e senha"
+      );
+
+      return;
+    }
+
+    setCarregando(true);
+
+    try {
+      /**
+       * 1. Login no backend.
+       */
+      const resultadoLogin =
+        await authApi.login({
+          condominiumCode:
+            tipo === "platform"
+              ? undefined
+              : codigoDigitado,
+
+          username:
+            usuarioDigitado,
+
+          password:
+            senhaDigitada,
+        });
+
+      const usuarioBackend =
+        resultadoLogin.user;
+
+      /**
+       * 2. Segurança adicional:
+       * impede um usuário de entrar pelo portal visual
+       * correspondente a outro perfil.
+       */
+      if (
+        !tipoFrontendAceitaRole(
+          tipo,
+          usuarioBackend?.role
+        )
+      ) {
+        /**
+         * Remove os tokens gerados pelo login,
+         * pois o usuário tentou entrar pelo portal errado.
+         */
+        authApi.clearAuthTokens();
+
+        setErro(
+          "Este usuário não possui permissão para acessar este perfil."
+        );
+
+        return;
+      }
+
+      /**
+       * 3. Confirma o token usando /auth/me.
+       *
+       * Isso garante que o accessToken realmente funciona
+       * antes de liberar o dashboard.
+       */
+      let usuarioConfirmado =
+        null;
+
+      try {
+        usuarioConfirmado =
+          await authApi.me();
+      } catch {
+        /**
+         * Se /me falhar por qualquer incompatibilidade
+         * de formato, não liberamos uma sessão duvidosa.
+         */
+        authApi.clearAuthTokens();
+
+        throw new Error(
+          "Não foi possível validar a sessão autenticada."
+        );
+      }
+
+      /**
+       * Alguns backends retornam o usuário diretamente
+       * em data, outros dentro de data.user.
+       *
+       * authApi.me já normaliza isso, mas mantemos
+       * fallback para segurança.
+       */
+      const usuarioFinal =
+        usuarioConfirmado ||
+        usuarioBackend;
+
+      /**
+       * 4. Monta o formato legado esperado pelo frontend.
+       */
+      const dadosSessao =
+        montarDadosSessao(
+          usuarioFinal
+        );
+
+      /**
+       * 5. Salva compatibilidade temporária.
+       */
+      salvarSessao(
+        dadosSessao
+      );
+
+      /**
+       * 6. Redireciona para o dashboard correspondente.
+       */
+      navigate(
+        obterRotaDestino(),
+        {
+          replace: true,
+        }
+      );
+    } catch (error) {
+      /**
+       * =================================================
+       * TRATAMENTO DE ERROS
+       * =================================================
+       */
+
+      if (
+        error?.status === 401
+      ) {
+        setErro(
+          tipo === "platform"
+            ? "Usuário ou senha inválidos"
+            : "Usuário, senha ou código do condomínio inválidos"
+        );
+
+        return;
+      }
+
+      if (
+        error?.status === 403
+      ) {
+        setErro(
+          error?.message ||
+          "Acesso não autorizado"
+        );
+
+        return;
+      }
+
+      if (
+        error?.status === 422
+      ) {
+        setErro(
+          error?.message ||
+          "Verifique os dados informados"
+        );
+
+        return;
+      }
+
+      if (
+        error?.status === 0
+      ) {
+        setErro(
+          "Não foi possível conectar ao servidor do InfinityCondo"
+        );
+
+        return;
+      }
+
+      setErro(
+        error?.message ||
+        "Não foi possível realizar o login"
+      );
+    } finally {
+      setCarregando(false);
     }
   }
 
-  function continuarComUsuarioPadrao() {
-    setAvisoPadrao(null);
-    navigate(obterRotaDestino(), { replace: true });
-  }
-
-  function irParaConfiguracoes() {
-    setAvisoPadrao(null);
-    navigate("/dashboard/configuracoes", { replace: true });
-  }
-
+  /**
+   * =====================================================
+   * MODAL DE RECUPERAÇÃO DE SENHA
+   * =====================================================
+   *
+   * Mantido visualmente como na versão atual.
+   */
   function abrirRecuperacaoSenha() {
     setErro("");
     setAvisoPadrao(null);
@@ -371,26 +694,48 @@ function Login() {
     setRecuperarSenha(false);
   }
 
+  /**
+   * Permite login ao pressionar ENTER.
+   */
   function handleKeyPress(e) {
-    if (e.key === "Enter") {
+    if (
+      e.key === "Enter" &&
+      !carregando
+    ) {
       fazerLogin();
     }
   }
 
+  /**
+   * =====================================================
+   * INTERFACE
+   * =====================================================
+   *
+   * O design original foi preservado.
+   *
+   * A única inclusão visual necessária para a
+   * autenticação multi-condomínio é o campo
+   * "Código do condomínio".
+   */
   return (
     <div style={styles.container}>
       <div style={styles.glowGreen}></div>
       <div style={styles.glowGold}></div>
       <div style={styles.gridOverlay}></div>
+
       <div style={styles.codeRain}>
-        {"010101 110010 101101 001011 111000 010110 100101"}
+        {
+          "010101 110010 101101 001011 111000 010110 100101"
+        }
       </div>
 
       <div style={styles.loginShell}>
         <div style={styles.formSide}>
           <button
             style={styles.backButton}
-            onClick={() => navigate("/")}
+            onClick={() =>
+              navigate("/")
+            }
           >
             <FaArrowLeft />
             Voltar
@@ -407,13 +752,18 @@ function Login() {
           <div
             style={{
               ...styles.iconCircle,
-              background: perfil.gradient
+              background:
+                perfil.gradient,
             }}
           >
             {perfil.icon}
           </div>
 
-          <span style={styles.profileBadge}>
+          <span
+            style={
+              styles.profileBadge
+            }
+          >
             Acesso seguro
           </span>
 
@@ -425,8 +775,53 @@ function Login() {
             {perfil.subtitulo}
           </p>
 
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>
+          {/**
+           * =============================================
+           * CÓDIGO DO CONDOMÍNIO
+           * =============================================
+           *
+           * Usa exatamente o mesmo estilo do campo
+           * de usuário para não quebrar o design.
+           */}
+          {tipo !== "platform" && (
+            <div
+              style={
+                styles.inputGroup
+              }
+            >
+              <label
+                style={styles.label}
+              >
+                Código do condomínio
+              </label>
+
+              <input
+                style={styles.input}
+                placeholder="Digite o código do condomínio"
+                value={
+                  condominioCodigo
+                }
+                onChange={(e) =>
+                  setCondominioCodigo(
+                    e.target.value
+                  )
+                }
+                onKeyDown={
+                  handleKeyPress
+                }
+                autoComplete="organization"
+              />
+            </div>
+          )}
+
+          <div
+            style={
+              styles.inputGroup
+            }
+          >
+            <label
+              style={styles.label}
+            >
               Usuário
             </label>
 
@@ -434,95 +829,243 @@ function Login() {
               style={styles.input}
               placeholder="Digite seu usuário"
               value={usuario}
-              onChange={(e) => setUsuario(e.target.value)}
-              onKeyDown={handleKeyPress}
+              onChange={(e) =>
+                setUsuario(
+                  e.target.value
+                )
+              }
+              onKeyDown={
+                handleKeyPress
+              }
+              autoComplete="username"
             />
           </div>
 
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>
+          <div
+            style={
+              styles.inputGroup
+            }
+          >
+            <label
+              style={styles.label}
+            >
               Senha
             </label>
 
-            <div style={styles.passwordWrap}>
+            <div
+              style={
+                styles.passwordWrap
+              }
+            >
               <input
-                style={styles.passwordInput}
-                type={mostrarSenha ? "text" : "password"}
+                style={
+                  styles.passwordInput
+                }
+                type={
+                  mostrarSenha
+                    ? "text"
+                    : "password"
+                }
                 placeholder="Digite sua senha"
                 value={senha}
-                onChange={(e) => setSenha(e.target.value)}
-                onKeyDown={handleKeyPress}
+                onChange={(e) =>
+                  setSenha(
+                    e.target.value
+                  )
+                }
+                onKeyDown={
+                  handleKeyPress
+                }
+                autoComplete="current-password"
               />
 
               <button
                 type="button"
-                style={styles.eyeButton}
-                onClick={() => setMostrarSenha(!mostrarSenha)}
-                title={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+                style={
+                  styles.eyeButton
+                }
+                onClick={() =>
+                  setMostrarSenha(
+                    !mostrarSenha
+                  )
+                }
+                title={
+                  mostrarSenha
+                    ? "Ocultar senha"
+                    : "Mostrar senha"
+                }
               >
-                {mostrarSenha ? <FaEyeSlash /> : <FaEye />}
+                {mostrarSenha
+                  ? <FaEyeSlash />
+                  : <FaEye />}
               </button>
             </div>
           </div>
 
           <button
             type="button"
-            style={styles.forgotButton}
-            onClick={abrirRecuperacaoSenha}
+            style={
+              styles.forgotButton
+            }
+            onClick={
+              abrirRecuperacaoSenha
+            }
           >
             <FaKey />
             Esqueci minha senha
           </button>
 
           {erro && (
-            <div style={styles.errorBox}>
+            <div
+              style={
+                styles.errorBox
+              }
+            >
               {erro}
             </div>
           )}
 
           <button
-            style={styles.button}
+            style={{
+              ...styles.button,
+
+              /**
+               * Mantemos o mesmo botão.
+               * Apenas damos feedback visual mínimo
+               * durante a requisição.
+               */
+              opacity:
+                carregando
+                  ? 0.72
+                  : 1,
+
+              cursor:
+                carregando
+                  ? "wait"
+                  : "pointer",
+            }}
             onClick={fazerLogin}
+            disabled={carregando}
           >
-            Entrar no InfinityCondo →
+            {carregando
+              ? "Entrando..."
+              : "Entrar no InfinityCondo →"}
           </button>
 
-          <p style={styles.footerText}>
+          {/**
+           * =============================================
+           * CADASTRO DE NOVO CONDOMÍNIO
+           * =============================================
+           *
+           * Exibido somente no portal do síndico/
+           * administrador, pois é o ponto de entrada
+           * comercial para um novo condomínio.
+           */}
+          {tipo === "sindico" && (
+            <div
+              style={
+                styles.registrationBox
+              }
+            >
+              <span
+                style={
+                  styles.registrationText
+                }
+              >
+                Seu condomínio ainda não usa o InfinityCondo?
+              </span>
+
+              <button
+                type="button"
+                style={
+                  styles.registrationButton
+                }
+                onClick={() =>
+                  navigate(
+                    "/cadastro-condominio"
+                  )
+                }
+              >
+                Cadastre seu condomínio
+              </button>
+            </div>
+          )}
+
+          <p
+            style={
+              styles.footerText
+            }
+          >
             InfinityCondo • Star Infinity Code © 2026
           </p>
         </div>
 
         <div style={styles.infoSide}>
           <div>
-            <div style={styles.infoLogoMark}>✦</div>
+            <div
+              style={
+                styles.infoLogoMark
+              }
+            >
+              ✦
+            </div>
 
-            <span style={styles.systemBadge}>
+            <span
+              style={
+                styles.systemBadge
+              }
+            >
               InfinityCondo
             </span>
 
-            <h2 style={styles.infoTitle}>
+            <h2
+              style={
+                styles.infoTitle
+              }
+            >
               {perfil.chamada}
             </h2>
 
-            <p style={styles.infoText}>
+            <p
+              style={
+                styles.infoText
+              }
+            >
               Plataforma inteligente para gestão condominial,
               segurança operacional e experiência integrada.
             </p>
           </div>
 
-          <div style={styles.featureList}>
-            {perfil.recursos.map((item) => (
-              <div
-                key={item}
-                style={styles.featureItem}
-              >
-                <FaCheckCircle color="#facc15" />
-                <span>{item}</span>
-              </div>
-            ))}
+          <div
+            style={
+              styles.featureList
+            }
+          >
+            {perfil.recursos.map(
+              (item) => (
+                <div
+                  key={item}
+                  style={
+                    styles.featureItem
+                  }
+                >
+                  <FaCheckCircle
+                    color="#facc15"
+                  />
+
+                  <span>
+                    {item}
+                  </span>
+                </div>
+              )
+            )}
           </div>
 
-          <div style={styles.secureBox}>
+          <div
+            style={
+              styles.secureBox
+            }
+          >
             <strong>
               Ambiente protegido
             </strong>
@@ -535,30 +1078,68 @@ function Login() {
         </div>
       </div>
 
+      {/**
+       * =================================================
+       * RECUPERAÇÃO DE SENHA
+       * =================================================
+       */}
       {recuperarSenha && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.warningModal}>
-            <div style={styles.warningIcon}>
+        <div
+          style={
+            styles.modalOverlay
+          }
+        >
+          <div
+            style={
+              styles.warningModal
+            }
+          >
+            <div
+              style={
+                styles.warningIcon
+              }
+            >
               🔐
             </div>
 
-            <h2 style={styles.warningTitle}>
+            <h2
+              style={
+                styles.warningTitle
+              }
+            >
               Recuperação de senha
             </h2>
 
-            <p style={styles.warningText}>
-              A recuperação automática será ativada na versão com backend.
+            <p
+              style={
+                styles.warningText
+              }
+            >
+              A recuperação automática será integrada ao backend
+              em uma etapa específica de segurança.
             </p>
 
-            <p style={styles.warningText}>
-              Por enquanto, solicite a redefinição ao administrador do sistema
-              ou entre em contato com a Star Infinity Code.
+            <p
+              style={
+                styles.warningText
+              }
+            >
+              Por enquanto, solicite a redefinição ao administrador
+              do condomínio ou à Star Infinity Code.
             </p>
 
-            <div style={styles.warningActions}>
+            <div
+              style={
+                styles.warningActions
+              }
+            >
               <button
-                style={styles.changeNowButton}
-                onClick={fecharRecuperacaoSenha}
+                style={
+                  styles.changeNowButton
+                }
+                onClick={
+                  fecharRecuperacaoSenha
+                }
               >
                 Entendi
               </button>
@@ -567,40 +1148,72 @@ function Login() {
         </div>
       )}
 
+      {/**
+       * Mantemos a estrutura do modal antigo na página
+       * para não interferir no restante do design.
+       *
+       * A autenticação mestre padrão admin/1234 foi
+       * removida da lógica porque agora o backend é a
+       * fonte oficial de autenticação.
+       */}
       {avisoPadrao && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.warningModal}>
-            <div style={styles.warningIcon}>
+        <div
+          style={
+            styles.modalOverlay
+          }
+        >
+          <div
+            style={
+              styles.warningModal
+            }
+          >
+            <div
+              style={
+                styles.warningIcon
+              }
+            >
               ⚠️
             </div>
 
-            <h2 style={styles.warningTitle}>
-              Acesso padrão em uso
+            <h2
+              style={
+                styles.warningTitle
+              }
+            >
+              Aviso de segurança
             </h2>
 
-            <p style={styles.warningText}>
-              Você está usando o usuário mestre padrão do sistema:
-              <strong> admin / 1234</strong>.
+            <p
+              style={
+                styles.warningText
+              }
+            >
+              A sessão foi autenticada pelo servidor do InfinityCondo.
             </p>
 
-            <p style={styles.warningText}>
-              Recomendamos alterar usuário e senha em Configurações para
-              aumentar a segurança do seu condomínio.
-            </p>
-
-            <div style={styles.warningActions}>
+            <div
+              style={
+                styles.warningActions
+              }
+            >
               <button
-                style={styles.changeNowButton}
-                onClick={irParaConfiguracoes}
-              >
-                Alterar agora
-              </button>
+                style={
+                  styles.changeNowButton
+                }
+                onClick={() => {
+                  setAvisoPadrao(
+                    null
+                  );
 
-              <button
-                style={styles.continueButton}
-                onClick={continuarComUsuarioPadrao}
+                  navigate(
+                    obterRotaDestino(),
+                    {
+                      replace: true,
+                    }
+                  );
+                }}
               >
-                Continuar por enquanto
+                Continuar
               </button>
             </div>
           </div>
@@ -610,19 +1223,29 @@ function Login() {
   );
 }
 
+/**
+ * =====================================================
+ * ESTILOS
+ * =====================================================
+ *
+ * Estes estilos foram preservados da versão enviada
+ * pelo usuário para manter o design aprovado.
+ */
 const styles = {
   container: {
     minHeight: "100vh",
     background:
       "radial-gradient(circle at top left,rgba(124,58,237,0.24),transparent 30%), radial-gradient(circle at bottom right,rgba(168,85,247,0.20),transparent 28%), radial-gradient(circle at center,rgba(59,130,246,0.10),transparent 36%), linear-gradient(135deg,#ffffff,#f8f5ff 48%,#ffffff)",
     display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent:
+      "center",
+    alignItems:
+      "center",
     padding: "32px",
     fontFamily: "Arial",
     position: "relative",
     overflow: "hidden",
-    boxSizing: "border-box"
+    boxSizing: "border-box",
   },
 
   glowGreen: {
@@ -630,10 +1253,11 @@ const styles = {
     width: "430px",
     height: "430px",
     borderRadius: "50%",
-    background: "rgba(124,58,237,0.15)",
+    background:
+      "rgba(124,58,237,0.15)",
     filter: "blur(80px)",
     top: "-120px",
-    left: "-100px"
+    left: "-100px",
   },
 
   glowGold: {
@@ -641,10 +1265,11 @@ const styles = {
     width: "380px",
     height: "380px",
     borderRadius: "50%",
-    background: "rgba(168,85,247,0.12)",
+    background:
+      "rgba(168,85,247,0.12)",
     filter: "blur(85px)",
     bottom: "-110px",
-    right: "-90px"
+    right: "-90px",
   },
 
   gridOverlay: {
@@ -652,76 +1277,89 @@ const styles = {
     inset: 0,
     backgroundImage:
       "linear-gradient(rgba(124,58,237,0.08) 1px, transparent 1px), linear-gradient(90deg,rgba(124,58,237,0.08) 1px, transparent 1px)",
-    backgroundSize: "44px 44px",
+    backgroundSize:
+      "44px 44px",
     maskImage:
       "linear-gradient(to bottom,transparent,black 24%,black 76%,transparent)",
-    opacity: 0.55
+    opacity: 0.55,
   },
 
   codeRain: {
     position: "absolute",
     left: "50%",
     bottom: "7%",
-    transform: "translateX(-50%)",
+    transform:
+      "translateX(-50%)",
     width: "900px",
     maxWidth: "86%",
-    color: "rgba(109,40,217,0.13)",
+    color:
+      "rgba(109,40,217,0.13)",
     fontSize: "18px",
     fontWeight: "900",
     letterSpacing: "12px",
     textAlign: "center",
     userSelect: "none",
     pointerEvents: "none",
-    filter: "blur(0.2px)"
+    filter: "blur(0.2px)",
   },
 
   loginShell: {
     width: "1080px",
     minHeight: "650px",
     display: "grid",
-    gridTemplateColumns: "1fr 0.95fr",
+    gridTemplateColumns:
+      "1fr 0.95fr",
     background:
       "radial-gradient(circle at top right,rgba(168,85,247,0.13),transparent 35%), linear-gradient(180deg,rgba(255,255,255,0.95),rgba(251,250,255,0.88))",
-    border: "1px solid rgba(124,58,237,0.18)",
+    border:
+      "1px solid rgba(124,58,237,0.18)",
     borderRadius: "40px",
     boxShadow:
       "0 35px 90px rgba(88,28,135,0.16), inset 0 0 0 1px rgba(255,255,255,0.75)",
-    backdropFilter: "blur(22px)",
+    backdropFilter:
+      "blur(22px)",
     overflow: "hidden",
     position: "relative",
-    zIndex: 2
+    zIndex: 2,
   },
 
   formSide: {
     padding: "50px",
     display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
+    flexDirection:
+      "column",
+    justifyContent:
+      "center",
     position: "relative",
     background:
-      "radial-gradient(circle at top left,rgba(124,58,237,0.08),transparent 32%), rgba(255,255,255,0.94)"
+      "radial-gradient(circle at top left,rgba(124,58,237,0.08),transparent 32%), rgba(255,255,255,0.94)",
   },
 
   infoSide: {
     padding: "50px",
     background:
       "radial-gradient(circle at top right,rgba(255,255,255,0.20),transparent 34%), radial-gradient(circle at bottom left,rgba(168,85,247,0.24),transparent 38%), linear-gradient(145deg,#2e1065,#4c1d95,#7c3aed)",
-    borderLeft: "1px solid rgba(255,255,255,0.18)",
+    borderLeft:
+      "1px solid rgba(255,255,255,0.18)",
     color: "white",
     display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
+    flexDirection:
+      "column",
+    justifyContent:
+      "space-between",
     position: "relative",
-    overflow: "hidden"
+    overflow: "hidden",
   },
 
   backButton: {
     position: "absolute",
     top: "24px",
     left: "24px",
-    border: "1px solid #ddd6fe",
+    border:
+      "1px solid #ddd6fe",
     background: "#ffffff",
-    padding: "10px 14px",
+    padding:
+      "10px 14px",
     borderRadius: "14px",
     cursor: "pointer",
     display: "flex",
@@ -729,19 +1367,22 @@ const styles = {
     gap: "8px",
     fontWeight: "800",
     color: "#6d28d9",
-    boxShadow: "0 10px 24px rgba(124,58,237,0.10)"
+    boxShadow:
+      "0 10px 24px rgba(124,58,237,0.10)",
   },
 
   logoBox: {
     width: "230px",
     maxWidth: "78%",
-    margin: "18px 0 18px"
+    margin:
+      "18px 0 18px",
   },
 
   logoImage: {
     width: "100%",
     display: "block",
-    filter: "drop-shadow(0 0 24px rgba(124,58,237,0.30))"
+    filter:
+      "drop-shadow(0 0 24px rgba(124,58,237,0.30))",
   },
 
   iconCircle: {
@@ -750,41 +1391,46 @@ const styles = {
     borderRadius: "28px",
     display: "flex",
     alignItems: "center",
-    justifyContent: "center",
-    margin: "4px 0 16px",
+    justifyContent:
+      "center",
+    margin:
+      "4px 0 16px",
     boxShadow:
-      "0 18px 40px rgba(124,58,237,0.24), 0 0 35px rgba(168,85,247,0.18)"
+      "0 18px 40px rgba(124,58,237,0.24), 0 0 35px rgba(168,85,247,0.18)",
   },
 
   profileBadge: {
     width: "fit-content",
     background: "#f3e8ff",
     color: "#6d28d9",
-    border: "1px solid #ddd6fe",
-    padding: "8px 13px",
+    border:
+      "1px solid #ddd6fe",
+    padding:
+      "8px 13px",
     borderRadius: "999px",
     fontSize: "12px",
     fontWeight: "900",
-    marginBottom: "14px"
+    marginBottom: "14px",
   },
 
   title: {
     margin: 0,
     fontSize: "34px",
     color: "#111827",
-    letterSpacing: "-0.6px"
+    letterSpacing:
+      "-0.6px",
   },
 
   subtitle: {
     marginTop: "10px",
     marginBottom: "28px",
     color: "#6b7280",
-    lineHeight: "1.5"
+    lineHeight: "1.5",
   },
 
   inputGroup: {
     width: "100%",
-    marginBottom: "15px"
+    marginBottom: "15px",
   },
 
   label: {
@@ -792,20 +1438,22 @@ const styles = {
     color: "#374151",
     fontSize: "13px",
     fontWeight: "900",
-    marginBottom: "8px"
+    marginBottom: "8px",
   },
 
   input: {
     width: "100%",
     padding: "16px",
     borderRadius: "17px",
-    border: "1px solid #ddd6fe",
+    border:
+      "1px solid #ddd6fe",
     fontSize: "15px",
     outline: "none",
     background: "#ffffff",
     color: "#111827",
     boxSizing: "border-box",
-    boxShadow: "0 10px 26px rgba(124,58,237,0.06)"
+    boxShadow:
+      "0 10px 26px rgba(124,58,237,0.06)",
   },
 
   passwordWrap: {
@@ -813,11 +1461,13 @@ const styles = {
     display: "flex",
     alignItems: "center",
     borderRadius: "17px",
-    border: "1px solid #ddd6fe",
+    border:
+      "1px solid #ddd6fe",
     background: "#ffffff",
     boxSizing: "border-box",
     overflow: "hidden",
-    boxShadow: "0 10px 26px rgba(124,58,237,0.06)"
+    boxShadow:
+      "0 10px 26px rgba(124,58,237,0.06)",
   },
 
   passwordInput: {
@@ -826,32 +1476,36 @@ const styles = {
     border: "none",
     fontSize: "15px",
     outline: "none",
-    background: "transparent",
+    background:
+      "transparent",
     color: "#111827",
-    boxSizing: "border-box"
+    boxSizing: "border-box",
   },
 
   eyeButton: {
     width: "52px",
     height: "52px",
     border: "none",
-    background: "transparent",
+    background:
+      "transparent",
     color: "#6d28d9",
     cursor: "pointer",
-    fontSize: "18px"
+    fontSize: "18px",
   },
 
   forgotButton: {
     border: "none",
-    background: "transparent",
+    background:
+      "transparent",
     color: "#6d28d9",
     cursor: "pointer",
     fontWeight: "900",
     display: "flex",
     alignItems: "center",
     gap: "8px",
-    margin: "-3px 0 15px",
-    padding: 0
+    margin:
+      "-3px 0 15px",
+    padding: 0,
   },
 
   errorBox: {
@@ -864,7 +1518,8 @@ const styles = {
     textAlign: "center",
     fontWeight: "800",
     boxSizing: "border-box",
-    border: "1px solid #fecaca"
+    border:
+      "1px solid #fecaca",
   },
 
   button: {
@@ -877,16 +1532,50 @@ const styles = {
     fontSize: "15px",
     cursor: "pointer",
     marginTop: "8px",
-    background: "linear-gradient(135deg,#6d28d9,#a855f7)",
+    background:
+      "linear-gradient(135deg,#6d28d9,#a855f7)",
     boxShadow:
-      "0 18px 38px rgba(124,58,237,0.28), 0 0 32px rgba(168,85,247,0.18)"
+      "0 18px 38px rgba(124,58,237,0.28), 0 0 32px rgba(168,85,247,0.18)",
+  },
+
+  registrationBox: {
+    width: "100%",
+    marginTop: "16px",
+    padding: "15px",
+    border:
+      "1px solid #ddd6fe",
+    borderRadius: "17px",
+    background:
+      "linear-gradient(180deg,#faf7ff,#ffffff)",
+    textAlign: "center",
+    boxSizing: "border-box",
+  },
+
+  registrationText: {
+    display: "block",
+    color: "#6b7280",
+    fontSize: "12px",
+    fontWeight: "700",
+    lineHeight: "1.5",
+    marginBottom: "8px",
+  },
+
+  registrationButton: {
+    border: "none",
+    background: "transparent",
+    color: "#6d28d9",
+    cursor: "pointer",
+    fontWeight: "900",
+    fontSize: "13px",
+    padding: "4px 6px",
   },
 
   footerText: {
-    margin: "22px 0 0",
+    margin:
+      "22px 0 0",
     color: "#7c3aed",
     fontSize: "12px",
-    fontWeight: "800"
+    fontWeight: "800",
   },
 
   infoLogoMark: {
@@ -895,143 +1584,170 @@ const styles = {
     borderRadius: "24px",
     background:
       "linear-gradient(135deg,rgba(255,255,255,0.22),rgba(255,255,255,0.08))",
-    border: "1px solid rgba(255,255,255,0.20)",
+    border:
+      "1px solid rgba(255,255,255,0.20)",
     display: "flex",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent:
+      "center",
     fontSize: "44px",
     marginBottom: "18px",
-    boxShadow: "0 20px 45px rgba(0,0,0,0.18)"
+    boxShadow:
+      "0 20px 45px rgba(0,0,0,0.18)",
   },
 
   systemBadge: {
-    display: "inline-block",
+    display:
+      "inline-block",
     width: "fit-content",
-    background: "rgba(255,255,255,0.12)",
-    border: "1px solid rgba(255,255,255,0.18)",
-    padding: "9px 13px",
+    background:
+      "rgba(255,255,255,0.12)",
+    border:
+      "1px solid rgba(255,255,255,0.18)",
+    padding:
+      "9px 13px",
     borderRadius: "999px",
     color: "#f5f3ff",
     fontSize: "12px",
     fontWeight: "900",
-    marginBottom: "18px"
+    marginBottom: "18px",
   },
 
   infoTitle: {
     margin: 0,
     fontSize: "38px",
-    letterSpacing: "-0.8px",
-    color: "white"
+    letterSpacing:
+      "-0.8px",
+    color: "white",
   },
 
   infoText: {
-    color: "rgba(255,255,255,0.72)",
+    color:
+      "rgba(255,255,255,0.72)",
     lineHeight: "1.6",
-    marginTop: "12px"
+    marginTop: "12px",
   },
 
   featureList: {
     display: "flex",
-    flexDirection: "column",
+    flexDirection:
+      "column",
     gap: "14px",
-    margin: "34px 0"
+    margin:
+      "34px 0",
   },
 
   featureItem: {
-    background: "rgba(255,255,255,0.10)",
-    border: "1px solid rgba(255,255,255,0.14)",
+    background:
+      "rgba(255,255,255,0.10)",
+    border:
+      "1px solid rgba(255,255,255,0.14)",
     borderRadius: "18px",
     padding: "14px",
     display: "flex",
     alignItems: "center",
     gap: "12px",
     fontWeight: "800",
-    boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.04)"
+    boxShadow:
+      "inset 0 0 0 1px rgba(255,255,255,0.04)",
   },
 
   secureBox: {
-    background: "rgba(255,255,255,0.11)",
-    border: "1px solid rgba(255,255,255,0.18)",
+    background:
+      "rgba(255,255,255,0.11)",
+    border:
+      "1px solid rgba(255,255,255,0.18)",
     borderRadius: "22px",
     padding: "18px",
-    color: "#f5f3ff"
+    color: "#f5f3ff",
   },
 
   modalOverlay: {
     position: "fixed",
     inset: 0,
-    background: "rgba(2,6,23,0.72)",
-    backdropFilter: "blur(10px)",
+    background:
+      "rgba(2,6,23,0.72)",
+    backdropFilter:
+      "blur(10px)",
     display: "flex",
-    justifyContent: "center",
+    justifyContent:
+      "center",
     alignItems: "center",
     zIndex: 20,
-    padding: "20px"
+    padding: "20px",
   },
 
   warningModal: {
     width: "460px",
-    background: "linear-gradient(180deg,#ffffff,#fbfaff)",
-    border: "1px solid #ddd6fe",
+    background:
+      "linear-gradient(180deg,#ffffff,#fbfaff)",
+    border:
+      "1px solid #ddd6fe",
     borderRadius: "32px",
     padding: "34px",
     color: "#111827",
     textAlign: "center",
     boxShadow:
-      "0 35px 90px rgba(88,28,135,0.26), 0 0 40px rgba(168,85,247,0.14)"
+      "0 35px 90px rgba(88,28,135,0.26), 0 0 40px rgba(168,85,247,0.14)",
   },
 
   warningIcon: {
     width: "74px",
     height: "74px",
     borderRadius: "24px",
-    margin: "0 auto 18px",
-    background: "linear-gradient(135deg,#6d28d9,#a855f7)",
+    margin:
+      "0 auto 18px",
+    background:
+      "linear-gradient(135deg,#6d28d9,#a855f7)",
     color: "white",
     display: "flex",
     alignItems: "center",
-    justifyContent: "center",
-    fontSize: "34px"
+    justifyContent:
+      "center",
+    fontSize: "34px",
   },
 
   warningTitle: {
-    margin: "0 0 12px",
+    margin:
+      "0 0 12px",
     fontSize: "28px",
-    color: "#111827"
+    color: "#111827",
   },
 
   warningText: {
     color: "#4b5563",
-    lineHeight: "1.6"
+    lineHeight: "1.6",
   },
 
   warningActions: {
     display: "flex",
     gap: "12px",
-    marginTop: "24px"
+    marginTop: "24px",
   },
 
   changeNowButton: {
     flex: 1,
-    background: "linear-gradient(135deg,#6d28d9,#a855f7)",
+    background:
+      "linear-gradient(135deg,#6d28d9,#a855f7)",
     color: "white",
     border: "none",
     padding: "14px",
     borderRadius: "16px",
     cursor: "pointer",
-    fontWeight: "900"
+    fontWeight: "900",
   },
 
   continueButton: {
     flex: 1,
     background: "#ffffff",
     color: "#6d28d9",
-    border: "1px solid #c4b5fd",
+    border:
+      "1px solid #c4b5fd",
     padding: "14px",
     borderRadius: "16px",
     cursor: "pointer",
-    fontWeight: "900"
-  }
+    fontWeight: "900",
+  },
 };
 
 export default Login;

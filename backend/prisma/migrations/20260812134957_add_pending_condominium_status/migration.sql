@@ -1,0 +1,2 @@
+ALTER TYPE "CondominiumStatus"
+ADD VALUE IF NOT EXISTS 'PENDING';

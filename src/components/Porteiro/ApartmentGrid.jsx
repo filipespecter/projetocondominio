@@ -1,137 +1,149 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import packageApi from "../../Services/packageApi.js";
 import PackageModal from "./PackageModal";
 
 export default function ApartmentGrid({ onRefresh }) {
   const [selectedAp, setSelectedAp] = useState(null);
   const [encomendas, setEncomendas] = useState([]);
-  const [esperadas, setEsperadas] = useState([]);
   const [moradores, setMoradores] = useState([]);
-  const [ocorrencias, setOcorrencias] = useState([]);
+  const [apartamentosData, setApartamentosData] = useState([]);
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState("todos");
 
-  useEffect(() => {
-    carregarDados();
-
-    const interval = setInterval(() => {
-      carregarDados();
-    }, 10000);
-
-    window.addEventListener("storage", carregarDados);
-    window.addEventListener(
-      "infinitycondo:encomendas",
-      carregarDados
-    );
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener("storage", carregarDados);
-      window.removeEventListener(
-        "infinitycondo:encomendas",
-        carregarDados
-      );
-    };
-  }, []);
-
-  function lerStorage(chave) {
+  async function carregarDados() {
     try {
-      const dados = localStorage.getItem(chave);
-      return dados ? JSON.parse(dados) : [];
-    } catch {
-      return [];
+      const [
+        packageData,
+        apartmentData,
+        residentData,
+      ] = await Promise.all([
+        packageApi.list(),
+        packageApi.apartmentsDirectory(),
+        packageApi.residentsDirectory(),
+      ]);
+
+      const mappedResidents =
+        (residentData ?? []).map(
+          (r) => ({
+            ...r,
+            nome:
+              r.user?.name ??
+              r.name ??
+              "",
+            apartamento:
+              r.apartment?.number ??
+              "",
+            apartamentoId:
+              r.apartmentId ??
+              r.apartment?.id ??
+              null,
+          })
+        );
+
+      const mappedPackages =
+        (packageData ?? []).map(
+          (item) => ({
+            ...item,
+            apartamento:
+              item.apartment?.number ??
+              "",
+            status:
+              item.status === "EXPECTED"
+                ? "aguardando"
+                : item.status === "RECEIVED"
+                  ? "recebido"
+                  : item.status === "DELIVERED"
+                    ? "entregue"
+                    : "cancelado",
+          })
+        );
+
+      setMoradores(
+        mappedResidents
+      );
+
+      setApartamentosData(
+        apartmentData ?? []
+      );
+
+      setEncomendas(
+        mappedPackages.filter(
+          (item) =>
+            item.status !==
+            "aguardando"
+        )
+      );
+    } catch (error) {
+      alert(
+        error?.message ??
+        "Não foi possível carregar o mapa operacional."
+      );
     }
   }
 
-  function carregarDados() {
-    setEncomendas(lerStorage("encomendas"));
-    setEsperadas(lerStorage("encomendas_esperadas"));
-    setMoradores(lerStorage("moradores"));
-    setOcorrencias(lerStorage("ocorrencias"));
-  }
+  useEffect(() => {
+    carregarDados();
+  }, []);
 
-  const apartamentosCadastrados = lerStorage("apartamentos");
-
-  const apartamentos = [
-    ...new Set(
-      [
-        ...apartamentosCadastrados.map((item) =>
+  const apartamentos =
+    apartamentosData
+      .map(
+        (item) =>
           String(
-            item.numero ||
-            item.apartamento ||
-            item.apto ||
-            ""
+            item.number ?? ""
           ).trim()
-        ),
-        ...moradores.map((m) =>
-          String(m.apartamento || m.apto || "").trim()
+      )
+      .filter(Boolean)
+      .sort((a, b) =>
+        String(a).localeCompare(
+          String(b),
+          "pt-BR",
+          { numeric: true }
         )
-      ].filter(Boolean)
-    )
-  ].sort((a, b) =>
-    String(a).localeCompare(String(b), "pt-BR", {
-      numeric: true
-    })
-  );
+      );
 
   function obterMorador(ap) {
-    const encontrado = moradores.find(
-      (m) =>
-        String(m.apartamento) === String(ap) ||
-        String(m.apto) === String(ap)
+    return (
+      moradores.find(
+        (m) =>
+          String(m.apartamento) ===
+          String(ap)
+      ) ?? null
     );
-
-    return encontrado || null;
   }
 
   function contarPendentes(ap) {
     return encomendas.filter(
       (e) =>
-        String(e.apartamento) === String(ap) &&
-        ["recebido", "pendente", "aguardando", "atrasado"].includes(
-          String(e.status || "").toLowerCase()
-        )
+        String(e.apartamento) ===
+          String(ap) &&
+        e.status === "recebido"
     ).length;
   }
 
   function contarRetiradas(ap) {
     return encomendas.filter(
       (e) =>
-        String(e.apartamento) === String(ap) &&
-        ["retirada", "retirado", "entregue"].includes(
-          String(e.status || "").toLowerCase()
-        )
+        String(e.apartamento) ===
+          String(ap) &&
+        e.status === "entregue"
     ).length;
   }
 
-  function contarEsperadas(ap) {
-    return esperadas.filter(
-      (e) => String(e.apartamento) === String(ap)
-    ).length;
+  function contarEsperadas() {
+    return 0;
   }
 
-  function contarOcorrencias(ap) {
-    return ocorrencias.filter(
-      (o) =>
-        String(o.apartamento) === String(ap) &&
-        o.status !== "Resolvida" &&
-        o.status !== "Resolvido"
-    ).length;
+  function contarOcorrencias() {
+    return 0;
   }
 
   function definirStatus(ap) {
-    const pendentes = contarPendentes(ap);
-    const esperadasAp = contarEsperadas(ap);
-    const ocorrenciasAp = contarOcorrencias(ap);
+    const pendentes =
+      contarPendentes(ap);
 
-    if (ocorrenciasAp > 0) {
-      return {
-        texto: "Com ocorrência",
-        cor: "#dc2626",
-        fundo: "#fee2e2",
-        borda: "#fecaca",
-        destaque: "#dc2626"
-      };
-    }
+    const esperadasAp =
+      contarEsperadas(ap);
 
     if (pendentes > 0) {
       return {
@@ -162,40 +174,74 @@ export default function ApartmentGrid({ onRefresh }) {
     };
   }
 
-  const apartamentosFiltrados = apartamentos.filter((ap) => {
-    const pendentes = contarPendentes(ap);
-    const retiradas = contarRetiradas(ap);
-    const esperadasAp = contarEsperadas(ap);
-    const ocorrenciasAp = contarOcorrencias(ap);
-    const morador = obterMorador(ap);
-    const textoBusca = busca.toLowerCase();
+  const apartamentosFiltrados =
+    apartamentos.filter((ap) => {
+      const pendentes =
+        contarPendentes(ap);
+      const retiradas =
+        contarRetiradas(ap);
+      const esperadasAp =
+        contarEsperadas(ap);
+      const morador =
+        obterMorador(ap);
 
-    const matchBusca =
-      ap.includes(textoBusca) ||
-      morador?.nome?.toLowerCase().includes(textoBusca);
+      const textoBusca =
+        busca.toLowerCase();
 
-    if (filtro === "pendentes") return pendentes > 0 && matchBusca;
-    if (filtro === "retiradas") return retiradas > 0 && matchBusca;
-    if (filtro === "esperadas") return esperadasAp > 0 && matchBusca;
-    if (filtro === "ocorrencias") return ocorrenciasAp > 0 && matchBusca;
+      const matchBusca =
+        ap.toLowerCase().includes(
+          textoBusca
+        ) ||
+        morador?.nome
+          ?.toLowerCase()
+          .includes(textoBusca);
 
-    return matchBusca;
-  });
+      if (filtro === "pendentes") {
+        return (
+          pendentes > 0 &&
+          matchBusca
+        );
+      }
 
-  const totalPendentes = apartamentos.reduce(
-    (total, ap) => total + contarPendentes(ap),
-    0
-  );
+      if (filtro === "retiradas") {
+        return (
+          retiradas > 0 &&
+          matchBusca
+        );
+      }
 
-  const totalEsperadas = apartamentos.reduce(
-    (total, ap) => total + contarEsperadas(ap),
-    0
-  );
+      if (filtro === "esperadas") {
+        return (
+          esperadasAp > 0 &&
+          matchBusca
+        );
+      }
 
-  const totalOcorrencias = apartamentos.reduce(
-    (total, ap) => total + contarOcorrencias(ap),
-    0
-  );
+      if (filtro === "ocorrencias") {
+        return false;
+      }
+
+      return matchBusca;
+    });
+
+  const totalPendentes =
+    apartamentos.reduce(
+      (total, ap) =>
+        total +
+        contarPendentes(ap),
+      0
+    );
+
+  const totalEsperadas =
+    apartamentos.reduce(
+      (total, ap) =>
+        total +
+        contarEsperadas(ap),
+      0
+    );
+
+  const totalOcorrencias = 0;
+
 
   return (
     <>

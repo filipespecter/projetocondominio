@@ -1,654 +1,595 @@
-import { useState } from "react";
-import { registrarAuditoria } from "../../Services/auditoriaService";
-import { criarNotificacao } from "../../Services/notificacaoService";
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import noticeApi from "../../Services/noticeApi.js";
+import occurrenceApi from "../../Services/occurrenceApi.js";
+import apartmentApi from "../../Services/apartmentApi.js";
 
 function Avisos() {
-  const STORAGE_AVISOS = "avisos";
-  const STORAGE_CENTRAL = "avisos_sindico";
-  const STORAGE_SUGESTOES = "sugestoes_reclamacoes";
-  const STORAGE_OCORRENCIAS = "ocorrencias";
-  const STORAGE_VISITANTES = "visitantes";
-  const STORAGE_ENCOMENDAS = "encomendas";
-  const STORAGE_MOVIMENTACOES = "movimentacoes";
-  const STORAGE_RELATORIOS = "relatorios_operacionais";
-  const STORAGE_NOTIFICACOES_MORADOR = "notificacoesMorador";
-
   const estadoInicialAviso = {
     titulo: "",
     descricao: "",
     prioridade: "Média",
-    data: new Date().toLocaleDateString("pt-BR")
+    publico: "Todos",
+    apartamentoId: "",
+    statusPublicacao: "Publicado",
+    data:
+      new Date()
+        .toLocaleDateString(
+          "pt-BR"
+        ),
   };
 
-  const [avisos, setAvisos] = useState(() => carregarCentral());
-  const [mostrarModal, setMostrarModal] = useState(false);
-  const [busca, setBusca] = useState("");
-  const [filtroPrioridade, setFiltroPrioridade] = useState("Todas");
-  const [filtroCategoria, setFiltroCategoria] = useState("Todas");
-  const [novoAviso, setNovoAviso] = useState(estadoInicialAviso);
-  const [editId, setEditId] = useState(null);
-  const [respostaTexto, setRespostaTexto] = useState("");
+  const [avisos, setAvisos] =
+    useState([]);
 
-  function lerStorage(chave) {
-    try {
-      return JSON.parse(localStorage.getItem(chave)) || [];
-    } catch {
-      return [];
-    }
-  }
+  const [apartamentos, setApartamentos] =
+    useState([]);
 
-  function salvarStorage(chave, dados) {
-    localStorage.setItem(chave, JSON.stringify(dados));
-  }
+  const [mostrarModal, setMostrarModal] =
+    useState(false);
 
-  function carregarCentral() {
-    const avisosOficiais = lerStorage(STORAGE_AVISOS).map((item) => ({
+  const [busca, setBusca] =
+    useState("");
+
+  const [
+    filtroPrioridade,
+    setFiltroPrioridade,
+  ] = useState("Todas");
+
+  const [
+    filtroCategoria,
+    setFiltroCategoria,
+  ] = useState("Todas");
+
+  const [novoAviso, setNovoAviso] =
+    useState(
+      estadoInicialAviso
+    );
+
+  const [editId, setEditId] =
+    useState(null);
+
+  const [
+    respostaTexto,
+    setRespostaTexto,
+  ] = useState("");
+
+  const priorityFront = {
+    URGENT: "Urgente",
+    HIGH: "Alta",
+    NORMAL: "Média",
+    LOW: "Baixa",
+  };
+
+  const priorityBack = {
+    Urgente: "URGENT",
+    Alta: "HIGH",
+    Média: "NORMAL",
+    Baixa: "LOW",
+  };
+
+  const audienceFront = {
+    ALL: "Todos",
+    RESIDENTS: "Moradores",
+    DOORMEN: "Porteiros",
+    MANAGERS: "Gestão",
+    APARTMENT: "Apartamento",
+  };
+
+  const audienceBack = {
+    Todos: "ALL",
+    Moradores: "RESIDENTS",
+    Porteiros: "DOORMEN",
+    Gestão: "MANAGERS",
+    Apartamento: "APARTMENT",
+  };
+
+  const occurrenceTypeFront = {
+    COMPLAINT: "Reclamação",
+    SUGGESTION: "Sugestão",
+    REQUEST: "Solicitação",
+    SECURITY: "Ocorrência",
+    MAINTENANCE: "Ocorrência",
+    NOISE: "Ocorrência",
+    OTHER: "Ocorrência",
+  };
+
+  const occurrenceStatusFront = {
+    NEW: "Novo",
+    IN_REVIEW: "Em Tratamento",
+    IN_PROGRESS: "Em Tratamento",
+    RESOLVED: "Resolvido",
+    CLOSED: "Resolvido",
+    CANCELED: "Cancelado",
+  };
+
+  function mapNotice(item) {
+    return {
       ...item,
       categoria: "Aviso",
       origem: "Síndico",
-      status: item.status || "Publicado",
-      prioridade: item.prioridade || "Média",
-      responsavel: "Síndico",
-      cienciaSindico: true
-    }));
-
-    const centralManual = lerStorage(STORAGE_CENTRAL);
-
-    const sugestoes = lerStorage(STORAGE_SUGESTOES).map((item) => ({
-      ...item,
-      categoria: item.tipoRegistro || item.tipo || "Solicitação",
-      origem: "Morador",
-      status: item.status || "Novo",
-      prioridade: item.prioridade || "Média",
-      morador: item.moradorNome || item.morador || "",
-      responsavel: item.sindicoResponsavel || "",
-      cienciaSindico: item.lidaSindico || false
-    }));
-
-    const ocorrencias = lerStorage(STORAGE_OCORRENCIAS).map((item) => ({
-      ...item,
-      categoria: "Ocorrência",
-      origem: "Porteiro",
-      status: item.status || "Novo",
-      prioridade: item.prioridade || "Média",
-      responsavel: item.porteiroNome || "Porteiro",
-      cienciaSindico: item.lidaSindico || false
-    }));
-
-    const visitantes = lerStorage(STORAGE_VISITANTES).map((item) => ({
-      ...item,
-      id: item.id || Date.now(),
-      categoria: "Visitante",
-      origem: "Porteiro",
-      titulo: item.nome
-        ? `Visitante: ${item.nome}`
-        : "Registro de visitante",
+      titulo:
+        item.title ?? "",
       descricao:
-        item.observacao ||
-        item.motivo ||
-        `Visitante registrado para o apartamento ${item.apartamento || "-"}`,
-      prioridade: "Média",
-      status: item.statusSindico || item.status || "Novo",
-      responsavel: item.porteiroNome || "Porteiro",
-      cienciaSindico: item.cienciaSindico || false,
-      data: item.data || item.dataEntrada || new Date().toLocaleDateString("pt-BR")
-    }));
+        item.message ?? "",
+      prioridade:
+        priorityFront[
+          item.priority
+        ] ??
+        "Média",
+      status:
+        item.status ===
+          "DRAFT"
+          ? "Rascunho"
+          : item.status ===
+              "ARCHIVED"
+            ? "Arquivado"
+            : "Publicado",
+      publico:
+        audienceFront[
+          item.audience
+        ] ??
+        "Todos",
+      apartamentoId:
+        item.apartmentId ??
+        "",
+      data:
+        item.publishedAt ||
+        item.createdAt
+          ? new Date(
+              item.publishedAt ??
+              item.createdAt
+            ).toLocaleString(
+              "pt-BR"
+            )
+          : "",
+    };
+  }
 
-    const encomendas = lerStorage(STORAGE_ENCOMENDAS).map((item) => ({
+  function mapOccurrence(item) {
+    return {
       ...item,
-      id: item.id || Date.now(),
-      categoria: "Encomenda",
-      origem: "Porteiro",
-      titulo: item.destinatario
-        ? `Encomenda para ${item.destinatario}`
-        : "Registro de encomenda",
+      categoria:
+        occurrenceTypeFront[
+          item.type
+        ] ??
+        "Ocorrência",
+      origem:
+        item.createdBy?.role ===
+          "RESIDENT"
+          ? "Morador"
+          : item.createdBy?.role ===
+              "DOORMAN"
+            ? "Porteiro"
+            : "Sistema",
+      titulo:
+        item.title ??
+        "Ocorrência",
       descricao:
-        item.descricao ||
-        item.nome ||
-        `Encomenda registrada para o apartamento ${item.apartamento || "-"}`,
-      prioridade: "Baixa",
-      status: item.statusSindico || item.status || "Novo",
-      responsavel: item.porteiroNome || "Porteiro",
-      cienciaSindico: item.cienciaSindico || false,
-      data: item.data || new Date().toLocaleDateString("pt-BR")
-    }));
+        item.description ??
+        "",
+      prioridade:
+        priorityFront[
+          item.priority
+        ] ??
+        "Média",
+      status:
+        occurrenceStatusFront[
+          item.status
+        ] ??
+        item.status,
+      data:
+        item.createdAt
+          ? new Date(
+              item.createdAt
+            ).toLocaleString(
+              "pt-BR"
+            )
+          : "",
+      respostaSindico:
+        item.resolution ??
+        "",
+    };
+  }
 
-    const lista = [
-      ...centralManual,
-      ...avisosOficiais,
-      ...sugestoes,
-      ...ocorrencias,
-      ...visitantes,
-      ...encomendas
-    ];
+  async function carregarCentral() {
+    try {
+      const [
+        noticeData,
+        occurrenceData,
+        apartmentData,
+      ] = await Promise.all([
+        noticeApi.list(),
+        occurrenceApi.list(),
+        apartmentApi.list(),
+      ]);
 
-    const semDuplicados = lista.filter(
-      (item, index, self) =>
-        index === self.findIndex((x) => String(x.id) === String(item.id))
+      setApartamentos(
+        apartmentData ?? []
+      );
+
+      setAvisos(
+        [
+          ...(noticeData ?? [])
+            .map(mapNotice),
+          ...(occurrenceData ?? [])
+            .map(
+              mapOccurrence
+            ),
+        ].sort(
+          (a, b) =>
+            new Date(
+              b.createdAt ??
+              b.publishedAt ??
+              0
+            ) -
+            new Date(
+              a.createdAt ??
+              a.publishedAt ??
+              0
+            )
+        )
+      );
+    } catch (error) {
+      alert(
+        error?.message ??
+        "Não foi possível carregar a central de avisos."
+      );
+    }
+  }
+
+  useEffect(() => {
+    carregarCentral();
+  }, []);
+
+  const avisosFiltrados =
+    avisos.filter(
+      (a) => {
+        const texto =
+          busca
+            .trim()
+            .toLowerCase();
+
+        const correspondeBusca =
+          !texto ||
+          a.titulo
+            ?.toLowerCase()
+            .includes(texto) ||
+          a.descricao
+            ?.toLowerCase()
+            .includes(texto) ||
+          a.prioridade
+            ?.toLowerCase()
+            .includes(texto) ||
+          a.status
+            ?.toLowerCase()
+            .includes(texto) ||
+          a.categoria
+            ?.toLowerCase()
+            .includes(texto) ||
+          a.origem
+            ?.toLowerCase()
+            .includes(texto) ||
+          a.data
+            ?.toLowerCase()
+            .includes(texto);
+
+        const correspondePrioridade =
+          filtroPrioridade ===
+            "Todas" ||
+          a.prioridade ===
+            filtroPrioridade;
+
+        const correspondeCategoria =
+          filtroCategoria ===
+            "Todas" ||
+          a.categoria ===
+            filtroCategoria;
+
+        return (
+          correspondeBusca &&
+          correspondePrioridade &&
+          correspondeCategoria
+        );
+      }
     );
 
-    return semDuplicados.sort((a, b) => Number(b.id) - Number(a.id));
-  }
+  const alta =
+    avisos.filter(
+      (a) =>
+        [
+          "Alta",
+          "Urgente",
+        ].includes(
+          a.prioridade
+        )
+    ).length;
 
-  function atualizarCentral() {
-    setAvisos(carregarCentral());
-  }
+  const media =
+    avisos.filter(
+      (a) =>
+        a.prioridade ===
+        "Média"
+    ).length;
 
-  function registrarMovimentacao(tipo, origem, titulo) {
-    const movimentacoes = lerStorage(STORAGE_MOVIMENTACOES);
+  const baixa =
+    avisos.filter(
+      (a) =>
+        a.prioridade ===
+        "Baixa"
+    ).length;
 
-    const nova = {
-      id: Date.now(),
-      tipo,
-      origem,
-      titulo,
-      data: new Date().toLocaleDateString("pt-BR"),
-      hora: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      })
-    };
-
-    salvarStorage(STORAGE_MOVIMENTACOES, [nova, ...movimentacoes]);
-  }
-
-  function registrarRelatorio(tipo, origem, titulo) {
-    const relatorios = lerStorage(STORAGE_RELATORIOS);
-
-    const novo = {
-      id: Date.now(),
-      tipo,
-      origem,
-      titulo,
-      data: new Date().toLocaleDateString("pt-BR"),
-      hora: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      })
-    };
-
-    salvarStorage(STORAGE_RELATORIOS, [novo, ...relatorios]);
-  }
-
-  function registrarAuditoriaAvisos({ acao, modulo, detalhes = "", antes = null, depois = null, referenciaId = null }) {
-    registrarAuditoria({
-      acao,
-      modulo,
-      detalhes,
-      antes,
-      depois,
-      referenciaId
-    });
-  }
-
-  function criarNotificacaoGlobal({
-    titulo,
-    mensagem,
-    tipo = "Avisos",
-    perfilDestino = "sindico",
-    usuarioDestinoId = null,
-    usuarioDestinoNome = "",
-    usuarioDestinoUsuario = "",
-    apartamentoDestino = "",
-    condominioId = null,
-    referenciaId = null,
-    prioridade = "normal"
-  }) {
-    criarNotificacao({
-      titulo,
-      mensagem,
-      tipo,
-      origem: "Avisos",
-      perfilDestino,
-      usuarioDestinoId,
-      usuarioDestinoNome,
-      usuarioDestinoUsuario,
-      apartamentoDestino,
-      condominioId,
-      moduloOrigem: "Avisos",
-      referenciaId,
-      prioridade
-    });
-  }
-
-  const avisosFiltrados = avisos.filter((a) => {
-    const texto = busca.toLowerCase();
-
-    const correspondeBusca =
-      a.titulo?.toLowerCase().includes(texto) ||
-      a.descricao?.toLowerCase().includes(texto) ||
-      a.prioridade?.toLowerCase().includes(texto) ||
-      a.status?.toLowerCase().includes(texto) ||
-      a.categoria?.toLowerCase().includes(texto) ||
-      a.origem?.toLowerCase().includes(texto) ||
-      a.data?.toLowerCase().includes(texto);
-
-    const correspondePrioridade =
-      filtroPrioridade === "Todas" || a.prioridade === filtroPrioridade;
-
-    const correspondeCategoria =
-      filtroCategoria === "Todas" || a.categoria === filtroCategoria;
-
-    return correspondeBusca && correspondePrioridade && correspondeCategoria;
-  });
-
-  const alta = avisos.filter((a) => a.prioridade === "Alta").length;
-  const media = avisos.filter((a) => a.prioridade === "Média").length;
-  const baixa = avisos.filter((a) => a.prioridade === "Baixa").length;
-
-  function salvarAviso() {
-    if (!novoAviso.titulo || !novoAviso.descricao) {
-      alert("Preencha todos os campos");
+  async function salvarAviso() {
+    if (
+      !novoAviso.titulo.trim() ||
+      !novoAviso.descricao.trim()
+    ) {
+      alert(
+        "Preencha título e descrição."
+      );
       return;
     }
 
-    const listaAvisos = lerStorage(STORAGE_AVISOS);
-    let listaAtualizada = [];
+    const audience =
+      audienceBack[
+        novoAviso.publico
+      ] ??
+      "ALL";
 
-    if (editId !== null) {
-      listaAtualizada = listaAvisos.map((a) =>
-        a.id === editId
-          ? {
-              ...a,
-              ...novoAviso,
-              id: editId,
-              categoria: "Aviso",
-              origem: "Síndico",
-              status: "Publicado",
-              cienciaSindico: true
-            }
-          : a
+    if (
+      audience ===
+        "APARTMENT" &&
+      !novoAviso.apartamentoId
+    ) {
+      alert(
+        "Selecione o apartamento destinatário."
       );
-
-      const avisoEditado = listaAtualizada.find((a) => a.id === editId);
-
-      registrarAuditoriaAvisos({
-        acao: "Editou aviso oficial",
-        modulo: "Avisos",
-        detalhes: novoAviso.titulo,
-        depois: avisoEditado,
-        referenciaId: editId
-      });
-
-      criarNotificacaoGlobal({
-        titulo: "Aviso oficial atualizado",
-        mensagem: novoAviso.titulo,
-        tipo: "Aviso",
-        perfilDestino: "morador",
-        referenciaId: editId
-      });
-
-      setEditId(null);
-    } else {
-      const novo = {
-        id: Date.now(),
-        categoria: "Aviso",
-        origem: "Síndico",
-        titulo: novoAviso.titulo,
-        descricao: novoAviso.descricao,
-        prioridade: novoAviso.prioridade,
-        status: "Publicado",
-        respostaSindico: "",
-        cienciaSindico: true,
-        data: new Date().toLocaleDateString("pt-BR")
-      };
-
-      listaAtualizada = [novo, ...listaAvisos];
-
-      registrarMovimentacao("Aviso", "Síndico", novo.titulo);
-      registrarRelatorio("Aviso", "Síndico", novo.titulo);
-
-      registrarAuditoriaAvisos({
-        acao: "Publicou aviso oficial",
-        modulo: "Avisos",
-        detalhes: novo.titulo,
-        depois: novo,
-        referenciaId: novo.id
-      });
-
-      criarNotificacaoGlobal({
-        titulo: novo.titulo,
-        mensagem: novo.descricao,
-        tipo: "Aviso",
-        perfilDestino: "morador",
-        referenciaId: novo.id,
-        prioridade: novo.prioridade === "Alta" ? "alta" : "normal"
-      });
+      return;
     }
 
-    salvarStorage(STORAGE_AVISOS, listaAtualizada);
+    const payload = {
+      title:
+        novoAviso.titulo.trim(),
+      message:
+        novoAviso.descricao.trim(),
+      category:
+        "Aviso",
+      priority:
+        priorityBack[
+          novoAviso.prioridade
+        ] ??
+        "NORMAL",
+      audience,
+      apartmentId:
+        audience ===
+        "APARTMENT"
+          ? novoAviso.apartamentoId
+          : null,
+      status:
+        novoAviso
+          .statusPublicacao ===
+          "Rascunho"
+          ? "DRAFT"
+          : "PUBLISHED",
+      expiresAt: null,
+    };
 
-    setNovoAviso(estadoInicialAviso);
-    setMostrarModal(false);
-    atualizarCentral();
+    try {
+      if (editId) {
+        await noticeApi.update(
+          editId,
+          payload
+        );
+      } else {
+        await noticeApi.create(
+          payload
+        );
+      }
+
+      fecharModal();
+      await carregarCentral();
+    } catch (error) {
+      alert(
+        error?.message ??
+        "Não foi possível salvar o aviso."
+      );
+    }
   }
 
   function editarAviso(aviso) {
-    if (aviso.categoria !== "Aviso") {
-      alert("Apenas avisos oficiais podem ser editados por este botão.");
+    if (
+      aviso.categoria !==
+      "Aviso"
+    ) {
       return;
     }
+
+    setEditId(
+      aviso.id
+    );
 
     setNovoAviso({
       ...estadoInicialAviso,
-      ...aviso
+      titulo:
+        aviso.titulo,
+      descricao:
+        aviso.descricao,
+      prioridade:
+        aviso.prioridade,
+      publico:
+        aviso.publico ??
+        "Todos",
+      apartamentoId:
+        aviso.apartamentoId ??
+        "",
+      statusPublicacao:
+        aviso.status ===
+          "Rascunho"
+          ? "Rascunho"
+          : "Publicado",
     });
 
-    setEditId(aviso.id);
-    setMostrarModal(true);
+    setMostrarModal(
+      true
+    );
   }
 
-  function excluirAviso(id) {
-    const confirmar = window.confirm("Deseja realmente excluir este aviso?");
-
-    if (!confirmar) return;
-
-    const avisoAntes = lerStorage(STORAGE_AVISOS).find((a) => a.id === id);
-    const listaAvisos = lerStorage(STORAGE_AVISOS).filter((a) => a.id !== id);
-
-    salvarStorage(STORAGE_AVISOS, listaAvisos);
-
-    registrarAuditoriaAvisos({
-      acao: "Excluiu aviso oficial",
-      modulo: "Avisos",
-      detalhes: avisoAntes?.titulo || "Aviso excluído",
-      antes: avisoAntes,
-      referenciaId: id
-    });
-
-    atualizarCentral();
-  }
-
-  function atualizarStatus(item, novoStatus) {
-    const agora = new Date();
-
-    if (item.categoria === "Sugestão" || item.categoria === "Reclamação") {
-      const lista = lerStorage(STORAGE_SUGESTOES).map((registro) =>
-        registro.id === item.id
-          ? {
-              ...registro,
-              status: novoStatus,
-              lidaSindico: true,
-              dataResolucao:
-                novoStatus === "Resolvido"
-                  ? agora.toLocaleDateString("pt-BR")
-                  : registro.dataResolucao,
-              horaResolucao:
-                novoStatus === "Resolvido"
-                  ? agora.toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit"
-                    })
-                  : registro.horaResolucao
-            }
-          : registro
-      );
-
-      salvarStorage(STORAGE_SUGESTOES, lista);
-    }
-
-    if (item.categoria === "Ocorrência") {
-      const lista = lerStorage(STORAGE_OCORRENCIAS).map((registro) =>
-        registro.id === item.id
-          ? {
-              ...registro,
-              status: novoStatus,
-              lidaSindico: true,
-              dataResolucao:
-                novoStatus === "Resolvido"
-                  ? agora.toLocaleDateString("pt-BR")
-                  : registro.dataResolucao,
-              horaResolucao:
-                novoStatus === "Resolvido"
-                  ? agora.toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit"
-                    })
-                  : registro.horaResolucao
-            }
-          : registro
-      );
-
-      salvarStorage(STORAGE_OCORRENCIAS, lista);
-    }
-
-    if (item.categoria === "Visitante") {
-      const lista = lerStorage(STORAGE_VISITANTES).map((registro) =>
-        registro.id === item.id
-          ? {
-              ...registro,
-              statusSindico: novoStatus,
-              cienciaSindico: true
-            }
-          : registro
-      );
-
-      salvarStorage(STORAGE_VISITANTES, lista);
-    }
-
-    if (item.categoria === "Encomenda") {
-      const lista = lerStorage(STORAGE_ENCOMENDAS).map((registro) =>
-        registro.id === item.id
-          ? {
-              ...registro,
-              statusSindico: novoStatus,
-              cienciaSindico: true
-            }
-          : registro
-      );
-
-      salvarStorage(STORAGE_ENCOMENDAS, lista);
-    }
-
-    registrarAuditoriaAvisos({
-      acao: "Alterou status na central",
-      modulo: item.categoria,
-      detalhes: `${item.titulo} - ${novoStatus}`,
-      antes: item,
-      depois: { ...item, status: novoStatus },
-      referenciaId: item.id
-    });
-
-    if (item.categoria !== "Notificação") {
-      criarNotificacaoGlobal({
-        titulo: item.titulo,
-        mensagem: `Status alterado para ${novoStatus}`,
-        tipo: item.categoria,
-        perfilDestino:
-          item.categoria === "Sugestão" || item.categoria === "Reclamação"
-            ? "morador"
-            : "sindico",
-        usuarioDestinoId:
-          item.categoria === "Sugestão" || item.categoria === "Reclamação"
-            ? item.moradorId || null
-            : null,
-        usuarioDestinoNome:
-          item.categoria === "Sugestão" || item.categoria === "Reclamação"
-            ? item.moradorNome || item.morador || ""
-            : "",
-        usuarioDestinoUsuario:
-          item.categoria === "Sugestão" || item.categoria === "Reclamação"
-            ? item.moradorUsuario || ""
-            : "",
-        apartamentoDestino:
-          item.categoria === "Sugestão" || item.categoria === "Reclamação"
-            ? item.apartamento || item.apto || ""
-            : "",
-        condominioId: item.condominioId || null,
-        referenciaId: item.id,
-        prioridade: novoStatus === "Resolvido" ? "baixa" : "normal"
-      });
-    }
-
-    registrarMovimentacao(item.categoria, "Síndico", `${item.titulo} - ${novoStatus}`);
-    registrarRelatorio(item.categoria, "Síndico", `${item.titulo} - ${novoStatus}`);
-
-    atualizarCentral();
-  }
-
-  function responderItem(item) {
-    if (!respostaTexto.trim()) {
-      alert("Digite uma resposta antes de salvar.");
+  async function excluirAviso(id) {
+    if (
+      !window.confirm(
+        "Deseja excluir este aviso?"
+      )
+    ) {
       return;
     }
 
-    const agora = new Date();
-
-    const resposta = {
-      id: Date.now(),
-      texto: respostaTexto,
-      autor: "Síndico",
-      data: agora.toLocaleDateString("pt-BR"),
-      hora: agora.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      })
-    };
-
-    if (item.categoria === "Sugestão" || item.categoria === "Reclamação") {
-      const lista = lerStorage(STORAGE_SUGESTOES).map((registro) =>
-        registro.id === item.id
-          ? {
-              ...registro,
-              respostaSindico: respostaTexto,
-              respostasSindico: [...(registro.respostasSindico || []), resposta],
-              lidaSindico: true,
-              status:
-                registro.status === "Novo" || registro.status === "Ciente"
-                  ? "Em Tratamento"
-                  : registro.status,
-              dataResposta: agora.toLocaleString()
-            }
-          : registro
+    try {
+      await noticeApi.remove(id);
+      await carregarCentral();
+    } catch (error) {
+      alert(
+        error?.message ??
+        "Não foi possível excluir o aviso."
       );
+    }
+  }
 
-      salvarStorage(STORAGE_SUGESTOES, lista);
-
-      const notificacoes = lerStorage(STORAGE_NOTIFICACOES_MORADOR);
-      const novaNotificacao = {
-        id: Date.now(),
-        tipo: item.categoria,
-        titulo: `Resposta do síndico: ${item.titulo}`,
-        descricao: respostaTexto,
-        apartamento: item.apartamento || item.apto || "",
-        apartamentoId: item.apartamentoId || null,
-        morador: item.morador || item.moradorNome || "",
-        moradorId: item.moradorId || null,
-        moradorUsuario: item.moradorUsuario || "",
-        condominioId: item.condominioId || null,
-        referenciaId: item.id,
-        lida: false,
-        data: agora.toLocaleDateString("pt-BR"),
-        hora: agora.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit"
-        })
-      };
-
-      salvarStorage(STORAGE_NOTIFICACOES_MORADOR, [
-        novaNotificacao,
-        ...notificacoes
-      ]);
+  async function atualizarStatus(
+    item,
+    novoStatus
+  ) {
+    if (
+      item.categoria ===
+      "Aviso"
+    ) {
+      return;
     }
 
-    if (item.categoria === "Ocorrência") {
-      const lista = lerStorage(STORAGE_OCORRENCIAS).map((registro) =>
-        registro.id === item.id
-          ? {
-              ...registro,
-              respostaSindico: respostaTexto,
-              respostasSindico: [...(registro.respostasSindico || []), resposta],
-              lidaSindico: true,
-              status:
-                registro.status === "Novo" || registro.status === "Ciente"
-                  ? "Em Tratamento"
-                  : registro.status
-            }
-          : registro
-      );
+    try {
+      if (
+        novoStatus ===
+        "Ciente"
+      ) {
+        await occurrenceApi
+          .markReadManager?.(
+            item.id
+          );
+      } else if (
+        novoStatus ===
+        "Em Tratamento"
+      ) {
+        await occurrenceApi
+          .markInReview(
+            item.id
+          );
+      } else if (
+        novoStatus ===
+        "Resolvido"
+      ) {
+        const resolution =
+          respostaTexto.trim() ||
+          window.prompt(
+            "Informe a resolução:"
+          );
 
-      salvarStorage(STORAGE_OCORRENCIAS, lista);
+        if (
+          !resolution ||
+          resolution.trim().length <
+            2
+        ) {
+          return;
+        }
+
+        await occurrenceApi
+          .resolve(
+            item.id,
+            resolution.trim()
+          );
+
+        setRespostaTexto("");
+      }
+
+      await carregarCentral();
+    } catch (error) {
+      alert(
+        error?.message ??
+        "Não foi possível atualizar a ocorrência."
+      );
+    }
+  }
+
+  async function responderItem(
+    item
+  ) {
+    if (
+      !respostaTexto.trim()
+    ) {
+      alert(
+        "Digite a resposta ou resolução."
+      );
+      return;
     }
 
-    registrarMovimentacao(item.categoria, "Síndico", `Resposta: ${item.titulo}`);
-    registrarRelatorio(item.categoria, "Síndico", `Resposta: ${item.titulo}`);
+    try {
+      await occurrenceApi
+        .resolve(
+          item.id,
+          respostaTexto.trim()
+        );
 
-    registrarAuditoriaAvisos({
-      acao: "Respondeu item da central",
-      modulo: item.categoria,
-      detalhes: item.titulo,
-      depois: resposta,
-      referenciaId: item.id
-    });
-
-    criarNotificacaoGlobal({
-      titulo: `Resposta do síndico: ${item.titulo}`,
-      mensagem: respostaTexto,
-      tipo: item.categoria,
-      perfilDestino: item.categoria === "Ocorrência" ? "sindico" : "morador",
-      usuarioDestinoId:
-        item.categoria === "Ocorrência" ? null : item.moradorId || null,
-      usuarioDestinoNome:
-        item.categoria === "Ocorrência"
-          ? ""
-          : item.moradorNome || item.morador || "",
-      usuarioDestinoUsuario:
-        item.categoria === "Ocorrência" ? "" : item.moradorUsuario || "",
-      apartamentoDestino:
-        item.categoria === "Ocorrência"
-          ? ""
-          : item.apartamento || item.apto || "",
-      condominioId: item.condominioId || null,
-      referenciaId: item.id
-    });
-
-    setRespostaTexto("");
-    atualizarCentral();
+      setRespostaTexto("");
+      await carregarCentral();
+    } catch (error) {
+      alert(
+        error?.message ??
+        "Não foi possível responder a solicitação."
+      );
+    }
   }
 
   function fecharModal() {
     setMostrarModal(false);
     setEditId(null);
-    setNovoAviso(estadoInicialAviso);
+    setNovoAviso(
+      estadoInicialAviso
+    );
   }
 
   function corPrioridade(prioridade) {
     switch (prioridade) {
-      case "Alta":
       case "Urgente":
         return {
+          label: "Urgente",
           background: "#fee2e2",
-          color: "#b91c1c",
-          border: "#fecaca",
-          icon: "🚨",
-          label: prioridade === "Urgente" ? "Urgente" : "Alta prioridade"
+          color: "#991b1b",
+          border: "#ef4444"
         };
 
-      case "Média":
+      case "Alta":
         return {
-          background: "#fef3c7",
-          color: "#92400e",
-          border: "#fde68a",
-          icon: "⚠️",
-          label: "Média prioridade"
+          label: "Alta",
+          background: "#ffedd5",
+          color: "#9a3412",
+          border: "#fb923c"
         };
 
       case "Baixa":
         return {
+          label: "Baixa",
           background: "#dcfce7",
           color: "#166534",
-          border: "#bbf7d0",
-          icon: "✅",
-          label: "Baixa prioridade"
+          border: "#86efac"
         };
 
       default:
         return {
-          background: "#f3f4f6",
-          color: "#374151",
-          border: "#e5e7eb",
-          icon: "📢",
-          label: prioridade || "Sem prioridade"
+          label: "Média",
+          background: "#fef3c7",
+          color: "#92400e",
+          border: "#fde68a"
         };
     }
   }
@@ -657,32 +598,32 @@ function Avisos() {
     switch (categoria) {
       case "Aviso":
         return "📢";
-      case "Encomenda":
-        return "📦";
-      case "Ocorrência":
-        return "📘";
-      case "Visitante":
-        return "🧾";
       case "Reclamação":
         return "⚠️";
       case "Sugestão":
         return "💡";
+      case "Solicitação":
+        return "📝";
       default:
-        return "📌";
+        return "📋";
     }
   }
 
   return (
     <div style={styles.container}>
       <section style={styles.hero}>
-        <div style={styles.heroLeft}>
-          <span style={styles.heroBadge}>📢 Central de comunicação</span>
+        <div>
+          <span style={styles.heroBadge}>
+            📢 Central de comunicação
+          </span>
 
           <h1 style={styles.title}>Avisos</h1>
 
           <p style={styles.subtitle}>
-            Publique comunicados, acompanhe ocorrências, sugestões,
-            reclamações, encomendas e visitantes em uma única central.
+            Publique comunicados e acompanhe ocorrências,
+            sugestões e reclamações em uma única central.
+            Encomendas, visitantes e demais eventos aparecem
+            na Central de Notificações.
           </p>
         </div>
 
@@ -711,7 +652,9 @@ function Avisos() {
             style={styles.heroButton}
             onClick={() => {
               setEditId(null);
-              setNovoAviso(estadoInicialAviso);
+              setNovoAviso(
+                estadoInicialAviso
+              );
               setMostrarModal(true);
             }}
           >
@@ -727,14 +670,22 @@ function Avisos() {
           <input
             placeholder="Buscar por título, descrição, data, status, categoria ou prioridade..."
             value={busca}
-            onChange={(e) => setBusca(e.target.value)}
+            onChange={(e) =>
+              setBusca(
+                e.target.value
+              )
+            }
             style={styles.search}
           />
         </div>
 
         <select
           value={filtroPrioridade}
-          onChange={(e) => setFiltroPrioridade(e.target.value)}
+          onChange={(e) =>
+            setFiltroPrioridade(
+              e.target.value
+            )
+          }
           style={styles.filter}
         >
           <option>Todas</option>
@@ -746,16 +697,19 @@ function Avisos() {
 
         <select
           value={filtroCategoria}
-          onChange={(e) => setFiltroCategoria(e.target.value)}
+          onChange={(e) =>
+            setFiltroCategoria(
+              e.target.value
+            )
+          }
           style={styles.filter}
         >
           <option>Todas</option>
           <option>Aviso</option>
-          <option>Encomenda</option>
           <option>Ocorrência</option>
-          <option>Visitante</option>
           <option>Reclamação</option>
           <option>Sugestão</option>
+          <option>Solicitação</option>
         </select>
 
         <div style={styles.compactStats}>
@@ -789,8 +743,7 @@ function Avisos() {
             <h3 style={styles.emptyTitle}>Nenhum registro encontrado</h3>
 
             <p style={styles.emptyText}>
-              Avisos, ocorrências, reclamações, sugestões, visitantes e
-              encomendas aparecerão aqui.
+              Avisos, ocorrências, reclamações e sugestões aparecerão aqui.
             </p>
 
             <button
@@ -850,10 +803,11 @@ function Avisos() {
 
                   {(aviso.categoria === "Sugestão" ||
                     aviso.categoria === "Reclamação" ||
+                    aviso.categoria === "Solicitação" ||
                     aviso.categoria === "Ocorrência") && (
                     <div style={styles.responseArea}>
                       <textarea
-                        placeholder="Resposta ou comentário do síndico..."
+                        placeholder="Resposta ou resolução da administração..."
                         value={respostaTexto}
                         onChange={(e) => setRespostaTexto(e.target.value)}
                         style={styles.responseInput}
@@ -987,9 +941,86 @@ function Avisos() {
                     }
                     style={styles.input}
                   >
+                    <option>Urgente</option>
                     <option>Alta</option>
                     <option>Média</option>
                     <option>Baixa</option>
+                  </select>
+                </div>
+
+                <div style={styles.groupFull}>
+                  <label style={styles.label}>Público</label>
+
+                  <select
+                    value={novoAviso.publico}
+                    onChange={(e) =>
+                      setNovoAviso({
+                        ...novoAviso,
+                        publico: e.target.value,
+                        apartamentoId:
+                          e.target.value === "Apartamento"
+                            ? novoAviso.apartamentoId
+                            : ""
+                      })
+                    }
+                    style={styles.input}
+                  >
+                    <option>Todos</option>
+                    <option>Moradores</option>
+                    <option>Porteiros</option>
+                    <option>Gestão</option>
+                    <option>Apartamento</option>
+                  </select>
+                </div>
+
+                {novoAviso.publico === "Apartamento" && (
+                  <div style={styles.groupFull}>
+                    <label style={styles.label}>Apartamento</label>
+
+                    <select
+                      value={novoAviso.apartamentoId}
+                      onChange={(e) =>
+                        setNovoAviso({
+                          ...novoAviso,
+                          apartamentoId: e.target.value
+                        })
+                      }
+                      style={styles.input}
+                    >
+                      <option value="">
+                        Selecione
+                      </option>
+
+                      {apartamentos.map((ap) => (
+                        <option
+                          key={ap.id}
+                          value={ap.id}
+                        >
+                          {ap.block
+                            ? `${ap.block} - `
+                            : ""}
+                          {ap.number}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div style={styles.groupFull}>
+                  <label style={styles.label}>Publicação</label>
+
+                  <select
+                    value={novoAviso.statusPublicacao}
+                    onChange={(e) =>
+                      setNovoAviso({
+                        ...novoAviso,
+                        statusPublicacao: e.target.value
+                      })
+                    }
+                    style={styles.input}
+                  >
+                    <option>Publicado</option>
+                    <option>Rascunho</option>
                   </select>
                 </div>
               </div>

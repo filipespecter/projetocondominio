@@ -1,461 +1,193 @@
 import { useEffect, useState } from "react";
-import { registrarAuditoria } from "../../Services/auditoriaService";
-import { criarNotificacao } from "../../Services/notificacaoService";
+import { me as getAuthenticatedUser } from "../../Services/authApi.js";
+import packageApi from "../../Services/packageApi.js";
+import PackagePickupModal from "../../components/Porteiro/PackagePickupModal.jsx";
 
 import ApartmentGrid from "../../components/Porteiro/ApartmentGrid";
 
 function EncomendasPorteiro() {
-  const STORAGE_ENCOMENDAS = "encomendas";
-  const STORAGE_ESPERADAS = "encomendas_esperadas";
-  const STORAGE_AVISOS_SINDICO = "avisos_sindico";
-  const STORAGE_NOTIFICACOES = "notificacoesMorador";
-  const STORAGE_HISTORICO = "encomendas_historico";
-  const STORAGE_MOVIMENTACOES = "movimentacoes";
-  const STORAGE_RELATORIOS = "relatorios_operacionais";
-
-  const [esperadas, setEsperadas] = useState([]);
   const [encomendas, setEncomendas] = useState([]);
   const [porteiro, setPorteiro] = useState(null);
+  const [pickupMethod, setPickupMethod] = useState(null);
+
+  function mapPackage(item, residentList = []) {
+    const resident =
+      item.expectedByResident ??
+      item.resident ??
+      residentList.find(
+        (r) =>
+          String(r.id) ===
+          String(
+            item.expectedByResidentId ??
+            item.residentId ??
+            ""
+          )
+      ) ??
+      residentList.find(
+        (r) =>
+          String(r.apartamentoId) ===
+          String(item.apartmentId)
+      );
+
+    const user =
+      resident?.user ??
+      resident ??
+      {};
+
+    const statusMap = {
+      EXPECTED: "Aguardando",
+      RECEIVED: "Recebido",
+      DELIVERED: "Entregue",
+      CANCELED: "Cancelado",
+    };
+
+    return {
+      ...item,
+      codigoInterno:
+        item.internalCode ??
+        "",
+      codigoRastreio:
+        item.trackingCode ??
+        "",
+      codigo:
+        item.trackingCode ??
+        "",
+      rastreio:
+        item.trackingCode ??
+        "",
+      apartamento:
+        item.apartment?.number ??
+        resident?.apartment?.number ??
+        resident?.apartamento ??
+        "",
+      apartamentoId:
+        item.apartmentId ??
+        item.apartment?.id ??
+        null,
+      moradorId:
+        resident?.id ??
+        null,
+      morador:
+        user.name ??
+        resident?.nome ??
+        "Morador",
+      nome:
+        user.name ??
+        resident?.nome ??
+        "Morador",
+      tipo:
+        item.type ??
+        "Encomenda",
+      descricao:
+        item.description ??
+        item.type ??
+        "Encomenda",
+      transportadora:
+        item.carrier ??
+        "",
+      status:
+        statusMap[item.status] ??
+        item.status ??
+        "Recebido",
+      data:
+        item.receivedAt
+          ? new Date(item.receivedAt).toLocaleString("pt-BR")
+          : item.createdAt
+            ? new Date(item.createdAt).toLocaleString("pt-BR")
+            : "",
+      dataRecebimento:
+        item.receivedAt
+          ? new Date(item.receivedAt).toLocaleDateString("pt-BR")
+          : "",
+      retiradaEm:
+        item.deliveredAt
+          ? new Date(item.deliveredAt).toLocaleString("pt-BR")
+          : "",
+      retiradoPor:
+        item.withdrawnBy ??
+        "",
+      porteiroRecebimento:
+        item.receivedBy?.name ??
+        item.receivedBy?.user?.name ??
+        "",
+    };
+  }
+
+  async function atualizarTela() {
+    try {
+      const [
+        user,
+        data,
+      ] = await Promise.all([
+        getAuthenticatedUser(),
+        packageApi.list(),
+      ]);
+
+      setPorteiro({
+        ...user,
+        nome:
+          user?.name ??
+          "Porteiro",
+      });
+
+      const mapped =
+        (data ?? []).map(
+          (item) =>
+            mapPackage(item)
+        );
+
+      setEncomendas(mapped);
+    } catch (error) {
+      alert(
+        error?.message ??
+        "Não foi possível carregar encomendas."
+      );
+    }
+  }
 
   useEffect(() => {
-    carregarSessao();
-    carregarEsperadas();
-    carregarEncomendas();
-
-    const sincronizar = () => {
-      carregarEsperadas();
-      carregarEncomendas();
-    };
-
-    window.addEventListener("storage", sincronizar);
-    window.addEventListener(
-      "infinitycondo:encomendas",
-      sincronizar
-    );
-
-    return () => {
-      window.removeEventListener("storage", sincronizar);
-      window.removeEventListener(
-        "infinitycondo:encomendas",
-        sincronizar
-      );
-    };
+    atualizarTela();
   }, []);
 
-  function lerStorage(chave) {
-    try {
-      const dados = localStorage.getItem(chave);
-      return dados ? JSON.parse(dados) : [];
-    } catch {
-      return [];
-    }
-  }
+  const pendentes =
+    encomendas.filter(
+      (e) =>
+        e.status === "Recebido"
+    );
 
-  function salvarStorage(chave, dados) {
-    localStorage.setItem(chave, JSON.stringify(dados));
+  const retiradas =
+    encomendas.filter(
+      (e) =>
+        e.status === "Entregue"
+    );
 
-    if (
-      chave === "encomendas" ||
-      chave === "encomendas_esperadas" ||
-      chave === "encomendas_historico"
-    ) {
-      window.dispatchEvent(
-        new CustomEvent("infinitycondo:encomendas", {
-          detail: { chave }
-        })
+  const recebidasHoje =
+    encomendas.filter((e) => {
+      if (!e.dataRecebimento) {
+        return false;
+      }
+
+      return (
+        e.dataRecebimento ===
+        new Date().toLocaleDateString(
+          "pt-BR"
+        )
       );
-    }
-  }
-
-  function gerarIdUnico() {
-    return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-  }
-
-  function normalizarCodigo(valor) {
-    const limpo = String(valor || "")
-      .trim()
-      .replace(/\s+/g, "")
-      .replace(/[^a-zA-Z0-9._-]/g, "")
-      .toUpperCase();
-
-    return limpo;
-  }
-
-  function obterCodigoRastreio(item = {}) {
-    const valor =
-      item.codigoRastreio ||
-      item.rastreio ||
-      item.codigo ||
-      "";
-
-    if (
-      String(valor).toLowerCase() === "não informado" ||
-      String(valor).toLowerCase() === "nao informado"
-    ) {
-      return "";
-    }
-
-    return normalizarCodigo(valor);
-  }
-
-  function normalizarStatus(status) {
-    const valor = String(status || "")
-      .trim()
-      .toLowerCase();
-
-    if (
-      valor === "entregue" ||
-      valor === "retirada" ||
-      valor === "retirado"
-    ) {
-      return "Entregue";
-    }
-
-    if (valor === "atrasado") {
-      return "Atrasado";
-    }
-
-    if (
-      valor === "aguardando" ||
-      valor === "esperada" ||
-      valor === "esperado"
-    ) {
-      return "Aguardando";
-    }
-
-    return "Recebido";
-  }
-
-  function carregarSessao() {
-    const sessao =
-      localStorage.getItem("sessaoPorteiro") ||
-      sessionStorage.getItem("sessaoPorteiro");
-
-    try {
-      const usuario = sessao ? JSON.parse(sessao) : null;
-      setPorteiro(usuario);
-    } catch {
-      setPorteiro(null);
-    }
-  }
-
-  function carregarEsperadas() {
-    setEsperadas(lerStorage(STORAGE_ESPERADAS));
-  }
-
-  function carregarEncomendas() {
-    const lista = lerStorage(STORAGE_ENCOMENDAS);
-
-    setEncomendas(
-      lista.map((item) => ({
-        ...item,
-        codigoRastreio: obterCodigoRastreio(item),
-        rastreio: obterCodigoRastreio(item),
-        codigo: obterCodigoRastreio(item),
-        status: normalizarStatus(item.status)
-      }))
-    );
-  }
-
-  function registrarAuditoriaEncomenda(acao, encomenda, antes = null) {
-    registrarAuditoria({
-      acao,
-      modulo: "Encomendas Porteiro",
-      detalhes: `${encomenda?.tipo || "Encomenda"} • Apto ${encomenda?.apartamento || "-"}`,
-      antes,
-      depois: encomenda,
-      referenciaId: encomenda?.id || null
     });
-  }
 
-  function criarNotificacaoSindico(encomenda, titulo, mensagem, prioridade = "normal") {
-    criarNotificacao({
-      titulo,
-      mensagem,
-      tipo: "Encomendas",
-      origem: "Porteiro",
-      perfilDestino: "sindico",
-      moduloOrigem: "EncomendasPorteiro",
-      referenciaId: encomenda?.id || null,
-      prioridade
+  const retiradasHoje =
+    encomendas.filter((e) => {
+      if (!e.retiradaEm) {
+        return false;
+      }
+
+      return e.retiradaEm.includes(
+        new Date().toLocaleDateString(
+          "pt-BR"
+        )
+      );
     });
-  }
 
-  function atualizarTela() {
-    carregarEncomendas();
-    carregarEsperadas();
-  }
-
-  const pendentes = encomendas.filter((e) => {
-    const status = String(e.status || "").toLowerCase();
-
-    return (
-      status === "pendente" ||
-      status === "recebido" ||
-      status === "aguardando" ||
-      status === "aguardando retirada" ||
-      status === "atrasado"
-    );
-  });
-
-  const retiradas = encomendas.filter((e) => {
-    const status = String(e.status || "").toLowerCase();
-
-    return (
-      status === "retirada" ||
-      status === "retirado" ||
-      status === "entregue"
-    );
-  });
-
-  const recebidasHoje = encomendas.filter((e) => {
-    if (!e.dataRecebimento && !e.data) return false;
-
-    const hoje = new Date().toLocaleDateString("pt-BR");
-
-    return (
-      e.dataRecebimento === hoje ||
-      e.data?.includes(hoje)
-    );
-  });
-
-  const retiradasHoje = encomendas.filter((e) => {
-    if (!e.retiradaEm) return false;
-
-    const hoje = new Date().toLocaleDateString("pt-BR");
-
-    return e.retiradaEm.includes(hoje);
-  });
-
-  function registrarAvisoSindico(encomenda) {
-    const avisos = lerStorage(STORAGE_AVISOS_SINDICO);
-
-    const novoAviso = {
-      id: encomenda.id,
-      categoria: "Encomenda",
-      origem: "Porteiro",
-      titulo: `Encomenda recebida - Apto ${encomenda.apartamento}`,
-      descricao: encomenda.descricao,
-      apartamento: encomenda.apartamento,
-      apartamentoId: encomenda.apartamentoId || null,
-      morador: encomenda.morador,
-      responsavel: encomenda.porteiroRecebimento,
-      status: "Novo",
-      respostaSindico: "",
-      cienciaSindico: false,
-      data: encomenda.dataRecebimento
-    };
-
-    salvarStorage(STORAGE_AVISOS_SINDICO, [
-      novoAviso,
-      ...avisos
-    ]);
-  }
-
-  function notificarMorador(encomenda) {
-    const notificacoes = lerStorage(STORAGE_NOTIFICACOES);
-
-    const novaNotificacao = {
-      id: gerarIdUnico(),
-      tipo: "Encomenda",
-      titulo: "Encomenda recebida na portaria",
-      descricao: `Sua encomenda ${encomenda.tipo || ""} foi recebida e está aguardando retirada na portaria.`,
-      morador: encomenda.morador,
-      moradorId: encomenda.moradorId || null,
-      apartamento: encomenda.apartamento,
-      apartamentoId: encomenda.apartamentoId || null,
-      lida: false,
-      data: encomenda.dataRecebimento,
-      hora: encomenda.horaRecebimento
-    };
-
-    salvarStorage(STORAGE_NOTIFICACOES, [
-      novaNotificacao,
-      ...notificacoes
-    ]);
-  }
-
-  function registrarHistorico(encomenda, origemEsperada) {
-    const historico = lerStorage(STORAGE_HISTORICO);
-
-    const novoHistorico = {
-      id: gerarIdUnico(),
-      encomendaId: encomenda.id,
-      encomendaEsperadaId: origemEsperada?.id || null,
-      acao: "recebimento_confirmado",
-      origem: "Porteiro",
-      morador: encomenda.morador,
-      moradorId: encomenda.moradorId || null,
-      apartamento: encomenda.apartamento,
-      apartamentoId: encomenda.apartamentoId || null,
-      descricao: encomenda.descricao,
-      tipo: encomenda.tipo,
-      codigo: obterCodigoRastreio(encomenda),
-      codigoRastreio: obterCodigoRastreio(encomenda),
-      rastreio: obterCodigoRastreio(encomenda),
-      codigoInterno: encomenda.codigoInterno || "",
-      transportadora: encomenda.transportadora,
-      status: encomenda.status,
-      porteiro: encomenda.porteiroRecebimento,
-      data: encomenda.dataRecebimento,
-      hora: encomenda.horaRecebimento
-    };
-
-    salvarStorage(STORAGE_HISTORICO, [
-      novoHistorico,
-      ...historico
-    ]);
-  }
-
-  function registrarMovimentacao(encomenda) {
-    const movimentacoes = lerStorage(STORAGE_MOVIMENTACOES);
-
-    const novaMovimentacao = {
-      id: gerarIdUnico(),
-      tipo: "Encomenda",
-      acao: "recebimento_confirmado",
-      origem: "Porteiro",
-      titulo: `Encomenda recebida - Apto ${encomenda.apartamento}`,
-      apartamento: encomenda.apartamento,
-      morador: encomenda.morador,
-      moradorId: encomenda.moradorId || null,
-      descricao: encomenda.descricao,
-      porteiro: encomenda.porteiroRecebimento,
-      data: encomenda.dataRecebimento,
-      hora: encomenda.horaRecebimento,
-      timestamp: Date.now()
-    };
-
-    salvarStorage(STORAGE_MOVIMENTACOES, [
-      novaMovimentacao,
-      ...movimentacoes
-    ]);
-  }
-
-  function registrarRelatorio(encomenda) {
-    const relatorios = lerStorage(STORAGE_RELATORIOS);
-
-    const novoRelatorio = {
-      id: gerarIdUnico(),
-      tipo: "Encomenda",
-      acao: "recebimento_confirmado",
-      origem: "Porteiro",
-      titulo: `Encomenda recebida - Apto ${encomenda.apartamento}`,
-      apartamento: encomenda.apartamento,
-      morador: encomenda.morador,
-      moradorId: encomenda.moradorId || null,
-      descricao: encomenda.descricao,
-      codigo: obterCodigoRastreio(encomenda),
-      codigoRastreio: obterCodigoRastreio(encomenda),
-      rastreio: obterCodigoRastreio(encomenda),
-      codigoInterno: encomenda.codigoInterno || "",
-      transportadora: encomenda.transportadora,
-      status: encomenda.status,
-      porteiro: encomenda.porteiroRecebimento,
-      data: encomenda.dataRecebimento,
-      hora: encomenda.horaRecebimento
-    };
-
-    salvarStorage(STORAGE_RELATORIOS, [
-      novoRelatorio,
-      ...relatorios
-    ]);
-  }
-
-  function confirmarRecebimento(item) {
-    const todasEncomendas = lerStorage(STORAGE_ENCOMENDAS);
-    const agora = new Date();
-
-    const codigoInterno = `ENC-${String(
-      todasEncomendas.length + 1
-    ).padStart(6, "0")}`;
-
-    const codigoRastreio = obterCodigoRastreio(item);
-
-    const novaEncomenda = {
-      id: gerarIdUnico(),
-
-      encomendaEsperadaId: item.id || null,
-
-      moradorId: item.moradorId || null,
-
-      codigoInterno,
-      codigoRastreio,
-      rastreio: codigoRastreio,
-      codigo: codigoRastreio,
-
-      apartamento: item.apartamento || "N/A",
-      apto: item.apartamento || "N/A",
-      apartamentoId: item.apartamentoId || null,
-
-      nome: item.nome || item.morador || "Morador",
-
-      morador: item.morador || item.nome || "Morador",
-
-      usuario: item.usuario || "",
-
-      bloco: item.bloco || "",
-
-      descricao: item.descricao || item.tipo,
-
-      tipo: item.tipo || "Encomenda",
-
-      transportadora: item.transportadora || "Não informada",
-
-      status: "Recebido",
-
-      data: agora.toLocaleString("pt-BR"),
-
-      dataRecebimento: agora.toLocaleDateString("pt-BR"),
-
-      horaRecebimento: agora.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      }),
-
-      porteiroRecebimento: porteiro?.nome || "Porteiro",
-
-      porteiroUsuario: porteiro?.usuario || "",
-
-      notificadoMorador: true,
-
-      cienciaSindico: false,
-      condominioId: item.condominioId || null,
-      nomeCondominio: item.nomeCondominio || "",
-      criadoEm: agora.toISOString(),
-      atualizadoEm: agora.toISOString(),
-      origemModulo: "EncomendasPorteiro"
-    };
-
-    const atualizadas = [
-      novaEncomenda,
-      ...todasEncomendas
-    ];
-
-    salvarStorage(STORAGE_ENCOMENDAS, atualizadas);
-
-    const novasEsperadas = esperadas.filter(
-      (e) => e.id !== item.id
-    );
-
-    salvarStorage(STORAGE_ESPERADAS, novasEsperadas);
-
-    registrarAvisoSindico(novaEncomenda);
-    notificarMorador(novaEncomenda);
-    registrarHistorico(novaEncomenda, item);
-    registrarMovimentacao(novaEncomenda);
-    registrarRelatorio(novaEncomenda);
-    registrarAuditoriaEncomenda("Confirmou recebimento de encomenda", novaEncomenda, item);
-    criarNotificacaoSindico(
-      novaEncomenda,
-      "Encomenda recebida pela portaria",
-      `A portaria recebeu uma encomenda para o apto ${novaEncomenda.apartamento}.`
-    );
-
-    atualizarTela();
-
-    alert("Encomenda confirmada e morador notificado.");
-  }
 
   return (
     <div style={styles.container}>
@@ -526,16 +258,16 @@ function EncomendasPorteiro() {
 
         <div style={styles.card}>
           <div style={styles.cardIconBlue}>
-            📬
+            🔐
           </div>
 
           <div>
             <p style={styles.cardLabel}>
-              Entregas esperadas
+              Retirada segura
             </p>
 
             <h2 style={styles.cardNumberBlue}>
-              {esperadas.length}
+              QR / Código
             </h2>
           </div>
         </div>
@@ -572,89 +304,90 @@ function EncomendasPorteiro() {
           </div>
         </div>
       </div>
+      <div style={styles.expectedSection}>
+        <div style={styles.sectionHeader}>
+          <div>
+            <h2 style={styles.sectionTitle}>
+              Retirada segura
+            </h2>
 
-      {esperadas.length > 0 && (
-        <div style={styles.expectedSection}>
-          <div style={styles.sectionHeader}>
-            <div>
-              <h2 style={styles.sectionTitle}>
-                Encomendas esperadas
-              </h2>
+            <p style={styles.sectionSubtitle}>
+              Escolha como validar a credencial apresentada pelo morador.
+              A encomenda só é baixada após a confirmação final.
+            </p>
+          </div>
 
-              <p style={styles.sectionSubtitle}>
-                Entregas informadas previamente pelos moradores.
-              </p>
+          <span style={styles.sectionBadge}>
+            🔐 QR + código
+          </span>
+        </div>
+
+        <div style={styles.expectedGrid}>
+          <div style={styles.expectedCard}>
+            <div style={styles.expectedTop}>
+              <div>
+                <span style={styles.expectedBadge}>
+                  Opção 1
+                </span>
+
+                <h3 style={styles.expectedType}>
+                  📷 Dar baixa com QR Code
+                </h3>
+              </div>
+
+              <div style={styles.expectedIcon}>
+                📷
+              </div>
             </div>
 
-            <span style={styles.sectionBadge}>
-              📬 {esperadas.length} aguardando
-            </span>
+            <p style={styles.expectedDescription}>
+              Use a câmera do computador para ler o QR exibido
+              no celular do morador.
+            </p>
+
+            <button
+              style={styles.confirmButton}
+              onClick={() =>
+                setPickupMethod("QR")
+              }
+            >
+              Abrir câmera
+            </button>
           </div>
 
-          <div style={styles.expectedGrid}>
-            {esperadas.map((item) => (
-              <div
-                key={item.id}
-                style={styles.expectedCard}
-              >
-                <div style={styles.expectedTop}>
-                  <div>
-                    <span style={styles.expectedBadge}>
-                      Aguardada
-                    </span>
+          <div style={styles.expectedCard}>
+            <div style={styles.expectedTop}>
+              <div>
+                <span style={styles.expectedBadge}>
+                  Opção 2
+                </span>
 
-                    <h3 style={styles.expectedType}>
-                      📦 {item.tipo || "Encomenda"}
-                    </h3>
-                  </div>
-
-                  <div style={styles.expectedIcon}>
-                    📬
-                  </div>
-                </div>
-
-                <p style={styles.expectedDescription}>
-                  {item.descricao ||
-                    "Sem descrição informada"}
-                </p>
-
-                <div style={styles.expectedMeta}>
-                  <span>
-                    🏠 Apto {item.apartamento || "N/A"}
-                  </span>
-
-                  {item.nome && (
-                    <span>
-                      👤 {item.nome}
-                    </span>
-                  )}
-
-                  {item.transportadora && (
-                    <span>
-                      🚚 {item.transportadora}
-                    </span>
-                  )}
-
-                  {item.data && (
-                    <span>
-                      🕒 {item.data}
-                    </span>
-                  )}
-                </div>
-
-                <button
-                  style={styles.confirmButton}
-                  onClick={() =>
-                    confirmarRecebimento(item)
-                  }
-                >
-                  Confirmar recebimento
-                </button>
+                <h3 style={styles.expectedType}>
+                  🔢 Dar baixa com código
+                </h3>
               </div>
-            ))}
+
+              <div style={styles.expectedIcon}>
+                🔢
+              </div>
+            </div>
+
+            <p style={styles.expectedDescription}>
+              Se a portaria não possuir câmera, digite o código
+              de 6 dígitos informado pelo morador.
+            </p>
+
+            <button
+              style={styles.confirmButton}
+              onClick={() =>
+                setPickupMethod("CODE")
+              }
+            >
+              Digitar código
+            </button>
           </div>
         </div>
-      )}
+      </div>
 
       <div style={styles.apartmentSection}>
         <div style={styles.sectionHeader}>
@@ -664,8 +397,8 @@ function EncomendasPorteiro() {
             </h2>
 
             <p style={styles.sectionSubtitle}>
-              Clique em um apartamento para registrar, retirar ou
-              consultar encomendas.
+              Clique em um apartamento para registrar ou consultar encomendas.
+              A retirada segura é feita pelos botões acima.
             </p>
           </div>
 
@@ -676,6 +409,18 @@ function EncomendasPorteiro() {
 
         <ApartmentGrid onRefresh={atualizarTela} />
       </div>
+
+      {pickupMethod && (
+        <PackagePickupModal
+          method={pickupMethod}
+          onClose={() =>
+            setPickupMethod(null)
+          }
+          onCompleted={
+            atualizarTela
+          }
+        />
+      )}
     </div>
   );
 }

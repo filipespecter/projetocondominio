@@ -1,49 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { registrarAuditoria } from "../../Services/auditoriaService";
-import { criarNotificacao } from "../../Services/notificacaoService";
+import reportApi from "../../Services/reportApi.js";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 
 function Relatorios() {
-  const STORAGE_KEYS = {
-    moradores: "moradores",
-    apartamentos: "apartamentos",
-    porteiros: "porteiros",
-
-    visitantes: "visitantes",
-    visitantesHistorico: "visitantes_historico",
-
-    encomendas: "encomendas",
-    encomendasHistorico: "encomendas_historico",
-    encomendasEsperadas: "encomendas_esperadas",
-
-    reservas: "reservas",
-    areasComuns: "areasComuns",
-
-    avisos: "avisos",
-    avisosSindico: "avisos_sindico",
-    notificacoesMorador: "notificacoesMorador",
-
-    prestadores: "condominio_prestadores",
-    prestadoresParticulares: "prestadores_particulares_v2",
-
-    ocorrencias: "ocorrencias",
-    historicoOcorrencias: "historico_ocorrencias",
-
-    sugestoes: "sugestoesMorador",
-    sugestoesReclamacoes: "sugestoes_reclamacoes",
-
-    movimentacoes: "movimentacoes",
-    relatoriosOperacionais: "relatorios_operacionais",
-    auditoria: "auditoria_logs",
-    auditoriaSistema: "auditoriaSistema",
-    configuracoes: "configuracoes",
-    perfilCondominio: "perfil_condominio",
-
-    historico: "historico_relatorios_infinitycondo"
-  };
-
   const [dados, setDados] = useState({});
   const [tipoRelatorio, setTipoRelatorio] = useState("executivo");
   const [periodo, setPeriodo] = useState("30dias");
@@ -51,13 +12,7 @@ function Relatorios() {
   const [observacoes, setObservacoes] = useState("");
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState("");
 
-  const [historico, setHistorico] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEYS.historico)) || [];
-    } catch {
-      return [];
-    }
-  });
+  const [historico, setHistorico] = useState([]);
 
   const [relatorioPersonalizado, setRelatorioPersonalizado] = useState({
     titulo: "Relatório Personalizado",
@@ -77,184 +32,36 @@ function Relatorios() {
     carregarDados();
   }, []);
 
-  function lerStorage(chave) {
-    try {
-      return JSON.parse(localStorage.getItem(chave)) || [];
-    } catch {
-      return [];
-    }
-  }
-
-  function lerObjeto(chave) {
-    try {
-      return JSON.parse(localStorage.getItem(chave)) || null;
-    } catch {
-      return null;
-    }
-  }
-
   function obterUsuarioAtual() {
-    try {
-      return (
-        JSON.parse(localStorage.getItem("usuarioSindico")) ||
-        JSON.parse(sessionStorage.getItem("usuarioSindico")) ||
-        {}
-      );
-    } catch {
-      return {};
-    }
+    return dados.usuario || {};
   }
 
   function obterPerfilCondominio() {
-    const perfil =
-      lerObjeto(STORAGE_KEYS.perfilCondominio) ||
-      lerObjeto(STORAGE_KEYS.configuracoes) ||
-      {};
-
+    const perfil = dados.configuracoes || {};
     return {
-      condominioId: perfil.id || perfil.condominioId || null,
-      nomeCondominio:
-        perfil.nomeCondominio ||
-        perfil.nome ||
-        "Condomínio não configurado",
-      cnpj: perfil.cnpj || "",
-      endereco: perfil.endereco || "",
-      sindico: perfil.sindico || "",
-      telefone: perfil.telefone || "",
-      email: perfil.email || ""
+      condominioId: dados.usuario?.condominiumId || perfil.id || null,
+      nomeCondominio: perfil.name || perfil.nomeCondominio || perfil.nome || "Condomínio",
+      cnpj: perfil.cnpj || "", endereco: perfil.address || perfil.endereco || "",
+      sindico: perfil.managerName || perfil.sindico || "", telefone: perfil.phone || perfil.telefone || "", email: perfil.email || ""
     };
   }
 
-  function registrarAuditoriaRelatorio(acao, detalhes = "") {
-    registrarAuditoria({
-      acao,
-      modulo: "Relatórios",
-      detalhes,
-      referenciaId: Date.now()
-    });
+  async function registrarAuditoriaRelatorio(acao, detalhes = "") {
+    try { await reportApi.registrarExportacao({ tipo: acao, titulo: preview?.titulo || "Relatório", periodo: detalhes || nomePeriodo() }); } catch (error) { console.error("Falha ao registrar exportação:", error); }
   }
 
-  function criarNotificacaoRelatorio(tipo) {
-    if (tipoRelatorio !== "executivo" && tipoRelatorio !== "personalizado") {
-      return;
+  function criarNotificacaoRelatorio() {
+    // Notificações de negócio são responsabilidade do backend.
+  }
+
+  async function carregarDados() {
+    try {
+      const payload = await reportApi.loadAll();
+      setDados(payload);
+      setUltimaAtualizacao(new Date().toLocaleString("pt-BR"));
+    } catch (error) {
+      console.error("Erro ao carregar relatórios:", error);
     }
-
-    criarNotificacao({
-      titulo:
-        tipoRelatorio === "executivo"
-          ? "Relatório executivo gerado"
-          : "Relatório personalizado gerado",
-      mensagem: `${preview.titulo} foi exportado em ${tipo}.`,
-      tipo: "Relatórios",
-      origem: "Relatórios",
-      perfilDestino: "sindico",
-      moduloOrigem: "Relatorios",
-      referenciaId: Date.now(),
-      prioridade: "normal"
-    });
-  }
-
-  function carregarDados() {
-    const perfilAtual = obterPerfilCondominio();
-    const condominioId = perfilAtual.condominioId;
-
-    function filtrarCondominio(lista) {
-      return removerDuplicados(lista).filter((item) =>
-        itemPertenceAoCondominio(item, condominioId)
-      );
-    }
-
-    setDados({
-      moradores: filtrarCondominio(lerStorage(STORAGE_KEYS.moradores)),
-      apartamentos: filtrarCondominio(lerStorage(STORAGE_KEYS.apartamentos)),
-      porteiros: filtrarCondominio(lerStorage(STORAGE_KEYS.porteiros)),
-
-      visitantes: filtrarCondominio([
-        ...lerStorage(STORAGE_KEYS.visitantes),
-        ...lerStorage(STORAGE_KEYS.visitantesHistorico)
-      ]),
-
-      encomendas: filtrarCondominio([
-        ...lerStorage(STORAGE_KEYS.encomendas),
-        ...lerStorage(STORAGE_KEYS.encomendasHistorico),
-        ...lerStorage(STORAGE_KEYS.encomendasEsperadas)
-      ]),
-
-      reservas: filtrarCondominio(lerStorage(STORAGE_KEYS.reservas)),
-      areasComuns: filtrarCondominio(lerStorage(STORAGE_KEYS.areasComuns)),
-
-      avisos: filtrarCondominio([
-        ...lerStorage(STORAGE_KEYS.avisos),
-        ...lerStorage(STORAGE_KEYS.avisosSindico),
-        ...lerStorage(STORAGE_KEYS.notificacoesMorador)
-      ]),
-
-      prestadores: filtrarCondominio([
-        ...lerStorage(STORAGE_KEYS.prestadores),
-        ...lerStorage(STORAGE_KEYS.prestadoresParticulares)
-      ]),
-
-      ocorrencias: filtrarCondominio([
-        ...lerStorage(STORAGE_KEYS.ocorrencias),
-        ...lerStorage(STORAGE_KEYS.historicoOcorrencias)
-      ]),
-
-      sugestoes: filtrarCondominio([
-        ...lerStorage(STORAGE_KEYS.sugestoes),
-        ...lerStorage(STORAGE_KEYS.sugestoesReclamacoes)
-      ]),
-
-      movimentacoes: filtrarCondominio([
-        ...lerStorage(STORAGE_KEYS.movimentacoes),
-        ...lerStorage(STORAGE_KEYS.relatoriosOperacionais)
-      ]),
-
-      auditoria: filtrarCondominio([
-        ...lerStorage(STORAGE_KEYS.auditoria),
-        ...lerStorage(STORAGE_KEYS.auditoriaSistema)
-      ]),
-
-      configuracoes:
-        lerObjeto(STORAGE_KEYS.perfilCondominio) ||
-        lerObjeto(STORAGE_KEYS.configuracoes) ||
-        {}
-    });
-
-    setUltimaAtualizacao(new Date().toLocaleString("pt-BR"));
-  }
-
-  function removerDuplicados(lista) {
-    const vistos = new Set();
-
-    return (lista || []).filter((item, index) => {
-      const chave = String(
-        item?.id ||
-          item?.codigoInterno ||
-          item?.codigo ||
-          item?.documento ||
-          item?.cpfCnpj ||
-          item?.email ||
-          item?.nome ||
-          item?.titulo ||
-          index
-      );
-
-      if (vistos.has(chave)) {
-        return false;
-      }
-
-      vistos.add(chave);
-      return true;
-    });
-  }
-
-  function itemPertenceAoCondominio(item, condominioId) {
-    if (!condominioId) return true;
-
-    return (
-      !item?.condominioId ||
-      String(item.condominioId) === String(condominioId)
-    );
   }
 
   function obterDataItem(item) {
@@ -276,7 +83,7 @@ function Relatorios() {
     if (!valor) return null;
 
     if (String(valor).includes("/")) {
-      const partes = String(valor).split(/[\/,\s:]+/);
+      const partes = String(valor).split(/[/,\s:]+/);
 
       if (partes.length >= 3) {
         const dataBR = new Date(`${partes[2]}-${partes[1]}-${partes[0]}`);
@@ -878,7 +685,6 @@ function Relatorios() {
 
     setHistorico(atualizado);
 
-    localStorage.setItem(STORAGE_KEYS.historico, JSON.stringify(atualizado));
   }
 
   function gerarPDF() {
@@ -999,7 +805,7 @@ function Relatorios() {
 
     function limparNomeAba(nome, indice) {
       const base = String(nome || `Relatorio ${indice + 1}`)
-        .replace(/[\\/?*\[\]:]/g, " ")
+        .replace(/[\\/?*[\]:]/g, " ")
         .replace(/\s+/g, " ")
         .trim()
         .slice(0, 31) || `Relatorio ${indice + 1}`;

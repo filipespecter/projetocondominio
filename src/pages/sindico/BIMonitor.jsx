@@ -13,7 +13,8 @@ import {
   gerarComparativosBI,
   gerarRankingsPremiumBI,
   BI_MONITOR_SYNC_EVENT,
-  lerSincronizacaoBI
+  lerSincronizacaoBI,
+  emitirSincronizacaoBI
 } from "../../Services/biService";
 
 import DynamicCharts from "../../components/BI/DynamicCharts";
@@ -52,22 +53,7 @@ function BIMonitor() {
   const [atividades, setAtividades] = useState({});
   const [rankingsPremium, setRankingsPremium] = useState({});
 
-  function verificarAcessoBI() {
-    try {
-      const perfil =
-        JSON.parse(localStorage.getItem("perfil_condominio")) ||
-        JSON.parse(localStorage.getItem("configuracoes")) ||
-        {};
-
-      const plano = perfil.plano || "Completo";
-
-      return plano === "Completo";
-    } catch {
-      return true;
-    }
-  }
-
-  const acessoLiberado = verificarAcessoBI();
+  const acessoLiberado = true;
 
   useEffect(() => {
     carregarDados();
@@ -81,34 +67,17 @@ function BIMonitor() {
       setHora(new Date().toLocaleString("pt-BR"));
     }, 1000);
 
-    function aoAlterarStorage(event) {
-      const chavesBI = [
-        "bi_monitor_sync",
-        "bi_monitor_tela",
-        "bi_monitor_visao",
-        "bi_monitor_tipo_grafico",
-        "bi_monitor_periodo"
-      ];
-
-      if (!event.key || chavesBI.includes(event.key)) {
-        sincronizarComBIPrincipal();
-        carregarDados();
-      }
-    }
-
     function aoSincronizarBI() {
       sincronizarComBIPrincipal();
       carregarDados();
     }
 
-    window.addEventListener("storage", aoAlterarStorage);
     window.addEventListener(BI_MONITOR_SYNC_EVENT, aoSincronizarBI);
     window.addEventListener("focus", aoSincronizarBI);
 
     return () => {
       clearInterval(refresh);
       clearInterval(relogio);
-      window.removeEventListener("storage", aoAlterarStorage);
       window.removeEventListener(BI_MONITOR_SYNC_EVENT, aoSincronizarBI);
       window.removeEventListener("focus", aoSincronizarBI);
     };
@@ -144,22 +113,7 @@ function BIMonitor() {
   }
 
   function salvarSincronizacaoLocal(configuracao = {}) {
-    const atual = lerSincronizacaoBI();
-
-    const sincronizacao = {
-      ...atual,
-      ...configuracao,
-      atualizadoEm: Date.now()
-    };
-
-    localStorage.setItem("bi_monitor_tela", sincronizacao.tela || "geral");
-    localStorage.setItem("bi_monitor_visao", sincronizacao.visao || "geral");
-    localStorage.setItem(
-      "bi_monitor_tipo_grafico",
-      sincronizacao.tipoGrafico || tipoGraficoMonitor || "barra"
-    );
-    localStorage.setItem("bi_monitor_periodo", sincronizacao.periodo || periodoMonitor || "geral");
-    localStorage.setItem("bi_monitor_sync", JSON.stringify(sincronizacao));
+    emitirSincronizacaoBI(configuracao);
   }
 
   function trocarTela(tela) {

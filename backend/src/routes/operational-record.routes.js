@@ -1,0 +1,11 @@
+import { Router } from "express";
+import OperationalRecordController from "../controllers/OperationalRecordController.js";
+import { authMiddleware, authorizeRoles } from "../middlewares/authMiddleware.js";
+import { validateCreateOperationalRecord, validateOperationalRecordId } from "../validators/operationalRecordValidator.js";
+const operationalRecordRoutes=Router();
+operationalRecordRoutes.use(authMiddleware);
+const roles=authorizeRoles("CONDOMINIUM_ADMIN","MANAGER");
+operationalRecordRoutes.get("/",roles,(req,res,next)=>OperationalRecordController.index(req,res,next));
+operationalRecordRoutes.post("/",roles,validateCreateOperationalRecord,(req,res,next)=>OperationalRecordController.create(req,res,next));
+operationalRecordRoutes.delete("/:id",roles,validateOperationalRecordId,(req,res,next)=>OperationalRecordController.remove(req,res,next));
+export default operationalRecordRoutes;

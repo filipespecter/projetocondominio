@@ -1,12 +1,13 @@
-import { useState } from "react";
-import { registrarAuditoria } from "../../Services/auditoriaService";
-import { criarNotificacao } from "../../Services/notificacaoService";
+import { useEffect, useState } from "react";
+import apartmentApi from "../../Services/apartmentApi";
+import residentApi from "../../Services/residentApi";
+
+function limparNumero(valor) {
+  return String(valor ?? "")
+    .replace(/\D/g, "");
+}
 
 function Apartamentos() {
-  const STORAGE_KEY = "apartamentos";
-  const STORAGE_MOVIMENTACOES = "movimentacoes";
-  const STORAGE_RELATORIOS = "relatorios_operacionais";
-
   const estadoInicialApartamento = {
     bloco: "",
     numero: "",
@@ -16,48 +17,76 @@ function Apartamentos() {
     moradoresNomes: [],
     moradorPrincipalId: null,
     moradorPrincipalNome: "",
-    status: "Ocupado",
-    condominioId: null,
-    nomeCondominio: ""
+    status: "Ocupado"
   };
 
-  const [apartamentos, setApartamentos] = useState(() => {
-    const dados = localStorage.getItem(STORAGE_KEY);
-
-    if (!dados) return [];
-
-    const lista = JSON.parse(dados);
-
-    return lista.map((ap) => ({
-      ...ap,
-      bloco: ap.bloco || "",
-      numero: ap.numero || "",
-      andar: ap.andar || "",
-      morador: ap.morador || "",
-      moradoresIds: ap.moradoresIds || [],
-      moradoresNomes: ap.moradoresNomes || (ap.morador ? [ap.morador] : []),
-      moradorPrincipalId: ap.moradorPrincipalId || null,
-      moradorPrincipalNome: ap.moradorPrincipalNome || "",
-      moradorPrincipalId: ap.moradorPrincipalId || null,
-      moradorPrincipalNome: ap.moradorPrincipalNome || "",
-      status: ap.status || "Ocupado"
-    }));
-  });
-
-  const [moradores] = useState(() => {
-    const dados = localStorage.getItem("moradores");
-    return dados ? JSON.parse(dados) : [];
-  });
-
+  const [apartamentos, setApartamentos] = useState([]);
+  const [moradores, setMoradores] = useState([]);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("Todos");
   const [novoAp, setNovoAp] = useState(estadoInicialApartamento);
   const [editId, setEditId] = useState(null);
 
+  const statusFront = {
+    OCCUPIED: "Ocupado",
+    VACANT: "Disponível",
+    MAINTENANCE: "Manutenção",
+    INACTIVE: "Inativo"
+  };
+
+  const statusBack = {
+    "Ocupado": "OCCUPIED",
+    "Disponível": "VACANT",
+    "Manutenção": "MAINTENANCE",
+    "Inativo": "INACTIVE"
+  };
+
+  function mapApartment(ap) {
+    const residents = ap.residents ?? ap.moradores ?? [];
+    const principal = residents.find((r) => r.isPrimary || r.moradorPrincipal);
+    return {
+      ...ap,
+      bloco: ap.block ?? ap.bloco ?? "",
+      numero: ap.number ?? ap.numero ?? "",
+      andar: String(ap.floor ?? ap.andar ?? ""),
+      status: statusFront[ap.status] ?? ap.status ?? "Disponível",
+      moradoresIds: residents.map((r) => r.id),
+      moradoresNomes: residents.map((r) => r.user?.name ?? r.name ?? r.nome).filter(Boolean),
+      morador: principal?.user?.name ?? principal?.name ?? residents[0]?.user?.name ?? residents[0]?.name ?? "",
+      moradorPrincipalId: principal?.id ?? null,
+      moradorPrincipalNome: principal?.user?.name ?? principal?.name ?? ""
+    };
+  }
+
+  function mapResident(r) {
+    return {
+      ...r,
+      nome: r.user?.name ?? r.name ?? r.nome ?? "",
+      apartamentoId: r.apartmentId ?? r.apartment?.id ?? null,
+      apartamento: r.apartment?.number ?? "",
+      apto: r.apartment?.number ?? "",
+      moradorPrincipal: Boolean(r.isPrimary)
+    };
+  }
+
+  async function carregar() {
+    try {
+      const [aps, residents] = await Promise.all([
+        apartmentApi.list(),
+        residentApi.list()
+      ]);
+      setApartamentos((aps ?? []).map(mapApartment));
+      setMoradores((residents ?? []).map(mapResident));
+    } catch (error) {
+      alert(error?.message ?? "Não foi possível carregar apartamentos.");
+    }
+  }
+
+  useEffect(() => { carregar(); }, []);
+
   const apartamentosFiltrados = apartamentos.filter((ap) => {
     const texto = busca.toLowerCase();
-
     const correspondeBusca =
       ap.bloco?.toLowerCase().includes(texto) ||
       ap.numero?.toLowerCase().includes(texto) ||
@@ -65,430 +94,79 @@ function Apartamentos() {
       ap.morador?.toLowerCase().includes(texto) ||
       ap.moradoresNomes?.join(" ").toLowerCase().includes(texto) ||
       ap.status?.toLowerCase().includes(texto);
-
-    const correspondeStatus =
-      filtroStatus === "Todos" ||
-      ap.status === filtroStatus;
-
-    return correspondeBusca && correspondeStatus;
+    return correspondeBusca && (filtroStatus === "Todos" || ap.status === filtroStatus);
   });
 
-  function lerStorage(chave) {
-    try {
-      return JSON.parse(localStorage.getItem(chave)) || [];
-    } catch {
-      return [];
-    }
-  }
-
-  function salvarStorage(chave, dados) {
-    localStorage.setItem(chave, JSON.stringify(dados));
-  }
-
-  function limparNumero(valor) {
-    return String(valor || "").replace(/\D/g, "");
-  }
-
-  function obterPerfilCondominio() {
-    try {
-      const perfil =
-        JSON.parse(localStorage.getItem("perfil_condominio")) ||
-        JSON.parse(localStorage.getItem("configuracoes")) ||
-        {};
-
-      return {
-        condominioId: perfil.id || perfil.condominioId || null,
-        nomeCondominio: perfil.nomeCondominio || ""
-      };
-    } catch {
-      return {
-        condominioId: null,
-        nomeCondominio: ""
-      };
-    }
-  }
-
-  function obterUsuarioAtual() {
-    try {
-      return (
-        JSON.parse(localStorage.getItem("usuarioSindico")) ||
-        JSON.parse(sessionStorage.getItem("usuarioSindico")) ||
-        {}
-      );
-    } catch {
-      return {};
-    }
-  }
-
-  function registrarMovimentacaoApartamento(acao, apartamento) {
-    const movimentacoes = lerStorage(STORAGE_MOVIMENTACOES);
-
-    const nova = {
-      id: Date.now(),
-      tipo: "Apartamento",
-      origem: "Síndico",
-      titulo: `${acao}: Bloco ${apartamento?.bloco || "-"} Apto ${apartamento?.numero || "-"}`,
-      descricao: `Status: ${apartamento?.status || "-"} • Andar: ${apartamento?.andar || "-"}`,
-      status: apartamento?.status || "",
-      data: new Date().toLocaleDateString("pt-BR"),
-      hora: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      }),
-      criadoEm: new Date().toISOString()
-    };
-
-    salvarStorage(STORAGE_MOVIMENTACOES, [nova, ...movimentacoes]);
-
-    const relatorios = lerStorage(STORAGE_RELATORIOS);
-
-    salvarStorage(STORAGE_RELATORIOS, [nova, ...relatorios]);
-  }
-
-  function registrarAuditoriaApartamento({
-    acao,
-    detalhes,
-    antes = null,
-    depois = null,
-    referenciaId = null
-  }) {
-    registrarAuditoria({
-      acao,
-      modulo: "Apartamentos",
-      detalhes,
-      antes,
-      depois,
-      referenciaId
-    });
-  }
-
-  function criarNotificacaoApartamento({
-    titulo,
-    mensagem,
-    referenciaId = null,
-    prioridade = "normal"
-  }) {
-    criarNotificacao({
-      titulo,
-      mensagem,
-      tipo: "Apartamentos",
-      origem: "Apartamentos",
-      perfilDestino: "sindico",
-      moduloOrigem: "Apartamentos",
-      referenciaId,
-      prioridade
-    });
-  }
-
-  function moradoresDoApartamento(numeroApartamento) {
-    return moradores.filter(
-      (morador) =>
-        String(morador.apto || morador.apartamento || "") ===
-        String(numeroApartamento || "")
-    );
-  }
-
-  function obterMoradorPrincipal(lista) {
-    return lista.find((morador) => morador.moradorPrincipal) || lista[0] || null;
-  }
-
-  function sincronizarMoradoresComApartamento(apartamento) {
-    const moradoresAtuais = lerStorage("moradores");
-
-    const atualizados = moradoresAtuais.map((morador) => {
-      const estaVinculado = (apartamento.moradoresIds || []).some(
-        (id) => String(id) === String(morador.id)
-      );
-
-      if (!estaVinculado) return morador;
-
-      return {
-        ...morador,
-        apartamentoId: apartamento.id,
-        apto: apartamento.numero,
-        apartamento: apartamento.numero,
-        atualizadoEm: new Date().toISOString()
-      };
-    });
-
-    salvarStorage("moradores", atualizados);
-  }
-
-  function validarApartamento() {
-    const bloco = String(novoAp.bloco || "").trim();
-    const numero = String(novoAp.numero || "").trim();
-    const andar = String(novoAp.andar || "").trim();
-
-    if (!bloco) {
-      alert("Informe o bloco do apartamento.");
-      return false;
-    }
-
-    if (!numero) {
-      alert("Informe o número do apartamento.");
-      return false;
-    }
-
-    if (!/^[0-9A-Za-z-]+$/.test(numero)) {
-      alert("O número do apartamento deve conter apenas letras, números ou hífen.");
-      return false;
-    }
-
-    if (!andar) {
-      alert("Informe o andar do apartamento.");
-      return false;
-    }
-
-    if (!/^\d+$/.test(andar)) {
-      alert("O andar deve conter apenas números.");
-      return false;
-    }
-
-    if (!novoAp.status) {
-      alert("Selecione o status do apartamento.");
-      return false;
-    }
-
-    return true;
-  }
-
   function selecionarMorador(moradorId) {
-    const moradorSelecionado = moradores.find(
-      (m) => String(m.id) === String(moradorId)
-    );
-
-    if (!moradorSelecionado) return;
-
-    const moradoresIdsAtuais = novoAp.moradoresIds || [];
-    const moradoresNomesAtuais = novoAp.moradoresNomes || [];
-
-    if (moradoresIdsAtuais.some((id) => String(id) === String(moradorSelecionado.id))) {
-      return;
-    }
-
-    const novosIds = [...moradoresIdsAtuais, moradorSelecionado.id];
-    const novosNomes = [...moradoresNomesAtuais, moradorSelecionado.nome];
-    const principalAtual =
-      moradores.find((m) => m.moradorPrincipal && novosIds.some((id) => String(id) === String(m.id))) ||
-      moradorSelecionado;
-
-    setNovoAp({
-      ...novoAp,
-      morador: principalAtual?.nome || novosNomes[0] || "",
-      moradoresIds: novosIds,
-      moradoresNomes: novosNomes,
-      moradorPrincipalId: principalAtual?.id || null,
-      moradorPrincipalNome: principalAtual?.nome || "",
-      numero:
-        novoAp.numero ||
-        moradorSelecionado.apartamento ||
-        moradorSelecionado.apto ||
-        ""
-    });
+    const morador = moradores.find((m) => String(m.id) === String(moradorId));
+    if (!morador) return;
+    setNovoAp((prev) => ({
+      ...prev,
+      moradoresIds: [...new Set([...(prev.moradoresIds || []), morador.id])],
+      moradoresNomes: [...new Set([...(prev.moradoresNomes || []), morador.nome])],
+      morador: prev.morador || morador.nome,
+      moradorPrincipalId: prev.moradorPrincipalId || morador.id,
+      moradorPrincipalNome: prev.moradorPrincipalNome || morador.nome
+    }));
   }
 
   function removerMoradorVinculado(moradorId) {
-    const novosIds = (novoAp.moradoresIds || []).filter(
-      (id) => String(id) !== String(moradorId)
-    );
-
-    const novosMoradores = moradores.filter((m) =>
-      novosIds.some((id) => String(id) === String(m.id))
-    );
-
-    const novosNomes = novosMoradores.map((m) => m.nome);
-    const principal = obterMoradorPrincipal(novosMoradores);
-
-    setNovoAp({
-      ...novoAp,
-      morador: principal?.nome || novosNomes[0] || "",
-      moradoresIds: novosIds,
-      moradoresNomes: novosNomes,
-      moradorPrincipalId: principal?.id || null,
-      moradorPrincipalNome: principal?.nome || ""
+    const morador = moradores.find((m) => String(m.id) === String(moradorId));
+    setNovoAp((prev) => {
+      const ids = (prev.moradoresIds || []).filter((id) => String(id) !== String(moradorId));
+      const nomes = (prev.moradoresNomes || []).filter((nome) => nome !== morador?.nome);
+      return {
+        ...prev,
+        moradoresIds: ids,
+        moradoresNomes: nomes,
+        moradorPrincipalId: String(prev.moradorPrincipalId) === String(moradorId) ? null : prev.moradorPrincipalId,
+        moradorPrincipalNome: String(prev.moradorPrincipalId) === String(moradorId) ? "" : prev.moradorPrincipalNome,
+        morador: nomes[0] || ""
+      };
     });
   }
 
-  function salvarApartamento() {
-    if (!validarApartamento()) {
-      return;
+  function validarApartamento() {
+    if (!novoAp.bloco.trim() || !novoAp.numero.trim() || String(novoAp.andar).trim() === "") {
+      alert("Preencha bloco, número e andar.");
+      return false;
     }
+    return true;
+  }
 
-    const apartamentoExiste = apartamentos.find(
-      (ap) =>
-        ap.bloco?.toLowerCase() === novoAp.bloco.toLowerCase() &&
-        ap.numero === novoAp.numero &&
-        ap.id !== editId
-    );
-
-    if (apartamentoExiste) {
-      alert("Esse apartamento já existe");
-      return;
-    }
-
-    const perfilCondominio = obterPerfilCondominio();
-    const usuarioAtual = obterUsuarioAtual();
-
-    const moradoresSelecionados = moradores.filter((morador) =>
-      (novoAp.moradoresIds || []).some((id) => String(id) === String(morador.id))
-    );
-
-    const moradoresJaDoApartamento = moradoresDoApartamento(novoAp.numero);
-
-    const mapaMoradores = new Map();
-
-    [...moradoresSelecionados, ...moradoresJaDoApartamento].forEach((morador) => {
-      mapaMoradores.set(String(morador.id), morador);
-    });
-
-    const moradoresVinculados = Array.from(mapaMoradores.values());
-    const principal = obterMoradorPrincipal(moradoresVinculados);
-
-    const apartamentoFormatado = {
-      ...novoAp,
-      bloco: String(novoAp.bloco || "").trim().toUpperCase(),
-      numero: String(novoAp.numero || "").trim(),
-      andar: limparNumero(novoAp.andar),
-      morador: principal?.nome || moradoresVinculados[0]?.nome || novoAp.morador || "",
-      moradoresIds: moradoresVinculados.map((morador) => morador.id),
-      moradoresNomes: moradoresVinculados.map((morador) => morador.nome),
-      moradorPrincipalId: principal?.id || null,
-      moradorPrincipalNome: principal?.nome || "",
-      status: novoAp.status || "Ocupado",
-      condominioId: perfilCondominio.condominioId,
-      nomeCondominio: perfilCondominio.nomeCondominio,
-      criadoPor: usuarioAtual.nome || usuarioAtual.usuario || "Administrador",
-      atualizadoEm: new Date().toISOString()
+  async function salvarApartamento() {
+    if (!validarApartamento()) return;
+    const payload = {
+      block: novoAp.bloco.trim(),
+      number: novoAp.numero.trim(),
+      floor: Number(novoAp.andar),
+      status: statusBack[novoAp.status] ?? "VACANT",
+      notes: null
     };
-
-    let listaAtualizada = [];
-
-    if (editId !== null) {
-      const apartamentoAntes = apartamentos.find((ap) => ap.id === editId);
-
-      listaAtualizada = apartamentos.map((ap) =>
-        ap.id === editId
-          ? {
-              ...apartamentoFormatado,
-              id: editId
-            }
-          : ap
-      );
-
-      const apartamentoDepois = listaAtualizada.find((ap) => ap.id === editId);
-
-      registrarAuditoriaApartamento({
-        acao: "Editou apartamento",
-        detalhes: `Bloco ${apartamentoFormatado.bloco} - Apto ${apartamentoFormatado.numero}`,
-        antes: apartamentoAntes,
-        depois: apartamentoDepois,
-        referenciaId: editId
-      });
-
-      criarNotificacaoApartamento({
-        titulo: "Apartamento atualizado",
-        mensagem: `Bloco ${apartamentoFormatado.bloco} - Apto ${apartamentoFormatado.numero} foi atualizado.`,
-        referenciaId: editId
-      });
-
-      registrarMovimentacaoApartamento("Editou apartamento", apartamentoDepois);
-
-      setEditId(null);
-    } else {
-      const novo = {
-        id: Date.now(),
-        ...apartamentoFormatado,
-        dataCadastro: new Date().toLocaleDateString("pt-BR"),
-        criadoEm: new Date().toISOString()
-      };
-
-      listaAtualizada = [...apartamentos, novo];
-
-      registrarAuditoriaApartamento({
-        acao: "Cadastrou apartamento",
-        detalhes: `Bloco ${novo.bloco} - Apto ${novo.numero}`,
-        depois: novo,
-        referenciaId: novo.id
-      });
-
-      criarNotificacaoApartamento({
-        titulo: "Novo apartamento cadastrado",
-        mensagem: `Bloco ${novo.bloco} - Apto ${novo.numero} foi cadastrado.`,
-        referenciaId: novo.id
-      });
-
-      registrarMovimentacaoApartamento("Cadastrou apartamento", novo);
+    try {
+      if (editId) await apartmentApi.update(editId, payload);
+      else await apartmentApi.create(payload);
+      await carregar();
+      fecharModal();
+    } catch (error) {
+      alert(error?.message ?? "Erro ao salvar apartamento.");
     }
-
-    setApartamentos(listaAtualizada);
-
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(listaAtualizada)
-    );
-
-    const apartamentoSalvo =
-      editId !== null
-        ? listaAtualizada.find((ap) => ap.id === editId)
-        : listaAtualizada[listaAtualizada.length - 1];
-
-    if (apartamentoSalvo) {
-      sincronizarMoradoresComApartamento(apartamentoSalvo);
-    }
-
-    setNovoAp(estadoInicialApartamento);
-    setMostrarModal(false);
   }
 
   function editarApartamento(ap) {
-    setNovoAp({
-      ...estadoInicialApartamento,
-      ...ap,
-      moradoresIds: ap.moradoresIds || [],
-      moradoresNomes: ap.moradoresNomes || (ap.morador ? [ap.morador] : []),
-      moradorPrincipalId: ap.moradorPrincipalId || null,
-      moradorPrincipalNome: ap.moradorPrincipalNome || ""
-    });
-
     setEditId(ap.id);
+    setNovoAp({ ...estadoInicialApartamento, ...ap });
     setMostrarModal(true);
   }
 
-  function excluirApartamento(id) {
-    const confirmar = window.confirm(
-      "Deseja excluir esse apartamento?"
-    );
-
-    if (!confirmar) return;
-
-    const apartamentoExcluido = apartamentos.find((ap) => ap.id === id);
-
-    const listaAtualizada = apartamentos.filter(
-      (ap) => ap.id !== id
-    );
-
-    setApartamentos(listaAtualizada);
-
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(listaAtualizada)
-    );
-
-    registrarAuditoriaApartamento({
-      acao: "Excluiu apartamento",
-      detalhes: `Bloco ${apartamentoExcluido?.bloco || "-"} - Apto ${apartamentoExcluido?.numero || "-"}`,
-      antes: apartamentoExcluido,
-      referenciaId: id
-    });
-
-    criarNotificacaoApartamento({
-      titulo: "Apartamento removido",
-      mensagem: `Bloco ${apartamentoExcluido?.bloco || "-"} - Apto ${apartamentoExcluido?.numero || "-"} foi removido.`,
-      referenciaId: id,
-      prioridade: "alta"
-    });
-
-    registrarMovimentacaoApartamento("Excluiu apartamento", apartamentoExcluido);
+  async function excluirApartamento(id) {
+    if (!window.confirm("Deseja realmente excluir este apartamento?")) return;
+    try {
+      await apartmentApi.remove(id);
+      await carregar();
+    } catch (error) {
+      alert(error?.message ?? "Não foi possível excluir o apartamento.");
+    }
   }
 
   function fecharModal() {

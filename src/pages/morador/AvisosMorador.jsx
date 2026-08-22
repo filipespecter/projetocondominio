@@ -1,297 +1,309 @@
-import { useEffect, useState } from "react";
-import { registrarAuditoria } from "../../Services/auditoriaService";
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import noticeApi from "../../Services/noticeApi.js";
+
+import {
+  listarMinhasNotificacoes,
+  marcarComoLida,
+} from "../../Services/notificacaoService.js";
 
 function AvisosMorador() {
-  const [avisos, setAvisos] = useState([]);
-  const [busca, setBusca] = useState("");
-  const [filtroPrioridade, setFiltroPrioridade] = useState("Todos");
+  const [avisos, setAvisos] =
+    useState([]);
+
+  const [busca, setBusca] =
+    useState("");
+
+  const [
+    filtroPrioridade,
+    setFiltroPrioridade,
+  ] = useState("Todas");
+
+  const priorityFront = {
+    URGENT: "Urgente",
+    HIGH: "Alta",
+    NORMAL: "Média",
+    LOW: "Baixa",
+  };
+
+  async function carregarAvisos() {
+    try {
+      const [
+        noticeData,
+        notifications,
+      ] = await Promise.all([
+        noticeApi.list(
+          "?publishedOnly=true"
+        ),
+        listarMinhasNotificacoes(),
+      ]);
+
+      const noticeNotifications =
+        (notifications ?? [])
+          .filter(
+            (item) =>
+              item.module ===
+                "NOTICE" &&
+              item.referenceId
+          );
+
+      const notificationByReference =
+        new Map(
+          noticeNotifications.map(
+            (item) => [
+              String(
+                item.referenceId
+              ),
+              item,
+            ]
+          )
+        );
+
+      setAvisos(
+        (noticeData ?? [])
+          .map((item) => {
+            const notification =
+              notificationByReference
+                .get(
+                  String(item.id)
+                );
+
+            return {
+              ...item,
+              titulo:
+                item.title ?? "",
+              descricao:
+                item.message ?? "",
+              prioridade:
+                priorityFront[
+                  item.priority
+                ] ??
+                "Média",
+              data:
+                item.publishedAt ||
+                item.createdAt
+                  ? new Date(
+                      item.publishedAt ??
+                      item.createdAt
+                    ).toLocaleString(
+                      "pt-BR"
+                    )
+                  : "",
+              lido:
+                Boolean(
+                  notification?.readAt
+                ),
+              notificationId:
+                notification?.id ??
+                null,
+              origem:
+                "Síndico",
+              categoria:
+                item.category ??
+                "Aviso",
+            };
+          })
+          .sort(
+            (a, b) =>
+              new Date(
+                b.publishedAt ??
+                b.createdAt ??
+                0
+              ) -
+              new Date(
+                a.publishedAt ??
+                a.createdAt ??
+                0
+              )
+          )
+      );
+    } catch (error) {
+      alert(
+        error?.message ??
+        "Não foi possível carregar os avisos."
+      );
+    }
+  }
 
   useEffect(() => {
     carregarAvisos();
-
-    const interval = setInterval(() => {
-      carregarAvisos();
-    }, 1000);
-
-    window.addEventListener("storage", carregarAvisos);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener("storage", carregarAvisos);
-    };
   }, []);
 
-  function lerStorage(chave) {
-    try {
-      return JSON.parse(localStorage.getItem(chave)) || [];
-    } catch {
-      return [];
-    }
-  }
-
-  function salvarStorage(chave, dados) {
-    localStorage.setItem(chave, JSON.stringify(dados));
-  }
-
-  function obterMoradorAtual() {
-    const chaves = ["sessaoMorador", "usuarioMorador"];
-
-    for (const chave of chaves) {
-      try {
-        const valor =
-          localStorage.getItem(chave) ||
-          sessionStorage.getItem(chave);
-
-        if (valor) return JSON.parse(valor);
-      } catch {
-        continue;
-      }
-    }
-
-    return null;
-  }
-
-  function registroPertenceAoMorador(item, moradorAtual) {
-    if (!moradorAtual) return false;
-
-    const itemId =
-      item.usuarioDestinoId ||
-      item.moradorId ||
-      item.destinatarioMoradorId ||
-      null;
-
-    const moradorId = moradorAtual.id || null;
-
-    if (itemId && moradorId) {
-      return String(itemId) === String(moradorId);
-    }
-
-    const itemUsuario =
-      item.usuarioDestinoUsuario ||
-      item.moradorUsuario ||
-      "";
-
-    const moradorUsuario = moradorAtual.usuario || "";
-
-    if (itemUsuario && moradorUsuario) {
-      return String(itemUsuario) === String(moradorUsuario);
-    }
-
-    const itemNome =
-      item.usuarioDestinoNome ||
-      item.moradorNome ||
-      item.morador ||
-      "";
-
-    const moradorNome = moradorAtual.nome || "";
-
-    const itemApartamento =
-      item.apartamentoDestino ||
-      item.apartamento ||
-      item.apto ||
-      "";
-
-    const moradorApartamento =
-      moradorAtual.apartamento ||
-      moradorAtual.apto ||
-      "";
-
-    return Boolean(
-      itemNome &&
-      moradorNome &&
-      itemApartamento &&
-      moradorApartamento &&
-      String(itemNome).trim().toLowerCase() ===
-        String(moradorNome).trim().toLowerCase() &&
-      String(itemApartamento) === String(moradorApartamento)
+  function normalizarPrioridade(
+    prioridade
+  ) {
+    return (
+      prioridade ??
+      "Média"
     );
   }
 
-  function carregarAvisos() {
-    const avisosOficiais = lerStorage("avisos").map((item) => ({
-      ...item,
-      origem: "Síndico",
-      tipo: "Aviso",
-      status: item.status || "Publicado",
-      lida: item.lidaMorador || false
-    }));
+  function obterPrioridade(
+    prioridade
+  ) {
+    const value =
+      normalizarPrioridade(
+        prioridade
+      );
 
-    const moradorAtual = obterMoradorAtual();
-
-    const notificacoesMorador = lerStorage("notificacoesMorador")
-      .filter((item) => registroPertenceAoMorador(item, moradorAtual))
-      .map((item) => ({
-        ...item,
-        titulo: item.titulo || "Notificação",
-        descricao: item.descricao || item.mensagem || "",
-        prioridade: item.prioridade || "Normal",
-        origem: "Síndico",
-        tipo: item.tipo || "Notificação",
-        status: item.status || "Novo",
-        lida: item.lida || false
-      }));
-
-    const sugestoesRespondidas = lerStorage("sugestoes_reclamacoes")
-      .filter(
-        (item) =>
-          registroPertenceAoMorador(item, moradorAtual) &&
-          (item.respostaSindico || item.respostasSindico?.length > 0)
-      )
-      .map((item) => ({
-        ...item,
-        titulo: item.titulo || item.tipoRegistro || item.tipo || "Resposta do síndico",
-        descricao: item.descricao || item.mensagem || "Solicitação respondida pelo síndico.",
-        prioridade: item.prioridade || "Normal",
-        origem: "Síndico",
-        tipo: item.tipoRegistro || item.tipo || "Resposta",
-        status: item.status || "Respondido",
-        respostaSindico:
-          item.respostaSindico ||
-          item.respostasSindico?.[item.respostasSindico.length - 1]?.texto ||
-          "",
-        data: item.dataResposta || item.data || item.criadoEm || "",
-        lida: item.lidaMorador || false
-      }));
-
-    const lista = [
-      ...avisosOficiais,
-      ...notificacoesMorador,
-      ...sugestoesRespondidas
-    ];
-
-    const semDuplicados = lista.filter(
-      (item, index, self) =>
-        index === self.findIndex(
-          (x) => String(x.tipo || x.categoria) + String(x.id) === String(item.tipo || item.categoria) + String(item.id)
-        )
-    );
-
-    setAvisos(semDuplicados.sort((a, b) => Number(b.id) - Number(a.id)));
-  }
-
-  function normalizarPrioridade(prioridade) {
-    return prioridade ? prioridade.toLowerCase() : "normal";
-  }
-
-  function obterPrioridade(prioridade) {
-    const valor = normalizarPrioridade(prioridade);
-
-    if (valor === "urgente" || valor === "alta") {
+    if (
+      value === "Urgente"
+    ) {
       return {
-        texto: "Urgente",
-        fundo: "#fee2e2",
-        cor: "#991b1b",
-        icone: "🚨"
+        label:
+          "Urgente",
+        background:
+          "#fee2e2",
+        color:
+          "#991b1b",
+        border:
+          "#fecaca",
       };
     }
 
-    if (valor === "importante" || valor === "média" || valor === "media") {
+    if (
+      value === "Alta"
+    ) {
       return {
-        texto: "Importante",
-        fundo: "#fef3c7",
-        cor: "#92400e",
-        icone: "⚠️"
+        label:
+          "Alta",
+        background:
+          "#ffedd5",
+        color:
+          "#9a3412",
+        border:
+          "#fed7aa",
+      };
+    }
+
+    if (
+      value === "Baixa"
+    ) {
+      return {
+        label:
+          "Baixa",
+        background:
+          "#dcfce7",
+        color:
+          "#166534",
+        border:
+          "#bbf7d0",
       };
     }
 
     return {
-      texto: "Normal",
-      fundo: "#f3e8ff",
-      cor: "#7c3aed",
-      icone: "📢"
+      label:
+        "Média",
+      background:
+        "#fef3c7",
+      color:
+        "#92400e",
+      border:
+        "#fde68a",
     };
   }
 
-  function marcarComoLido(item) {
-    const avisosOficiais = lerStorage("avisos").map((aviso) =>
-      aviso.id === item.id
-        ? {
-            ...aviso,
-            lidaMorador: true,
-            lidaEm: new Date().toISOString()
-          }
-        : aviso
-    );
+  async function marcarComoLido(
+    item
+  ) {
+    if (
+      !item.notificationId ||
+      item.lido
+    ) {
+      return;
+    }
 
-    salvarStorage("avisos", avisosOficiais);
+    try {
+      await marcarComoLida(
+        item.notificationId
+      );
 
-    const notificacoes = lerStorage("notificacoesMorador").map((notificacao) =>
-      notificacao.id === item.id
-        ? {
-            ...notificacao,
-            lida: true,
-            lidaEm: new Date().toISOString()
-          }
-        : notificacao
-    );
-
-    salvarStorage("notificacoesMorador", notificacoes);
-
-    const sugestoes = lerStorage("sugestoes_reclamacoes").map((registro) =>
-      registro.id === item.id
-        ? {
-            ...registro,
-            lidaMorador: true,
-            lidaMoradorEm: new Date().toISOString()
-          }
-        : registro
-    );
-
-    salvarStorage("sugestoes_reclamacoes", sugestoes);
-
-    registrarAuditoria({
-      acao: "Morador marcou aviso como lido",
-      modulo: "Avisos Morador",
-      detalhes: item.titulo || "Aviso lido",
-      referenciaId: item.id
-    });
-
-    carregarAvisos();
+      await carregarAvisos();
+    } catch (error) {
+      alert(
+        error?.message ??
+        "Não foi possível marcar o aviso como lido."
+      );
+    }
   }
 
-  const urgentes = avisos.filter(
-    (a) => obterPrioridade(a.prioridade).texto === "Urgente"
-  );
+  const urgentes =
+    avisos.filter(
+      (item) =>
+        item.prioridade ===
+        "Urgente"
+    ).length;
 
-  const importantes = avisos.filter(
-    (a) => obterPrioridade(a.prioridade).texto === "Importante"
-  );
+  const importantes =
+    avisos.filter(
+      (item) =>
+        item.prioridade ===
+        "Alta"
+    ).length;
 
-  const normais = avisos.filter(
-    (a) => obterPrioridade(a.prioridade).texto === "Normal"
-  );
+  const normais =
+    avisos.filter(
+      (item) =>
+        [
+          "Média",
+          "Baixa",
+        ].includes(
+          item.prioridade
+        )
+    ).length;
 
-  const avisosFiltrados = avisos.filter((item) => {
-    const texto = busca.toLowerCase();
+  const avisosFiltrados =
+    avisos.filter(
+      (item) => {
+        const texto =
+          busca
+            .trim()
+            .toLowerCase();
 
-    const correspondeBusca =
-      item.titulo?.toLowerCase().includes(texto) ||
-      item.descricao?.toLowerCase().includes(texto) ||
-      item.prioridade?.toLowerCase().includes(texto) ||
-      item.data?.toLowerCase().includes(texto) ||
-      item.status?.toLowerCase().includes(texto) ||
-      item.origem?.toLowerCase().includes(texto) ||
-      item.tipo?.toLowerCase().includes(texto);
+        const corresponde =
+          !texto ||
+          item.titulo
+            ?.toLowerCase()
+            .includes(texto) ||
+          item.descricao
+            ?.toLowerCase()
+            .includes(texto) ||
+          item.categoria
+            ?.toLowerCase()
+            .includes(texto);
 
-    const prioridade = obterPrioridade(item.prioridade).texto;
+        const prioridadeMatch =
+          filtroPrioridade ===
+            "Todas" ||
+          item.prioridade ===
+            filtroPrioridade;
 
-    const correspondePrioridade =
-      filtroPrioridade === "Todos" || prioridade === filtroPrioridade;
-
-    return correspondeBusca && correspondePrioridade;
-  });
+        return (
+          corresponde &&
+          prioridadeMatch
+        );
+      }
+    );
 
   return (
     <div style={styles.container}>
-      <div style={styles.hero}>
+      <section style={styles.hero}>
         <div>
-          <span style={styles.heroBadge}>📢 Comunicação oficial</span>
+          <span style={styles.heroBadge}>
+            📢 Comunicação oficial
+          </span>
 
-          <h1 style={styles.title}>Avisos do Condomínio</h1>
+          <h1 style={styles.title}>
+            Avisos
+          </h1>
 
           <p style={styles.subtitle}>
-            Acompanhe comunicados importantes, respostas do síndico,
-            alertas e informações publicadas pela administração.
+            Consulte comunicados publicados pela administração.
+            Somente avisos destinados ao seu perfil ou apartamento
+            aparecem nesta tela.
           </p>
         </div>
 
@@ -300,9 +312,11 @@ function AvisosMorador() {
 
           <h3 style={styles.heroNumber}>{avisos.length}</h3>
 
-          <span style={styles.heroStatus}>Comunicados ativos</span>
+          <span style={styles.heroStatus}>
+            comunicados disponíveis
+          </span>
         </div>
-      </div>
+      </section>
 
       <div style={styles.resumeGrid}>
         <div style={styles.cardPrimary}>
@@ -311,20 +325,12 @@ function AvisosMorador() {
 
             <h2 style={styles.cardNumberLight}>{avisos.length}</h2>
 
-            <span style={styles.cardHintLight}>comunicados publicados</span>
+            <span style={styles.cardHintLight}>
+              comunicação do condomínio
+            </span>
           </div>
 
           <div style={styles.cardIconLight}>📢</div>
-        </div>
-
-        <div style={styles.resumeCard}>
-          <div style={styles.cardIconYellow}>⚠️</div>
-
-          <div>
-            <p style={styles.resumeLabel}>Importantes</p>
-
-            <h2 style={styles.resumeNumberYellow}>{importantes.length}</h2>
-          </div>
         </div>
 
         <div style={styles.resumeCard}>
@@ -333,7 +339,21 @@ function AvisosMorador() {
           <div>
             <p style={styles.resumeLabel}>Urgentes</p>
 
-            <h2 style={styles.resumeNumberRed}>{urgentes.length}</h2>
+            <h2 style={styles.resumeNumberRed}>
+              {urgentes}
+            </h2>
+          </div>
+        </div>
+
+        <div style={styles.resumeCard}>
+          <div style={styles.cardIconOrange}>⚠️</div>
+
+          <div>
+            <p style={styles.resumeLabel}>Alta prioridade</p>
+
+            <h2 style={styles.resumeNumberOrange}>
+              {importantes}
+            </h2>
           </div>
         </div>
 
@@ -341,117 +361,155 @@ function AvisosMorador() {
           <div style={styles.cardIconGreen}>✅</div>
 
           <div>
-            <p style={styles.resumeLabel}>Normais</p>
+            <p style={styles.resumeLabel}>Demais avisos</p>
 
-            <h2 style={styles.resumeNumberGreen}>{normais.length}</h2>
+            <h2 style={styles.resumeNumberGreen}>
+              {normais}
+            </h2>
           </div>
         </div>
       </div>
 
-      <div style={styles.listCard}>
-        <div style={styles.listHeader}>
-          <div>
-            <h2 style={styles.sectionTitle}>Comunicados publicados</h2>
+      <div style={styles.filterCard}>
+        <div>
+          <h2 style={styles.sectionTitle}>
+            Comunicados
+          </h2>
 
-            <p style={styles.sectionSubtitle}>
-              Consulte avisos enviados pelo síndico e respostas das suas solicitações.
-            </p>
-          </div>
-
-          <div style={styles.filters}>
-            <input
-              placeholder="Buscar aviso..."
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              style={styles.search}
-            />
-
-            <select
-              value={filtroPrioridade}
-              onChange={(e) => setFiltroPrioridade(e.target.value)}
-              style={styles.filter}
-            >
-              <option>Todos</option>
-              <option>Normal</option>
-              <option>Importante</option>
-              <option>Urgente</option>
-            </select>
-          </div>
+          <p style={styles.sectionSubtitle}>
+            Consulte avisos enviados pelo síndico.
+            Respostas de solicitações e demais eventos chegam
+            também pela Central de Notificações.
+          </p>
         </div>
 
+        <div style={styles.filters}>
+          <input
+            placeholder="Buscar aviso..."
+            value={busca}
+            onChange={(e) =>
+              setBusca(
+                e.target.value
+              )
+            }
+            style={styles.search}
+          />
+
+          <select
+            value={filtroPrioridade}
+            onChange={(e) =>
+              setFiltroPrioridade(
+                e.target.value
+              )
+            }
+            style={styles.filter}
+          >
+            <option>Todas</option>
+            <option>Urgente</option>
+            <option>Alta</option>
+            <option>Média</option>
+            <option>Baixa</option>
+          </select>
+        </div>
+      </div>
+
+      <div style={styles.listCard}>
         {avisosFiltrados.length === 0 ? (
           <div style={styles.empty}>
             <div style={styles.emptyIcon}>📭</div>
 
-            <h3 style={styles.emptyTitle}>Nenhum aviso encontrado</h3>
+            <h3 style={styles.emptyTitle}>
+              Nenhum aviso disponível
+            </h3>
 
             <p style={styles.emptyText}>
-              Não existem avisos cadastrados ou filtrados no momento.
+              Não existem avisos publicados para você neste momento.
             </p>
           </div>
         ) : (
           <div style={styles.list}>
             {avisosFiltrados.map((item) => {
-              const prioridade = obterPrioridade(item.prioridade);
+              const prioridade =
+                obterPrioridade(
+                  item.prioridade
+                );
 
               return (
-                <div key={`${item.tipo || "aviso"}-${item.id}`} style={styles.card}>
+                <div
+                  key={item.id}
+                  style={{
+                    ...styles.noticeCard,
+                    borderColor:
+                      prioridade.border,
+                  }}
+                >
                   <div style={styles.cardTop}>
-                    <div style={styles.noticeIcon}>{prioridade.icone}</div>
-
-                    <div style={styles.noticeContent}>
-                      <div style={styles.badges}>
-                        <span
-                          style={{
-                            ...styles.priority,
-                            background: prioridade.fundo,
-                            color: prioridade.cor
-                          }}
-                        >
-                          {prioridade.texto}
-                        </span>
-
-                        <span style={styles.dateBadge}>
-                          📅 {item.data || "Sem data"}
-                        </span>
-
-                        <span style={styles.originBadge}>
-                          {item.origem || "Administração"}
-                        </span>
-
-                        <span style={styles.statusBadge}>
-                          {item.status || "Publicado"}
-                        </span>
-
-                        {!item.lida && (
-                          <span style={styles.newBadge}>
-                            Novo
-                          </span>
-                        )}
-                      </div>
-
-                      <h2 style={styles.cardTitle}>{item.titulo}</h2>
-
-                      <p style={styles.description}>{item.descricao}</p>
-
-                      {item.respostaSindico && (
-                        <div style={styles.responseBox}>
-                          <strong>Resposta do síndico:</strong>
-
-                          <p>{item.respostaSindico}</p>
-                        </div>
-                      )}
-
-                      {!item.lida && (
-                        <button
-                          style={styles.readButton}
-                          onClick={() => marcarComoLido(item)}
-                        >
-                          Marcar como lido
-                        </button>
-                      )}
+                    <div style={styles.noticeIcon}>
+                      📢
                     </div>
+
+                    <span
+                      style={{
+                        ...styles.priorityBadge,
+                        background:
+                          prioridade.background,
+                        color:
+                          prioridade.color,
+                      }}
+                    >
+                      {prioridade.label}
+                    </span>
                   </div>
+
+                  <div style={styles.badges}>
+                    <span style={styles.categoryBadge}>
+                      {item.categoria}
+                    </span>
+
+                    <span style={styles.originBadge}>
+                      {item.origem}
+                    </span>
+
+                    <span
+                      style={{
+                        ...styles.readBadge,
+                        ...(item.lido
+                          ? styles.readBadgeDone
+                          : {}),
+                      }}
+                    >
+                      {item.lido
+                        ? "Lido"
+                        : "Novo"}
+                    </span>
+                  </div>
+
+                  <h3 style={styles.noticeTitle}>
+                    {item.titulo}
+                  </h3>
+
+                  <p style={styles.description}>
+                    {item.descricao}
+                  </p>
+
+                  <div style={styles.meta}>
+                    <span>Publicado em</span>
+                    <strong>{item.data}</strong>
+                  </div>
+
+                  {!item.lido &&
+                    item.notificationId && (
+                    <button
+                      style={styles.readButton}
+                      onClick={() =>
+                        marcarComoLido(
+                          item
+                        )
+                      }
+                    >
+                      Marcar como lido
+                    </button>
+                  )}
                 </div>
               );
             })}

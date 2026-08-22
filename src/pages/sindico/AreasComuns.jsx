@@ -1,607 +1,497 @@
-import { useEffect, useState } from "react";
-import { registrarAuditoria } from "../../Services/auditoriaService";
-import { criarNotificacao } from "../../Services/notificacaoService";
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import commonAreaApi from "../../Services/commonAreaApi.js";
+import reservationApi from "../../Services/reservationApi.js";
 
 function AreasComuns() {
-  const STORAGE_KEY = "areasComuns";
-  const STORAGE_MOVIMENTACOES = "movimentacoes";
-  const STORAGE_RELATORIOS = "relatorios_operacionais";
-  const STORAGE_AVISOS_SINDICO = "avisos_sindico";
-
   const estadoInicialArea = {
     nome: "",
     capacidade: "",
     horario: "",
     status: "Disponível",
-    condominioId: null,
-    nomeCondominio: "",
-    criadoPor: ""
   };
 
-  const [areas, setAreas] = useState(() => {
-    const dados = localStorage.getItem(STORAGE_KEY);
+  const [areas, setAreas] =
+    useState([]);
 
-    if (!dados) return [];
+  const [mostrarModal, setMostrarModal] =
+    useState(false);
 
-    const lista = JSON.parse(dados);
+  const [busca, setBusca] =
+    useState("");
 
-    return lista.map((area) => ({
-      ...area,
-      capacidade: area.capacidade || "",
-      status: area.status || "Disponível"
-    }));
-  });
+  const [filtroStatus, setFiltroStatus] =
+    useState("Todos");
 
-  const [mostrarModal, setMostrarModal] = useState(false);
-  const [busca, setBusca] = useState("");
-  const [filtroStatus, setFiltroStatus] = useState("Todos");
-  const [novaArea, setNovaArea] = useState(estadoInicialArea);
-  const [editId, setEditId] = useState(null);
-
-  useEffect(() => {
-    const sincronizar = () => {
-      const lista = lerStorage(STORAGE_KEY).map((area) => ({
-        ...area,
-        capacidade: area.capacidade || "",
-        status: area.status || "Disponível"
-      }));
-
-      setAreas(lista);
-    };
-
-    window.addEventListener("storage", sincronizar);
-    window.addEventListener(
-      "infinitycondo:reservas",
-      sincronizar
+  const [novaArea, setNovaArea] =
+    useState(
+      estadoInicialArea
     );
 
-    return () => {
-      window.removeEventListener("storage", sincronizar);
-      window.removeEventListener(
-        "infinitycondo:reservas",
-        sincronizar
-      );
-    };
-  }, []);
-
-  function lerStorage(chave) {
-    try {
-      const dados = localStorage.getItem(chave);
-      return dados ? JSON.parse(dados) : [];
-    } catch {
-      return [];
-    }
-  }
-
-  function salvarStorage(chave, dados) {
-    localStorage.setItem(chave, JSON.stringify(dados));
-
-    if (
-      chave === STORAGE_KEY ||
-      chave === "reservas"
-    ) {
-      window.dispatchEvent(
-        new CustomEvent("infinitycondo:reservas", {
-          detail: { chave }
-        })
-      );
-    }
-  }
-
-  function gerarIdUnico() {
-    return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-  }
-
-  function normalizarStatusReserva(status) {
-    const valor = String(status || "")
-      .trim()
-      .toLowerCase();
-
-    if (
-      valor === "recusada" ||
-      valor === "recusado" ||
-      valor === "cancelada" ||
-      valor === "cancelado" ||
-      valor === "concluída" ||
-      valor === "concluida"
-    ) {
-      return valor.includes("recus")
-        ? "recusada"
-        : valor.includes("cancel")
-        ? "cancelada"
-        : "concluida";
-    }
-
-    return valor === "aprovada" || valor === "aprovado"
-      ? "aprovada"
-      : "pendente";
-  }
-
-  function reservaAtiva(reserva) {
-    return ![
-      "recusada",
-      "cancelada",
-      "concluida"
-    ].includes(normalizarStatusReserva(reserva?.status));
-  }
-
-  function reservasAtivasDaArea(area) {
-    const reservas = lerStorage("reservas");
-
-    return reservas.filter((reserva) => {
-      const mesmaArea =
-        area?.id && reserva?.areaId
-          ? String(area.id) === String(reserva.areaId)
-          : String(area?.nome || "")
-              .trim()
-              .toLowerCase() ===
-            String(reserva?.area || "")
-              .trim()
-              .toLowerCase();
-
-      return mesmaArea && reservaAtiva(reserva);
-    });
-  }
+  const [editId, setEditId] =
+    useState(null);
 
   function limparCapacidade(valor) {
-    return String(valor || "").replace(/\D/g, "");
+    return String(valor ?? "")
+      .replace(/\D/g, "");
   }
 
-  function obterPerfilCondominio() {
-    try {
-      const perfil =
-        JSON.parse(localStorage.getItem("perfil_condominio")) ||
-        JSON.parse(localStorage.getItem("configuracoes")) ||
-        {};
-
-      return {
-        condominioId: perfil.id || perfil.condominioId || null,
-        nomeCondominio: perfil.nomeCondominio || ""
-      };
-    } catch {
-      return {
-        condominioId: null,
-        nomeCondominio: ""
-      };
+  function horarioTexto(area) {
+    if (
+      area.openingTime &&
+      area.closingTime
+    ) {
+      return `${area.openingTime} às ${area.closingTime}`;
     }
+
+    return (
+      area.openingTime ||
+      area.closingTime ||
+      ""
+    );
   }
 
-  function obterUsuarioAtual() {
+  function extrairHorarios(valor) {
+    const matches =
+      String(valor ?? "")
+        .match(
+          /(?:[01]\d|2[0-3]):[0-5]\d/g
+        ) ?? [];
+
+    if (matches.length < 2) {
+      return null;
+    }
+
+    return {
+      openingTime:
+        matches[0],
+      closingTime:
+        matches[1],
+    };
+  }
+
+  async function carregar() {
     try {
-      return (
-        JSON.parse(localStorage.getItem("usuarioSindico")) ||
-        JSON.parse(sessionStorage.getItem("usuarioSindico")) ||
-        {}
+      const [
+        areaData,
+        reservationData,
+      ] = await Promise.all([
+        commonAreaApi.list(),
+        reservationApi.list(),
+      ]);
+      const activeReservationList =
+        reservationData ?? [];
+
+      setAreas(
+        (areaData ?? []).map(
+          (item) => {
+            const active =
+              item.active !== false;
+
+            const agora =
+              new Date();
+
+            const hoje =
+              agora
+                .toISOString()
+                .slice(0, 10);
+
+            const hora =
+              agora
+                .toTimeString()
+                .slice(0, 5);
+
+            const ocupada =
+              active &&
+              activeReservationList.some(
+                (reserva) =>
+                  reserva.commonAreaId ===
+                    item.id &&
+                  reserva.status ===
+                    "APPROVED" &&
+                  String(
+                    reserva.reservationDate ??
+                    ""
+                  ).slice(0, 10) ===
+                    hoje &&
+                  reserva.startTime <=
+                    hora &&
+                  reserva.endTime >
+                    hora
+              );
+
+            return {
+              ...item,
+              nome:
+                item.name ??
+                "",
+              capacidade:
+                item.capacity ===
+                  null ||
+                item.capacity ===
+                  undefined
+                  ? ""
+                  : String(
+                      item.capacity
+                    ),
+              horario:
+                horarioTexto(
+                  item
+                ),
+              status:
+                !active
+                  ? "Manutenção"
+                  : ocupada
+                    ? "Ocupado"
+                    : "Disponível",
+            };
+          }
+        )
       );
-    } catch {
-      return {};
+    } catch (error) {
+      alert(
+        error?.message ??
+        "Não foi possível carregar as áreas comuns."
+      );
     }
   }
 
-  function registrarAuditoriaArea({
-    acao,
-    detalhes,
-    antes = null,
-    depois = null,
-    referenciaId = null
-  }) {
-    registrarAuditoria({
-      acao,
-      modulo: "Áreas Comuns",
-      detalhes,
-      antes,
-      depois,
-      referenciaId
-    });
-  }
+  useEffect(() => {
+    carregar();
+  }, []);
 
-  function criarNotificacaoArea({
-    titulo,
-    mensagem,
-    referenciaId = null,
-    prioridade = "normal"
-  }) {
-    criarNotificacao({
-      titulo,
-      mensagem,
-      tipo: "Áreas Comuns",
-      origem: "Áreas Comuns",
-      perfilDestino: "sindico",
-      moduloOrigem: "AreasComuns",
-      referenciaId,
-      prioridade
+  const areasFiltradas =
+    areas.filter((area) => {
+      const texto =
+        busca
+          .trim()
+          .toLowerCase();
+
+      const correspondeBusca =
+        !texto ||
+        area.nome
+          ?.toLowerCase()
+          .includes(texto) ||
+        area.capacidade
+          ?.toLowerCase()
+          .includes(texto) ||
+        area.horario
+          ?.toLowerCase()
+          .includes(texto) ||
+        area.status
+          ?.toLowerCase()
+          .includes(texto);
+
+      const correspondeStatus =
+        filtroStatus ===
+          "Todos" ||
+        area.status ===
+          filtroStatus;
+
+      return (
+        correspondeBusca &&
+        correspondeStatus
+      );
     });
-  }
+
+  const disponiveis =
+    areas.filter(
+      (area) =>
+        area.status ===
+        "Disponível"
+    );
+
+  const ocupadas =
+    areas.filter(
+      (area) =>
+        area.status ===
+        "Ocupado"
+    );
+
+  const manutencao =
+    areas.filter(
+      (area) =>
+        area.status ===
+        "Manutenção"
+    );
 
   function validarArea() {
-    const nome = String(novaArea.nome || "").trim();
-    const horario = String(novaArea.horario || "").trim();
-    const capacidade = String(novaArea.capacidade || "").trim();
-
-    if (nome.length < 3) {
-      alert("Informe um nome válido para a área comum.");
+    if (
+      String(
+        novaArea.nome ??
+        ""
+      ).trim().length < 3
+    ) {
+      alert(
+        "Informe um nome válido para a área comum."
+      );
       return false;
     }
 
-    if (capacidade && limparCapacidade(capacidade).length === 0) {
-      alert("A capacidade deve conter apenas números ou ficar em branco.");
+    const horarios =
+      extrairHorarios(
+        novaArea.horario
+      );
+
+    if (!horarios) {
+      alert(
+        "Informe o funcionamento com horário inicial e final. Ex: 08:00 às 22:00."
+      );
       return false;
     }
 
-    if (!horario) {
-      alert("Informe o horário de funcionamento.");
-      return false;
-    }
-
-    if (!novaArea.status) {
-      alert("Selecione o status da área.");
+    if (
+      horarios.openingTime >=
+      horarios.closingTime
+    ) {
+      alert(
+        "O horário final deve ser posterior ao inicial."
+      );
       return false;
     }
 
     return true;
   }
 
-  function registrarMovimentacao(acao, area) {
-    const movimentacoes = lerStorage(STORAGE_MOVIMENTACOES);
-
-    const nova = {
-      id: gerarIdUnico(),
-      tipo: "Área Comum",
-      acao,
-      origem: "Síndico",
-      titulo: area.nome,
-      areaId: area.id,
-      status: area.status,
-      descricao: `Área comum ${area.nome} - ${acao}`,
-      data: new Date().toLocaleDateString("pt-BR"),
-      hora: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      }),
-      timestamp: Date.now(),
-      impactaBI: true,
-      origemModulo: "AreasComuns"
-    };
-
-    salvarStorage(STORAGE_MOVIMENTACOES, [nova, ...movimentacoes]);
-  }
-
-  function registrarRelatorio(acao, area) {
-    const relatorios = lerStorage(STORAGE_RELATORIOS);
-
-    const novo = {
-      id: gerarIdUnico(),
-      tipo: "Área Comum",
-      acao,
-      origem: "Síndico",
-      titulo: area.nome,
-      areaId: area.id,
-      nome: area.nome,
-      capacidade: area.capacidade,
-      horario: area.horario,
-      status: area.status,
-      data: new Date().toLocaleDateString("pt-BR"),
-      hora: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      }),
-      impactaRelatorio: true,
-      origemModulo: "AreasComuns"
-    };
-
-    salvarStorage(STORAGE_RELATORIOS, [novo, ...relatorios]);
-  }
-
-  function registrarAvisoSindico(acao, area) {
-    const avisos = lerStorage(STORAGE_AVISOS_SINDICO);
-
-    const novo = {
-      id: gerarIdUnico(),
-      categoria: "Aviso",
-      origem: "Síndico",
-      titulo: `Área comum ${acao} - ${area.nome}`,
-      descricao: `A área ${area.nome} foi ${acao}. Status atual: ${area.status}.`,
-      apartamento: "",
-      morador: "",
-      responsavel: "Síndico",
-      status: "Novo",
-      respostaSindico: "",
-      cienciaSindico: true,
-      data: new Date().toLocaleDateString("pt-BR"),
-      areaId: area.id,
-      impactaBI: true,
-      impactaRelatorio: true,
-      exibirNaCentral: true,
-      origemModulo: "AreasComuns"
-    };
-
-    salvarStorage(STORAGE_AVISOS_SINDICO, [novo, ...avisos]);
-  }
-
-  function registrarFluxo(acao, area, antes = null) {
-    registrarMovimentacao(acao, area);
-    registrarRelatorio(acao, area);
-
-    registrarAuditoriaArea({
-      acao: `Área comum - ${acao}`,
-      detalhes: `${area.nome} • Status: ${area.status}`,
-      antes,
-      depois: area,
-      referenciaId: area.id
-    });
-
-    if (
-      acao === "status alterado para Manutenção" ||
-      acao === "status alterado para Disponível"
-    ) {
-      criarNotificacaoArea({
-        titulo:
-          acao === "status alterado para Manutenção"
-            ? "Área em manutenção"
-            : "Área liberada",
-        mensagem: `${area.nome} agora está com status ${area.status}.`,
-        referenciaId: area.id,
-        prioridade:
-          acao === "status alterado para Manutenção" ? "alta" : "normal"
-      });
-    }
-  }
-
-  const areasFiltradas = areas.filter((area) => {
-    const texto = busca.toLowerCase();
-
-    const correspondeBusca =
-      area.nome?.toLowerCase().includes(texto) ||
-      area.capacidade?.toLowerCase().includes(texto) ||
-      area.horario?.toLowerCase().includes(texto) ||
-      area.status?.toLowerCase().includes(texto);
-
-    const correspondeStatus =
-      filtroStatus === "Todos" ||
-      area.status === filtroStatus;
-
-    return correspondeBusca && correspondeStatus;
-  });
-
-  const disponiveis = areas.filter(
-    (area) => area.status === "Disponível"
-  );
-
-  const ocupadas = areas.filter(
-    (area) => area.status === "Ocupado"
-  );
-
-  const manutencao = areas.filter(
-    (area) => area.status === "Manutenção"
-  );
-
-  function salvarArea() {
+  async function salvarArea() {
     if (!validarArea()) {
       return;
     }
 
-    const areaExiste = areas.find(
-      (area) =>
-        area.nome?.toLowerCase() === novaArea.nome.toLowerCase() &&
-        area.id !== editId
-    );
-
-    if (areaExiste) {
-      alert("Essa área já existe");
-      return;
-    }
-
-    const perfilCondominio = obterPerfilCondominio();
-    const usuarioAtual = obterUsuarioAtual();
-
-    const areaFormatada = {
-      ...novaArea,
-      nome: String(novaArea.nome || "").trim(),
-      capacidade: limparCapacidade(novaArea.capacidade),
-      horario: String(novaArea.horario || "").trim(),
-      status: novaArea.status || "Disponível",
-      condominioId: perfilCondominio.condominioId,
-      nomeCondominio: perfilCondominio.nomeCondominio,
-      criadoPor: usuarioAtual.nome || usuarioAtual.usuario || "Administrador"
-    };
-
-    let listaAtualizada = [];
-    let areaFinal = null;
-
-    if (editId !== null) {
-      const areaAntes = areas.find((area) => area.id === editId);
-
-      areaFinal = {
-        ...areaFormatada,
-        id: editId,
-        impactaBI: true,
-        impactaRelatorio: true,
-        origemModulo: "AreasComuns",
-        atualizadoEm: new Date().toLocaleString("pt-BR"),
-        atualizadoEmISO: new Date().toISOString()
-      };
-
-      listaAtualizada = areas.map((area) =>
-        area.id === editId ? areaFinal : area
+    const horarios =
+      extrairHorarios(
+        novaArea.horario
       );
 
-      registrarFluxo("editada", areaFinal, areaAntes);
-      setEditId(null);
-    } else {
-      areaFinal = {
-        id: gerarIdUnico(),
-        ...areaFormatada,
-        reservasAtivas: 0,
-        impactaBI: true,
-        impactaRelatorio: true,
-        origemModulo: "AreasComuns",
-        criadoEm: new Date().toLocaleString("pt-BR"),
-        criadoEmISO: new Date().toISOString()
-      };
+    const payload = {
+      name:
+        novaArea.nome.trim(),
+      description:
+        novaArea.description ??
+        null,
+      capacity:
+        novaArea.capacidade
+          ? Number(
+              novaArea.capacidade
+            )
+          : null,
+      openingTime:
+        horarios.openingTime,
+      closingTime:
+        horarios.closingTime,
+      reservationRequired:
+        true,
+      active:
+        novaArea.status !==
+        "Manutenção",
+      rules:
+        novaArea.rules ??
+        null,
+    };
 
-      listaAtualizada = [
-        areaFinal,
-        ...areas
-      ];
+    try {
+      if (editId) {
+        await commonAreaApi
+          .update(
+            editId,
+            payload
+          );
+      } else {
+        await commonAreaApi
+          .create(
+            payload
+          );
+      }
 
-      registrarFluxo("cadastrada", areaFinal);
+      await carregar();
+      fecharModal();
+    } catch (error) {
+      alert(
+        error?.message ??
+        "Não foi possível salvar a área comum."
+      );
     }
-
-    setAreas(listaAtualizada);
-    salvarStorage(STORAGE_KEY, listaAtualizada);
-
-    setNovaArea(estadoInicialArea);
-    setMostrarModal(false);
   }
 
   function editarArea(area) {
     setNovaArea({
       ...estadoInicialArea,
-      ...area
+      ...area,
+      status:
+        area.status ===
+        "Ocupado"
+          ? "Disponível"
+          : area.status,
     });
 
-    setEditId(area.id);
-    setMostrarModal(true);
-  }
-
-  function excluirArea(id) {
-    const confirmar = window.confirm(
-      "Deseja excluir essa área?"
+    setEditId(
+      area.id
     );
 
-    if (!confirmar) return;
+    setMostrarModal(
+      true
+    );
+  }
 
-    const areaExcluida = areas.find((area) => area.id === id);
-
-    if (!areaExcluida) {
-      alert("Área comum não encontrada.");
+  async function excluirArea(id) {
+    if (
+      !window.confirm(
+        "Deseja excluir essa área?"
+      )
+    ) {
       return;
     }
 
-    const reservasAtivas =
-      reservasAtivasDaArea(areaExcluida);
+    try {
+      await commonAreaApi
+        .remove(id);
 
-    if (reservasAtivas.length > 0) {
+      await carregar();
+    } catch (error) {
       alert(
-        "Não é possível excluir esta área porque existem reservas ativas vinculadas a ela. Cancele ou conclua as reservas primeiro."
+        error?.message ??
+        "Não foi possível excluir a área. Verifique se existem reservas ativas."
+      );
+    }
+  }
+
+  async function alterarStatus(
+    id,
+    status
+  ) {
+    if (status === "Ocupado") {
+      alert(
+        "O status Ocupado é calculado automaticamente a partir das reservas aprovadas em andamento."
       );
       return;
     }
 
-    const listaAtualizada = areas.filter(
-      (area) => area.id !== id
-    );
-
-    setAreas(listaAtualizada);
-    salvarStorage(STORAGE_KEY, listaAtualizada);
-
-    if (areaExcluida) {
-      registrarFluxo("excluída", areaExcluida, areaExcluida);
-    }
-  }
-
-  function alterarStatus(id, status) {
-    let areaAtualizada = null;
-    const areaAntes = areas.find((area) => area.id === id);
-
-    if (!areaAntes) {
-      alert("Área comum não encontrada.");
-      return;
-    }
-
-    if (status === "Manutenção") {
-      const reservasAtivas =
-        reservasAtivasDaArea(areaAntes);
-
-      if (reservasAtivas.length > 0) {
-        const confirmar = window.confirm(
-          `Esta área possui ${reservasAtivas.length} reserva(s) ativa(s). Ao colocá-la em manutenção, novas reservas e aprovações serão bloqueadas. Deseja continuar?`
-        );
-
-        if (!confirmar) return;
+    try {
+      if (
+        status ===
+        "Manutenção"
+      ) {
+        await commonAreaApi
+          .deactivate(id);
+      } else {
+        await commonAreaApi
+          .activate(id);
       }
-    }
 
-    const listaAtualizada = areas.map((area) => {
-      if (area.id !== id) return area;
-
-      areaAtualizada = {
-        ...area,
-        status,
-        impactaBI: true,
-        impactaRelatorio: true,
-        origemModulo: "AreasComuns",
-        atualizadoEm: new Date().toLocaleString("pt-BR"),
-        atualizadoEmISO: new Date().toISOString()
-      };
-
-      return areaAtualizada;
-    });
-
-    setAreas(listaAtualizada);
-    salvarStorage(STORAGE_KEY, listaAtualizada);
-
-    if (areaAtualizada) {
-      registrarFluxo(`status alterado para ${status}`, areaAtualizada, areaAntes);
+      await carregar();
+    } catch (error) {
+      alert(
+        error?.message ??
+        "Não foi possível alterar o status da área."
+      );
     }
   }
 
   function fecharModal() {
     setMostrarModal(false);
     setEditId(null);
-    setNovaArea(estadoInicialArea);
+    setNovaArea(
+      estadoInicialArea
+    );
   }
 
   function corStatus(status) {
-    switch (status) {
-      case "Disponível":
-        return {
-          background: "#f3e8ff",
-          color: "#7c3aed",
-          border: "#ddd6fe",
-          label: "Disponível"
-        };
-
-      case "Ocupado":
-        return {
-          background: "#fef3c7",
-          color: "#92400e",
-          border: "#fde68a",
-          label: "Ocupado"
-        };
-
-      case "Manutenção":
-        return {
-          background: "#fee2e2",
-          color: "#b91c1c",
-          border: "#fecaca",
-          label: "Manutenção"
-        };
-
-      default:
-        return {
-          background: "#f5f3ff",
-          color: "#374151",
-          border: "#ddd6fe",
-          label: status || "Sem status"
-        };
+    if (
+      status === "Disponível"
+    ) {
+      return {
+        label:
+          "Disponível",
+        background:
+          "#dcfce7",
+        color:
+          "#166534",
+        border:
+          "#bbf7d0",
+      };
     }
+
+    if (
+      status === "Ocupado"
+    ) {
+      return {
+        label:
+          "Ocupado",
+        background:
+          "#fef3c7",
+        color:
+          "#92400e",
+        border:
+          "#fde68a",
+      };
+    }
+
+    return {
+      label:
+        "Manutenção",
+      background:
+        "#fee2e2",
+      color:
+        "#b91c1c",
+      border:
+        "#fecaca",
+    };
   }
 
   function iconeArea(nome) {
-    const texto = nome?.toLowerCase() || "";
+    const texto =
+      String(nome ?? "")
+        .toLowerCase();
 
-    if (texto.includes("piscina")) return "🏊";
-    if (texto.includes("churrasqueira")) return "🔥";
-    if (texto.includes("salão") || texto.includes("salao")) return "🎉";
-    if (texto.includes("quadra")) return "⚽";
-    if (texto.includes("academia")) return "💪";
-    if (texto.includes("brinquedo") || texto.includes("play")) return "🧸";
-    if (texto.includes("coworking")) return "💻";
-    if (texto.includes("jardim")) return "🌿";
+    if (
+      texto.includes(
+        "pisc"
+      )
+    ) {
+      return "🏊";
+    }
+
+    if (
+      texto.includes(
+        "churr"
+      )
+    ) {
+      return "🔥";
+    }
+
+    if (
+      texto.includes(
+        "quadra"
+      )
+    ) {
+      return "🏀";
+    }
+
+    if (
+      texto.includes(
+        "academ"
+      )
+    ) {
+      return "🏋️";
+    }
+
+    if (
+      texto.includes(
+        "salão"
+      ) ||
+      texto.includes(
+        "salao"
+      )
+    ) {
+      return "🎉";
+    }
 
     return "🏢";
   }
+
     return (
     <div style={styles.container}>
       <section style={styles.hero}>
@@ -939,7 +829,6 @@ function AreasComuns() {
                     style={styles.input}
                   >
                     <option>Disponível</option>
-                    <option>Ocupado</option>
                     <option>Manutenção</option>
                   </select>
                 </div>

@@ -4,7 +4,6 @@ import {
   Link,
   Outlet,
   useNavigate,
-  Navigate,
   useLocation
 } from "react-router-dom";
 
@@ -26,6 +25,8 @@ import {
 
 import { contarNaoLidas } from "../Services/notificacaoService";
 import logoStar from "../assets/images/logo-star-infinity.png";
+import authApi from "../Services/authApi.js";
+import NotificationCenter from "../components/NotificationCenter.jsx";
 
 function DashboardLayout() {
   const navigate = useNavigate();
@@ -43,83 +44,128 @@ function DashboardLayout() {
   const possuiBI = planoAtual === "Completo";
   const textoPlano = possuiBI ? "Completo" : "Básico";
 
-  const sessaoSalva =
-    localStorage.getItem("sessaoSindico") ||
-    sessionStorage.getItem("sessaoSindico") ||
-    localStorage.getItem("usuarioSindico") ||
-    sessionStorage.getItem("usuarioSindico");
+  const [
+    usuarioLogado,
+    setUsuarioLogado,
+  ] = useState(null);
 
   useEffect(() => {
-    carregarPerfilCondominio();
+    let mounted = true;
+
+    async function carregarContexto() {
+      try {
+        const user =
+          await authApi.me();
+
+        if (!mounted) {
+          return;
+        }
+
+        if (
+          ![
+            "CONDOMINIUM_ADMIN",
+            "MANAGER",
+          ].includes(
+            user?.role
+          )
+        ) {
+          navigate(
+            "/login/sindico",
+            {
+              replace: true,
+            }
+          );
+
+          return;
+        }
+
+        setUsuarioLogado({
+          ...user,
+          nome:
+            user.name ??
+            "Administrador",
+          perfilAdmin:
+            user.role ===
+            "MANAGER"
+              ? "sub"
+              : "master",
+        });
+
+        const condominium =
+          user.condominium ??
+          {};
+
+        setPerfilCondominio({
+          nomeCondominio:
+            condominium.name ??
+            "Condomínio",
+          logoUrl:
+            condominium.logoUrl ??
+            "",
+          plano:
+            condominium.subscription
+              ?.plan
+              ?.name ??
+            "Completo",
+        });
+
+        await carregarNotificacoes();
+      } catch {
+        if (mounted) {
+          navigate(
+            "/login/sindico",
+            {
+              replace: true,
+            }
+          );
+        }
+      }
+    }
+
+    carregarContexto();
     carregarNotificacoes();
 
-    const interval = setInterval(() => {
-      carregarPerfilCondominio();
-      carregarNotificacoes();
-    }, 10000);
-
-    window.addEventListener("storage", carregarPerfilCondominio);
-    window.addEventListener("storage", carregarNotificacoes);
+    const interval =
+      setInterval(
+        () => {
+          carregarNotificacoes();
+        },
+        15000
+      );
 
     return () => {
-      clearInterval(interval);
-      window.removeEventListener("storage", carregarPerfilCondominio);
-      window.removeEventListener("storage", carregarNotificacoes);
+      mounted = false;
+      clearInterval(
+        interval
+      );
     };
-  }, []);
+  }, [navigate]);
 
-  function carregarPerfilCondominio() {
+  async function carregarNotificacoes() {
     try {
-      const perfil =
-        JSON.parse(localStorage.getItem("perfil_condominio")) ||
-        JSON.parse(localStorage.getItem("configuracoes")) ||
-        {};
-
-      setPerfilCondominio({
-        nomeCondominio: perfil.nomeCondominio || "Condomínio",
-        logoUrl: perfil.logoUrl || perfil.tema?.logoUrl || "",
-        plano:
-          perfil.plano === "Básico" || perfil.plano === "Completo"
-            ? perfil.plano
-            : "Completo"
-      });
+      setNotificacoesNaoLidas(
+        await contarNaoLidas()
+      );
     } catch {
-      setPerfilCondominio({
-        nomeCondominio: "Condomínio",
-        logoUrl: "",
-        plano: "Completo"
-      });
+      setNotificacoesNaoLidas(0);
     }
   }
 
-  function carregarNotificacoes() {
-    setNotificacoesNaoLidas(contarNaoLidas("sindico"));
-  }
-
-  if (!sessaoSalva) {
-    return <Navigate to="/login/sindico" replace />;
-  }
-
-  let usuarioLogado = null;
-
-  try {
-    usuarioLogado = JSON.parse(sessaoSalva);
-  } catch {
-    localStorage.removeItem("sessaoSindico");
-    sessionStorage.removeItem("sessaoSindico");
-
-    return <Navigate to="/login/sindico" replace />;
+  if (!usuarioLogado) {
+    return null;
   }
 
   function sair() {
-    localStorage.removeItem("sessaoSindico");
-    sessionStorage.removeItem("sessaoSindico");
-    localStorage.removeItem("usuarioSindico");
-    sessionStorage.removeItem("usuarioSindico");
-
-    navigate("/", {
-      replace: true
-    });
+    authApi
+      .logout()
+      .finally(() => {
+        navigate(
+          "/",
+          {
+            replace: true,
+          }
+        );
+      });
   }
 
   function itemAtivo(path) {
@@ -128,7 +174,9 @@ function DashboardLayout() {
 
   return (
     <div style={styles.container}>
-      <aside style={styles.sidebar}>
+      
+      <NotificationCenter />
+<aside style={styles.sidebar}>
         <div style={styles.sidebarGlow}></div>
         <div style={styles.sidebarGrid}></div>
 

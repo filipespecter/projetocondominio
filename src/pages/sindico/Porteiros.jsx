@@ -1,46 +1,20 @@
-import { useState } from "react";
-import { registrarAuditoria } from "../../Services/auditoriaService";
-import { criarNotificacao } from "../../Services/notificacaoService";
+import { useEffect, useState } from "react";
+import doormanApi from "../../Services/doormanApi";
 
-import logoStar from "../../assets/images/logo-star-infinity.png";
+function limparTelefone(valor) {
+  return String(valor ?? "")
+    .replace(/\D/g, "")
+    .slice(0, 11);
+}
 
 function Porteiros() {
-  const STORAGE_KEY = "porteiros";
-  const STORAGE_MOVIMENTACOES = "movimentacoes";
-  const STORAGE_RELATORIOS = "relatorios_operacionais";
-
   const estadoInicialPorteiro = {
-    nome: "",
-    turno: "",
-    telefone: "",
-    usuario: "",
-    senha: "",
-    status: "Ativo",
-    codigoPorteiro: "",
-    ultimoLogin: null,
-    ultimoLogout: null,
-    ultimoPlantao: null,
-    condominioId: null,
-    nomeCondominio: ""
+    nome: "", turno: "", telefone: "", email: "", usuario: "", senha: "",
+    status: "Ativo", codigoPorteiro: "", ultimoLogin: null,
+    ultimoLogout: null, ultimoPlantao: null
   };
 
-  const [porteiros, setPorteiros] = useState(() => {
-    const dados = localStorage.getItem(STORAGE_KEY);
-
-    if (!dados) return [];
-
-    const lista = JSON.parse(dados);
-
-    return lista.map((porteiro, index) => ({
-      ...porteiro,
-      codigoPorteiro: porteiro.codigoPorteiro || gerarCodigoPorteiro(index + 1),
-      status: porteiro.status || "Ativo",
-      ultimoLogin: porteiro.ultimoLogin || null,
-      ultimoLogout: porteiro.ultimoLogout || null,
-      ultimoPlantao: porteiro.ultimoPlantao || null
-    }));
-  });
-
+  const [porteiros, setPorteiros] = useState([]);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("Todos");
@@ -48,9 +22,41 @@ function Porteiros() {
   const [novoPorteiro, setNovoPorteiro] = useState(estadoInicialPorteiro);
   const [editId, setEditId] = useState(null);
 
+  const shiftFront = { MORNING:"Manhã", AFTERNOON:"Tarde", NIGHT:"Noite", TWELVE_BY_THIRTY_SIX:"12x36", OTHER:"Outro" };
+  const shiftBack = { "Manhã":"MORNING", "Tarde":"AFTERNOON", "Noite":"NIGHT", "12x36":"TWELVE_BY_THIRTY_SIX", "Outro":"OTHER" };
+  const statusFront = { ACTIVE:"Ativo", INACTIVE:"Inativo", BLOCKED:"Bloqueado", PENDING:"Pendente" };
+  const statusBack = { "Ativo":"ACTIVE", "Inativo":"INACTIVE", "Bloqueado":"BLOCKED", "Pendente":"PENDING" };
+
+  function mapDoorman(d) {
+    const user = d.user ?? d;
+    return {
+      ...d,
+      nome: user.name ?? d.name ?? "",
+      usuario: user.username ?? d.username ?? "",
+      email: user.email ?? d.email ?? "",
+      telefone: user.phone ?? d.phone ?? "",
+      codigoPorteiro: d.code ?? d.codigoPorteiro ?? "",
+      turno: shiftFront[d.shift] ?? d.customShift ?? d.shift ?? "",
+      status: statusFront[user.status ?? d.status] ?? user.status ?? d.status ?? "Ativo",
+      ultimoLogin: user.lastLoginAt ?? d.lastLoginAt ?? null,
+      ultimoLogout: user.lastLogoutAt ?? d.lastLogoutAt ?? null,
+      ultimoPlantao: d.lastDutyAt ?? null
+    };
+  }
+
+  async function carregar() {
+    try {
+      const data = await doormanApi.list();
+      setPorteiros((data ?? []).map(mapDoorman));
+    } catch (error) {
+      alert(error?.message ?? "Não foi possível carregar porteiros.");
+    }
+  }
+
+  useEffect(() => { carregar(); }, []);
+
   const porteirosFiltrados = porteiros.filter((p) => {
     const texto = busca.toLowerCase();
-
     const correspondeBusca =
       p.nome?.toLowerCase().includes(texto) ||
       p.turno?.toLowerCase().includes(texto) ||
@@ -58,367 +64,81 @@ function Porteiros() {
       p.usuario?.toLowerCase().includes(texto) ||
       p.codigoPorteiro?.toLowerCase().includes(texto) ||
       p.status?.toLowerCase().includes(texto);
-
-    const correspondeStatus =
-      filtroStatus === "Todos" ||
-      p.status === filtroStatus;
-
-    const correspondeTurno =
-      filtroTurno === "Todos" ||
-      p.turno === filtroTurno;
-
-    return correspondeBusca && correspondeStatus && correspondeTurno;
+    return correspondeBusca &&
+      (filtroStatus === "Todos" || p.status === filtroStatus) &&
+      (filtroTurno === "Todos" || p.turno === filtroTurno);
   });
 
-  const totalAtivos = porteiros.filter(
-    (p) => p.status === "Ativo"
-  ).length;
-
-  const totalInativos = porteiros.filter(
-    (p) => p.status === "Inativo"
-  ).length;
-
-  const totalManha = porteiros.filter(
-    (p) => p.turno === "Manhã"
-  ).length;
-
-  const totalTarde = porteiros.filter(
-    (p) => p.turno === "Tarde"
-  ).length;
-
-  const totalNoite = porteiros.filter(
-    (p) => p.turno === "Noite"
-  ).length;
-
-  function lerStorage(chave) {
-    try {
-      return JSON.parse(localStorage.getItem(chave)) || [];
-    } catch {
-      return [];
-    }
-  }
-
-  function salvarStorage(chave, dados) {
-    localStorage.setItem(chave, JSON.stringify(dados));
-  }
-
-  function limparTelefone(valor) {
-    return String(valor || "").replace(/\D/g, "");
-  }
+  const totalAtivos = porteiros.filter((p) => p.status === "Ativo").length;
+  const totalInativos = porteiros.filter((p) => p.status === "Inativo").length;
+  const totalManha = porteiros.filter((p) => p.turno === "Manhã").length;
+  const totalTarde = porteiros.filter((p) => p.turno === "Tarde").length;
+  const totalNoite = porteiros.filter((p) => p.turno === "Noite").length;
 
   function gerarCodigoPorteiro(numero) {
     return `P${String(numero).padStart(3, "0")}`;
   }
 
   function proximoCodigoPorteiro() {
-    const numeros = porteiros
-      .map((p) => Number(String(p.codigoPorteiro || "").replace(/\D/g, "")))
-      .filter((n) => !isNaN(n));
-
-    const proximo = numeros.length > 0 ? Math.max(...numeros) + 1 : porteiros.length + 1;
-
-    return gerarCodigoPorteiro(proximo);
-  }
-
-  function obterPerfilCondominio() {
-    try {
-      const perfil =
-        JSON.parse(localStorage.getItem("perfil_condominio")) ||
-        JSON.parse(localStorage.getItem("configuracoes")) ||
-        {};
-
-      return {
-        condominioId: perfil.id || perfil.condominioId || null,
-        nomeCondominio: perfil.nomeCondominio || ""
-      };
-    } catch {
-      return {
-        condominioId: null,
-        nomeCondominio: ""
-      };
-    }
-  }
-
-  function obterUsuarioAtual() {
-    try {
-      return (
-        JSON.parse(localStorage.getItem("usuarioSindico")) ||
-        JSON.parse(sessionStorage.getItem("usuarioSindico")) ||
-        {}
-      );
-    } catch {
-      return {};
-    }
-  }
-
-  function registrarMovimentacaoPorteiro(acao, porteiro) {
-    const movimentacoes = lerStorage(STORAGE_MOVIMENTACOES);
-
-    const nova = {
-      id: Date.now(),
-      tipo: "Porteiro",
-      origem: "Síndico",
-      titulo: `${acao}: ${porteiro?.nome || "Porteiro"}`,
-      descricao: `${porteiro?.codigoPorteiro || "-"} • Turno ${porteiro?.turno || "-"}`,
-      status: porteiro?.status || "",
-      data: new Date().toLocaleDateString("pt-BR"),
-      hora: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      }),
-      criadoEm: new Date().toISOString()
-    };
-
-    salvarStorage(STORAGE_MOVIMENTACOES, [nova, ...movimentacoes]);
-
-    const relatorios = lerStorage(STORAGE_RELATORIOS);
-    salvarStorage(STORAGE_RELATORIOS, [nova, ...relatorios]);
-  }
-
-  function registrarAuditoriaPorteiro({
-    acao,
-    detalhes,
-    antes = null,
-    depois = null,
-    referenciaId = null
-  }) {
-    registrarAuditoria({
-      acao,
-      modulo: "Porteiros",
-      detalhes,
-      antes,
-      depois,
-      referenciaId
-    });
-  }
-
-  function criarNotificacaoPorteiro({
-    titulo,
-    mensagem,
-    referenciaId = null,
-    prioridade = "normal"
-  }) {
-    criarNotificacao({
-      titulo,
-      mensagem,
-      tipo: "Porteiros",
-      origem: "Porteiros",
-      perfilDestino: "sindico",
-      moduloOrigem: "Porteiros",
-      referenciaId,
-      prioridade
-    });
+    const numeros = porteiros.map((p) => Number(String(p.codigoPorteiro || "").replace(/\D/g, ""))).filter(Number.isFinite);
+    return gerarCodigoPorteiro(numeros.length ? Math.max(...numeros) + 1 : 1);
   }
 
   function validarPorteiro() {
-    const nome = String(novoPorteiro.nome || "").trim();
-    const telefone = limparTelefone(novoPorteiro.telefone);
-    const usuario = String(novoPorteiro.usuario || "").trim();
-    const senha = String(novoPorteiro.senha || "").trim();
-
-    if (nome.length < 3) {
-      alert("Informe um nome válido com pelo menos 3 caracteres.");
+    if (!novoPorteiro.nome.trim() || !novoPorteiro.usuario.trim() || !novoPorteiro.turno) {
+      alert("Preencha nome, usuário e turno.");
       return false;
     }
-
-    if (!novoPorteiro.turno) {
-      alert("Selecione o turno do porteiro.");
+    if (!editId && String(novoPorteiro.senha || "").length < 8) {
+      alert("A senha inicial deve possuir pelo menos 8 caracteres.");
       return false;
     }
-
-    if (telefone.length < 10 || telefone.length > 11) {
-      alert("Informe um telefone válido com DDD. Use apenas números.");
-      return false;
-    }
-
-    if (usuario.length < 4) {
-      alert("O usuário de login deve ter pelo menos 4 caracteres.");
-      return false;
-    }
-
-    if (/\s/.test(usuario)) {
-      alert("O usuário de login não pode conter espaços.");
-      return false;
-    }
-
-    if (senha.length < 4) {
-      alert("A senha deve ter pelo menos 4 caracteres.");
-      return false;
-    }
-
-    if (!novoPorteiro.status) {
-      alert("Selecione o status do porteiro.");
-      return false;
-    }
-
     return true;
   }
-
 
   function limparFormulario() {
     setNovoPorteiro(estadoInicialPorteiro);
     setEditId(null);
   }
 
-  function salvarPorteiro() {
-    if (!validarPorteiro()) {
-      return;
-    }
-
-    const usuarioExistente = porteiros.find(
-      (p) =>
-        p.usuario?.trim().toLowerCase() ===
-          novoPorteiro.usuario.trim().toLowerCase() &&
-        p.id !== editId
-    );
-
-    if (usuarioExistente) {
-      alert("Esse usuário já existe");
-      return;
-    }
-
-    const perfilCondominio = obterPerfilCondominio();
-    const usuarioAtual = obterUsuarioAtual();
-
-    const porteiroFormatado = {
-      ...novoPorteiro,
-      nome: String(novoPorteiro.nome || "").trim(),
-      turno: novoPorteiro.turno,
-      telefone: limparTelefone(novoPorteiro.telefone),
-      usuario: String(novoPorteiro.usuario || "").trim(),
-      senha: String(novoPorteiro.senha || "").trim(),
-      status: novoPorteiro.status || "Ativo",
-      codigoPorteiro: novoPorteiro.codigoPorteiro || proximoCodigoPorteiro(),
-      condominioId: perfilCondominio.condominioId,
-      nomeCondominio: perfilCondominio.nomeCondominio,
-      criadoPor: usuarioAtual.nome || usuarioAtual.usuario || "Administrador",
-      atualizadoEm: new Date().toISOString()
+  async function salvarPorteiro() {
+    if (!validarPorteiro()) return;
+    const shift = shiftBack[novoPorteiro.turno] ?? "OTHER";
+    const payload = {
+      name: novoPorteiro.nome.trim(),
+      username: novoPorteiro.usuario.trim(),
+      email: novoPorteiro.email?.trim() || null,
+      phone: novoPorteiro.telefone?.trim() || null,
+      code: novoPorteiro.codigoPorteiro || proximoCodigoPorteiro(),
+      shift,
+      customShift: shift === "OTHER" ? novoPorteiro.turno : null,
+      status: statusBack[novoPorteiro.status] ?? "ACTIVE"
     };
-
-    let listaAtualizada = [];
-
-    if (editId !== null) {
-      const porteiroAntes = porteiros.find((p) => p.id === editId);
-
-      listaAtualizada = porteiros.map((p) =>
-        p.id === editId
-          ? {
-              ...p,
-              ...porteiroFormatado,
-              id: editId
-            }
-          : p
-      );
-
-      const porteiroDepois = listaAtualizada.find((p) => p.id === editId);
-
-      registrarAuditoriaPorteiro({
-        acao: "Editou porteiro",
-        detalhes: `${porteiroFormatado.nome} - ${porteiroFormatado.codigoPorteiro}`,
-        antes: porteiroAntes,
-        depois: porteiroDepois,
-        referenciaId: editId
-      });
-
-      criarNotificacaoPorteiro({
-        titulo: "Porteiro atualizado",
-        mensagem: `${porteiroFormatado.nome} teve o cadastro atualizado.`,
-        referenciaId: editId
-      });
-
-      registrarMovimentacaoPorteiro("Editou porteiro", porteiroDepois);
-
-      setEditId(null);
-    } else {
-      const novo = {
-        id: Date.now(),
-        ...porteiroFormatado,
-        dataCadastro: new Date().toLocaleDateString("pt-BR"),
-        criadoEm: new Date().toISOString()
-      };
-
-      listaAtualizada = [
-        ...porteiros,
-        novo
-      ];
-
-      registrarAuditoriaPorteiro({
-        acao: "Cadastrou porteiro",
-        detalhes: `${novo.nome} - ${novo.codigoPorteiro}`,
-        depois: novo,
-        referenciaId: novo.id
-      });
-
-      criarNotificacaoPorteiro({
-        titulo: "Novo porteiro cadastrado",
-        mensagem: `${novo.nome} foi cadastrado no turno ${novo.turno}.`,
-        referenciaId: novo.id
-      });
-
-      registrarMovimentacaoPorteiro("Cadastrou porteiro", novo);
+    try {
+      if (editId) await doormanApi.update(editId, payload);
+      else await doormanApi.create({ ...payload, password: novoPorteiro.senha, mustChangePassword: true });
+      await carregar();
+      fecharModal();
+    } catch (error) {
+      alert(error?.message ?? "Erro ao salvar porteiro.");
     }
-
-    setPorteiros(listaAtualizada);
-
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(listaAtualizada)
-    );
-
-    limparFormulario();
-    setMostrarModal(false);
   }
 
   function editarPorteiro(porteiro) {
-    setNovoPorteiro({
-      ...estadoInicialPorteiro,
-      ...porteiro
-    });
-
     setEditId(porteiro.id);
+    setNovoPorteiro({ ...estadoInicialPorteiro, ...porteiro, senha: "" });
     setMostrarModal(true);
   }
 
-  function excluirPorteiro(id) {
-    const confirmar = window.confirm(
-      "Deseja excluir este porteiro?"
-    );
-
-    if (!confirmar) return;
-
-    const porteiroExcluido = porteiros.find((p) => p.id === id);
-
-    const lista = porteiros.filter(
-      (p) => p.id !== id
-    );
-
-    setPorteiros(lista);
-
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(lista)
-    );
-
-    registrarAuditoriaPorteiro({
-      acao: "Excluiu porteiro",
-      detalhes: `${porteiroExcluido?.nome || "Porteiro"} - ${porteiroExcluido?.codigoPorteiro || "-"}`,
-      antes: porteiroExcluido,
-      referenciaId: id
-    });
-
-    criarNotificacaoPorteiro({
-      titulo: "Porteiro removido",
-      mensagem: `${porteiroExcluido?.nome || "Um porteiro"} foi removido do cadastro.`,
-      referenciaId: id,
-      prioridade: "alta"
-    });
-
-    registrarMovimentacaoPorteiro("Excluiu porteiro", porteiroExcluido);
+  async function excluirPorteiro(id) {
+    if (!window.confirm("Deseja realmente excluir este porteiro?")) return;
+    try { await doormanApi.remove(id); await carregar(); }
+    catch (error) { alert(error?.message ?? "Não foi possível excluir o porteiro."); }
   }
 
   function fecharModal() {
-    limparFormulario();
     setMostrarModal(false);
+    limparFormulario();
   }
 
   function obterStatus(status) {

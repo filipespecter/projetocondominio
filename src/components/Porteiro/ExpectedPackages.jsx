@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import packageApi from "../../Services/packageApi.js";
 
 function ExpectedPackages() {
 
@@ -8,17 +9,14 @@ function ExpectedPackages() {
     carregarEsperadas();
   }, []);
 
-  function carregarEsperadas() {
-
-    const data =
-      JSON.parse(
-        localStorage.getItem(
-          "encomendas_esperadas"
-        )
-      ) || [];
-
-    setEsperadas(data);
-
+  async function carregarEsperadas() {
+    try {
+      const data = await packageApi.list("?status=EXPECTED");
+      setEsperadas(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Erro ao carregar encomendas esperadas:", error);
+      setEsperadas([]);
+    }
   }
 
   if (esperadas.length === 0) {

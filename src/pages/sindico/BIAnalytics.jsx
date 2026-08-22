@@ -13,6 +13,7 @@ import TrendAnalysis from "../../components/BI/TrendAnalysis";
 
 import {
   buscarDadosBI,
+  carregarDadosBI,
   gerarIndicadoresBI,
   calcularSaudeCondominio,
   gerarDistribuicaoGeral,
@@ -46,7 +47,7 @@ function BIAnalytics() {
     return "distribuicao";
   });
   const [abaAtiva, setAbaAtiva] = useState(
-    () => localStorage.getItem("bi_monitor_tela") || "geral"
+    () => lerSincronizacaoBI().tela || "geral"
   );
 
   const [indicadores, setIndicadores] = useState({});
@@ -62,22 +63,7 @@ function BIAnalytics() {
   const [rankingsPremium, setRankingsPremium] = useState({});
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState("");
 
-  function verificarAcessoBI() {
-    try {
-      const perfil =
-        JSON.parse(localStorage.getItem("perfil_condominio")) ||
-        JSON.parse(localStorage.getItem("configuracoes")) ||
-        {};
-
-      const plano = perfil.plano || "Completo";
-
-      return plano === "Completo";
-    } catch {
-      return true;
-    }
-  }
-
-  const acessoLiberado = verificarAcessoBI();
+  const acessoLiberado = true;
 
   useEffect(() => {
     carregarBI(periodo);
@@ -91,7 +77,8 @@ function BIAnalytics() {
     return () => clearInterval(interval);
   }, [periodo]);
 
-  function carregarBI(periodoSelecionado = periodo) {
+  async function carregarBI(periodoSelecionado = periodo) {
+    await carregarDadosBI();
     buscarDadosBI(periodoSelecionado);
 
     setIndicadores(gerarIndicadoresBI(periodoSelecionado));

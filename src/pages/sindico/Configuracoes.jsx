@@ -1,815 +1,148 @@
 import { useEffect, useState } from "react";
-import { registrarAuditoria } from "../../Services/auditoriaService";
-import { criarNotificacao } from "../../Services/notificacaoService";
+import configurationApi from "../../Services/configurationApi.js";
 
 function Configuracoes() {
   const [abaAtiva, setAbaAtiva] = useState("dados");
   const [salvo, setSalvo] = useState(false);
   const [mensagem, setMensagem] = useState("");
+  const [, setCarregando] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
 
   const [config, setConfig] = useState({
-    nomeCondominio: "",
-    cnpj: "",
-    endereco: "",
-    telefone: "",
-    sindico: "",
-    email: "",
-    corTema: "#8b5cf6",
-    tema: {
-      corPrincipal: "#8b5cf6",
-      corSecundaria: "#5b21b6",
-      aplicarTemaPersonalizado: false,
-      logoUrl: "",
-      atualizadoEm: ""
-    },
-
-    logoUrl: "",
-    plano: "Completo",
-    statusComercial: "Ativo",
-    quantidadeUnidades: "",
-    responsavelTecnico: "",
-    observacoesComerciais: ""
+    nomeCondominio: "", cnpj: "", endereco: "", telefone: "", sindico: "", email: "",
+    corTema: "#8b5cf6", tema: { corPrincipal: "#8b5cf6", corSecundaria: "#5b21b6", aplicarTemaPersonalizado: false, logoUrl: "", atualizadoEm: "" },
+    logoUrl: "", plano: "Completo", statusComercial: "Ativo", quantidadeUnidades: "", responsavelTecnico: "", observacoesComerciais: ""
   });
 
   const [preferencias, setPreferencias] = useState({
-    nomeSistema: "InfinityCondo",
-    assinaturaRelatorios: "Síndico / Administração",
-    formatoData: "pt-BR",
-    notificacoes: true,
-    confirmacaoExclusao: true,
-    backupAutomatico: false,
-
-    notificarReserva: true,
-    notificarEncomenda: true,
-    notificarOcorrencia: true,
-    notificarVisitante: true,
-    notificarSugestao: true,
-    notificarReclamacao: true
+    nomeSistema: "InfinityCondo", assinaturaRelatorios: "Síndico / Administração", formatoData: "pt-BR",
+    notificacoes: true, confirmacaoExclusao: true, backupAutomatico: true,
+    notificarReserva: true, notificarEncomenda: true, notificarOcorrencia: true, notificarVisitante: true, notificarSugestao: true, notificarReclamacao: true
   });
 
-  const [whatsappConfig, setWhatsappConfig] = useState({
-    ativo: false,
-    provider: "Evolution",
-    token: "",
-    numeroEmpresa: "",
-    webhook: ""
-  });
+  const [whatsappConfig, setWhatsappConfig] = useState({ ativo: false, provider: "Evolution", token: "", numeroEmpresa: "", webhook: "" });
+  const [biConfig, setBiConfig] = useState({ periodoPadrao: "30dias", exportacaoAutomatica: false, retencaoHistorico: "12 meses", dashboardExecutivo: true });
+  const [segurancaConfig, setSegurancaConfig] = useState({ jwtAtivo: true, tempoSessao: 60, refreshToken: true, loginPorPerfil: true });
 
-  const [biConfig, setBiConfig] = useState({
-    periodoPadrao: "30dias",
-    exportacaoAutomatica: false,
-    retencaoHistorico: "12 meses",
-    dashboardExecutivo: true
-  });
-
-  const [segurancaConfig, setSegurancaConfig] = useState({
-    jwtAtivo: false,
-    tempoSessao: 60,
-    refreshToken: true,
-    loginPorPerfil: true
-  });
-
-  const usuarioLogado = (() => {
-    try {
-      return (
-        JSON.parse(localStorage.getItem("usuarioSindico")) ||
-        JSON.parse(sessionStorage.getItem("usuarioSindico")) ||
-        {}
-      );
-    } catch {
-      return {};
-    }
-  })();
-
-  const isMestre =
-    usuarioLogado.perfilAdmin === "mestre" ||
-    usuarioLogado.perfil === "mestre";
-
-  const usuarioInicial = {
-    nome: "",
-    usuario: "",
-    senha: "",
-    perfil: "sub",
-    status: "Ativo"
-  };
-
+  const usuarioInicial = { nome: "", usuario: "", senha: "", perfil: "sub", status: "Ativo" };
   const [usuariosSindico, setUsuariosSindico] = useState([]);
   const [novoUsuario, setNovoUsuario] = useState(usuarioInicial);
   const [editId, setEditId] = useState(null);
+  const [credenciaisMestre, setCredenciaisMestre] = useState({ usuario: "", senha: "", confirmarSenha: "" });
+  const [ultimoBackup, setUltimoBackup] = useState("Backup operacional gerenciado pelo servidor");
 
-  const [credenciaisMestre, setCredenciaisMestre] = useState({
-    usuario: "",
-    senha: "",
-    confirmarSenha: ""
-  });
-
-  useEffect(() => {
-    carregarTudo();
-  }, []);
-
-  function lerStorage(chave) {
-    try {
-      const valor = localStorage.getItem(chave);
-      if (!valor) return [];
-      return JSON.parse(valor);
-    } catch {
-      return [];
-    }
-  }
-
-  function carregarObjeto(chave, fallback) {
-    try {
-      const valor = localStorage.getItem(chave);
-      return valor ? JSON.parse(valor) : fallback;
-    } catch {
-      return fallback;
-    }
-  }
-
-  function registrarConfiguracaoAuditoria(acao, detalhes, depois = null, antes = null) {
-    registrarAuditoria({
-      acao,
-      modulo: "Configurações",
-      detalhes,
-      antes,
-      depois
-    });
-  }
-
-  function criarNotificacaoConfiguracao(titulo, mensagem, prioridade = "normal") {
-    criarNotificacao({
-      titulo,
-      mensagem,
-      tipo: "Configuração",
-      origem: "Configurações",
-      perfilDestino: "sindico",
-      moduloOrigem: "Configurações",
-      prioridade
-    });
-  }
-
-  function carregarTudo() {
-    const dadosConfig = carregarObjeto("configuracoes", null);
-    const dadosPerfil = carregarObjeto("perfil_condominio", null);
-    const dadosPreferencias = carregarObjeto("preferenciasSistema", null);
-    const dadosWhatsapp = carregarObjeto("whatsappConfig", null);
-    const dadosBI = carregarObjeto("biConfig", null);
-    const dadosSeguranca = carregarObjeto("segurancaConfig", null);
-
-    if (dadosConfig || dadosPerfil) {
-      setConfig((prev) => {
-        const dadosUnificados = {
-          ...prev,
-          ...(dadosConfig || {}),
-          ...(dadosPerfil || {})
-        };
-
-        return {
-          ...dadosUnificados,
-          plano:
-            dadosUnificados.plano === "Básico" ||
-            dadosUnificados.plano === "Completo"
-              ? dadosUnificados.plano
-              : "Completo",
-          corTema:
-            dadosUnificados.corTema ||
-            dadosUnificados.tema?.corPrincipal ||
-            "#8b5cf6",
-          tema: {
-            ...prev.tema,
-            ...(dadosUnificados.tema || {}),
-            corPrincipal:
-              dadosUnificados.tema?.corPrincipal ||
-              dadosUnificados.corTema ||
-              "#8b5cf6",
-            logoUrl:
-              dadosUnificados.tema?.logoUrl ||
-              dadosUnificados.logoUrl ||
-              ""
-          }
-        };
-      });
-    }
-
-    if (dadosPreferencias) {
-      setPreferencias((prev) => ({
-        ...prev,
-        ...dadosPreferencias
-      }));
-    }
-
-    if (dadosWhatsapp) {
-      setWhatsappConfig((prev) => ({
-        ...prev,
-        ...dadosWhatsapp
-      }));
-    }
-
-    if (dadosBI) {
-      setBiConfig((prev) => ({
-        ...prev,
-        ...dadosBI
-      }));
-    }
-
-    if (dadosSeguranca) {
-      setSegurancaConfig((prev) => ({
-        ...prev,
-        ...dadosSeguranca
-      }));
-    }
-
-    let usuarios =
-      JSON.parse(localStorage.getItem("usuariosSindico")) || [];
-
-    if (usuarios.length === 0) {
-      usuarios = [
-        {
-          id: Date.now(),
-          nome: "Administrador Principal",
-          usuario: "admin",
-          senha: "1234",
-          perfil: "mestre",
-          status: "Ativo",
-          usuarioPadrao: true,
-          criadoEm: new Date().toLocaleString("pt-BR")
-        }
-      ];
-
-      localStorage.setItem("usuariosSindico", JSON.stringify(usuarios));
-    }
-
-    setUsuariosSindico(usuarios);
-
-    const mestreEncontrado = usuarios.find((u) => u.perfil === "mestre");
-
-    if (mestreEncontrado) {
-      setCredenciaisMestre({
-        usuario: mestreEncontrado.usuario || "",
-        senha: "",
-        confirmarSenha: ""
-      });
-    }
-  }
-
-  const mestre =
-    usuariosSindico.find((u) => u.perfil === "mestre") || {};
-
-  const usandoPadrao =
-    mestre.usuario === "admin" &&
-    mestre.senha === "1234";
-
-  const ultimoBackup =
-    localStorage.getItem("ultimoBackupInfinity") || "Nenhum backup gerado";
-
+  const isMestre = currentUser?.role === "CONDOMINIUM_ADMIN" || currentUser?.perfil === "mestre";
+  const usandoPadrao = false;
   const totalUsuarios = usuariosSindico.length;
 
+  useEffect(() => { carregarTudo(); }, []);
+
   function feedback(texto) {
-    setMensagem(texto);
-    setSalvo(true);
-
-    setTimeout(() => {
-      setSalvo(false);
-      setMensagem("");
-    }, 3000);
+    setMensagem(texto); setSalvo(true);
+    setTimeout(() => { setSalvo(false); setMensagem(""); }, 3000);
   }
 
-  function salvarDadosCondominio() {
-    const agoraISO = new Date().toISOString();
-    const agoraBR = new Date().toLocaleString("pt-BR");
-
-    const planoNormalizado =
-      config.plano === "Básico" || config.plano === "Completo"
-        ? config.plano
-        : "Completo";
-
-    const perfilCondominio = {
-      ...config,
-      condominioId:
-        config.condominioId ||
-        `cond-${Date.now()}`,
-      plano: planoNormalizado,
-      corTema: config.corTema || "#8b5cf6",
-      tema: {
-        ...(config.tema || {}),
-        corPrincipal: config.corTema || config.tema?.corPrincipal || "#8b5cf6",
-        corSecundaria: config.tema?.corSecundaria || "#5b21b6",
-        aplicarTemaPersonalizado:
-          Boolean(config.tema?.aplicarTemaPersonalizado),
-        logoUrl: config.logoUrl || config.tema?.logoUrl || "",
-        atualizadoEm: agoraISO
-      },
-      recursosPlano: {
-        biAnalytics: planoNormalizado === "Completo",
-        biMonitor: planoNormalizado === "Completo",
-        centralBI: planoNormalizado === "Completo"
-      },
-      criadoEm: config.criadoEm || agoraISO,
-      atualizadoEm: agoraBR,
-      atualizadoEmISO: agoraISO,
-      origem: "Configuracoes",
-      preparadoParaSaaS: true
-    };
-
-    setConfig((prev) => ({
-      ...prev,
-      ...perfilCondominio
-    }));
-
-    localStorage.setItem("configuracoes", JSON.stringify(perfilCondominio));
-    localStorage.setItem("perfil_condominio", JSON.stringify(perfilCondominio));
-
-    registrarConfiguracaoAuditoria(
-      "Atualizou perfil do condomínio",
-      `Perfil do condomínio ${config.nomeCondominio || "não informado"} atualizado.`,
-      perfilCondominio
-    );
-
-    criarNotificacaoConfiguracao(
-      "Perfil do condomínio atualizado",
-      `Os dados institucionais do condomínio ${config.nomeCondominio || "não informado"} foram atualizados.`
-    );
-
-    feedback("Dados do condomínio salvos com sucesso.");
+  async function executar(acao, sucesso) {
+    try { await acao(); if (sucesso) feedback(sucesso); }
+    catch (error) { console.error(error); alert(error?.message || "Não foi possível concluir a operação."); }
   }
 
-  function salvarPreferencias() {
-    localStorage.setItem("preferenciasSistema", JSON.stringify(preferencias));
-
-    registrarConfiguracaoAuditoria(
-      "Atualizou preferências do sistema",
-      "Preferências gerais do InfinityCondo foram atualizadas.",
-      preferencias
-    );
-
-    feedback("Preferências salvas com sucesso.");
+  async function carregarTudo() {
+    setCarregando(true);
+    try {
+      const data = await configurationApi.getAll();
+      if (data?.condominium) setConfig((prev) => ({ ...prev, ...data.condominium, tema: { ...prev.tema, ...(data.condominium.tema || {}) } }));
+      if (data?.preferences) setPreferencias((prev) => ({ ...prev, ...data.preferences }));
+      if (data?.whatsapp) setWhatsappConfig((prev) => ({ ...prev, ...data.whatsapp }));
+      if (data?.bi) setBiConfig((prev) => ({ ...prev, ...data.bi }));
+      if (data?.security) setSegurancaConfig((prev) => ({ ...prev, ...data.security, jwtAtivo: true, refreshToken: true, loginPorPerfil: true }));
+      setUsuariosSindico(Array.isArray(data?.users) ? data.users : []);
+      setCurrentUser(data?.currentUser || null);
+      const master = (data?.users || []).find((u) => u.perfil === "mestre");
+      setCredenciaisMestre({ usuario: master?.usuario || data?.currentUser?.usuario || "", senha: "", confirmarSenha: "" });
+    } catch (error) {
+      console.error(error); alert(error?.message || "Não foi possível carregar as configurações.");
+    } finally { setCarregando(false); }
   }
 
-  function salvarWhatsapp() {
-    localStorage.setItem("whatsappConfig", JSON.stringify(whatsappConfig));
-
-    registrarConfiguracaoAuditoria(
-      "Atualizou configurações de WhatsApp",
-      `Provider configurado: ${whatsappConfig.provider}`,
-      whatsappConfig
-    );
-
-    feedback("Configurações de WhatsApp salvas com sucesso.");
+  async function salvarDadosCondominio() {
+    await executar(async () => { await configurationApi.updateCondominium(config); await carregarTudo(); }, "Dados do condomínio salvos com sucesso.");
   }
 
-  function salvarBI() {
-    localStorage.setItem("biConfig", JSON.stringify(biConfig));
-
-    registrarConfiguracaoAuditoria(
-      "Atualizou configurações do BI",
-      `Período padrão do BI: ${biConfig.periodoPadrao}`,
-      biConfig
-    );
-
-    feedback("Configurações do BI salvas com sucesso.");
+  async function salvarPreferencias() {
+    await executar(async () => { await configurationApi.updateSettings("preferences", preferencias); }, "Preferências salvas com sucesso.");
   }
 
-  function salvarSeguranca() {
-    localStorage.setItem("segurancaConfig", JSON.stringify(segurancaConfig));
-
-    registrarConfiguracaoAuditoria(
-      "Atualizou configurações de segurança",
-      "Configurações de autenticação e JWT futuro foram atualizadas.",
-      segurancaConfig
-    );
-
-    criarNotificacaoConfiguracao(
-      "Segurança atualizada",
-      "As configurações de segurança do sistema foram atualizadas.",
-      "alta"
-    );
-
-    feedback("Configurações de segurança salvas com sucesso.");
+  async function salvarWhatsapp() {
+    await executar(async () => { await configurationApi.updateSettings("whatsapp", whatsappConfig); }, "Configurações de WhatsApp salvas com sucesso.");
   }
 
-  function salvarUsuarios(lista) {
-    setUsuariosSindico(lista);
-    localStorage.setItem("usuariosSindico", JSON.stringify(lista));
+  async function salvarBI() {
+    await executar(async () => { await configurationApi.updateSettings("bi", biConfig); }, "Configurações do BI salvas com sucesso.");
   }
 
-  function salvarUsuarioAdministrativo() {
-    if (!isMestre) {
-      alert("Apenas o Síndico Mestre pode gerenciar usuários.");
-      return;
-    }
+  async function salvarSeguranca() {
+    await executar(async () => {
+      const updated = await configurationApi.updateSettings("security", { tempoSessao: segurancaConfig.tempoSessao });
+      setSegurancaConfig((prev) => ({ ...prev, ...updated, jwtAtivo: true, refreshToken: true, loginPorPerfil: true }));
+    }, "Preferência de sessão salva. JWT e refresh token permanecem protegidos pelo servidor.");
+  }
 
-    if (!novoUsuario.nome || !novoUsuario.usuario || !novoUsuario.senha) {
-      alert("Preencha nome, usuário e senha.");
-      return;
-    }
+  async function salvarUsuarioAdministrativo() {
+    if (!isMestre) return alert("Apenas o Síndico Mestre pode gerenciar usuários.");
+    if (!novoUsuario.nome || !novoUsuario.usuario || (!editId && !novoUsuario.senha)) return alert("Preencha nome, usuário e senha.");
+    if (novoUsuario.senha && novoUsuario.senha.length < 8) return alert("A senha deve possuir pelo menos 8 caracteres.");
 
-    const usuarioRepetido = usuariosSindico.find(
-      (u) =>
-        u.usuario?.toLowerCase() === novoUsuario.usuario.toLowerCase() &&
-        u.id !== editId
-    );
-
-    if (usuarioRepetido) {
-      alert("Este usuário já existe.");
-      return;
-    }
-
-    let listaAtualizada = [];
-
-    if (editId !== null) {
-      listaAtualizada = usuariosSindico.map((u) =>
-        u.id === editId
-          ? {
-              ...u,
-              ...novoUsuario,
-              perfil: u.perfil === "mestre" ? "mestre" : "sub"
-            }
-          : u
-      );
-    } else {
-      listaAtualizada = [
-        {
-          id: Date.now(),
-          ...novoUsuario,
-          perfil: "sub",
-          usuarioPadrao: false,
-          criadoEm: new Date().toLocaleString("pt-BR")
-        },
-        ...usuariosSindico
-      ];
-    }
-
-    salvarUsuarios(listaAtualizada);
-
-    registrarConfiguracaoAuditoria(
-      editId ? "Editou usuário administrativo" : "Criou usuário administrativo",
-      `${novoUsuario.nome} - ${novoUsuario.usuario}`,
-      novoUsuario
-    );
-
-    criarNotificacaoConfiguracao(
-      editId ? "Usuário administrativo editado" : "Novo usuário administrativo",
-      `${novoUsuario.nome} foi ${editId ? "editado" : "criado"} no sistema.`
-    );
-
-    setNovoUsuario(usuarioInicial);
-    setEditId(null);
-    feedback("Usuário salvo com sucesso.");
+    await executar(async () => {
+      if (editId) await configurationApi.updateUser(editId, novoUsuario);
+      else await configurationApi.createUser(novoUsuario);
+      setNovoUsuario(usuarioInicial); setEditId(null); await carregarTudo();
+    }, "Usuário salvo com sucesso.");
   }
 
   function editarUsuario(usuario) {
-    if (usuario.perfil === "mestre") {
-      setAbaAtiva("seguranca");
-      return;
-    }
-
-    setNovoUsuario({
-      nome: usuario.nome,
-      usuario: usuario.usuario,
-      senha: usuario.senha,
-      perfil: usuario.perfil,
-      status: usuario.status
-    });
-
+    if (usuario.perfil === "mestre") { setAbaAtiva("seguranca"); return; }
+    setNovoUsuario({ nome: usuario.nome || "", usuario: usuario.usuario || "", senha: "", perfil: "sub", status: usuario.status || "Ativo" });
     setEditId(usuario.id);
   }
 
-  function excluirUsuario(id) {
-    if (!isMestre) {
-      alert("Apenas o Síndico Mestre pode excluir usuários.");
-      return;
-    }
-
+  async function excluirUsuario(id) {
+    if (!isMestre) return alert("Apenas o Síndico Mestre pode excluir usuários.");
     const usuario = usuariosSindico.find((u) => u.id === id);
-
-    if (usuario?.perfil === "mestre") {
-      alert("O usuário mestre não pode ser excluído.");
-      return;
-    }
-
-    const confirmar = window.confirm(
-      "Deseja excluir este usuário administrativo?"
-    );
-
-    if (!confirmar) return;
-
-    const listaAtualizada = usuariosSindico.filter((u) => u.id !== id);
-
-    salvarUsuarios(listaAtualizada);
-
-    registrarConfiguracaoAuditoria(
-      "Excluiu usuário administrativo",
-      `${usuario?.nome || "Usuário"} foi excluído.`,
-      null,
-      usuario
-    );
-
-    criarNotificacaoConfiguracao(
-      "Usuário administrativo excluído",
-      `${usuario?.nome || "Usuário"} foi removido do sistema.`,
-      "alta"
-    );
-
-    feedback("Usuário excluído com sucesso.");
+    if (usuario?.perfil === "mestre") return alert("O usuário mestre não pode ser excluído.");
+    if (!window.confirm("Deseja excluir este usuário administrativo?")) return;
+    await executar(async () => { await configurationApi.removeUser(id); await carregarTudo(); }, "Usuário excluído com sucesso.");
   }
 
-  function alterarStatusUsuario(id) {
-    if (!isMestre) {
-      alert("Apenas o Síndico Mestre pode alterar status.");
-      return;
-    }
-
-    const usuarioAntes = usuariosSindico.find((u) => u.id === id);
-
-    const listaAtualizada = usuariosSindico.map((u) =>
-      u.id === id && u.perfil !== "mestre"
-        ? {
-            ...u,
-            status: u.status === "Ativo" ? "Inativo" : "Ativo"
-          }
-        : u
-    );
-
-    salvarUsuarios(listaAtualizada);
-
-    const usuarioDepois = listaAtualizada.find((u) => u.id === id);
-
-    registrarConfiguracaoAuditoria(
-      "Alterou status de usuário administrativo",
-      `${usuarioAntes?.nome || "Usuário"} teve o status alterado para ${usuarioDepois?.status}.`,
-      usuarioDepois,
-      usuarioAntes
-    );
-
-    feedback("Status atualizado com sucesso.");
+  async function alterarStatusUsuario(id) {
+    if (!isMestre) return alert("Apenas o Síndico Mestre pode alterar status.");
+    await executar(async () => { await configurationApi.toggleUser(id); await carregarTudo(); }, "Status atualizado com sucesso.");
   }
 
-  function alterarCredenciaisMestre() {
-    if (!isMestre) {
-      alert("Apenas o Síndico Mestre pode alterar estas credenciais.");
-      return;
-    }
+  async function alterarCredenciaisMestre() {
+    if (!isMestre) return alert("Apenas o Síndico Mestre pode alterar estas credenciais.");
+    if (!credenciaisMestre.usuario) return alert("Informe o novo usuário.");
+    if (credenciaisMestre.senha && credenciaisMestre.senha.length < 8) return alert("A senha deve possuir pelo menos 8 caracteres.");
+    if (credenciaisMestre.senha && credenciaisMestre.senha !== credenciaisMestre.confirmarSenha) return alert("As senhas não conferem.");
 
-    if (!credenciaisMestre.usuario) {
-      alert("Informe o novo usuário.");
-      return;
-    }
-
-    if (
-      credenciaisMestre.senha &&
-      credenciaisMestre.senha !== credenciaisMestre.confirmarSenha
-    ) {
-      alert("As senhas não conferem.");
-      return;
-    }
-
-    const mestreAtual = usuariosSindico.find((u) => u.perfil === "mestre");
-
-    if (!mestreAtual) return;
-
-    const usuarioRepetido = usuariosSindico.find(
-      (u) =>
-        u.usuario?.toLowerCase() === credenciaisMestre.usuario.toLowerCase() &&
-        u.id !== mestreAtual.id
-    );
-
-    if (usuarioRepetido) {
-      alert("Este usuário já está em uso.");
-      return;
-    }
-
-    const listaAtualizada = usuariosSindico.map((u) =>
-      u.id === mestreAtual.id
-        ? {
-            ...u,
-            usuario: credenciaisMestre.usuario,
-            senha: credenciaisMestre.senha ? credenciaisMestre.senha : u.senha,
-            usuarioPadrao: false,
-            ultimaAlteracao: new Date().toLocaleString("pt-BR")
-          }
-        : u
-    );
-
-    salvarUsuarios(listaAtualizada);
-
-    const sessaoAtualizada = {
-      ...usuarioLogado,
-      usuario: credenciaisMestre.usuario,
-      usuarioPadrao: false
-    };
-
-    localStorage.setItem("usuarioSindico", JSON.stringify(sessaoAtualizada));
-    sessionStorage.setItem("usuarioSindico", JSON.stringify(sessaoAtualizada));
-    localStorage.setItem("sessaoSindico", JSON.stringify(sessaoAtualizada));
-    sessionStorage.setItem("sessaoSindico", JSON.stringify(sessaoAtualizada));
-
-    registrarConfiguracaoAuditoria(
-      "Alterou credenciais do Síndico Mestre",
-      "As credenciais principais do sistema foram atualizadas.",
-      {
-        usuario: credenciaisMestre.usuario,
-        senhaAlterada: Boolean(credenciaisMestre.senha)
-      }
-    );
-
-    criarNotificacaoConfiguracao(
-      "Credenciais do Síndico Mestre alteradas",
-      "As credenciais principais do sistema foram atualizadas.",
-      "alta"
-    );
-
-    setCredenciaisMestre({
-      usuario: credenciaisMestre.usuario,
-      senha: "",
-      confirmarSenha: ""
-    });
-
-    feedback("Credenciais atualizadas com sucesso.");
+    await executar(async () => {
+      await configurationApi.updateMasterCredentials({ usuario: credenciaisMestre.usuario, senha: credenciaisMestre.senha || undefined });
+      setCredenciaisMestre((prev) => ({ ...prev, senha: "", confirmarSenha: "" }));
+      await carregarTudo();
+    }, "Credenciais atualizadas com sucesso. No próximo login use o novo usuário.");
   }
-    function gerarBackup() {
-    if (!isMestre) {
-      alert("Apenas o Síndico Mestre pode gerar backup.");
-      return;
-    }
 
-    const chaves = [
-      "configuracoes",
-      "perfil_condominio",
-      "preferenciasSistema",
-      "whatsappConfig",
-      "biConfig",
-      "segurancaConfig",
-
-      "usuariosSindico",
-      "usuarioSindico",
-      "sessaoSindico",
-      "usuarioPorteiro",
-      "sessaoPorteiro",
-      "usuarioMorador",
-      "sessaoMorador",
-
-      "moradores",
-      "apartamentos",
-      "porteiros",
-      "visitantes",
-      "visitantes_historico",
-
-      "encomendas",
-      "encomendas_esperadas",
-      "encomendas_historico",
-
-      "reservas",
-      "areasComuns",
-
-      "avisos",
-      "avisos_sindico",
-      "notificacoes",
-      "notificacoesMorador",
-
-      "auditoria_logs",
-      "auditoriaSistema",
-
-      "ocorrencias",
-      "historico_ocorrencias",
-      "livro_ocorrencias",
-
-      "sugestoesMorador",
-      "sugestoes_reclamacoes",
-
-      "movimentacoes",
-      "relatorios_operacionais",
-      "historico_relatorios_greencondo",
-
-      "condominio_prestadores",
-      "prestadores_particulares_v2",
-      "operacional_condominio_v2"
-    ];
-
-    const dados = {};
-
-    chaves.forEach((chave) => {
-      dados[chave] = lerStorage(chave);
-    });
-
-    const backup = {
-      sistema: preferencias.nomeSistema || "InfinityCondo",
-      tipo: "backup-completo-greencondo",
-      versao: "front-localstorage-v2-profissional",
-      geradoEm: new Date().toISOString(),
-      perfilCondominio: config,
-      dados
-    };
-
-    const blob = new Blob([JSON.stringify(backup, null, 2)], {
-      type: "application/json"
-    });
-
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `backup-greencondo-${Date.now()}.json`;
-    link.click();
-
-    setTimeout(() => {
-      URL.revokeObjectURL(url);
-    }, 100);
-
-    localStorage.setItem(
-      "ultimoBackupInfinity",
-      new Date().toLocaleString("pt-BR")
-    );
-
-    registrarConfiguracaoAuditoria(
-      "Gerou backup completo",
-      "Backup completo do sistema foi gerado.",
-      {
-        totalChaves: chaves.length,
-        versao: "front-localstorage-v2-profissional"
-      }
-    );
-
-    criarNotificacaoConfiguracao(
-      "Backup completo gerado",
-      "Um backup completo do InfinityCondo foi gerado com sucesso."
-    );
-
-    feedback("Backup completo gerado com sucesso.");
+  function gerarBackup() {
+    if (!isMestre) return alert("Apenas o Síndico Mestre pode exportar configurações.");
+    const exportacao = { sistema: "InfinityCondo", tipo: "exportacao-configuracoes", geradoEm: new Date().toISOString(), config, preferencias, whatsappConfig: { ...whatsappConfig, token: whatsappConfig.token ? "[PROTEGIDO]" : "" }, biConfig, segurancaConfig: { tempoSessao: segurancaConfig.tempoSessao } };
+    const blob = new Blob([JSON.stringify(exportacao, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `infinitycondo-config-${Date.now()}.json`; link.click(); URL.revokeObjectURL(url);
+    const agora = new Date().toLocaleString("pt-BR"); setUltimoBackup(agora); feedback("Exportação das configurações gerada. O backup real do PostgreSQL é feito no servidor.");
   }
 
   function restaurarBackup(event) {
-    if (!isMestre) {
-      alert("Apenas o Síndico Mestre pode restaurar backup.");
-      return;
-    }
-
-    const arquivo = event.target.files[0];
-
-    if (!arquivo) return;
-
-    const confirmar = window.confirm(
-      "Restaurar um backup pode sobrescrever os dados atuais. Deseja continuar?"
-    );
-
-    if (!confirmar) return;
-
-    const leitor = new FileReader();
-
-    leitor.onload = function (e) {
-      try {
-        const conteudo = JSON.parse(e.target.result);
-
-        if (!conteudo.dados) {
-          alert("Arquivo de backup inválido.");
-          return;
-        }
-
-        Object.keys(conteudo.dados).forEach((chave) => {
-          localStorage.setItem(chave, JSON.stringify(conteudo.dados[chave]));
-        });
-
-        if (conteudo.perfilCondominio) {
-          localStorage.setItem(
-            "perfil_condominio",
-            JSON.stringify(conteudo.perfilCondominio)
-          );
-
-          localStorage.setItem(
-            "configuracoes",
-            JSON.stringify(conteudo.perfilCondominio)
-          );
-        }
-
-        localStorage.setItem(
-          "ultimoBackupInfinity",
-          new Date().toLocaleString("pt-BR")
-        );
-
-        registrarConfiguracaoAuditoria(
-          "Restaurou backup",
-          "Backup do sistema foi restaurado.",
-          {
-            arquivo: arquivo.name,
-            restauradoEm: new Date().toLocaleString("pt-BR")
-          }
-        );
-
-        criarNotificacaoConfiguracao(
-          "Backup restaurado",
-          "Um backup foi restaurado no InfinityCondo.",
-          "alta"
-        );
-
-        carregarTudo();
-        feedback("Backup restaurado com sucesso. Recarregue o sistema se necessário.");
-      } catch {
-        alert("Erro ao restaurar backup.");
-      }
-    };
-
-    leitor.readAsText(arquivo);
-
     event.target.value = "";
+    alert("A restauração direta pelo navegador foi desativada. Os dados reais estão no PostgreSQL e a restauração de backup deve ser feita pelo processo seguro do servidor.");
   }
 
   return (

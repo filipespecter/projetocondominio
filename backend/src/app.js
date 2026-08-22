@@ -6,6 +6,7 @@ import compression from "compression";
 
 import { env } from "./config/env.js";
 import { router } from "./routes/index.js";
+import requestContextMiddleware from "./middlewares/requestContextMiddleware.js";
 import {
   errorHandler,
   notFoundHandler
@@ -14,6 +15,12 @@ import {
 export const app = express();
 
 app.disable("x-powered-by");
+
+/**
+ * Contexto único por requisição para correlação entre
+ * auditoria, erros e eventos operacionais.
+ */
+app.use(requestContextMiddleware);
 
 app.use(morgan("dev"));
 
@@ -36,9 +43,36 @@ app.use(
   })
 );
 
+/**
+ * =====================================================
+ * BODY PARSERS
+ * =====================================================
+ *
+ * O rawBody é preservado para permitir a validação
+ * criptográfica de webhooks externos, principalmente
+ * o X-Hub-Signature-256 da WhatsApp Cloud API.
+ *
+ * O restante da aplicação continua recebendo req.body
+ * normalmente como JSON.
+ */
 app.use(
   express.json({
-    limit: "1mb"
+    limit: "1mb",
+
+    verify: (
+      req,
+      res,
+      buffer
+    ) => {
+      /**
+       * Preservamos somente o Buffer bruto.
+       *
+       * A validação específica permanece no Service
+       * responsável pelo webhook.
+       */
+      req.rawBody =
+        Buffer.from(buffer);
+    }
   })
 );
 

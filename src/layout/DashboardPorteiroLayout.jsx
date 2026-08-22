@@ -16,6 +16,8 @@ import {
 
 import { useEffect, useState } from "react";
 import logoStar from "../assets/images/logo-star-infinity.png";
+import authApi from "../Services/authApi.js";
+import NotificationCenter from "../components/NotificationCenter.jsx";
 
 function DashboardPorteiroLayout() {
 
@@ -31,50 +33,58 @@ function DashboardPorteiroLayout() {
   ========================= */
 
   useEffect(() => {
+    let mounted = true;
 
-    const usuarioSalvo =
-      localStorage.getItem("sessaoPorteiro") ||
-      sessionStorage.getItem("sessaoPorteiro");
-
-    if (usuarioSalvo) {
-
+    async function carregarUsuario() {
       try {
+        const user =
+          await authApi.me();
 
-        const usuario =
-          JSON.parse(usuarioSalvo);
-
-        if (
-          usuario.tipo !== "porteiro"
-        ) {
-
-          navigate("/login/porteiro");
-
+        if (!mounted) {
           return;
-
         }
 
-        setUsuarioLogado(usuario);
+        if (
+          user?.role !==
+          "DOORMAN"
+        ) {
+          navigate(
+            "/login/porteiro",
+            {
+              replace: true,
+            }
+          );
 
+          return;
+        }
+
+        setUsuarioLogado({
+          ...user,
+          nome:
+            user.name ??
+            "Porteiro",
+          turno:
+            user.doorman
+              ?.shift ??
+            "",
+        });
       } catch {
-
-        localStorage.removeItem(
-          "sessaoPorteiro"
-        );
-
-        sessionStorage.removeItem(
-          "sessaoPorteiro"
-        );
-
-        navigate("/login/porteiro");
-
+        if (mounted) {
+          navigate(
+            "/login/porteiro",
+            {
+              replace: true,
+            }
+          );
+        }
       }
-
-    } else {
-
-      navigate("/login/porteiro");
-
     }
 
+    carregarUsuario();
+
+    return () => {
+      mounted = false;
+    };
   }, [navigate]);
 
   /* =========================
@@ -92,24 +102,25 @@ function DashboardPorteiroLayout() {
   ========================= */
 
   function sair() {
-
-    localStorage.removeItem(
-      "sessaoPorteiro"
-    );
-
-    sessionStorage.removeItem(
-      "sessaoPorteiro"
-    );
-
-    navigate("/");
-
+    authApi
+      .logout()
+      .finally(() => {
+        navigate(
+          "/",
+          {
+            replace: true,
+          }
+        );
+      });
   }
 
   return (
 
     <div style={styles.container}>
 
-      {/* SIDEBAR */}
+      
+      <NotificationCenter />
+{/* SIDEBAR */}
 
       <aside style={styles.sidebar}>
 

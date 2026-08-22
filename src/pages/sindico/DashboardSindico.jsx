@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import logoStar from "../../assets/images/logo-star-infinity.png";
+import dashboardApi from "../../Services/dashboardApi.js";
 
 function DashboardSindico() {
   const navigate = useNavigate();
@@ -49,308 +50,73 @@ function DashboardSindico() {
       carregarDados();
     }, 10000);
 
-    window.addEventListener("storage", carregarDados);
-
     return () => {
       clearInterval(interval);
-      window.removeEventListener("storage", carregarDados);
     };
   }, []);
-
-  function lerStorage(chave) {
-    try {
-      return JSON.parse(localStorage.getItem(chave)) || [];
-    } catch {
-      return [];
-    }
-  }
-
-  function lerObjeto(chave) {
-    try {
-      return JSON.parse(localStorage.getItem(chave)) || {};
-    } catch {
-      return {};
-    }
-  }
 
   function normalizarTexto(valor) {
     return String(valor || "").trim().toLowerCase();
   }
 
-  function carregarDados() {
-    const perfil =
-      lerObjeto("perfil_condominio") ||
-      lerObjeto("configuracoes") ||
-      {};
+  async function carregarDados() {
+    try {
+      const payload = await dashboardApi.manager();
+      const base = payload.dashboard || {};
+      const residents = base.residents || {};
+      const apartments = base.apartments || {};
+      const packages = base.packages || {};
+      const visitorsInfo = base.visitors || {};
+      const reservationsInfo = base.reservations || {};
+      const commonAreas = base.commonAreas || {};
+      const notices = base.notices || {};
+      const occurrencesInfo = base.occurrences || {};
+      const providers = payload.providers || [];
+      const occurrences = payload.occurrences || [];
+      const notifications = payload.notifications || [];
+      const audit = Array.isArray(payload.audit) ? payload.audit : (payload.audit?.items || []);
+      const me = payload.me?.user || payload.me || {};
 
-    const condominioId =
-      perfil.id ||
-      perfil.condominioId ||
-      null;
+      const principais = Number(residents.principals ?? residents.primary ?? residents.total ?? 0);
+      const dependentes = Number(residents.dependents ?? Math.max(Number(residents.total || 0) - principais, 0));
+      const sugestoes = occurrences.filter((o) => normalizarTexto(o.type || o.category).includes("suggest"));
+      const reclamacoes = occurrences.filter((o) => normalizarTexto(o.type || o.category).includes("complaint") || normalizarTexto(o.type || o.category).includes("reclama"));
+      const abertas = (lista) => lista.filter((o) => !["resolved","closed","cancelled","resolvido","resolvida","finalizado","finalizada"].includes(normalizarTexto(o.status)));
+      const prestadoresExecucao = providers.filter((p) => ["in_progress","em execução","em execucao","active"].includes(normalizarTexto(p.status))).length;
+      const prestadoresFinalizados = providers.filter((p) => ["completed","finalizado","finalizada"].includes(normalizarTexto(p.status))).length;
 
-    setPerfilCondominio({
-      condominioId,
-      nomeCondominio: perfil.nomeCondominio || "Condomínio",
-      plano: perfil.plano || "Plano Completo",
-      statusComercial: perfil.statusComercial || "Ativo",
-      quantidadeUnidades: perfil.quantidadeUnidades || ""
-    });
+      setPerfilCondominio({
+        condominioId: me.condominiumId || null,
+        nomeCondominio: me.condominium?.name || me.condominiumName || "Condomínio",
+        plano: me.condominium?.plan?.name || me.planName || "Plano Completo",
+        statusComercial: me.condominium?.status || "Ativo",
+        quantidadeUnidades: apartments.total || ""
+      });
 
-    const moradores = lerStorage("moradores");
-    const apartamentos = lerStorage("apartamentos");
-    const porteiros = lerStorage("porteiros");
+      setDados({
+        moradores: Number(residents.total || 0), apartamentos: Number(apartments.total || 0),
+        porteiros: payload.doormen.length, prestadores: providers.length, encomendas: Number(packages.pending || 0),
+        visitantes: Number(visitorsInfo.total || 0), reservas: Number(reservationsInfo.pending || 0),
+        avisos: Number(notices.published || 0), areasComuns: Number(commonAreas.total || 0),
+        ocorrencias: Number(occurrencesInfo.active || 0), movimentacoes: payload.visitors.length + payload.packages.length + payload.reservations.length + occurrences.length,
+        sugestoes: abertas(sugestoes).length, reclamacoes: abertas(reclamacoes).length, notificacoes: payload.unread,
+        auditoria: audit.length, moradoresPrincipais: principais, dependentes, apartamentosOcupados: Number(apartments.occupied || 0),
+        areasManutencao: Math.max(Number(commonAreas.total || 0) - Number(commonAreas.active || 0), 0),
+        prestadoresExecucao, prestadoresFinalizados
+      });
 
-    const prestadores = [
-      ...lerStorage("condominio_prestadores"),
-      ...lerStorage("prestadores_particulares_v2")
-    ].filter(
-      (item, index, array) =>
-        index ===
-        array.findIndex(
-          (p) =>
-            String(p.id || p.cpfCnpj || p.documento || p.nome || index) ===
-            String(item.id || item.cpfCnpj || item.documento || item.nome || index)
-        )
-    );
-
-    const encomendas = [
-      ...lerStorage("encomendas"),
-      ...lerStorage("encomendas_historico"),
-      ...lerStorage("encomendas_esperadas")
-    ];
-
-    const visitantes = [
-      ...lerStorage("visitantes"),
-      ...lerStorage("visitantes_historico")
-    ];
-
-    const reservas = lerStorage("reservas");
-
-    const avisos = [
-      ...lerStorage("avisos"),
-      ...lerStorage("avisos_sindico")
-    ];
-
-    const notificacoesMorador = lerStorage("notificacoesMorador");
-    const notificacoes = lerStorage("notificacoes");
-
-    const notificacoesSindicoNaoLidas = notificacoes.filter((item) => {
-      return item.perfilDestino === "sindico" && !item.lida;
-    });
-
-    const notificacoesMoradorPendentes = notificacoesMorador.filter(
-      (item) => !item.lida
-    );
-
-    const areasComuns = lerStorage("areasComuns");
-
-    const ocorrencias = [
-      ...lerStorage("ocorrencias"),
-      ...lerStorage("historico_ocorrencias"),
-      ...lerStorage("livro_ocorrencias")
-    ];
-
-    const sugestoesReclamacoes = [
-      ...lerStorage("sugestoesMorador"),
-      ...lerStorage("sugestoes_reclamacoes")
-    ];
-
-    const movimentacoes = [
-      ...lerStorage("movimentacoes"),
-      ...lerStorage("relatorios_operacionais")
-    ];
-
-    const auditoria = [
-      ...lerStorage("auditoria_logs"),
-      ...lerStorage("auditoriaSistema")
-    ];
-
-    const moradoresPrincipais = moradores.filter((m) => m.moradorPrincipal);
-    const dependentes = moradores.filter((m) => !m.moradorPrincipal);
-
-    const apartamentosOcupados = apartamentos.filter((a) => {
-      const status = normalizarTexto(a.status);
-
-      return (
-        status === "ocupado" ||
-        a.morador ||
-        a.moradoresNomes?.length > 0 ||
-        a.moradoresIds?.length > 0
-      );
-    });
-
-    const areasManutencao = areasComuns.filter(
-      (area) => normalizarTexto(area.status) === "manutenção" ||
-        normalizarTexto(area.status) === "manutencao"
-    );
-
-    const prestadoresExecucao = prestadores.filter((p) => {
-      const status = normalizarTexto(p.status);
-      return status === "em execução" || status === "em execucao";
-    });
-
-    const prestadoresFinalizados = prestadores.filter((p) => {
-      const status = normalizarTexto(p.status);
-      return status === "finalizado" || status === "finalizada";
-    });
-
-    const encomendasPendentes = encomendas.filter((e) => {
-      const status = normalizarTexto(e.status || e.statusSindico);
-
-      return (
-        status === "pendente" ||
-        status === "recebido" ||
-        status === "aguardando" ||
-        status === "aguardando retirada" ||
-        status === "esperada" ||
-        status === "atrasado"
-      );
-    });
-
-    const reservasPendentes = reservas.filter((r) => {
-      const status = normalizarTexto(r.status);
-
-      return (
-        status === "pendente" ||
-        status === "em análise" ||
-        status === "em analise"
-      );
-    });
-
-    const ocorrenciasPendentes = ocorrencias.filter((o) => {
-      const status = normalizarTexto(o.status);
-
-      return (
-        status !== "resolvida" &&
-        status !== "resolvido" &&
-        status !== "finalizada" &&
-        status !== "finalizado"
-      );
-    });
-
-    const sugestoesAbertas = sugestoesReclamacoes.filter((item) => {
-      const tipo = normalizarTexto(item.tipoRegistro || item.tipo || item.categoria);
-      const status = normalizarTexto(item.status);
-
-      return (
-        tipo.includes("sugest") &&
-        status !== "resolvido" &&
-        status !== "resolvida"
-      );
-    });
-
-    const reclamacoesAbertas = sugestoesReclamacoes.filter((item) => {
-      const tipo = normalizarTexto(item.tipoRegistro || item.tipo || item.categoria);
-      const status = normalizarTexto(item.status);
-
-      return (
-        tipo.includes("reclama") &&
-        status !== "resolvido" &&
-        status !== "resolvida"
-      );
-    });
-
-    setDados({
-      moradores: moradores.length,
-      apartamentos: apartamentos.length,
-      porteiros: porteiros.length,
-      prestadores: prestadores.length,
-      encomendas: encomendasPendentes.length,
-      visitantes: visitantes.length,
-      reservas: reservasPendentes.length,
-      avisos: avisos.length,
-      areasComuns: areasComuns.length,
-      ocorrencias: ocorrenciasPendentes.length,
-      movimentacoes: movimentacoes.length,
-      sugestoes: sugestoesAbertas.length,
-      reclamacoes: reclamacoesAbertas.length,
-      notificacoes:
-        notificacoesSindicoNaoLidas.length +
-        notificacoesMoradorPendentes.length,
-      auditoria: auditoria.length,
-      moradoresPrincipais: moradoresPrincipais.length,
-      dependentes: dependentes.length,
-      apartamentosOcupados: apartamentosOcupados.length,
-      areasManutencao: areasManutencao.length,
-      prestadoresExecucao: prestadoresExecucao.length,
-      prestadoresFinalizados: prestadoresFinalizados.length
-    });
-
-    const historico = [
-      ...notificacoes.slice(-5).map((n) => ({
-        id: n.id || `notificacao-${n.titulo || ""}-${n.data || ""}`,
-        icon: n.lida ? "🔔" : "🟡",
-        titulo: n.titulo || "Notificação",
-        texto: n.mensagem || "Nova notificação do sistema",
-        tempo: `${n.data || ""} ${n.hora || ""}`,
-        tipo: n.lida ? "Notificação lida" : "Notificação pendente"
-      })),
-
-      ...auditoria.slice(-5).map((a) => ({
-        id: a.id || `auditoria-${a.acao || ""}-${a.criadoEm || ""}`,
-        icon: "🧾",
-        titulo: a.acao || "Registro de auditoria",
-        texto: `${a.usuario || "Sistema"} • ${a.modulo || "Sistema"}`,
-        tempo: `${a.data || a.criadoEm || ""} ${a.hora || ""}`,
-        tipo: "Auditoria"
-      })),
-
-      ...ocorrencias.slice(-4).map((o) => ({
-        id: o.id || `ocorrencia-${o.titulo || ""}-${o.criadoEm || ""}`,
-        icon: "💬",
-        titulo: o.titulo || o.tipo || "Ocorrência registrada",
-        texto:
-          o.origem === "morador"
-            ? `Solicitação do morador ${o.moradorNome || o.morador || ""}`
-            : "Ocorrência registrada pela portaria",
-        tempo: `${o.data || o.criadoEm || ""} ${o.hora || ""}`,
-        tipo: "Ocorrência"
-      })),
-
-      ...encomendas.slice(-4).map((e) => ({
-        id: e.id || `encomenda-${e.codigoInterno || e.codigo || ""}-${e.criadoEm || ""}`,
-        icon: "📦",
-        titulo: e.status === "esperada" || e.status === "Esperada"
-          ? "Encomenda esperada"
-          : "Encomenda registrada",
-        texto: `Apartamento ${e.apartamento || e.apto || "N/A"}`,
-        tempo: e.data || e.criadoEm || e.recebidoEm || "Agora",
-        tipo: "Encomenda"
-      })),
-
-      ...reservas.slice(-4).map((r) => ({
-        id: r.id || `reserva-${r.area || r.areaComum || ""}-${r.criadoEm || ""}`,
-        icon: "📅",
-        titulo: "Reserva solicitada",
-        texto: r.area || r.areaComum || "Área comum",
-        tempo: r.criadoEm || r.data || "Agora",
-        tipo: "Reserva"
-      })),
-
-      ...visitantes.slice(-4).map((v) => ({
-        id: v.id || `visitante-${v.nome || ""}-${v.data || ""}`,
-        icon: "👤",
-        titulo: "Visitante registrado",
-        texto: v.nome || "Visitante",
-        tempo: v.horarioEntrada || v.hora || v.data || "Agora",
-        tipo: "Visitante"
-      })),
-
-      ...sugestoesReclamacoes.slice(-4).map((s) => ({
-        id: s.id || `solicitacao-${s.titulo || s.tipo || ""}-${s.criadoEm || ""}`,
-        icon: normalizarTexto(s.tipoRegistro || s.tipo || s.categoria).includes("reclama")
-          ? "⚠️"
-          : "💡",
-        titulo: s.titulo || s.tipoRegistro || s.tipo || "Solicitação do morador",
-        texto: s.descricao || s.mensagem || s.observacao || "Registro enviado pelo morador",
-        tempo: s.data || s.criadoEm || "Agora",
-        tipo: normalizarTexto(s.tipoRegistro || s.tipo || s.categoria).includes("reclama")
-          ? "Reclamação"
-          : "Sugestão"
-      }))
-    ];
-
-    setAtividades(historico.reverse().slice(0, 12));
+      const historico = [
+        ...notifications.slice(0, 5).map((n) => ({ id:n.id, icon:n.readAt ? "🔔" : "🟡", titulo:n.title || "Notificação", texto:n.message || "Nova notificação do sistema", tempo:n.createdAt || "", tipo:n.readAt ? "Notificação lida" : "Notificação pendente" })),
+        ...audit.slice(0, 5).map((a) => ({ id:a.id, icon:"🧾", titulo:a.action || a.acao || "Registro de auditoria", texto:`${a.user?.name || a.usuario || "Sistema"} • ${a.module || a.modulo || "Sistema"}`, tempo:a.createdAt || a.criadoEm || "", tipo:"Auditoria" })),
+        ...occurrences.slice(0, 4).map((o) => ({ id:o.id, icon:"💬", titulo:o.title || o.type || "Ocorrência registrada", texto:o.description || o.descricao || "Ocorrência do condomínio", tempo:o.createdAt || "", tipo:"Ocorrência" })),
+        ...payload.packages.slice(0, 4).map((e) => ({ id:e.id, icon:"📦", titulo:"Encomenda registrada", texto:`Apartamento ${e.apartment?.number || e.apartmentNumber || "N/A"}`, tempo:e.createdAt || e.receivedAt || "", tipo:"Encomenda" })),
+        ...payload.reservations.slice(0, 4).map((r) => ({ id:r.id, icon:"📅", titulo:"Reserva solicitada", texto:r.commonArea?.name || r.area || "Área comum", tempo:r.createdAt || "", tipo:"Reserva" })),
+        ...payload.visitors.slice(0, 4).map((v) => ({ id:v.id, icon:"👤", titulo:"Visitante registrado", texto:v.name || v.nome || "Visitante", tempo:v.createdAt || v.entryAt || "", tipo:"Visitante" }))
+      ];
+      setAtividades(historico.slice(0, 12));
+    } catch (error) {
+      console.error("Erro ao carregar dashboard:", error);
+    }
   }
 
   const totalOperacao =

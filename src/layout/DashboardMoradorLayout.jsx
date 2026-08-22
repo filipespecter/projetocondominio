@@ -16,6 +16,8 @@ import {
 
 import { useEffect, useState } from "react";
 import logoStar from "../assets/images/logo-star-infinity.png";
+import authApi from "../Services/authApi.js";
+import NotificationCenter from "../components/NotificationCenter.jsx";
 
 function DashboardMoradorLayout() {
 
@@ -31,48 +33,62 @@ function DashboardMoradorLayout() {
   ========================= */
 
   useEffect(() => {
+    let mounted = true;
 
-    const usuarioSalvo =
-      localStorage.getItem("sessaoMorador") ||
-      sessionStorage.getItem("sessaoMorador");
-
-    if (usuarioSalvo) {
-
+    async function carregarUsuario() {
       try {
+        const user =
+          await authApi.me();
 
-        const usuario =
-          JSON.parse(usuarioSalvo);
-
-        if (usuario.tipo !== "morador") {
-
-          navigate("/login/morador");
-
+        if (!mounted) {
           return;
-
         }
 
-        setMoradorLogado(usuario);
+        if (
+          user?.role !==
+          "RESIDENT"
+        ) {
+          navigate(
+            "/login/morador",
+            {
+              replace: true,
+            }
+          );
 
+          return;
+        }
+
+        setMoradorLogado({
+          ...user,
+          nome:
+            user.name ??
+            "Morador",
+          apartamento:
+            user.resident
+              ?.apartment
+              ?.number ??
+            user.resident
+              ?.apartment
+              ?.unit ??
+            "-",
+        });
       } catch {
-
-        localStorage.removeItem(
-          "sessaoMorador"
-        );
-
-        sessionStorage.removeItem(
-          "sessaoMorador"
-        );
-
-        navigate("/login/morador");
-
+        if (mounted) {
+          navigate(
+            "/login/morador",
+            {
+              replace: true,
+            }
+          );
+        }
       }
-
-    } else {
-
-      navigate("/login/morador");
-
     }
 
+    carregarUsuario();
+
+    return () => {
+      mounted = false;
+    };
   }, [navigate]);
 
   function active(path) {
@@ -86,26 +102,25 @@ function DashboardMoradorLayout() {
   ========================= */
 
   function sair() {
-
-    localStorage.removeItem(
-      "sessaoMorador"
-    );
-
-    sessionStorage.removeItem(
-      "sessaoMorador"
-    );
-
-    navigate("/", {
-      replace: true
-    });
-
+    authApi
+      .logout()
+      .finally(() => {
+        navigate(
+          "/",
+          {
+            replace: true,
+          }
+        );
+      });
   }
 
   return (
 
     <div style={styles.container}>
 
-      {/* SIDEBAR */}
+      
+      <NotificationCenter />
+{/* SIDEBAR */}
 
       <aside style={styles.sidebar}>
 

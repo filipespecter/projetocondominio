@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import residentApi from "../../Services/residentApi.js";
 
 function MoradoresPorteiro() {
 
@@ -17,15 +18,14 @@ function MoradoresPorteiro() {
 
   }, []);
 
-  function carregarMoradores() {
-
-    const data =
-      JSON.parse(
-        localStorage.getItem("moradores")
-      ) || [];
-
-    setMoradores(data);
-
+  async function carregarMoradores() {
+    try {
+      const data = await residentApi.directory();
+      setMoradores(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Erro ao carregar moradores para a portaria:", error);
+      setMoradores([]);
+    }
   }
 
   function obterStatus(status) {
@@ -114,13 +114,6 @@ function MoradoresPorteiro() {
       (m) =>
         obterStatus(m.status).texto === "Inativo"
     ).length;
-
-  const moradoresPrincipais =
-    moradores.filter((m) => m.moradorPrincipal).length;
-
-  const dependentes =
-    moradores.filter((m) => !m.moradorPrincipal).length;
-
   const apartamentosVinculados =
     new Set(
       moradores

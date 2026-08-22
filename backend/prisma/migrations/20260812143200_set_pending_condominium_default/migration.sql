@@ -1,0 +1,3 @@
+ALTER TABLE "Condominium"
+ALTER COLUMN "status"
+SET DEFAULT 'PENDING';

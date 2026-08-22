@@ -1,101 +1,89 @@
+import api from "./api.js";
+import residentApi from "./residentApi.js";
+import apartmentApi from "./apartmentApi.js";
+import doormanApi from "./doormanApi.js";
+import visitorApi from "./visitorApi.js";
+import packageApi from "./packageApi.js";
+import reservationApi from "./reservationApi.js";
+import commonAreaApi from "./commonAreaApi.js";
+import noticeApi from "./noticeApi.js";
+import occurrenceApi from "./occurrenceApi.js";
+import serviceProviderApi from "./serviceProviderApi.js";
+import operationalRecordApi from "./operationalRecordApi.js";
+import { listarMinhasNotificacoes } from "./notificacaoService.js";
+
+const cacheDados = {};
+let sincronizacaoBI = {};
+
 function lerStorage(chave) {
-  try {
-    return JSON.parse(localStorage.getItem(chave)) || [];
-  } catch {
-    return [];
-  }
+  return Array.isArray(cacheDados[chave]) ? cacheDados[chave] : [];
 }
 
 export const BI_MONITOR_SYNC_EVENT = "bi_sync_update";
 export const BI_MONITOR_SYNC_KEY = "bi_monitor_sync";
-
-const BI_SYNC_KEY = BI_MONITOR_SYNC_KEY;
 const BI_SYNC_EVENT = BI_MONITOR_SYNC_EVENT;
 
 export function lerSincronizacaoBI() {
-  try {
-    return JSON.parse(localStorage.getItem(BI_SYNC_KEY)) || {};
-  } catch {
-    return {};
-  }
+  return { ...sincronizacaoBI };
 }
 
 export function emitirSincronizacaoBI(configuracao = {}) {
-  const dadosAtuais = lerSincronizacaoBI();
-
-  const novaConfiguracao = {
-    ...dadosAtuais,
-    ...configuracao,
-    atualizadoEm: Date.now()
-  };
-
-  try {
-    localStorage.setItem(
-      BI_SYNC_KEY,
-      JSON.stringify(novaConfiguracao)
-    );
-  } catch {
-    // Mantém o BI funcionando mesmo se o navegador bloquear storage.
+  sincronizacaoBI = { ...sincronizacaoBI, ...configuracao, atualizadoEm: Date.now() };
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(BI_SYNC_EVENT, { detail: sincronizacaoBI }));
   }
-
-  try {
-    window.dispatchEvent(
-      new CustomEvent(BI_SYNC_EVENT, {
-        detail: novaConfiguracao
-      })
-    );
-  } catch {
-    // Compatibilidade com ambientes sem window/eventos.
-  }
-
-  return novaConfiguracao;
+  return { ...sincronizacaoBI };
 }
 
 export function ouvirSincronizacaoBI(callback) {
-  if (typeof window === "undefined") {
-    return () => {};
-  }
-
-  const executarCallback = (dados = {}) => {
-    if (typeof callback === "function") {
-      callback({
-        ...lerSincronizacaoBI(),
-        ...dados
-      });
-    }
-  };
-
-  const eventoInterno = (event) => {
-    executarCallback(event.detail || {});
-  };
-
-  const eventoStorage = (event) => {
-    if (event.key === BI_SYNC_KEY) {
-      executarCallback(lerSincronizacaoBI());
-    }
-  };
-
-  window.addEventListener(BI_SYNC_EVENT, eventoInterno);
-  window.addEventListener("storage", eventoStorage);
-
-  return () => {
-    window.removeEventListener(BI_SYNC_EVENT, eventoInterno);
-    window.removeEventListener("storage", eventoStorage);
-  };
+  if (typeof window === "undefined") return () => {};
+  const handler = (event) => callback?.({ ...sincronizacaoBI, ...(event.detail || {}) });
+  window.addEventListener(BI_SYNC_EVENT, handler);
+  return () => window.removeEventListener(BI_SYNC_EVENT, handler);
 }
 
-export function emitirAtualizacaoBI(origem = "bi") {
-  return emitirSincronizacaoBI({
-    origem
-  });
-}
+export function emitirAtualizacaoBI(origem = "bi") { return emitirSincronizacaoBI({ origem }); }
+export function ouvirAtualizacaoBI(callback) { return ouvirSincronizacaoBI(callback); }
+export function registrarMudancaBI(origem = "sistema") { return emitirAtualizacaoBI(origem); }
 
-export function ouvirAtualizacaoBI(callback) {
-  return ouvirSincronizacaoBI(callback);
-}
+function unwrap(response) { return response?.data?.data ?? response?.data ?? []; }
 
-export function registrarMudancaBI(origem = "sistema") {
-  return emitirAtualizacaoBI(origem);
+export async function carregarDadosBI() {
+  const resultados = await Promise.allSettled([
+    residentApi.list(), apartmentApi.list(), doormanApi.list(), visitorApi.list(),
+    packageApi.list(), reservationApi.list(), serviceProviderApi.list(), commonAreaApi.list(),
+    noticeApi.list(), listarMinhasNotificacoes(), occurrenceApi.list(), operationalRecordApi.list(),
+    api.get("/v1/audit")
+  ]);
+  const valor = (i, fallback = []) => resultados[i].status === "fulfilled" ? resultados[i].value : fallback;
+  cacheDados.moradores = valor(0);
+  cacheDados.apartamentos = valor(1);
+  cacheDados.porteiros = valor(2);
+  cacheDados.visitantes = valor(3);
+  cacheDados.visitantes_historico = [];
+  cacheDados.encomendas = valor(4);
+  cacheDados.encomendas_historico = [];
+  cacheDados.encomendas_esperadas = [];
+  cacheDados.reservas = valor(5);
+  cacheDados.condominio_prestadores = valor(6);
+  cacheDados.prestadores_particulares_v2 = [];
+  cacheDados.areasComuns = valor(7);
+  cacheDados.avisos = valor(8);
+  cacheDados.avisos_sindico = [];
+  cacheDados.notificacoesMorador = valor(9);
+  cacheDados.notificacoes = valor(9);
+  cacheDados.ocorrencias = valor(10);
+  cacheDados.historico_ocorrencias = [];
+  cacheDados.livro_ocorrencias = [];
+  cacheDados.sugestoesMorador = valor(10).filter((x) => ["SUGGESTION","COMPLAINT","REQUEST"].includes(String(x.type || x.category || "").toUpperCase()));
+  cacheDados.sugestoes_reclamacoes = [];
+  cacheDados.operacional_condominio_v2 = valor(11);
+  cacheDados.relatorios_operacionais = [];
+  cacheDados.movimentacoes = valor(11);
+  const audit = unwrap(valor(12));
+  cacheDados.auditoria_logs = Array.isArray(audit) ? audit : [];
+  cacheDados.auditoriaSistema = [];
+  return cacheDados;
 }
 
 function normalizarTexto(valor) {
@@ -124,7 +112,7 @@ function obterDataRegistro(item) {
   if (!encontrada) return null;
 
   if (String(encontrada).includes("/")) {
-    const partes = String(encontrada).split(/[\/,\s:]+/);
+    const partes = String(encontrada).split(/[/,\s:]+/);
 
     if (partes.length >= 3) {
       const dia = partes[0];
@@ -916,6 +904,7 @@ export function gerarInsightsBI(periodo = "geral") {
 }
 
 export default {
+  carregarDadosBI,
   emitirAtualizacaoBI,
   ouvirAtualizacaoBI,
   registrarMudancaBI,

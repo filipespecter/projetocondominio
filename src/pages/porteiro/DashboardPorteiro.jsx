@@ -1,187 +1,43 @@
 import { useEffect, useState } from "react";
-
-import {
-  buscarMovimentacoes
-} from "../../Services/movimentacaoService";
+import dashboardApi from "../../Services/dashboardApi.js";
 
 function DashboardPorteiro() {
+  const [dados, setDados] = useState({ visitantes: 0, encomendas: 0, moradores: 0, esperadas: 0, ocorrencias: 0, ocorrenciasResolvidas: 0, visitantesDentro: 0, moradoresPrincipais: 0, dependentes: 0 });
+  const [movimentacoes, setMovimentacoes] = useState([]);
+  const [porteiro, setPorteiro] = useState(null);
 
-  const [dados, setDados] = useState({
-    visitantes: 0,
-    encomendas: 0,
-    moradores: 0,
-    esperadas: 0,
-    ocorrencias: 0,
-    ocorrenciasResolvidas: 0,
-    visitantesDentro: 0,
-    moradoresPrincipais: 0,
-    dependentes: 0
-  });
+  useEffect(() => { carregarDashboard(); }, []);
 
-  const [movimentacoes, setMovimentacoes] =
-    useState([]);
-
-  const [porteiro, setPorteiro] =
-    useState(null);
-
-  /* =========================
-     CARREGAR SESSÃO
-  ========================= */
-
-  useEffect(() => {
-
-    const sessaoSalva =
-      localStorage.getItem("sessaoPorteiro") ||
-      sessionStorage.getItem("sessaoPorteiro") ||
-      localStorage.getItem("usuarioPorteiro") ||
-      sessionStorage.getItem("usuarioPorteiro");
-
+  async function carregarDashboard() {
     try {
-
-      const usuario =
-        sessaoSalva
-          ? JSON.parse(sessaoSalva)
-          : null;
-
-      setPorteiro(usuario);
-
-    } catch {
-
-      setPorteiro(null);
-
+      const { dashboard, residents, packages, occurrences, me } = await dashboardApi.doorman();
+      setPorteiro(me || null);
+      const indicators = dashboard?.indicators || {};
+      const moradores = Array.isArray(residents) ? residents : [];
+      const encomendas = Array.isArray(packages) ? packages : [];
+      const ocorrenciasLista = Array.isArray(occurrences) ? occurrences : [];
+      const esperadas = encomendas.filter((e) => String(e.status || "").toUpperCase() === "EXPECTED").length;
+      const resolvidas = ocorrenciasLista.filter((o) => String(o.status || "").toUpperCase() === "RESOLVED").length;
+      const ativas = ocorrenciasLista.filter((o) => !["RESOLVED", "CANCELED"].includes(String(o.status || "").toUpperCase())).length;
+      const principais = moradores.filter((m) => Boolean(m.isPrimary ?? m.moradorPrincipal)).length;
+      setDados({
+        visitantes: Number(indicators.visitorsWaiting || 0) + Number(indicators.visitorsAuthorized || 0) + Number(indicators.visitorsInside || 0),
+        visitantesDentro: Number(indicators.visitorsInside || 0),
+        encomendas: Number(indicators.packagesPending || 0),
+        moradores: moradores.length,
+        moradoresPrincipais: principais,
+        dependentes: Math.max(0, moradores.length - principais),
+        esperadas, ocorrencias: ativas, ocorrenciasResolvidas: resolvidas
+      });
+      const recentes = [
+        ...(dashboard?.recentVisitors || []).map((v) => ({ ...v, tipo: "Visitante" })),
+        ...(dashboard?.recentPackages || []).map((e) => ({ ...e, tipo: "Encomenda" })),
+        ...(dashboard?.activeOccurrences || []).map((o) => ({ ...o, tipo: "Ocorrência" })),
+      ].slice(0, 8);
+      setMovimentacoes(recentes);
+    } catch (error) {
+      console.error("Erro ao carregar dashboard do porteiro:", error);
     }
-
-  }, []);
-
-  /* =========================
-     CARREGAR DASHBOARD
-  ========================= */
-
-  useEffect(() => {
-
-    carregarDashboard();
-
-    const handleStorage = (event) => {
-
-      if (
-        event.key === "visitantes" ||
-        event.key === "encomendas" ||
-        event.key === "moradores" ||
-        event.key === "encomendas_esperadas" ||
-        event.key === "movimentacoes" ||
-        event.key === "ocorrencias"
-      ) {
-
-        carregarDashboard();
-
-      }
-
-    };
-
-    window.addEventListener(
-      "storage",
-      handleStorage
-    );
-
-    return () => {
-
-      window.removeEventListener(
-        "storage",
-        handleStorage
-      );
-
-    };
-
-  }, []);
-
-  /* =========================
-     FUNÇÃO PRINCIPAL
-  ========================= */
-
-  function carregarDashboard() {
-
-    const visitantes =
-      JSON.parse(
-        localStorage.getItem("visitantes")
-      ) || [];
-
-    const encomendas =
-      JSON.parse(
-        localStorage.getItem("encomendas")
-      ) || [];
-
-    const moradores =
-      JSON.parse(
-        localStorage.getItem("moradores")
-      ) || [];
-
-    const esperadas =
-      JSON.parse(
-        localStorage.getItem("encomendas_esperadas")
-      ) || [];
-
-    const ocorrencias =
-      JSON.parse(
-        localStorage.getItem("ocorrencias")
-      ) || [];
-
-    const pendentes = encomendas.filter((e) => {
-      const status = String(e.status || "").toLowerCase();
-
-      return (
-        status === "pendente" ||
-        status === "recebido" ||
-        status === "aguardando" ||
-        status === "aguardando retirada" ||
-        status === "atrasado"
-      );
-    });
-
-    const ocorrenciasEncaminhadas =
-      ocorrencias.filter(
-        (item) =>
-          !["resolvida", "resolvido"].includes(
-            String(item.status || "").toLowerCase()
-          )
-      );
-
-    const ocorrenciasResolvidas =
-      ocorrencias.filter(
-        (item) =>
-          ["resolvida", "resolvido"].includes(
-            String(item.status || "").toLowerCase()
-          )
-      );
-
-    const visitantesDentro = visitantes.filter(
-      (v) => v.status === "Em Visita"
-    ).length;
-
-    const moradoresPrincipais = moradores.filter(
-      (m) => m.moradorPrincipal
-    ).length;
-
-    const dependentes = moradores.filter(
-      (m) => !m.moradorPrincipal
-    ).length;
-
-    setDados({
-      visitantes: visitantes.length,
-      visitantesDentro,
-      encomendas: pendentes.length,
-      moradores: moradores.length,
-      moradoresPrincipais,
-      dependentes,
-      esperadas: esperadas.length,
-      ocorrencias: ocorrenciasEncaminhadas.length,
-      ocorrenciasResolvidas: ocorrenciasResolvidas.length
-    });
-
-    const movs =
-      buscarMovimentacoes() || [];
-
-    setMovimentacoes(movs);
-
   }
 
   return (
@@ -429,7 +285,7 @@ function DashboardPorteiro() {
                 ●
               </span>
               <span>
-                Dados carregados do localStorage
+                Dados carregados do backend
               </span>
             </div>
 

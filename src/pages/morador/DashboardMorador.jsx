@@ -1,232 +1,38 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import dashboardApi from "../../Services/dashboardApi.js";
 
 function DashboardMorador() {
   const navigate = useNavigate();
-
   const [morador, setMorador] = useState(null);
-
-  const [dados, setDados] = useState({
-    avisos: 0,
-    encomendas: 0,
-    reservas: 0,
-    solicitacoes: 0,
-    resolvidas: 0
-  });
-
+  const [dados, setDados] = useState({ avisos: 0, encomendas: 0, reservas: 0, solicitacoes: 0, resolvidas: 0 });
   const [atividades, setAtividades] = useState([]);
 
-  useEffect(() => {
-    carregarSessao();
-    carregarDashboard();
-  }, []);
+  useEffect(() => { carregarDashboard(); }, []);
 
-  function carregarSessao() {
-    const sessao =
-      localStorage.getItem("sessaoMorador") ||
-      sessionStorage.getItem("sessaoMorador") ||
-      localStorage.getItem("usuarioMorador") ||
-      sessionStorage.getItem("usuarioMorador");
-
+  async function carregarDashboard() {
     try {
-      const usuario = sessao ? JSON.parse(sessao) : null;
-      setMorador(usuario);
-    } catch {
-      setMorador(null);
+      const { dashboard, occurrences, me } = await dashboardApi.resident();
+      setMorador(me || null);
+      const indicators = dashboard?.indicators || {};
+      const listaOcorrencias = Array.isArray(occurrences) ? occurrences : [];
+      const resolvidas = listaOcorrencias.filter((item) => ["RESOLVED", "resolvida", "resolvido"].includes(String(item.status || ""))).length;
+      const avisos = Array.isArray(dashboard?.recentNotices) ? dashboard.recentNotices.length : 0;
+      const encomendas = Number(indicators.pendingPackages || 0);
+      const reservas = Number(indicators.activeReservations || 0);
+      setDados({ avisos, encomendas, reservas, solicitacoes: listaOcorrencias.length, resolvidas, moradorPrincipal: Boolean(me?.moradorPrincipal), perfilMorador: me?.perfilMorador || "dependente", tipoMorador: me?.tipoMorador || "Morador" });
+
+      const novasAtividades = [];
+      if (encomendas > 0) novasAtividades.push({ id: "atividade-encomendas", icone: "📦", titulo: "Encomendas pendentes", texto: `Você possui ${encomendas} encomenda(s) aguardando retirada.` });
+      if (avisos > 0) novasAtividades.push({ id: "atividade-avisos", icone: "📢", titulo: "Avisos publicados", texto: `Existem ${avisos} aviso(s) recente(s) disponível(is) para leitura.` });
+      if (reservas > 0) novasAtividades.push({ id: "atividade-reservas", icone: "📅", titulo: "Reservas registradas", texto: `Você possui ${reservas} reserva(s) ativa(s) no sistema.` });
+      if (listaOcorrencias.length > 0) novasAtividades.push({ id: "atividade-solicitacoes", icone: "💬", titulo: "Solicitações enviadas", texto: `Você possui ${listaOcorrencias.length} ocorrência(s) ou solicitação(ões).` });
+      if (!novasAtividades.length) novasAtividades.push({ id: "atividade-boas-vindas", icone: "🏢", titulo: "Bem-vindo ao portal", texto: "Nenhuma atividade recente encontrada no momento." });
+      setAtividades(novasAtividades);
+    } catch (error) {
+      console.error("Erro ao carregar dashboard do morador:", error);
+      setAtividades([{ id: "atividade-erro", icone: "⚠️", titulo: "Não foi possível atualizar", texto: "Tente novamente em instantes." }]);
     }
-  }
-
-  function carregarDashboard() {
-    const sessao =
-      localStorage.getItem("sessaoMorador") ||
-      sessionStorage.getItem("sessaoMorador") ||
-      localStorage.getItem("usuarioMorador") ||
-      sessionStorage.getItem("usuarioMorador");
-
-    let usuario = null;
-
-    try {
-      usuario = sessao ? JSON.parse(sessao) : null;
-    } catch {
-      usuario = null;
-    }
-
-    const apartamentoMorador =
-      usuario?.apartamento ||
-      usuario?.apto ||
-      "";
-
-    const apartamentoIdMorador = usuario?.apartamentoId || null;
-    const condominioIdMorador = usuario?.condominioId || null;
-
-    const avisos =
-      JSON.parse(localStorage.getItem("avisos")) || [];
-
-    const encomendas =
-      JSON.parse(localStorage.getItem("encomendas")) || [];
-
-    const reservas =
-      JSON.parse(localStorage.getItem("reservas")) || [];
-
-    const ocorrencias =
-      JSON.parse(localStorage.getItem("ocorrencias")) || [];
-
-    const sugestoesMorador =
-      JSON.parse(localStorage.getItem("sugestoesMorador")) || [];
-
-    const sugestoesReclamacoes =
-      JSON.parse(localStorage.getItem("sugestoes_reclamacoes")) || [];
-
-    function pertenceAoCondominio(item) {
-      if (!condominioIdMorador) return true;
-
-      return (
-        !item.condominioId ||
-        String(item.condominioId) === String(condominioIdMorador)
-      );
-    }
-
-    function pertenceAoApartamento(item) {
-      return (
-        String(item.apartamento || item.apto || "") ===
-          String(apartamentoMorador) ||
-        (
-          apartamentoIdMorador &&
-          String(item.apartamentoId || "") === String(apartamentoIdMorador)
-        )
-      );
-    }
-
-    const avisosMorador =
-      avisos.filter((item) => {
-        const avisoGeral =
-          !item.apartamento &&
-          !item.apartamentoId &&
-          !item.moradorId;
-
-        return (
-          pertenceAoCondominio(item) &&
-          (
-            avisoGeral ||
-            pertenceAoApartamento(item) ||
-            String(item.moradorId || "") === String(usuario?.id || "")
-          )
-        );
-      });
-
-    const encomendasMorador =
-      encomendas.filter((item) => {
-        const status = String(item.status || "").toLowerCase();
-
-        return (
-          pertenceAoCondominio(item) &&
-          pertenceAoApartamento(item) &&
-          (
-            status === "pendente" ||
-            status === "recebido" ||
-            status === "aguardando" ||
-            status === "aguardando retirada" ||
-            status === "atrasado"
-          )
-        );
-      });
-
-    const reservasMorador =
-      reservas.filter(
-        (item) =>
-          pertenceAoCondominio(item) &&
-          (
-          item.moradorId === usuario?.id ||
-          item.moradorNome === usuario?.nome ||
-          item.morador === usuario?.nome ||
-          pertenceAoApartamento(item)
-          )
-      );
-
-    const solicitacoesMorador =
-      [
-        ...ocorrencias,
-        ...sugestoesMorador,
-        ...sugestoesReclamacoes
-      ].filter(
-        (item) =>
-          pertenceAoCondominio(item) &&
-          (
-          item.origem === "morador" ||
-          item.origemModulo === "Morador" ||
-          item.moradorId === usuario?.id ||
-          item.moradorUsuario === usuario?.usuario ||
-          item.usuario === usuario?.usuario ||
-          pertenceAoApartamento(item)
-          )
-      );
-
-    const solicitacoesResolvidas =
-      solicitacoesMorador.filter((item) =>
-        ["resolvida", "resolvido"].includes(
-          String(item.status || "").toLowerCase()
-        )
-      );
-
-    setDados({
-      avisos: avisosMorador.length,
-      encomendas: encomendasMorador.length,
-      reservas: reservasMorador.length,
-      solicitacoes: solicitacoesMorador.length,
-      resolvidas: solicitacoesResolvidas.length,
-      moradorPrincipal: Boolean(usuario?.moradorPrincipal),
-      perfilMorador: usuario?.perfilMorador || "dependente",
-      tipoMorador: usuario?.tipoMorador || "Morador"
-    });
-
-    const novasAtividades = [];
-
-    if (encomendasMorador.length > 0) {
-      novasAtividades.push({
-        id: "atividade-encomendas",
-        icone: "📦",
-        titulo: "Encomendas pendentes",
-        texto: `Você possui ${encomendasMorador.length} encomenda(s) aguardando retirada.`
-      });
-    }
-
-    if (avisosMorador.length > 0) {
-      novasAtividades.push({
-        id: "atividade-avisos",
-        icone: "📢",
-        titulo: "Avisos publicados",
-        texto: `Existem ${avisosMorador.length} aviso(s) disponível(is) para leitura.`
-      });
-    }
-
-    if (reservasMorador.length > 0) {
-      novasAtividades.push({
-        id: "atividade-reservas",
-        icone: "📅",
-        titulo: "Reservas registradas",
-        texto: `Você possui ${reservasMorador.length} reserva(s) no sistema.`
-      });
-    }
-
-    if (solicitacoesMorador.length > 0) {
-      novasAtividades.push({
-        id: "atividade-solicitacoes",
-        icone: "💬",
-        titulo: "Solicitações enviadas",
-        texto: `Você possui ${solicitacoesMorador.length} sugestão(ões) ou reclamação(ões).`
-      });
-    }
-
-    if (novasAtividades.length === 0) {
-      novasAtividades.push({
-        id: "atividade-boas-vindas",
-        icone: "🏢",
-        titulo: "Bem-vindo ao portal",
-        texto: "Nenhuma atividade recente encontrada no momento."
-      });
-    }
-
-    setAtividades(novasAtividades);
   }
 
   return (

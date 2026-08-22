@@ -1,790 +1,476 @@
 import { useEffect, useState } from "react";
-import { registrarAuditoria } from "../../Services/auditoriaService";
-import { criarNotificacao } from "../../Services/notificacaoService";
-
-import logoStar from "../../assets/images/logo-star-infinity.png";
+import packageApi from "../../Services/packageApi.js";
 
 function Encomendas() {
-  const STORAGE_KEY = "encomendas";
-  const STORAGE_MOVIMENTACOES = "movimentacoes";
-  const STORAGE_RELATORIOS = "relatorios_operacionais";
-  const STORAGE_AVISOS_SINDICO = "avisos_sindico";
-  const STORAGE_NOTIFICACOES = "notificacoesMorador";
-  const STORAGE_HISTORICO = "encomendas_historico";
-
   const estadoInicialEncomenda = {
     morador: "",
-    moradorId: null,
+    moradorId: "",
     apartamento: "",
     apartamentoId: null,
-    tipoMorador: "",
-    moradorPrincipal: false,
     descricao: "",
     codigo: "",
-    codigoRastreio: "",
-    rastreio: "",
-    codigoInterno: "",
     transportadora: "",
     status: "Recebido",
-    condominioId: null,
-    nomeCondominio: "",
-    criadoPor: "",
-    porteiroId: null,
-    porteiroNome: ""
+    tipo: "Encomenda",
   };
 
-  const [encomendas, setEncomendas] = useState(() => {
-    const lista = lerStorage(STORAGE_KEY);
-
-    return lista.map((item, index) => ({
-      ...item,
-      codigoRastreio: obterCodigoRastreio(item),
-      rastreio: obterCodigoRastreio(item),
-      codigo: obterCodigoRastreio(item),
-      codigoInterno: item.codigoInterno || gerarCodigoEncomenda(index + 1),
-      moradorId: item.moradorId || null,
-      status: normalizarStatus(item.status)
-    }));
-  });
-
-  const [moradores] = useState(() => {
-    const lista = lerStorage("moradores");
-
-    return lista.map((morador) => ({
-      ...morador,
-      apto: morador.apto || morador.apartamento || "",
-      apartamento: morador.apartamento || morador.apto || "",
-      apartamentoId: morador.apartamentoId || null,
-      tipoMorador: morador.tipoMorador || "Morador",
-      moradorPrincipal: Boolean(morador.moradorPrincipal)
-    }));
-  });
-
+  const [encomendas, setEncomendas] = useState([]);
+  const [moradores, setMoradores] = useState([]);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("Todos");
   const [novaEncomenda, setNovaEncomenda] = useState(estadoInicialEncomenda);
   const [editId, setEditId] = useState(null);
 
-  useEffect(() => {
-    const sincronizar = () => {
-      const lista = lerStorage(STORAGE_KEY).map((item, index) => ({
-        ...item,
-        codigoRastreio: obterCodigoRastreio(item),
-        rastreio: obterCodigoRastreio(item),
-        codigo: obterCodigoRastreio(item),
-        codigoInterno:
-          item.codigoInterno ||
-          gerarCodigoEncomenda(index + 1),
-        status: normalizarStatus(item.status)
-      }));
-
-      setEncomendas(lista);
-    };
-
-    window.addEventListener("storage", sincronizar);
-    window.addEventListener(
-      "infinitycondo:encomendas",
-      sincronizar
-    );
-
-    return () => {
-      window.removeEventListener("storage", sincronizar);
-      window.removeEventListener(
-        "infinitycondo:encomendas",
-        sincronizar
-      );
-    };
-  }, []);
-
-  function lerStorage(chave) {
-    try {
-      const dados = localStorage.getItem(chave);
-      return dados ? JSON.parse(dados) : [];
-    } catch {
-      return [];
-    }
-  }
-
-  function salvarStorage(chave, dados) {
-    localStorage.setItem(chave, JSON.stringify(dados));
-
-    if (
-      chave === "encomendas" ||
-      chave === "encomendas_esperadas" ||
-      chave === "encomendas_historico"
-    ) {
-      window.dispatchEvent(
-        new CustomEvent("infinitycondo:encomendas", {
-          detail: { chave }
-        })
-      );
-    }
-  }
-
-  function gerarIdUnico() {
-    return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-  }
 
   function normalizarCodigo(valor) {
-    const limpo = String(valor || "")
+    return String(valor || "")
       .trim()
       .replace(/\s+/g, "")
       .replace(/[^a-zA-Z0-9._-]/g, "")
       .toUpperCase();
-
-    return limpo;
   }
 
   function obterCodigoRastreio(item = {}) {
-    const valor =
-      item.codigoRastreio ||
-      item.rastreio ||
-      item.codigo ||
-      "";
+    return normalizarCodigo(
+      item.codigoRastreio ??
+      item.trackingCode ??
+      item.rastreio ??
+      item.codigo ??
+      ""
+    );
+  }
 
-    if (
-      String(valor).toLowerCase() === "não informado" ||
-      String(valor).toLowerCase() === "nao informado"
-    ) {
-      return "";
+  function mapPackage(item, residentList = []) {
+    const resident =
+      item.expectedByResident ??
+      item.resident ??
+      residentList.find(
+        (r) =>
+          String(r.id) ===
+          String(
+            item.expectedByResidentId ??
+            item.residentId ??
+            ""
+          )
+      ) ??
+      residentList.find(
+        (r) =>
+          String(r.apartamentoId) ===
+          String(item.apartmentId)
+      );
+
+    const user =
+      resident?.user ??
+      resident ??
+      {};
+
+    const statusMap = {
+      EXPECTED: "Aguardando",
+      RECEIVED: "Recebido",
+      DELIVERED: "Entregue",
+      CANCELED: "Cancelado",
+    };
+
+    return {
+      ...item,
+      codigoInterno:
+        item.internalCode ??
+        "",
+      codigoRastreio:
+        item.trackingCode ??
+        "",
+      codigo:
+        item.trackingCode ??
+        "",
+      rastreio:
+        item.trackingCode ??
+        "",
+      apartamento:
+        item.apartment?.number ??
+        resident?.apartment?.number ??
+        resident?.apartamento ??
+        "",
+      apartamentoId:
+        item.apartmentId ??
+        item.apartment?.id ??
+        null,
+      moradorId:
+        resident?.id ??
+        null,
+      morador:
+        user.name ??
+        resident?.nome ??
+        "Morador",
+      nome:
+        user.name ??
+        resident?.nome ??
+        "Morador",
+      tipo:
+        item.type ??
+        "Encomenda",
+      descricao:
+        item.description ??
+        item.type ??
+        "Encomenda",
+      transportadora:
+        item.carrier ??
+        "",
+      status:
+        statusMap[item.status] ??
+        item.status ??
+        "Recebido",
+      data:
+        item.receivedAt
+          ? new Date(item.receivedAt).toLocaleString("pt-BR")
+          : item.createdAt
+            ? new Date(item.createdAt).toLocaleString("pt-BR")
+            : "",
+      dataRecebimento:
+        item.receivedAt
+          ? new Date(item.receivedAt).toLocaleDateString("pt-BR")
+          : "",
+      retiradaEm:
+        item.deliveredAt
+          ? new Date(item.deliveredAt).toLocaleString("pt-BR")
+          : "",
+      retiradoPor:
+        item.withdrawnBy ??
+        "",
+      retiradoDocumento:
+        item.withdrawnDocument ??
+        "",
+      pickupMethod:
+        item.pickupMethod ??
+        "",
+      pickupPersonType:
+        item.pickupPersonType ??
+        "",
+      porteiroRecebimento:
+        item.receivedBy?.name ??
+        item.receivedBy?.user?.name ??
+        "",
+    };
+  }
+
+  function mapResident(r) {
+    return {
+      ...r,
+      nome:
+        r.user?.name ??
+        r.name ??
+        "",
+      apartamento:
+        r.apartment?.number ??
+        "",
+      apto:
+        r.apartment?.number ??
+        "",
+      apartamentoId:
+        r.apartmentId ??
+        r.apartment?.id ??
+        null,
+    };
+  }
+
+  async function carregar() {
+    try {
+      const [
+        packageData,
+        residentData,
+      ] = await Promise.all([
+        packageApi.list(),
+        packageApi.residentsDirectory(),
+      ]);
+
+      const mappedResidents =
+        (residentData ?? []).map(
+          mapResident
+        );
+
+      setMoradores(
+        mappedResidents
+      );
+
+      setEncomendas(
+        (packageData ?? []).map(
+          (item) =>
+            mapPackage(
+              item,
+              mappedResidents
+            )
+        )
+      );
+    } catch (error) {
+      alert(
+        error?.message ??
+        "Não foi possível carregar encomendas."
+      );
     }
+  }
 
+  useEffect(() => {
+    carregar();
+  }, []);
+
+  const encomendasFiltradas =
+    encomendas.filter((e) => {
+      const texto =
+        busca.toLowerCase();
+
+      const corresponde =
+        e.morador?.toLowerCase().includes(texto) ||
+        e.apartamento?.toLowerCase().includes(texto) ||
+        e.codigoInterno?.toLowerCase().includes(texto) ||
+        e.codigoRastreio?.toLowerCase().includes(texto) ||
+        e.transportadora?.toLowerCase().includes(texto) ||
+        e.status?.toLowerCase().includes(texto);
+
+      return (
+        corresponde &&
+        (
+          filtroStatus === "Todos" ||
+          e.status === filtroStatus
+        )
+      );
+    });
+
+  const recebidas =
+    encomendas.filter(
+      (e) => e.status === "Recebido"
+    );
+
+  const entregues =
+    encomendas.filter(
+      (e) => e.status === "Entregue"
+    );
+
+  const atrasadas = [];
+
+  function limparCodigo(valor) {
     return normalizarCodigo(valor);
   }
 
-  function normalizarStatus(status) {
-    const valor = String(status || "")
-      .trim()
-      .toLowerCase();
-
-    if (
-      valor === "entregue" ||
-      valor === "retirada" ||
-      valor === "retirado"
-    ) {
-      return "Entregue";
-    }
-
-    if (valor === "atrasado") {
-      return "Atrasado";
-    }
-
-    if (
-      valor === "aguardando" ||
-      valor === "esperada" ||
-      valor === "esperado"
-    ) {
-      return "Aguardando";
-    }
-
-    return "Recebido";
-  }
-
-
-  function limparCodigo(valor) {
-    return String(valor || "").replace(/[^\w.-]/g, "").toUpperCase();
-  }
-
-  function gerarCodigoEncomenda(numero) {
-    return `ENC-${String(numero).padStart(6, "0")}`;
-  }
-
-  function proximoCodigoEncomenda() {
-    const numeros = encomendas
-      .map((item) => Number(String(item.codigoInterno || "").replace(/\D/g, "")))
-      .filter((numero) => !isNaN(numero));
-
-    const proximo =
-      numeros.length > 0
-        ? Math.max(...numeros) + 1
-        : encomendas.length + 1;
-
-    return gerarCodigoEncomenda(proximo);
-  }
-
-  function obterPerfilCondominio() {
-    try {
-      const perfil =
-        JSON.parse(localStorage.getItem("perfil_condominio")) ||
-        JSON.parse(localStorage.getItem("configuracoes")) ||
-        {};
-
-      return {
-        condominioId: perfil.id || perfil.condominioId || null,
-        nomeCondominio: perfil.nomeCondominio || ""
-      };
-    } catch {
-      return {
-        condominioId: null,
-        nomeCondominio: ""
-      };
-    }
-  }
-
-  function obterUsuarioAtual() {
-    try {
-      return (
-        JSON.parse(localStorage.getItem("usuarioSindico")) ||
-        JSON.parse(sessionStorage.getItem("usuarioSindico")) ||
-        JSON.parse(localStorage.getItem("usuarioPorteiro")) ||
-        JSON.parse(sessionStorage.getItem("usuarioPorteiro")) ||
-        {}
-      );
-    } catch {
-      return {};
-    }
-  }
-
-  function registrarAuditoriaEncomenda({
-    acao,
-    detalhes,
-    antes = null,
-    depois = null,
-    referenciaId = null
-  }) {
-    registrarAuditoria({
-      acao,
-      modulo: "Encomendas",
-      detalhes,
-      antes,
-      depois,
-      referenciaId
-    });
-  }
-
-  function criarNotificacaoEncomenda({
-    titulo,
-    mensagem,
-    referenciaId = null,
-    prioridade = "normal",
-    perfilDestino = "sindico",
-    encomenda = null
-  }) {
-    criarNotificacao({
-      titulo,
-      mensagem,
-      tipo: "Encomendas",
-      origem: "Encomendas",
-      perfilDestino,
-      usuarioDestinoId:
-        perfilDestino === "morador"
-          ? encomenda?.moradorId || null
-          : null,
-      usuarioDestinoNome:
-        perfilDestino === "morador"
-          ? encomenda?.morador || ""
-          : "",
-      apartamentoDestino:
-        perfilDestino === "morador"
-          ? encomenda?.apartamento || ""
-          : "",
-      moduloOrigem: "Encomendas",
-      referenciaId,
-      prioridade
-    });
-  }
-
-  function validarEncomenda() {
-    const descricao = String(novaEncomenda.descricao || "").trim();
-    const transportadora = String(novaEncomenda.transportadora || "").trim();
-    const codigo = obterCodigoRastreio(novaEncomenda);
-
-    if (!novaEncomenda.morador) {
-      alert("Selecione o morador destinatário.");
-      return false;
-    }
-
-    if (!novaEncomenda.apartamento) {
-      alert("O apartamento do destinatário é obrigatório.");
-      return false;
-    }
-
-    if (descricao.length < 3) {
-      alert("Informe uma descrição válida para a encomenda.");
-      return false;
-    }
-
-    if (transportadora.length < 2) {
-      alert("Informe a transportadora ou origem da encomenda.");
-      return false;
-    }
-
-    if (codigo) {
-      const codigoNormalizado = limparCodigo(codigo);
-
-      const duplicada = encomendas.find((item) => {
-        const statusAtual = item.status || "Recebido";
-
-        return (
-          obterCodigoRastreio(item) === codigoNormalizado &&
-          item.id !== editId &&
-          statusAtual !== "Entregue"
-        );
-      });
-
-      if (duplicada) {
-        alert("Já existe uma encomenda pendente com este código de rastreio.");
-        return false;
-      }
-    }
-
-    if (!novaEncomenda.status) {
-      alert("Selecione o status da encomenda.");
-      return false;
-    }
-
-    return true;
-  }
-
-  const encomendasFiltradas = encomendas.filter((e) => {
-    const texto = busca.toLowerCase();
-
-    const correspondeBusca =
-      e.morador?.toLowerCase().includes(texto) ||
-      e.apartamento?.toLowerCase().includes(texto) ||
-      e.descricao?.toLowerCase().includes(texto) ||
-      obterCodigoRastreio(e).toLowerCase().includes(texto) ||
-      e.codigoInterno?.toLowerCase().includes(texto) ||
-      e.transportadora?.toLowerCase().includes(texto) ||
-      e.status?.toLowerCase().includes(texto);
-
-    const correspondeStatus =
-      filtroStatus === "Todos" ||
-      e.status === filtroStatus;
-
-    return correspondeBusca && correspondeStatus;
-  });
-
-  const recebidas = encomendas.filter(
-    (e) => e.status === "Recebido"
-  );
-
-  const entregues = encomendas.filter(
-    (e) => e.status === "Entregue"
-  );
-
-  const atrasadas = encomendas.filter(
-    (e) => e.status === "Atrasado"
-  );
-
   function selecionarMorador(moradorId) {
-    const moradorSelecionado = moradores.find(
-      (m) => String(m.id) === String(moradorId)
+    const morador =
+      moradores.find(
+        (m) =>
+          String(m.id) ===
+          String(moradorId)
+      );
+
+    if (!morador) {
+      setNovaEncomenda(
+        (prev) => ({
+          ...prev,
+          moradorId: "",
+          morador: "",
+          apartamento: "",
+          apartamentoId: null,
+        })
+      );
+      return;
+    }
+
+    setNovaEncomenda(
+      (prev) => ({
+        ...prev,
+        moradorId:
+          morador.id,
+        morador:
+          morador.nome,
+        apartamento:
+          morador.apartamento,
+        apartamentoId:
+          morador.apartamentoId,
+      })
     );
-
-    if (!moradorSelecionado) {
-      setNovaEncomenda({
-        ...novaEncomenda,
-        morador: "",
-        apartamento: "",
-        moradorId: null,
-        apartamentoId: null,
-        tipoMorador: "",
-        moradorPrincipal: false
-      });
-
-      return;
-    }
-
-    setNovaEncomenda({
-      ...novaEncomenda,
-      moradorId: moradorSelecionado.id,
-      morador: moradorSelecionado.nome,
-      apartamento:
-        moradorSelecionado.apartamento ||
-        moradorSelecionado.apto ||
-        "",
-      apartamentoId: moradorSelecionado.apartamentoId || null,
-      tipoMorador: moradorSelecionado.tipoMorador || "Morador",
-      moradorPrincipal: Boolean(moradorSelecionado.moradorPrincipal)
-    });
   }
 
-  function salvarMovimentacao(acao, encomenda) {
-    const historico = lerStorage(STORAGE_MOVIMENTACOES);
-
-    const nova = {
-      id: Date.now(),
-      tipo: "Encomenda",
-      acao,
-      origem: "Síndico",
-      titulo: encomenda.descricao,
-      nome: encomenda.morador,
-      morador: encomenda.morador,
-      moradorId: encomenda.moradorId || null,
-      apartamento: encomenda.apartamento || "",
-      descricao: encomenda.descricao,
-      status: encomenda.status,
-      data: new Date().toLocaleDateString("pt-BR"),
-      hora: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      }),
-      timestamp: Date.now()
-    };
-
-    salvarStorage(STORAGE_MOVIMENTACOES, [
-      nova,
-      ...historico
-    ]);
-  }
-
-  function salvarRelatorio(acao, encomenda) {
-    const relatorios = lerStorage(STORAGE_RELATORIOS);
-
-    const novo = {
-      id: Date.now() + 1,
-      tipo: "Encomenda",
-      acao,
-      origem: "Síndico",
-      titulo: encomenda.descricao,
-      morador: encomenda.morador,
-      moradorId: encomenda.moradorId || null,
-      apartamento: encomenda.apartamento || "",
-      descricao: encomenda.descricao,
-      codigo: obterCodigoRastreio(encomenda),
-      codigoRastreio: obterCodigoRastreio(encomenda),
-      rastreio: obterCodigoRastreio(encomenda),
-      codigoInterno: encomenda.codigoInterno,
-      transportadora: encomenda.transportadora,
-      status: encomenda.status,
-      data: new Date().toLocaleDateString("pt-BR"),
-      hora: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      })
-    };
-
-    salvarStorage(STORAGE_RELATORIOS, [
-      novo,
-      ...relatorios
-    ]);
-  }
-
-  function salvarHistorico(acao, encomenda) {
-    const historico = lerStorage(STORAGE_HISTORICO);
-
-    const novo = {
-      id: Date.now() + 2,
-      encomendaId: encomenda.id,
-      acao,
-      origem: "Síndico",
-      morador: encomenda.morador,
-      moradorId: encomenda.moradorId || null,
-      apartamento: encomenda.apartamento || "",
-      descricao: encomenda.descricao,
-      codigo: obterCodigoRastreio(encomenda),
-      codigoRastreio: obterCodigoRastreio(encomenda),
-      rastreio: obterCodigoRastreio(encomenda),
-      codigoInterno: encomenda.codigoInterno,
-      transportadora: encomenda.transportadora,
-      status: encomenda.status,
-      data: new Date().toLocaleDateString("pt-BR"),
-      hora: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      })
-    };
-
-    salvarStorage(STORAGE_HISTORICO, [
-      novo,
-      ...historico
-    ]);
-  }
-
-  function salvarAvisoSindico(acao, encomenda) {
-    const avisos = lerStorage(STORAGE_AVISOS_SINDICO);
-
-    const novo = {
-      id: Date.now() + 3,
-      categoria: "Encomenda",
-      origem: "Síndico",
-      titulo: `Encomenda - ${acao}`,
-      descricao: encomenda.descricao,
-      apartamento: encomenda.apartamento || "",
-      morador: encomenda.morador || "",
-      responsavel: "Síndico",
-      status: encomenda.status || "Recebido",
-      respostaSindico: "",
-      cienciaSindico: true,
-      data: new Date().toLocaleDateString("pt-BR")
-    };
-
-    salvarStorage(STORAGE_AVISOS_SINDICO, [
-      novo,
-      ...avisos
-    ]);
-  }
-
-  function notificarMorador(acao, encomenda) {
-    const notificacoes = lerStorage(STORAGE_NOTIFICACOES);
-
-    const nova = {
-      id: Date.now() + 4,
-      tipo: "Encomenda",
-      titulo:
-        acao === "entrega"
-          ? "Sua encomenda foi entregue"
-          : "Nova atualização de encomenda",
-      descricao:
-        acao === "recebimento"
-          ? `Uma encomenda foi registrada para você: ${encomenda.descricao}.`
-          : `Status da encomenda atualizado para ${encomenda.status}.`,
-      morador: encomenda.morador || "",
-      moradorId: encomenda.moradorId || null,
-      apartamento: encomenda.apartamento || "",
-      lida: false,
-      data: new Date().toLocaleDateString("pt-BR"),
-      hora: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      })
-    };
-
-    salvarStorage(STORAGE_NOTIFICACOES, [
-      nova,
-      ...notificacoes
-    ]);
-  }
-
-  function registrarFluxo(acao, encomenda, antes = null) {
-    salvarMovimentacao(acao, encomenda);
-    salvarRelatorio(acao, encomenda);
-    salvarHistorico(acao, encomenda);
-    salvarAvisoSindico(acao, encomenda);
-    notificarMorador(acao, encomenda);
-
-    registrarAuditoriaEncomenda({
-      acao: `Encomenda - ${acao}`,
-      detalhes: `${encomenda.codigoInterno || encomenda.codigo || "Sem código"} • ${encomenda.morador} • Apto ${encomenda.apartamento}`,
-      antes,
-      depois: encomenda,
-      referenciaId: encomenda.id
-    });
-
+  async function salvarEncomenda() {
     if (
-      acao === "recebimento" ||
-      acao === "exclusão" ||
-      acao === "status: Entregue" ||
-      acao === "status: Atrasado"
+      !novaEncomenda.apartamentoId ||
+      novaEncomenda.descricao.trim().length < 2
     ) {
-      criarNotificacaoEncomenda({
-        titulo:
-          acao === "recebimento"
-            ? "Nova encomenda registrada"
-            : acao === "status: Entregue"
-            ? "Encomenda entregue"
-            : acao === "status: Atrasado"
-            ? "Encomenda atrasada"
-            : "Encomenda removida",
-        mensagem: `${encomenda.morador} • Apto ${encomenda.apartamento} • ${encomenda.descricao}`,
-        referenciaId: encomenda.id,
-        prioridade:
-          acao === "status: Atrasado" || acao === "exclusão"
-            ? "alta"
-            : "normal"
-      });
-    }
-  }
-
-  function salvarEncomenda() {
-    if (!validarEncomenda()) {
+      alert(
+        "Selecione o morador/apartamento e informe a descrição."
+      );
       return;
     }
 
-    const perfilCondominio = obterPerfilCondominio();
-    const usuarioAtual = obterUsuarioAtual();
-
-    const encomendaFormatada = {
-      ...novaEncomenda,
-      morador: String(novaEncomenda.morador || "").trim(),
-      apartamento: String(novaEncomenda.apartamento || "").trim(),
-      descricao: String(novaEncomenda.descricao || "").trim(),
-      codigoRastreio: obterCodigoRastreio(novaEncomenda),
-      rastreio: obterCodigoRastreio(novaEncomenda),
-      codigo: obterCodigoRastreio(novaEncomenda),
-      codigoInterno:
-        novaEncomenda.codigoInterno ||
-        proximoCodigoEncomenda(),
-      transportadora: String(novaEncomenda.transportadora || "").trim(),
-      status: normalizarStatus(novaEncomenda.status),
-      condominioId: perfilCondominio.condominioId,
-      nomeCondominio: perfilCondominio.nomeCondominio,
-      criadoPor: usuarioAtual.nome || usuarioAtual.usuario || "Sistema",
-      apartamentoId: novaEncomenda.apartamentoId || null,
-      tipoMorador: novaEncomenda.tipoMorador || "",
-      moradorPrincipal: Boolean(novaEncomenda.moradorPrincipal),
-      porteiroId: usuarioAtual.tipo === "porteiro" ? usuarioAtual.id || null : novaEncomenda.porteiroId || null,
-      porteiroNome: usuarioAtual.tipo === "porteiro" ? usuarioAtual.nome || usuarioAtual.usuario || "" : novaEncomenda.porteiroNome || "",
-      atualizadoEm: new Date().toISOString()
+    const payload = {
+      apartmentId:
+        novaEncomenda.apartamentoId,
+      expectedByResidentId:
+        novaEncomenda.moradorId ||
+        null,
+      type:
+        novaEncomenda.tipo ||
+        "Encomenda",
+      description:
+        novaEncomenda.descricao.trim(),
+      carrier:
+        novaEncomenda.transportadora?.trim() ||
+        null,
+      trackingCode:
+        normalizarCodigo(
+          novaEncomenda.codigo
+        ) || null,
+      notes: null,
+      expectedAt: null,
     };
 
-    let listaAtualizada = [];
+    try {
+      if (editId) {
+        await packageApi.update(
+          editId,
+          payload
+        );
+      } else {
+        await packageApi.createReceived(
+          payload
+        );
+      }
 
-    if (editId !== null) {
-      const encomendaAntiga = encomendas.find(
-        (item) => item.id === editId
+      await carregar();
+      fecharModal();
+    } catch (error) {
+      alert(
+        error?.message ??
+        "Não foi possível salvar a encomenda."
       );
-
-      const atualizada = {
-        ...encomendaFormatada,
-        id: editId,
-        data:
-          encomendaAntiga?.data ||
-          new Date().toLocaleString("pt-BR")
-      };
-
-      listaAtualizada = encomendas.map((e) =>
-        e.id === editId ? atualizada : e
-      );
-
-      registrarFluxo("edição", atualizada, encomendaAntiga);
-
-      setEditId(null);
-    } else {
-      const nova = {
-        id: gerarIdUnico(),
-        ...encomendaFormatada,
-        data: new Date().toLocaleString("pt-BR"),
-        criadoEm: new Date().toISOString()
-      };
-
-      listaAtualizada = [
-        nova,
-        ...encomendas
-      ];
-
-      registrarFluxo("recebimento", nova);
     }
-
-    setEncomendas(listaAtualizada);
-    salvarStorage(STORAGE_KEY, listaAtualizada);
-
-    setNovaEncomenda(estadoInicialEncomenda);
-    setMostrarModal(false);
   }
 
-  function editarEncomenda(encomenda) {
+  async function alterarStatus(
+    id,
+    status
+  ) {
+    try {
+      if (status === "Entregue") {
+        const retiradoPor =
+          window.prompt(
+            "Nome de quem retirou a encomenda:"
+          );
+
+        if (!retiradoPor?.trim()) {
+          return;
+        }
+
+        await packageApi.deliver(
+          id,
+          retiradoPor.trim()
+        );
+
+        await carregar();
+        return;
+      }
+
+      if (status === "Atrasado") {
+        alert(
+          "O backend não possui status manual de atraso. A encomenda permanece como Recebido até a retirada."
+        );
+      }
+    } catch (error) {
+      alert(
+        error?.message ??
+        "Não foi possível atualizar a encomenda."
+      );
+    }
+  }
+
+  function editarEncomenda(e) {
+    setEditId(e.id);
     setNovaEncomenda({
       ...estadoInicialEncomenda,
-      ...encomenda
+      ...e,
+      codigo:
+        obterCodigoRastreio(e),
     });
-
-    setEditId(encomenda.id);
     setMostrarModal(true);
   }
 
-  function excluirEncomenda(id) {
-    const confirmar = window.confirm(
-      "Deseja excluir esta encomenda?"
-    );
-
-    if (!confirmar) return;
-
-    const encomenda = encomendas.find(
-      (e) => e.id === id
-    );
-
-    const lista = encomendas.filter(
-      (e) => e.id !== id
-    );
-
-    if (encomenda) {
-      registrarFluxo("exclusão", encomenda);
+  async function excluirEncomenda(id) {
+    if (
+      !window.confirm(
+        "Deseja excluir este registro?"
+      )
+    ) {
+      return;
     }
 
-    setEncomendas(lista);
-    salvarStorage(STORAGE_KEY, lista);
-  }
-
-  function alterarStatus(id, status) {
-    const encomendaAntes = encomendas.find((e) => e.id === id);
-
-    const lista = encomendas.map((e) =>
-      e.id === id
-        ? {
-            ...e,
-            status: normalizarStatus(status),
-            atualizadoEm: new Date().toISOString(),
-            retiradaEm:
-              normalizarStatus(status) === "Entregue"
-                ? new Date().toLocaleString("pt-BR")
-                : e.retiradaEm
-          }
-        : e
-    );
-
-    const encomenda = lista.find(
-      (e) => e.id === id
-    );
-
-    if (encomenda) {
-      registrarFluxo(
-        `status: ${normalizarStatus(status)}`,
-        encomenda,
-        encomendaAntes
+    try {
+      await packageApi.remove(id);
+      await carregar();
+    } catch (error) {
+      alert(
+        error?.message ??
+        "Não foi possível excluir a encomenda."
       );
     }
-
-    setEncomendas(lista);
-    salvarStorage(STORAGE_KEY, lista);
   }
 
   function fecharModal() {
     setMostrarModal(false);
     setEditId(null);
-    setNovaEncomenda(estadoInicialEncomenda);
+    setNovaEncomenda(
+      estadoInicialEncomenda
+    );
   }
 
   function corStatus(status) {
-    switch (status) {
-      case "Recebido":
-        return {
-          background: "#fef3c7",
-          color: "#92400e",
-          border: "#fde68a",
-          label: "Aguardando retirada"
-        };
-
-      case "Entregue":
-        return {
-          background: "#f3e8ff",
-          color: "#7c3aed",
-          border: "#ddd6fe",
-          label: "Entregue"
-        };
-
-      case "Atrasado":
-        return {
-          background: "#fee2e2",
-          color: "#b91c1c",
-          border: "#fecaca",
-          label: "Atrasado"
-        };
-
-      default:
-        return {
-          background: "#f5f3ff",
-          color: "#374151",
-          border: "#ddd6fe",
-          label: status || "Sem status"
-        };
+    if (status === "Entregue") {
+      return {
+        label: "Entregue",
+        background: "#dcfce7",
+        color: "#166534",
+        border: "#bbf7d0",
+      };
     }
+
+    if (status === "Aguardando") {
+      return {
+        label: "Aguardando",
+        background: "#dbeafe",
+        color: "#1d4ed8",
+        border: "#bfdbfe",
+      };
+    }
+
+    if (status === "Cancelado") {
+      return {
+        label: "Cancelado",
+        background: "#fee2e2",
+        color: "#b91c1c",
+        border: "#fecaca",
+      };
+    }
+
+    return {
+      label: "Recebido",
+      background: "#fef3c7",
+      color: "#92400e",
+      border: "#fde68a",
+    };
   }
 
-  function iconeTransportadora(nome) {
-    const texto = nome?.toLowerCase() || "";
+  function iconeTransportadora(
+    transportadora
+  ) {
+    const texto =
+      String(
+        transportadora || ""
+      ).toLowerCase();
 
-    if (texto.includes("correios")) return "📮";
+    if (texto.includes("correio")) return "📮";
     if (texto.includes("amazon")) return "🟧";
     if (texto.includes("mercado")) return "🛒";
     if (texto.includes("shopee")) return "🛍️";
     if (texto.includes("jadlog")) return "🚚";
     if (texto.includes("loggi")) return "⚡";
-
     return "📦";
   }
+
 
   return (
     <div style={styles.container}>

@@ -1,14 +1,7 @@
-import { useState } from "react";
-import { registrarAuditoria } from "../../Services/auditoriaService";
-import { criarNotificacao } from "../../Services/notificacaoService";
+import { useEffect, useState } from "react";
+import visitorApi from "../../Services/visitorApi";
 
 function Visitantes() {
-  const STORAGE_KEY = "visitantes";
-  const STORAGE_AVISOS_SINDICO = "avisos_sindico";
-  const STORAGE_MOVIMENTACOES = "movimentacoes";
-  const STORAGE_RELATORIOS = "relatorios_operacionais";
-  const STORAGE_HISTORICO = "visitantes_historico";
-
   const estadoInicialVisitante = {
     nome: "",
     documento: "",
@@ -17,118 +10,195 @@ function Visitantes() {
     morador: "",
     moradorId: "",
     apartamentoId: null,
-    tipoMorador: "",
-    moradorPrincipal: false,
     observacao: "",
     entrada: "",
     autorizado: false,
     bloqueado: false,
     status: "Aguardando",
     tipo: "Visitante",
-    cienciaSindico: true,
-    condominioId: null,
-    nomeCondominio: "",
-    criadoPor: "",
-    porteiroId: null,
-    porteiroNome: ""
   };
 
-  const [visitantes, setVisitantes] = useState(() =>
-    lerStorage(STORAGE_KEY)
-  );
-
-  const [moradores] = useState(() => {
-    const lista = lerStorage("moradores");
-
-    return lista.map((morador) => ({
-      ...morador,
-      apto: morador.apto || morador.apartamento || "",
-      apartamento: morador.apartamento || morador.apto || "",
-      apartamentoId: morador.apartamentoId || null,
-      tipoMorador: morador.tipoMorador || "Morador",
-      moradorPrincipal: Boolean(morador.moradorPrincipal)
-    }));
-  });
-
+  const [visitantes, setVisitantes] = useState([]);
+  const [moradores, setMoradores] = useState([]);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("Todos");
   const [novoVisitante, setNovoVisitante] = useState(estadoInicialVisitante);
   const [editId, setEditId] = useState(null);
 
-  function lerStorage(chave) {
+  const statusFront = {
+    WAITING: "Aguardando",
+    AUTHORIZED: "Autorizado",
+    INSIDE: "Em Visita",
+    EXITED: "Saiu",
+    DENIED: "Bloqueado",
+    CANCELED: "Bloqueado",
+  };
+
+  function mapResident(r) {
+    return {
+      ...r,
+      nome: r.user?.name ?? r.name ?? "",
+      apartamento: r.apartment?.number ?? "",
+      apto: r.apartment?.number ?? "",
+      apartamentoId: r.apartmentId ?? r.apartment?.id ?? null,
+      moradorPrincipal: Boolean(r.isPrimary),
+    };
+  }
+
+  function mapVisitor(v, residentList = moradores) {
+    const resident =
+      residentList.find(
+        (r) =>
+          String(r.apartamentoId) ===
+            String(v.apartmentId) &&
+          r.moradorPrincipal
+      ) ??
+      residentList.find(
+        (r) =>
+          String(r.apartamentoId) ===
+          String(v.apartmentId)
+      );
+
+    const dateSource =
+      v.enteredAt ??
+      v.expectedAt ??
+      v.createdAt;
+
+    return {
+      ...v,
+      nome: v.name ?? "",
+      documento: v.document ?? "",
+      telefone: v.phone ?? "",
+      apartamento:
+        v.apartment?.number ??
+        resident?.apartamento ??
+        "",
+      apartamentoId:
+        v.apartmentId ??
+        v.apartment?.id ??
+        null,
+      morador:
+        resident?.nome ??
+        "",
+      moradorId:
+        resident?.id ??
+        "",
+      tipo:
+        v.visitType ??
+        "Visitante",
+      tipoVisitante:
+        v.visitType ??
+        "Visitante",
+      observacao:
+        v.notes ??
+        "",
+      status:
+        statusFront[v.status] ??
+        v.status ??
+        "Aguardando",
+      entrada:
+        v.enteredAt
+          ? new Date(v.enteredAt).toLocaleTimeString(
+              "pt-BR",
+              { hour: "2-digit", minute: "2-digit" }
+            )
+          : "",
+      data:
+        dateSource
+          ? new Date(dateSource).toLocaleDateString("pt-BR")
+          : "",
+      autorizado:
+        ["AUTHORIZED", "INSIDE", "EXITED"].includes(v.status),
+      bloqueado:
+        v.status === "DENIED",
+    };
+  }
+
+  async function carregar() {
     try {
-      const dados = localStorage.getItem(chave);
-      return dados ? JSON.parse(dados) : [];
-    } catch {
-      return [];
+      const [visitorData, residentData] =
+        await Promise.all([
+          visitorApi.list(),
+          visitorApi.residentsDirectory(),
+        ]);
+
+      const mappedResidents =
+        (residentData ?? []).map(mapResident);
+
+      setMoradores(mappedResidents);
+      setVisitantes(
+        (visitorData ?? []).map((v) =>
+          mapVisitor(v, mappedResidents)
+        )
+      );
+    } catch (error) {
+      alert(
+        error?.message ??
+        "Não foi possível carregar visitantes."
+      );
     }
   }
 
-  function salvarStorage(chave, dados) {
-    localStorage.setItem(chave, JSON.stringify(dados));
-  }
+  useEffect(() => {
+    carregar();
+  }, []);
 
-  function normalizarStatus(status) {
-    if (status === "aguardando" || status === "Pendente") return "Aguardando";
-    if (status === "liberado" || status === "Autorizado") return "Autorizado";
-    if (status === "entrou" || status === "Em visita") return "Em Visita";
-    if (status === "saiu" || status === "Encerrado") return "Saiu";
-    if (status === "Bloqueado") return "Bloqueado";
+  const visitantesNormalizados = visitantes;
 
-    return status || "Aguardando";
-  }
+  const visitantesFiltrados =
+    visitantesNormalizados.filter((v) => {
+      const texto = busca.toLowerCase();
 
-  const visitantesNormalizados = visitantes.map((v) => ({
-    ...v,
-    status: normalizarStatus(v.status)
-  }));
+      const correspondeBusca =
+        v.nome?.toLowerCase().includes(texto) ||
+        v.documento?.toLowerCase().includes(texto) ||
+        v.telefone?.toLowerCase().includes(texto) ||
+        v.apartamento?.toLowerCase().includes(texto) ||
+        v.morador?.toLowerCase().includes(texto) ||
+        v.tipo?.toLowerCase().includes(texto) ||
+        v.status?.toLowerCase().includes(texto);
 
-  const visitantesFiltrados = visitantesNormalizados.filter((v) => {
-    const texto = busca.toLowerCase();
+      return (
+        correspondeBusca &&
+        (filtroStatus === "Todos" ||
+          v.status === filtroStatus)
+      );
+    });
 
-    const correspondeBusca =
-      v.nome?.toLowerCase().includes(texto) ||
-      v.documento?.toLowerCase().includes(texto) ||
-      v.telefone?.toLowerCase().includes(texto) ||
-      v.apartamento?.toLowerCase().includes(texto) ||
-      v.morador?.toLowerCase().includes(texto) ||
-      v.tipo?.toLowerCase().includes(texto) ||
-      v.tipoVisitante?.toLowerCase().includes(texto) ||
-      v.status?.toLowerCase().includes(texto);
+  const pendentes =
+    visitantesNormalizados.filter(
+      (v) => v.status === "Aguardando"
+    );
 
-    const correspondeStatus =
-      filtroStatus === "Todos" || v.status === filtroStatus;
+  const emVisita =
+    visitantesNormalizados.filter(
+      (v) => v.status === "Em Visita"
+    );
 
-    return correspondeBusca && correspondeStatus;
-  });
+  const autorizados =
+    visitantesNormalizados.filter(
+      (v) => v.status === "Autorizado"
+    );
 
-  const pendentes = visitantesNormalizados.filter(
-    (v) => v.status === "Aguardando"
-  );
+  const bloqueados =
+    visitantesNormalizados.filter(
+      (v) => v.status === "Bloqueado"
+    );
 
-  const emVisita = visitantesNormalizados.filter(
-    (v) => v.status === "Em Visita"
-  );
-
-  const autorizados = visitantesNormalizados.filter(
-    (v) => v.status === "Autorizado"
-  );
-
-  const bloqueados = visitantesNormalizados.filter(
-    (v) => v.status === "Bloqueado" || v.bloqueado === true
-  );
-
-  const encerrados = visitantesNormalizados.filter(
-    (v) => v.status === "Saiu"
-  );
+  const encerrados =
+    visitantesNormalizados.filter(
+      (v) => v.status === "Saiu"
+    );
 
   function limparDocumento(valor) {
-    return String(valor || "").replace(/[^\dA-Za-z.-]/g, "");
+    return String(valor || "")
+      .replace(/[^\dA-Za-z.-]/g, "");
   }
 
   function limparTelefone(valor) {
-    return String(valor || "").replace(/\D/g, "");
+    return String(valor || "")
+      .replace(/\D/g, "");
   }
 
   function validarHora(valor) {
@@ -138,654 +208,284 @@ function Visitantes() {
 
   function validarDocumento(valor) {
     const doc = String(valor || "").trim();
+    if (!doc) return true;
 
-    const cpfNumerico = doc.replace(/\D/g, "");
+    const cpfNumerico =
+      doc.replace(/\D/g, "");
 
     if (cpfNumerico.length === 11) {
       return true;
     }
 
-    const rgValido = /^[0-9A-Za-z.-]{5,14}$/.test(doc);
-
-    return rgValido;
-  }
-
-  function obterPerfilCondominio() {
-    try {
-      const perfil =
-        JSON.parse(localStorage.getItem("perfil_condominio")) ||
-        JSON.parse(localStorage.getItem("configuracoes")) ||
-        {};
-
-      return {
-        condominioId: perfil.id || perfil.condominioId || null,
-        nomeCondominio: perfil.nomeCondominio || ""
-      };
-    } catch {
-      return {
-        condominioId: null,
-        nomeCondominio: ""
-      };
-    }
-  }
-
-  function obterUsuarioAtual() {
-    try {
-      return (
-        JSON.parse(localStorage.getItem("usuarioSindico")) ||
-        JSON.parse(sessionStorage.getItem("usuarioSindico")) ||
-        JSON.parse(localStorage.getItem("usuarioPorteiro")) ||
-        JSON.parse(sessionStorage.getItem("usuarioPorteiro")) ||
-        {}
-      );
-    } catch {
-      return {};
-    }
-  }
-
-  function registrarAuditoriaVisitante({
-    acao,
-    detalhes,
-    antes = null,
-    depois = null,
-    referenciaId = null
-  }) {
-    registrarAuditoria({
-      acao,
-      modulo: "Visitantes",
-      detalhes,
-      antes,
-      depois,
-      referenciaId
-    });
-  }
-
-  function criarNotificacaoVisitante({
-    titulo,
-    mensagem,
-    referenciaId = null,
-    prioridade = "normal",
-    perfilDestino = "sindico"
-  }) {
-    criarNotificacao({
-      titulo,
-      mensagem,
-      tipo: "Visitantes",
-      origem: "Visitantes",
-      perfilDestino,
-      moduloOrigem: "Visitantes",
-      referenciaId,
-      prioridade
-    });
+    return /^[0-9A-Za-z.-]{5,14}$/.test(doc);
   }
 
   function validarVisitante() {
-    const nome = String(novoVisitante.nome || "").trim();
-    const documento = String(novoVisitante.documento || "").trim();
-    const telefone = limparTelefone(novoVisitante.telefone);
-    const entrada = String(novoVisitante.entrada || "").trim();
-
-    if (nome.length < 3) {
-      alert("Informe o nome do visitante com pelo menos 3 caracteres.");
-      return false;
-    }
-
-    if (!documento) {
-      alert("Informe o documento do visitante.");
-      return false;
-    }
-
-    if (!validarDocumento(documento)) {
-      alert("Informe um CPF com 11 números ou um RG válido.");
-      return false;
-    }
-
-    if (telefone && (telefone.length < 10 || telefone.length > 11)) {
-      alert("Informe um telefone válido com DDD ou deixe em branco.");
-      return false;
-    }
-
-    if (!novoVisitante.tipo) {
-      alert("Selecione o tipo do visitante.");
-      return false;
-    }
-
-    if (entrada && !validarHora(entrada)) {
-      alert("Informe a hora no formato HH:mm. Exemplo: 14:35");
-      return false;
-    }
-
-    if (!novoVisitante.morador) {
-      alert("Selecione o morador responsável.");
-      return false;
-    }
-
-    if (!novoVisitante.apartamento) {
-      alert("O apartamento do morador responsável é obrigatório.");
-      return false;
-    }
-
-    const documentoNormalizado = documento.replace(/\D/g, "") || documento.toLowerCase();
-
-    const visitanteDuplicado = visitantes.find((v) => {
-      const docExistente =
-        String(v.documento || "").replace(/\D/g, "") ||
-        String(v.documento || "").toLowerCase();
-
-      const statusAtual = normalizarStatus(v.status);
-
-      return (
-        docExistente === documentoNormalizado &&
-        v.id !== editId &&
-        statusAtual !== "Saiu" &&
-        statusAtual !== "Bloqueado"
+    if (
+      novoVisitante.nome.trim().length < 2 ||
+      !novoVisitante.apartamentoId
+    ) {
+      alert(
+        "Informe o nome do visitante e o morador/apartamento responsável."
       );
-    });
+      return false;
+    }
 
-    if (visitanteDuplicado) {
-      alert("Já existe um visitante ativo/pendente com este documento.");
+    if (
+      novoVisitante.documento &&
+      !validarDocumento(
+        novoVisitante.documento
+      )
+    ) {
+      alert("Documento inválido.");
+      return false;
+    }
+
+    if (
+      novoVisitante.entrada &&
+      !validarHora(
+        novoVisitante.entrada
+      )
+    ) {
+      alert("Hora inválida. Use HH:mm.");
       return false;
     }
 
     return true;
   }
 
-  function registrarMovimentacao(acao, visitante) {
-    const movimentacoes = lerStorage(STORAGE_MOVIMENTACOES);
-
-    const nova = {
-      id: Date.now(),
-      tipo: "Visitante",
-      acao,
-      origem: "Síndico",
-      titulo: `Visitante ${visitante.nome}`,
-      visitanteId: visitante.id,
-      nome: visitante.nome,
-      apartamento: visitante.apartamento,
-      status: visitante.status,
-      data: new Date().toLocaleDateString("pt-BR"),
-      hora: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      }),
-      timestamp: Date.now(),
-      impactaBI: true,
-      origemModulo: "Visitantes",
-      atualizadoEm: new Date().toISOString()
-    };
-
-    salvarStorage(STORAGE_MOVIMENTACOES, [nova, ...movimentacoes]);
-  }
-
-  function registrarRelatorio(acao, visitante) {
-    const relatorios = lerStorage(STORAGE_RELATORIOS);
-
-    const novo = {
-      id: Date.now() + 1,
-      tipo: "Visitante",
-      acao,
-      origem: "Síndico",
-      visitanteId: visitante.id,
-      nome: visitante.nome,
-      documento: visitante.documento,
-      apartamento: visitante.apartamento,
-      morador: visitante.morador,
-      tipoVisitante: visitante.tipo || visitante.tipoVisitante || "Visita",
-      observacao: visitante.observacao,
-      status: visitante.status,
-      data: visitante.data || new Date().toLocaleDateString("pt-BR"),
-      entrada: visitante.entrada || visitante.horarioEntrada || "",
-      saida: visitante.saida || visitante.horarioSaida || "",
-      impactaRelatorio: true,
-      origemModulo: "Visitantes"
-    };
-
-    salvarStorage(STORAGE_RELATORIOS, [novo, ...relatorios]);
-  }
-
-  function registrarHistorico(acao, visitante) {
-    const historico = lerStorage(STORAGE_HISTORICO);
-
-    const novo = {
-      id: Date.now() + 2,
-      visitanteId: visitante.id,
-      acao,
-      origem: "Síndico",
-      nome: visitante.nome,
-      documento: visitante.documento,
-      apartamento: visitante.apartamento,
-      morador: visitante.morador,
-      tipoVisitante: visitante.tipo || visitante.tipoVisitante || "Visita",
-      observacao: visitante.observacao,
-      status: visitante.status,
-      data: visitante.data || new Date().toLocaleDateString("pt-BR"),
-      entrada: visitante.entrada || visitante.horarioEntrada || "",
-      saida: visitante.saida || visitante.horarioSaida || "",
-      registradoEm: new Date().toLocaleString("pt-BR"),
-      origemModulo: "Visitantes"
-    };
-
-    salvarStorage(STORAGE_HISTORICO, [novo, ...historico]);
-  }
-
-  function registrarAvisoSindico(acao, visitante) {
-    const avisos = lerStorage(STORAGE_AVISOS_SINDICO);
-
-    const novo = {
-      id: Date.now() + 3,
-      visitanteId: visitante.id,
-      categoria: "Visitante",
-      origem: "Síndico",
-      titulo: `Visitante ${acao} - ${visitante.nome}`,
-      descricao:
-        visitante.observacao ||
-        `Visitante ${visitante.nome} vinculado ao apartamento ${visitante.apartamento}`,
-      apartamento: visitante.apartamento,
-      morador: visitante.morador || "",
-      responsavel: "Síndico",
-      status: visitante.status,
-      respostaSindico: "",
-      cienciaSindico: true,
-      data: new Date().toLocaleDateString("pt-BR"),
-      impactaBI: true,
-      impactaRelatorio: true,
-      exibirNaCentral: true,
-      origemModulo: "Visitantes"
-    };
-
-    salvarStorage(STORAGE_AVISOS_SINDICO, [novo, ...avisos]);
-  }
-
-  function atualizarAvisoSindico(visitante) {
-    const avisos = lerStorage(STORAGE_AVISOS_SINDICO);
-
-    const atualizados = avisos.map((aviso) =>
-      aviso.categoria === "Visitante" &&
-      (
-        aviso.visitanteId === visitante.id ||
-        String(aviso.apartamento) === String(visitante.apartamento)
-      ) &&
-      aviso.titulo?.includes(visitante.nome)
-        ? {
-            ...aviso,
-            visitanteId: visitante.id,
-            status: visitante.status,
-            cienciaSindico: true,
-            dataAtualizacao: new Date().toLocaleString("pt-BR"),
-            impactaBI: true,
-            impactaRelatorio: true,
-            exibirNaCentral: true,
-            origemModulo: "Visitantes"
-          }
-        : aviso
+  function obterMoradorIdPorNomeApartamento(
+    nome,
+    apartamento
+  ) {
+    return (
+      moradores.find(
+        (m) =>
+          m.nome === nome &&
+          String(m.apartamento) ===
+            String(apartamento)
+      )?.id ?? ""
     );
-
-    salvarStorage(STORAGE_AVISOS_SINDICO, atualizados);
-  }
-
-  function registrarFluxo(acao, visitante, antes = null) {
-    registrarMovimentacao(acao, visitante);
-    registrarRelatorio(acao, visitante);
-    registrarHistorico(acao, visitante);
-    registrarAvisoSindico(acao, visitante);
-
-    registrarAuditoriaVisitante({
-      acao: `Visitante - ${acao}`,
-      detalhes: `${visitante.nome} - Apto ${visitante.apartamento}`,
-      antes,
-      depois: visitante,
-      referenciaId: visitante.id
-    });
-
-    if (["cadastro", "edição", "exclusão"].includes(acao)) {
-      criarNotificacaoVisitante({
-        titulo:
-          acao === "cadastro"
-            ? "Novo visitante registrado"
-            : acao === "edição"
-            ? "Visitante atualizado"
-            : "Visitante removido",
-        mensagem: `${visitante.nome} • Apartamento ${visitante.apartamento}`,
-        referenciaId: visitante.id,
-        prioridade: acao === "exclusão" ? "alta" : "normal"
-      });
-    }
-  }
-
-  function salvarVisitante() {
-    if (!validarVisitante()) {
-      return;
-    }
-
-    const agora = new Date();
-
-    let statusFinal = "Aguardando";
-
-    if (novoVisitante.bloqueado) {
-      statusFinal = "Bloqueado";
-    } else if (novoVisitante.autorizado) {
-      statusFinal = "Autorizado";
-    }
-
-    const perfilCondominio = obterPerfilCondominio();
-    const usuarioAtual = obterUsuarioAtual();
-
-    const visitanteCompleto = {
-      ...novoVisitante,
-      nome: String(novoVisitante.nome || "").trim(),
-      documento: limparDocumento(novoVisitante.documento),
-      telefone: limparTelefone(novoVisitante.telefone),
-      tipo: novoVisitante.tipo || "Visitante",
-      status: statusFinal,
-      cienciaSindico: true,
-      condominioId: perfilCondominio.condominioId,
-      nomeCondominio: perfilCondominio.nomeCondominio,
-      criadoPor: usuarioAtual.nome || usuarioAtual.usuario || "Sistema",
-      porteiroId: usuarioAtual.tipo === "porteiro" ? usuarioAtual.id || null : novoVisitante.porteiroId || null,
-      apartamentoId: novoVisitante.apartamentoId || null,
-      tipoMorador: novoVisitante.tipoMorador || "",
-      moradorPrincipal: Boolean(novoVisitante.moradorPrincipal),
-      porteiroNome: usuarioAtual.tipo === "porteiro" ? usuarioAtual.nome || usuarioAtual.usuario || "" : novoVisitante.porteiroNome || "",
-      data: agora.toLocaleDateString("pt-BR"),
-      hora: agora.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      }),
-      timestamp: agora.getTime(),
-      mes: agora.getMonth() + 1,
-      ano: agora.getFullYear(),
-      entrada:
-        novoVisitante.entrada ||
-        agora.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit"
-        }),
-      impactaBI: true,
-      impactaRelatorio: true,
-      exibirNaCentral: true,
-      origemModulo: "Visitantes"
-    };
-
-    let listaAtualizada = [];
-
-    if (editId !== null) {
-      listaAtualizada = visitantes.map((v) =>
-        v.id === editId
-          ? {
-              ...visitanteCompleto,
-              id: editId
-            }
-          : v
-      );
-
-      const visitanteAntes = visitantes.find((v) => v.id === editId);
-
-      registrarFluxo(
-        "edição",
-        {
-          ...visitanteCompleto,
-          id: editId
-        },
-        visitanteAntes
-      );
-
-      setEditId(null);
-    } else {
-      const novo = {
-        id: Date.now(),
-        ...visitanteCompleto,
-        criadoEm: agora.toISOString()
-      };
-
-      listaAtualizada = [novo, ...visitantes];
-
-      registrarFluxo("cadastro", novo);
-    }
-
-    setVisitantes(listaAtualizada);
-    salvarStorage(STORAGE_KEY, listaAtualizada);
-
-    setNovoVisitante(estadoInicialVisitante);
-    setMostrarModal(false);
-  }
-
-  function excluirVisitante(id) {
-    const confirmar = window.confirm(
-      "Deseja realmente excluir este visitante?"
-    );
-
-    if (!confirmar) return;
-
-    const visitante = visitantes.find((v) => v.id === id);
-
-    if (visitante) {
-      registrarMovimentacao("exclusão", visitante);
-      registrarRelatorio("exclusão", visitante);
-      registrarHistorico("exclusão", visitante);
-
-      registrarAuditoriaVisitante({
-        acao: "Excluiu visitante",
-        detalhes: `${visitante.nome} - Apto ${visitante.apartamento}`,
-        antes: visitante,
-        referenciaId: id
-      });
-
-      criarNotificacaoVisitante({
-        titulo: "Visitante removido",
-        mensagem: `${visitante.nome} foi removido do controle de acesso.`,
-        referenciaId: id,
-        prioridade: "alta"
-      });
-    }
-
-    const novaLista = visitantes.filter((v) => v.id !== id);
-
-    setVisitantes(novaLista);
-    salvarStorage(STORAGE_KEY, novaLista);
-  }
-
-  function editarVisitante(v) {
-    setNovoVisitante({
-      ...estadoInicialVisitante,
-      ...v,
-      status: normalizarStatus(v.status),
-      apartamentoId: v.apartamentoId || null,
-      tipoMorador: v.tipoMorador || "",
-      moradorPrincipal: Boolean(v.moradorPrincipal),
-      moradorId:
-        v.moradorId ||
-        obterMoradorIdPorNomeApartamento(v.morador, v.apartamento)
-    });
-
-    setEditId(v.id);
-    setMostrarModal(true);
-  }
-
-  function mudarStatus(id, status) {
-    const agora = new Date();
-
-    let visitanteAtualizado = null;
-
-    const lista = visitantes.map((v) => {
-      if (v.id !== id) return v;
-
-      visitanteAtualizado = {
-        ...v,
-        status,
-        statusSindico: status,
-        cienciaSindico: true,
-        autorizado:
-          status === "Autorizado" || status === "Em Visita"
-            ? true
-            : v.autorizado,
-        bloqueado:
-          status === "Bloqueado"
-            ? true
-            : status === "Autorizado" || status === "Em Visita"
-            ? false
-            : v.bloqueado,
-        saida:
-          status === "Saiu"
-            ? agora.toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit"
-              })
-            : v.saida,
-        horarioSaida:
-          status === "Saiu"
-            ? agora.toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit"
-              })
-            : v.horarioSaida,
-        saidaEm:
-          status === "Saiu"
-            ? agora.toLocaleString("pt-BR")
-            : v.saidaEm,
-        impactaBI: true,
-        impactaRelatorio: true,
-        exibirNaCentral: true,
-        origemModulo: "Visitantes"
-      };
-
-      return visitanteAtualizado;
-    });
-
-    if (visitanteAtualizado) {
-      registrarMovimentacao(`status: ${status}`, visitanteAtualizado);
-      registrarRelatorio(`status: ${status}`, visitanteAtualizado);
-      registrarHistorico(`status: ${status}`, visitanteAtualizado);
-      atualizarAvisoSindico(visitanteAtualizado);
-
-      registrarAuditoriaVisitante({
-        acao: `Alterou status do visitante para ${status}`,
-        detalhes: `${visitanteAtualizado.nome} - Apto ${visitanteAtualizado.apartamento}`,
-        depois: visitanteAtualizado,
-        referenciaId: visitanteAtualizado.id
-      });
-
-      criarNotificacaoVisitante({
-        titulo:
-          status === "Autorizado"
-            ? "Visitante autorizado"
-            : status === "Em Visita"
-            ? "Visitante entrou no condomínio"
-            : status === "Saiu"
-            ? "Visitante saiu do condomínio"
-            : status === "Bloqueado"
-            ? "Visitante bloqueado"
-            : "Status de visitante atualizado",
-        mensagem: `${visitanteAtualizado.nome} • Apartamento ${visitanteAtualizado.apartamento}`,
-        referenciaId: visitanteAtualizado.id,
-        prioridade: status === "Bloqueado" ? "alta" : "normal"
-      });
-    }
-
-    setVisitantes(lista);
-    salvarStorage(STORAGE_KEY, lista);
-  }
-
-  function obterMoradorIdPorNomeApartamento(nome, apartamento) {
-    const moradorEncontrado = moradores.find(
-      (m) =>
-        m.nome === nome &&
-        (m.apto === apartamento || m.apartamento === apartamento)
-    );
-
-    return moradorEncontrado ? moradorEncontrado.id : "";
   }
 
   function selecionarMorador(moradorId) {
-    const moradorSelecionado = moradores.find(
-      (m) => String(m.id) === String(moradorId)
-    );
+    const morador =
+      moradores.find(
+        (m) =>
+          String(m.id) ===
+          String(moradorId)
+      );
 
-    if (!moradorSelecionado) {
-      setNovoVisitante({
-        ...novoVisitante,
-        moradorId: "",
+    if (!morador) {
+      setNovoVisitante((prev) => ({
+        ...prev,
         morador: "",
+        moradorId: "",
         apartamento: "",
         apartamentoId: null,
-        tipoMorador: "",
-        moradorPrincipal: false
-      });
-
+      }));
       return;
     }
 
-    setNovoVisitante({
-      ...novoVisitante,
-      moradorId: moradorSelecionado.id,
-      morador: moradorSelecionado.nome,
-      apartamento:
-        moradorSelecionado.apartamento || moradorSelecionado.apto || "",
-      apartamentoId: moradorSelecionado.apartamentoId || null,
-      tipoMorador: moradorSelecionado.tipoMorador || "Morador",
-      moradorPrincipal: Boolean(moradorSelecionado.moradorPrincipal)
-    });
+    setNovoVisitante((prev) => ({
+      ...prev,
+      morador: morador.nome,
+      moradorId: morador.id,
+      apartamento: morador.apartamento,
+      apartamentoId: morador.apartamentoId,
+    }));
+  }
+
+  async function salvarVisitante() {
+    if (!validarVisitante()) return;
+
+    const expectedAt =
+      novoVisitante.entrada
+        ? (() => {
+            const [h, m] =
+              novoVisitante.entrada
+                .split(":")
+                .map(Number);
+            const d = new Date();
+            d.setHours(h, m, 0, 0);
+            return d.toISOString();
+          })()
+        : null;
+
+    const payload = {
+      apartmentId:
+        novoVisitante.apartamentoId,
+      name:
+        novoVisitante.nome.trim(),
+      document:
+        novoVisitante.documento?.trim() ||
+        null,
+      phone:
+        novoVisitante.telefone?.trim() ||
+        null,
+      visitType:
+        novoVisitante.tipo?.trim() ||
+        null,
+      vehicle: null,
+      plate: null,
+      notes:
+        novoVisitante.observacao?.trim() ||
+        null,
+      expectedAt,
+    };
+
+    try {
+      let saved;
+
+      if (editId) {
+        saved =
+          await visitorApi.update(
+            editId,
+            payload
+          );
+      } else {
+        saved =
+          await visitorApi.create(
+            payload
+          );
+      }
+
+      if (
+        !editId &&
+        saved?.id &&
+        novoVisitante.bloqueado
+      ) {
+        await visitorApi.deny(saved.id);
+      } else if (
+        !editId &&
+        saved?.id &&
+        novoVisitante.autorizado
+      ) {
+        await visitorApi.authorize(saved.id);
+      }
+
+      await carregar();
+      fecharModal();
+    } catch (error) {
+      alert(
+        error?.message ??
+        "Não foi possível salvar o visitante."
+      );
+    }
+  }
+
+  async function excluirVisitante(id) {
+    if (
+      !window.confirm(
+        "Deseja realmente excluir este visitante?"
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await visitorApi.remove(id);
+      await carregar();
+    } catch (error) {
+      alert(
+        error?.message ??
+        "Não foi possível excluir o visitante."
+      );
+    }
+  }
+
+  async function mudarStatus(
+    id,
+    status
+  ) {
+    try {
+      if (status === "Autorizado") {
+        await visitorApi.authorize(id);
+      } else if (
+        status === "Em Visita"
+      ) {
+        await visitorApi.registerEntry(id);
+      } else if (status === "Saiu") {
+        await visitorApi.registerExit(id);
+      } else if (
+        status === "Bloqueado"
+      ) {
+        await visitorApi.deny(id);
+      }
+
+      await carregar();
+    } catch (error) {
+      alert(
+        error?.message ??
+        "Não foi possível alterar o status."
+      );
+    }
   }
 
   function corStatus(status) {
     switch (status) {
-      case "Em Visita":
+      case "Aguardando":
         return {
-          bg: "#f3e8ff",
-          color: "#7c3aed",
-          border: "#ddd6fe",
-          label: "Dentro do condomínio"
-        };
-
-      case "Autorizado":
-        return {
-          bg: "#ede9fe",
-          color: "#6d28d9",
-          border: "#ddd6fe",
-          label: "Liberado"
-        };
-
-      case "Bloqueado":
-        return {
-          bg: "#fee2e2",
-          color: "#b91c1c",
-          border: "#fecaca",
-          label: "Bloqueado"
-        };
-
-      case "Saiu":
-        return {
-          bg: "#f5f3ff",
-          color: "#374151",
-          border: "#ddd6fe",
-          label: "Encerrado"
-        };
-
-      default:
-        return {
+          label: "Aguardando",
           bg: "#fef3c7",
           color: "#92400e",
-          border: "#fde68a",
-          label: "Aguardando"
+          border: "#fde68a"
+        };
+      case "Autorizado":
+        return {
+          label: "Autorizado",
+          bg: "#dcfce7",
+          color: "#166534",
+          border: "#bbf7d0"
+        };
+      case "Em Visita":
+        return {
+          label: "Em Visita",
+          bg: "#dbeafe",
+          color: "#1d4ed8",
+          border: "#bfdbfe"
+        };
+      case "Saiu":
+        return {
+          label: "Saiu",
+          bg: "#f3f4f6",
+          color: "#4b5563",
+          border: "#e5e7eb"
+        };
+      default:
+        return {
+          label: "Bloqueado",
+          bg: "#fee2e2",
+          color: "#b91c1c",
+          border: "#fecaca"
         };
     }
   }
 
   function tipoVisual(tipo) {
-    if (tipo === "Entregador") return "📦";
-    if (tipo === "Prestador") return "🧰";
-    if (tipo === "Técnico") return "🔧";
-    if (tipo === "Corretor") return "🏘️";
-    if (tipo === "Familiar") return "👨‍👩‍👧";
+    const texto =
+      String(tipo || "").toLowerCase();
+
+    if (texto.includes("familiar")) return "👪";
+    if (texto.includes("prestador")) return "🛠️";
+    if (texto.includes("entreg")) return "🛵";
+    if (texto.includes("técn")) return "🔧";
+    if (texto.includes("corret")) return "🏠";
     return "👤";
   }
 
   function iniciais(nome) {
-    if (!nome) return "V";
+    const partes =
+      String(nome || "")
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
 
-    const partes = nome.trim().split(" ");
-
+    if (partes.length === 0) return "?";
     if (partes.length === 1) {
-      return partes[0].charAt(0).toUpperCase();
+      return partes[0]
+        .charAt(0)
+        .toUpperCase();
     }
 
     return `${partes[0].charAt(0)}${partes[
@@ -796,8 +496,11 @@ function Visitantes() {
   function fecharModal() {
     setMostrarModal(false);
     setEditId(null);
-    setNovoVisitante(estadoInicialVisitante);
+    setNovoVisitante(
+      estadoInicialVisitante
+    );
   }
+
 
   return (
     <div style={styles.container}>
