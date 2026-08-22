@@ -13,7 +13,6 @@ import {
 
 import { useState } from "react";
 
-import logoStar from "../assets/images/logo-star-infinity.png";
 
 import authApi, {
   roleParaTipoFrontend,
@@ -685,9 +684,8 @@ function Login() {
    * Mantido visualmente como na versão atual.
    */
   function abrirRecuperacaoSenha() {
-    setErro("");
-    setAvisoPadrao(null);
     setRecuperarSenha(true);
+    setErro("");
   }
 
   function fecharRecuperacaoSenha() {
@@ -740,14 +738,6 @@ function Login() {
             <FaArrowLeft />
             Voltar
           </button>
-
-          <div style={styles.logoBox}>
-            <img
-              src={logoStar}
-              alt="Star Infinity Code"
-              style={styles.logoImage}
-            />
-          </div>
 
           <div
             style={{
@@ -1235,7 +1225,7 @@ const styles = {
   container: {
     minHeight: "100vh",
     background:
-      "radial-gradient(circle at top left,rgba(124,58,237,0.24),transparent 30%), radial-gradient(circle at bottom right,rgba(168,85,247,0.20),transparent 28%), radial-gradient(circle at center,rgba(59,130,246,0.10),transparent 36%), linear-gradient(135deg,#ffffff,#f8f5ff 48%,#ffffff)",
+      "radial-gradient(circle at top left,rgba(124,58,237,0.22),transparent 32%), radial-gradient(circle at bottom right,rgba(168,85,247,0.16),transparent 28%), radial-gradient(circle at center,rgba(59,130,246,0.08),transparent 38%), linear-gradient(135deg,#ffffff,#f8f5ff 48%,#ffffff)",
     display: "flex",
     justifyContent:
       "center",
@@ -1250,8 +1240,8 @@ const styles = {
 
   glowGreen: {
     position: "absolute",
-    width: "430px",
-    height: "430px",
+    width: "360px",
+    height: "360px",
     borderRadius: "50%",
     background:
       "rgba(124,58,237,0.15)",
@@ -1262,8 +1252,8 @@ const styles = {
 
   glowGold: {
     position: "absolute",
-    width: "380px",
-    height: "380px",
+    width: "320px",
+    height: "320px",
     borderRadius: "50%",
     background:
       "rgba(168,85,247,0.12)",
@@ -1304,8 +1294,8 @@ const styles = {
   },
 
   loginShell: {
-    width: "1080px",
-    minHeight: "650px",
+    width: "980px",
+    minHeight: "610px",
     display: "grid",
     gridTemplateColumns:
       "1fr 0.95fr",
@@ -1324,7 +1314,7 @@ const styles = {
   },
 
   formSide: {
-    padding: "50px",
+    padding: "48px",
     display: "flex",
     flexDirection:
       "column",
@@ -1336,7 +1326,7 @@ const styles = {
   },
 
   infoSide: {
-    padding: "50px",
+    padding: "48px",
     background:
       "radial-gradient(circle at top right,rgba(255,255,255,0.20),transparent 34%), radial-gradient(circle at bottom left,rgba(168,85,247,0.24),transparent 38%), linear-gradient(145deg,#2e1065,#4c1d95,#7c3aed)",
     borderLeft:
@@ -1386,9 +1376,9 @@ const styles = {
   },
 
   iconCircle: {
-    width: "88px",
-    height: "88px",
-    borderRadius: "28px",
+    width: "98px",
+    height: "98px",
+    borderRadius: "32px",
     display: "flex",
     alignItems: "center",
     justifyContent:
@@ -1510,7 +1500,7 @@ const styles = {
 
   errorBox: {
     width: "100%",
-    background: "#fee2e2",
+    background: "rgba(254,226,226,0.96)",
     color: "#dc2626",
     padding: "13px",
     borderRadius: "14px",
@@ -1607,7 +1597,7 @@ const styles = {
     padding:
       "9px 13px",
     borderRadius: "999px",
-    color: "#f5f3ff",
+    color: "#dcfce7",
     fontSize: "12px",
     fontWeight: "900",
     marginBottom: "18px",

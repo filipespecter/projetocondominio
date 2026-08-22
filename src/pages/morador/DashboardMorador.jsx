@@ -130,7 +130,7 @@ function DashboardMorador() {
           }}
           onClick={() => {
             if (morador?.permissoesMorador?.podeReservar === false) {
-              alert("Seu perfil está como dependente. A permissão de reserva pode ser liberada pelo condomínio.");
+              window.alert("Seu perfil está como dependente. A permissão de reserva pode ser liberada pelo condomínio.");
               return;
             }
 
@@ -370,8 +370,7 @@ const styles = {
   container: {
     width: "100%",
     fontFamily: "Arial",
-    color: "#111827",
-    position: "relative"
+    color: "#111827"
   },
 
   hero: {
@@ -386,8 +385,7 @@ const styles = {
     gap: "28px",
     marginBottom: "26px",
     boxShadow:
-      "0 22px 55px rgba(124,58,237,0.24), 0 0 38px rgba(168,85,247,0.12)",
-    border: "1px solid rgba(255,255,255,0.18)"
+      "0 20px 45px rgba(124,58,237,0.18)"
   },
 
   heroBadge: {
@@ -430,7 +428,7 @@ const styles = {
     borderRadius: "50%",
     background: "#a855f7",
     boxShadow:
-      "0 0 0 5px rgba(168,85,247,0.18)"
+      "0 0 0 5px rgba(56,189,248,0.16)"
   },
 
   apBadge: {
@@ -501,7 +499,7 @@ const styles = {
   actionButton: {
     background: "white",
     color: "#111827",
-    border: "1px solid #ede9fe",
+    border: "1px solid #eef2f7",
     padding: "22px",
     borderRadius: "24px",
     cursor: "pointer",
@@ -573,16 +571,15 @@ const styles = {
   },
 
   card: {
-    background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
+    background: "white",
     borderRadius: "24px",
     padding: "24px",
     display: "flex",
     alignItems: "center",
     gap: "18px",
     boxShadow:
-      "0 16px 40px rgba(88,28,135,0.08)",
-    border: "1px solid #ede9fe"
+      "0 12px 35px rgba(15,23,42,0.07)",
+    border: "1px solid #eef2f7"
   },
 
   cardLabelLight: {
@@ -660,7 +657,7 @@ const styles = {
 
   cardNumberGreen: {
     margin: "8px 0 0",
-    color: "#7c3aed",
+    color: "#6d28d9",
     fontSize: "34px"
   },
 
@@ -677,23 +674,21 @@ const styles = {
   },
 
   history: {
-    background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
+    background: "white",
     borderRadius: "28px",
     padding: "26px",
     boxShadow:
-      "0 18px 45px rgba(88,28,135,0.09)",
-    border: "1px solid #ede9fe"
+      "0 14px 40px rgba(15,23,42,0.08)",
+    border: "1px solid #eef2f7"
   },
 
   statusPanel: {
-    background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
+    background: "white",
     borderRadius: "28px",
     padding: "26px",
     boxShadow:
-      "0 18px 45px rgba(88,28,135,0.09)",
-    border: "1px solid #ede9fe"
+      "0 14px 40px rgba(15,23,42,0.08)",
+    border: "1px solid #eef2f7"
   },
 
   sectionHeader: {
@@ -718,7 +713,7 @@ const styles = {
   },
 
   sectionBadge: {
-    background: "#faf5ff",
+    background: "#f5f3ff",
     color: "#6d28d9",
     padding: "9px 13px",
     borderRadius: "999px",
@@ -734,8 +729,8 @@ const styles = {
   },
 
   historyItem: {
-    background: "#fbfaff",
-    border: "1px solid #ede9fe",
+    background: "#f9fafb",
+    border: "1px solid #eef2f7",
     borderRadius: "18px",
     padding: "16px",
     display: "flex",
@@ -769,8 +764,8 @@ const styles = {
   },
 
   infoBox: {
-    background: "#fbfaff",
-    border: "1px solid #ede9fe",
+    background: "#f9fafb",
+    border: "1px solid #eef2f7",
     borderRadius: "16px",
     padding: "14px",
     marginTop: "14px"
@@ -789,7 +784,7 @@ const styles = {
     border: "1px solid #ddd6fe",
     borderRadius: "16px",
     padding: "14px",
-    color: "#7c3aed",
+    color: "#6d28d9",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
