@@ -6,8 +6,6 @@ import {
   FaBuilding,
   FaUserShield,
   FaCheckCircle,
-  FaEye,
-  FaEyeSlash,
   FaShieldAlt,
 } from "react-icons/fa";
 
@@ -56,17 +54,14 @@ function CadastroCondominio() {
 
   /**
    * =====================================================
-   * ESTADO DO ADMINISTRADOR PRINCIPAL
+   * ESTADO DO RESPONSÁVEL PELO CADASTRO
    * =====================================================
    */
-  const [administrator, setAdministrator] =
+  const [contact, setContact] =
     useState({
       name: "",
-      username: "",
       email: "",
       phone: "",
-      password: "",
-      passwordConfirmation: "",
     });
 
   const [erro, setErro] =
@@ -78,15 +73,6 @@ function CadastroCondominio() {
   const [carregando, setCarregando] =
     useState(false);
 
-  const [
-    mostrarSenha,
-    setMostrarSenha,
-  ] = useState(false);
-
-  const [
-    mostrarConfirmacao,
-    setMostrarConfirmacao,
-  ] = useState(false);
 
   /**
    * =====================================================
@@ -105,11 +91,11 @@ function CadastroCondominio() {
     );
   }
 
-  function updateAdministrator(
+  function updateContact(
     field,
     value
   ) {
-    setAdministrator(
+    setContact(
       (current) => ({
         ...current,
         [field]: value,
@@ -202,31 +188,10 @@ function CadastroCondominio() {
       return "Informe o nome do condomínio.";
     }
 
-    if (!administrator.name.trim()) {
-      return "Informe o nome do administrador principal.";
+    if (!contact.name.trim()) {
+      return "Informe o nome do responsável pelo cadastro.";
     }
 
-    if (!administrator.username.trim()) {
-      return "Informe o usuário de acesso.";
-    }
-
-    if (!administrator.email.trim()) {
-      return "Informe o e-mail do administrador.";
-    }
-
-    if (
-      administrator.password.length <
-      8
-    ) {
-      return "A senha deve possuir pelo menos 8 caracteres.";
-    }
-
-    if (
-      administrator.password !==
-      administrator.passwordConfirmation
-    ) {
-      return "A confirmação da senha não corresponde.";
-    }
 
     return null;
   }
@@ -259,7 +224,7 @@ function CadastroCondominio() {
         await onboardingApi
           .registerCondominium({
             condominium,
-            administrator,
+            contact,
           });
 
       setSucesso(result);
@@ -351,9 +316,9 @@ function CadastroCondominio() {
             </div>
 
             <div>
-              <span>Administrador</span>
+              <span>Responsável</span>
               <strong>
-                {sucesso?.administrator?.name}
+                {sucesso?.condominium?.contactName ?? contact.name}
               </strong>
             </div>
 
@@ -374,30 +339,18 @@ function CadastroCondominio() {
               </strong>
 
               <p>
-                A senha não é exibida nem armazenada
-                nesta tela. O acesso será validado
-                diretamente pelo backend.
+                Sua solicitação foi registrada. As credenciais
+                de acesso serão liberadas somente após a análise
+                da Star Infinity Code.
               </p>
             </div>
           </div>
 
           <button
             className="primary-button"
-            onClick={() =>
-              navigate(
-                "/login/sindico",
-                {
-                  state: {
-                    condominiumCode:
-                      sucesso?.condominium
-                        ?.code ||
-                      "",
-                  },
-                }
-              )
-            }
+            onClick={() => navigate("/")}
           >
-            Ir para o login →
+            Entendi, voltar ao início →
           </button>
 
           <button
@@ -532,7 +485,7 @@ function CadastroCondominio() {
             />
 
             <Field
-              label="Telefone"
+              label="Telefone *"
               value={condominium.phone}
               onChange={(value) =>
                 updateCondominium(
@@ -660,18 +613,18 @@ function CadastroCondominio() {
             </div>
           </div>
 
-          <div className="section-heading administrator-heading">
+          <div className="section-heading contact-heading">
             <div className="section-icon">
               <FaUserShield />
             </div>
 
             <div>
               <strong>
-                Administrador principal
+                Responsável pelo cadastro
               </strong>
 
               <span>
-                Usuário responsável pela gestão inicial
+                Contato responsável pela solicitação
               </span>
             </div>
           </div>
@@ -679,39 +632,26 @@ function CadastroCondominio() {
           <div className="form-grid">
             <Field
               label="Nome completo *"
-              value={administrator.name}
+              value={contact.name}
               onChange={(value) =>
-                updateAdministrator(
+                updateContact(
                   "name",
                   value
                 )
               }
-              placeholder="Nome do administrador"
+              placeholder="Nome do responsável"
               className="full"
             />
 
-            <Field
-              label="Usuário de acesso *"
-              value={
-                administrator.username
-              }
-              onChange={(value) =>
-                updateAdministrator(
-                  "username",
-                  value
-                )
-              }
-              placeholder="seu.usuario"
-            />
 
             <Field
               label="E-mail *"
               type="email"
               value={
-                administrator.email
+                contact.email
               }
               onChange={(value) =>
-                updateAdministrator(
+                updateContact(
                   "email",
                   value
                 )
@@ -720,12 +660,12 @@ function CadastroCondominio() {
             />
 
             <Field
-              label="Telefone"
+              label="Telefone *"
               value={
-                administrator.phone
+                contact.phone
               }
               onChange={(value) =>
-                updateAdministrator(
+                updateContact(
                   "phone",
                   maskPhone(value)
                 )
@@ -734,55 +674,10 @@ function CadastroCondominio() {
               className="full"
             />
 
-            <PasswordField
-              label="Senha *"
-              value={
-                administrator.password
-              }
-              visible={
-                mostrarSenha
-              }
-              onToggle={() =>
-                setMostrarSenha(
-                  (current) =>
-                    !current
-                )
-              }
-              onChange={(value) =>
-                updateAdministrator(
-                  "password",
-                  value
-                )
-              }
-            />
-
-            <PasswordField
-              label="Confirmar senha *"
-              value={
-                administrator
-                  .passwordConfirmation
-              }
-              visible={
-                mostrarConfirmacao
-              }
-              onToggle={() =>
-                setMostrarConfirmacao(
-                  (current) =>
-                    !current
-                )
-              }
-              onChange={(value) =>
-                updateAdministrator(
-                  "passwordConfirmation",
-                  value
-                )
-              }
-            />
           </div>
 
           <p className="password-hint">
-            A senha deve possuir pelo menos 8
-            caracteres, incluindo letra e número.
+            As credenciais de acesso serão definidas pela Star Infinity Code após a aprovação do cadastro.
           </p>
 
           {erro && (
@@ -834,7 +729,7 @@ function CadastroCondominio() {
 
           <div className="feature-list">
             <Feature text="Ambiente exclusivo por condomínio" />
-            <Feature text="Administrador principal protegido" />
+            <Feature text="Responsável pelo cadastro protegido" />
             <Feature text="Código único para acesso" />
             <Feature text="Período inicial de teste" />
             <Feature text="Dados registrados no PostgreSQL" />
@@ -849,8 +744,8 @@ function CadastroCondominio() {
               </strong>
 
               <p>
-                Condomínio, administrador e auditoria
-                são criados juntos em uma única
+                Condomínio, solicitação e auditoria
+                são registrados juntos em uma única
                 transação no backend.
               </p>
             </div>
@@ -896,54 +791,6 @@ function Field({
           )
         }
       />
-    </div>
-  );
-}
-
-function PasswordField({
-  label,
-  value,
-  visible,
-  onToggle,
-  onChange,
-}) {
-  return (
-    <div className="field">
-      <label>
-        {label}
-      </label>
-
-      <div className="password-wrap">
-        <input
-          type={
-            visible
-              ? "text"
-              : "password"
-          }
-          value={value}
-          placeholder="Digite sua senha"
-          autoComplete="new-password"
-          onChange={(event) =>
-            onChange(
-              event.target.value
-            )
-          }
-        />
-
-        <button
-          type="button"
-          onClick={onToggle}
-          title={
-            visible
-              ? "Ocultar senha"
-              : "Mostrar senha"
-          }
-        >
-          {visible
-            ? <FaEyeSlash />
-            : <FaEye />}
-        </button>
-      </div>
     </div>
   );
 }
@@ -1141,7 +988,7 @@ const styles = `
     margin: 30px 0 18px;
   }
 
-  .administrator-heading {
+  .contact-heading {
     margin-top: 38px;
   }
 

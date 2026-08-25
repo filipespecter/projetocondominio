@@ -41,6 +41,10 @@ function PlatformCondominiums() {
     setBusyId,
   ] = useState(null);
 
+  const [approvalTarget, setApprovalTarget] = useState(null);
+  const [approvalForm, setApprovalForm] = useState(null);
+  const [approvedAccess, setApprovedAccess] = useState(null);
+
   const [
     rejectTarget,
     setRejectTarget,
@@ -93,53 +97,84 @@ function PlatformCondominiums() {
     load();
   }, []);
 
-  async function approve(item) {
+  function approve(item) {
     const activePlan =
-      plans.find(
-        (plan) =>
-          plan.status ===
-            "ACTIVE" ||
-          plan.isActive ===
-            true
-      ) ??
+      plans.find((plan) => plan.active === true) ??
+      plans.find((plan) => plan.status === "ACTIVE") ??
       plans[0];
 
     if (!activePlan?.id) {
-      setError(
-        "Nenhum plano disponível para aprovação."
-      );
-
+      setError("Nenhum plano disponível para aprovação.");
       return;
     }
 
-    const dueDate =
-      new Date();
+    const baseUsername = String(
+      item.contactName ?? item.name ?? "sindico"
+    )
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ".")
+      .replace(/^\.|\.$/g, "")
+      .slice(0, 40) || "sindico";
 
-    dueDate.setMonth(
-      dueDate.getMonth() + 1
-    );
-
-    setBusyId(item.id);
+    setApprovalTarget(item);
+    setApprovedAccess(null);
+    setApprovalForm({
+      planId: activePlan.id,
+      username: baseUsername,
+      password: "",
+      passwordConfirmation: "",
+      dueDay: 10,
+      initialStatus: "ACTIVE",
+      billingCycle: activePlan.billingCycle ?? "MONTHLY",
+      priceInCents: activePlan.monthlyPriceInCents ?? 0,
+      adminName: item.contactName ?? item.name ?? "",
+      adminEmail: item.email ?? "",
+      adminPhone: item.phone ?? "",
+      billingContactName: item.contactName ?? item.name ?? "",
+      billingEmail: item.email ?? "",
+      billingPhone: item.phone ?? "",
+    });
     setError("");
+  }
 
+  function updateApproval(field, value) {
+    setApprovalForm((current) => ({ ...current, [field]: value }));
+  }
+
+  async function submitApproval(event) {
+    event.preventDefault();
+    if (!approvalTarget?.id || !approvalForm) return;
+
+    if (approvalForm.password.length < 8) {
+      setError("A senha temporária deve possuir pelo menos 8 caracteres.");
+      return;
+    }
+    if (approvalForm.password !== approvalForm.passwordConfirmation) {
+      setError("A confirmação da senha não corresponde.");
+      return;
+    }
+
+    setBusyId(approvalTarget.id);
+    setError("");
     try {
-      await platformApi.condominiums
-        .approve(
-          item.id,
-          {
-            planId:
-              activePlan.id,
-            dueDate:
-              dueDate.toISOString(),
-          }
-        );
-
+      const result = await platformApi.condominiums.approve(
+        approvalTarget.id,
+        {
+          ...approvalForm,
+          dueDay: Number(approvalForm.dueDay),
+          priceInCents: Number(approvalForm.priceInCents),
+        }
+      );
+      setApprovedAccess({
+        condominiumCode: result?.condominium?.code ?? approvalTarget.code,
+        username: result?.administrator?.username ?? approvalForm.username,
+        password: approvalForm.password,
+      });
       await load();
     } catch (err) {
-      setError(
-        err?.message ??
-        "Não foi possível aprovar o condomínio."
-      );
+      setError(err?.message ?? "Não foi possível aprovar o condomínio.");
     } finally {
       setBusyId(null);
     }
@@ -316,6 +351,65 @@ function PlatformCondominiums() {
         )}
       </PlatformCard>
 
+      {approvalTarget && approvalForm && (
+        <div style={styles.overlay}>
+          <form style={styles.modalWide} onSubmit={submitApproval}>
+            <div style={styles.modalHeader}>
+              <div>
+                <span style={styles.modalEyebrow}>LIBERAÇÃO COMERCIAL</span>
+                <h2 style={styles.modalTitle}>Aprovar condomínio</h2>
+                <p style={styles.modalText}>
+                  {approvalTarget.name ?? approvalTarget.code} — defina plano e credenciais temporárias.
+                </p>
+              </div>
+              <button type="button" style={styles.close} onClick={() => setApprovalTarget(null)}>×</button>
+            </div>
+
+            {approvedAccess ? (
+              <div style={styles.modalBody}>
+                <div style={styles.successBox}>
+                  <strong>Acesso liberado com sucesso.</strong>
+                  <span>Código: {approvedAccess.condominiumCode ?? "-"}</span>
+                  <span>Usuário: {approvedAccess.username}</span>
+                  <span>Senha temporária: {approvedAccess.password}</span>
+                  <small>Entregue estas credenciais ao síndico. No primeiro acesso a troca de senha é obrigatória.</small>
+                </div>
+              </div>
+            ) : (
+              <div style={styles.modalBody}>
+                <div style={styles.formGrid}>
+                  <label style={styles.field}><span style={styles.label}>Plano *</span>
+                    <select style={styles.input} value={approvalForm.planId} onChange={(e) => {
+                      const plan = plans.find((p) => p.id === e.target.value);
+                      updateApproval("planId", e.target.value);
+                      if (plan) { updateApproval("billingCycle", plan.billingCycle ?? "MONTHLY"); updateApproval("priceInCents", plan.monthlyPriceInCents ?? 0); }
+                    }}>
+                      {plans.map((plan) => <option key={plan.id} value={plan.id}>{plan.name} — R$ {((plan.monthlyPriceInCents ?? 0)/100).toFixed(2)}</option>)}
+                    </select>
+                  </label>
+                  <label style={styles.field}><span style={styles.label}>Status inicial</span>
+                    <select style={styles.input} value={approvalForm.initialStatus} onChange={(e)=>updateApproval("initialStatus",e.target.value)}><option value="ACTIVE">Ativo</option><option value="TRIAL">Teste</option></select>
+                  </label>
+                  <label style={styles.field}><span style={styles.label}>Usuário *</span><input style={styles.input} value={approvalForm.username} onChange={(e)=>updateApproval("username",e.target.value)} required minLength={3}/></label>
+                  <label style={styles.field}><span style={styles.label}>Dia do vencimento *</span><input style={styles.input} type="number" min="1" max="31" value={approvalForm.dueDay} onChange={(e)=>updateApproval("dueDay",e.target.value)} required/></label>
+                  <label style={styles.field}><span style={styles.label}>Senha temporária *</span><input style={styles.input} type="password" value={approvalForm.password} onChange={(e)=>updateApproval("password",e.target.value)} required minLength={8}/></label>
+                  <label style={styles.field}><span style={styles.label}>Confirmar senha *</span><input style={styles.input} type="password" value={approvalForm.passwordConfirmation} onChange={(e)=>updateApproval("passwordConfirmation",e.target.value)} required minLength={8}/></label>
+                  <label style={styles.field}><span style={styles.label}>Administrador *</span><input style={styles.input} value={approvalForm.adminName} onChange={(e)=>updateApproval("adminName",e.target.value)} required/></label>
+                  <label style={styles.field}><span style={styles.label}>E-mail *</span><input style={styles.input} type="email" value={approvalForm.adminEmail} onChange={(e)=>{updateApproval("adminEmail",e.target.value); updateApproval("billingEmail",e.target.value)}} required/></label>
+                  <label style={styles.field}><span style={styles.label}>WhatsApp *</span><input style={styles.input} value={approvalForm.adminPhone} onChange={(e)=>{updateApproval("adminPhone",e.target.value); updateApproval("billingPhone",e.target.value)}} required/></label>
+                  <label style={styles.field}><span style={styles.label}>Valor mensal (centavos)</span><input style={styles.input} type="number" min="0" value={approvalForm.priceInCents} onChange={(e)=>updateApproval("priceInCents",e.target.value)}/></label>
+                </div>
+              </div>
+            )}
+
+            <div style={styles.modalFooter}>
+              <PlatformButton variant="secondary" onClick={() => setApprovalTarget(null)}>{approvedAccess ? "Fechar" : "Cancelar"}</PlatformButton>
+              {!approvedAccess && <PlatformButton type="submit" variant="success" disabled={busyId === approvalTarget.id}>Confirmar aprovação</PlatformButton>}
+            </div>
+          </form>
+        </div>
+      )}
+
       {rejectTarget && (
         <div
           style={styles.overlay}
@@ -420,6 +514,16 @@ const styles = {
     backdropFilter: "blur(5px)",
   },
 
+  modalWide: {
+    width: "min(860px,96vw)",
+    maxHeight: "92vh",
+    overflowY: "auto",
+    background: "#ffffff",
+    borderRadius: "22px",
+    border: "1px solid rgba(200,168,92,0.55)",
+    boxShadow: "0 30px 90px rgba(15,8,22,0.35)",
+  },
+
   modal: {
     width: "min(620px,96vw)",
     background: "#ffffff",
@@ -472,9 +576,37 @@ const styles = {
     padding: "22px",
   },
 
+  formGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))",
+    gap: "14px",
+  },
+
   field: {
     display: "grid",
     gap: "7px",
+  },
+
+  input: {
+    minHeight: "44px",
+    border: "1px solid #dcd3e5",
+    borderRadius: "12px",
+    padding: "0 12px",
+    outline: "none",
+    fontFamily: "inherit",
+    fontSize: "14px",
+    color: "#271b31",
+    background: "#fff",
+  },
+
+  successBox: {
+    display: "grid",
+    gap: "9px",
+    padding: "18px",
+    borderRadius: "14px",
+    background: "#f5fbf7",
+    border: "1px solid #bfe2ca",
+    color: "#234e31",
   },
 
   label: {

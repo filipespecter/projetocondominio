@@ -57,10 +57,9 @@ function PlatformPlans() {
   async function toggle(plan) {
     try {
       if (
-        plan.status ===
-          "ACTIVE" ||
-        plan.isActive ===
-          true
+        plan.active === true ||
+        plan.status === "ACTIVE" ||
+        plan.isActive === true
       ) {
         await platformApi.plans
           .deactivate(plan.id);
@@ -131,11 +130,11 @@ function PlatformPlans() {
                     </td>
 
                     <td style={platformTableStyles.td}>
-                      {plan.priceInCents !==
+                      {plan.monthlyPriceInCents !==
                       undefined
                         ? `R$ ${(
                             Number(
-                              plan.priceInCents
+                              plan.monthlyPriceInCents
                             ) / 100
                           ).toFixed(2)}`
                         : "-"}
@@ -144,7 +143,7 @@ function PlatformPlans() {
                     <td style={platformTableStyles.td}>
                       {plan.status ??
                         (
-                          plan.isActive
+                          (plan.active ?? plan.isActive)
                             ? "ACTIVE"
                             : "INACTIVE"
                         )}
@@ -157,10 +156,9 @@ function PlatformPlans() {
                           toggle(plan)
                         }
                       >
-                        {plan.status ===
-                          "ACTIVE" ||
-                        plan.isActive ===
-                          true
+                        {plan.active === true ||
+                        plan.status === "ACTIVE" ||
+                        plan.isActive === true
                           ? "Desativar"
                           : "Ativar"}
                       </PlatformButton>
