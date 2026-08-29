@@ -62,6 +62,19 @@ class ReservationController {
     }
   }
 
+  async myReservations(req, res, next) {
+    try {
+      const data = await ReservationService.findByUser(
+        req.user.id,
+        req.user.condominiumId
+      );
+
+      return res.json({ success: true, data });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
   async show(req, res, next) {
     try {
       const data =

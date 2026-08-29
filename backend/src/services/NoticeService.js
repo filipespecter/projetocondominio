@@ -301,6 +301,19 @@ class NoticeService extends BaseService {
    * Envia as notificações correspondentes
    * ao público do aviso.
    */
+  async findByCategory(condominiumId, category) {
+    if (!condominiumId) throw new ApiError("Condomínio não identificado.", 400);
+    const value = String(category ?? "").trim();
+    if (!value) throw new ApiError("A categoria é obrigatória.", 400);
+    return noticeRepository.findByCategory(condominiumId, value);
+  }
+
+  async findByApartment(apartmentId, condominiumId) {
+    if (!condominiumId) throw new ApiError("Condomínio não identificado.", 400);
+    if (!apartmentId) throw new ApiError("Apartamento não identificado.", 400);
+    return noticeRepository.findByApartment(apartmentId, condominiumId);
+  }
+
   async notifyAudience(notice) {
     await CommunicationTriggerService
       .notifyNotice({

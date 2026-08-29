@@ -9,7 +9,13 @@ import { validatePlatformApproval } from "../src/validators/platformCondominiumA
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const backendRoot = path.resolve(here, "..");
-const projectRoot = path.resolve(backendRoot, "..");
+
+// Em execução local, o backend fica em <projeto>/backend.
+// No container Docker, o backend é construído em /app e o repositório
+// completo é montado somente para leitura em /workspace.
+const projectRoot = process.env.PROJECT_ROOT
+  ? path.resolve(process.env.PROJECT_ROOT)
+  : path.resolve(backendRoot, "..");
 
 async function source(relativePath) {
   return readFile(path.resolve(projectRoot, relativePath), "utf8");
@@ -153,4 +159,40 @@ test("cadastro público usa contact e não envia administrator", async () => {
   const text = await source("src/pages/CadastroCondominio.jsx");
   assert.match(text, /registerCondominium\(\{\s*condominium,\s*contact,/s);
   assert.doesNotMatch(text, /registerCondominium\(\{\s*condominium,\s*administrator,/s);
+});
+
+test("controladores expõem métodos usados pelas rotas de notificações e reservas", async () => {
+  const notifications = await source("backend/src/controllers/NotificationController.js");
+  for (const method of ["unreadCount", "myUnread", "myNotifications", "markAllAsRead", "removeRead", "index", "create", "show", "markAsRead", "remove"]) {
+    assert.match(notifications, new RegExp(`async\\s+${method}\\s*\\(`), method);
+  }
+
+  const reservations = await source("backend/src/controllers/ReservationController.js");
+  assert.match(reservations, /async\s+myReservations\s*\(/);
+});
+
+test("services cobrem filtros chamados pelos controllers", async () => {
+  const audit = await source("backend/src/services/AuditLogService.js");
+  assert.match(audit, /async\s+findByUserAndPeriod\s*\(/);
+  assert.match(audit, /async\s+countByAction\s*\(/);
+
+  const notice = await source("backend/src/services/NoticeService.js");
+  assert.match(notice, /async\s+findByCategory\s*\(/);
+  assert.match(notice, /async\s+findByApartment\s*\(/);
+});
+
+test("frontend possui entrega manual de encomenda e troca obrigatória de senha", async () => {
+  const packages = await source("src/Services/packageApi.js");
+  assert.match(packages, /async\s+deliver\s*\(/);
+  assert.match(packages, /\/v1\/packages\/\$\{id\}\/deliver/);
+
+  const login = await source("src/pages/login.jsx");
+  assert.match(login, /mustChangePassword\s*===\s*true/);
+  assert.match(login, /authApi\.changePassword\s*\(/);
+});
+
+test("Docker de primeira inicialização aplica migrations antes do seed", async () => {
+  const text = await source("docker/PRIMEIRA_INICIALIZACAO.ps1");
+  assert.match(text, /npm run prisma:deploy/);
+  assert.ok(text.indexOf("npm run prisma:deploy") < text.indexOf("node prisma/seed.js"));
 });

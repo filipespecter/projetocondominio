@@ -275,6 +275,28 @@ class AuditLogService {
       );
   }
 
+  async findByUserAndPeriod(userId, condominiumId, startDate, endDate) {
+    if (!userId) throw new ApiError("Usuário não identificado.", 400);
+    if (!condominiumId) throw new ApiError("Condomínio não identificado.", 400);
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      throw new ApiError("Período de auditoria inválido.", 400);
+    }
+    if (typeof startDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(startDate)) start.setHours(0,0,0,0);
+    if (typeof endDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(endDate)) end.setHours(23,59,59,999);
+    if (start > end) throw new ApiError("A data inicial não pode ser posterior à data final.", 400);
+
+    return auditLogRepository.findByUserAndPeriod(userId, condominiumId, start, end);
+  }
+
+  async countByAction(condominiumId, action) {
+    if (!condominiumId) throw new ApiError("Condomínio não identificado.", 400);
+    if (!action) throw new ApiError("A ação é obrigatória.", 400);
+    return auditLogRepository.countByAction(condominiumId, String(action).trim().toUpperCase());
+  }
+
   async createLog(data) {
     if (!data?.action) {
       throw new ApiError(

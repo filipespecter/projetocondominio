@@ -1,473 +1,87 @@
-import { z } from "zod";
-import { ApiError } from "../utils/ApiError.js";
+import NotificationService from "../services/NotificationService.js";
 
-/**
- * =====================================================
- * CONSTANTES DE VALIDAÇÃO
- * =====================================================
- */
+class NotificationController {
+  async unreadCount(req, res, next) {
+    try {
+      const data = await NotificationService.countUnread(req.user.id, req.user.condominiumId);
+      return res.json({ success: true, data });
+    } catch (error) { return next(error); }
+  }
 
-/**
- * Prioridades suportadas pelo módulo de notificações.
- */
-export const NOTIFICATION_PRIORITIES = [
-  "LOW",
-  "NORMAL",
-  "HIGH",
-  "URGENT",
-];
+  async myUnread(req, res, next) {
+    try {
+      const data = await NotificationService.findUnreadByUser(req.user.id, req.user.condominiumId);
+      return res.json({ success: true, data });
+    } catch (error) { return next(error); }
+  }
 
-/**
- * Perfis que podem ser utilizados como público-alvo.
- */
-export const NOTIFICATION_TARGET_ROLES = [
-  "PLATFORM_ADMIN",
-  "CONDOMINIUM_ADMIN",
-  "MANAGER",
-  "DOORMAN",
-  "RESIDENT",
-];
+  async myNotifications(req, res, next) {
+    try {
+      const data = await NotificationService.findByUser(req.user.id, req.user.condominiumId);
+      return res.json({ success: true, data });
+    } catch (error) { return next(error); }
+  }
 
-/**
- * =====================================================
- * HELPERS DE VALIDAÇÃO
- * =====================================================
- */
+  async markAllAsRead(req, res, next) {
+    try {
+      const data = await NotificationService.markAllAsRead(req.user.id, req.user.condominiumId);
+      return res.json({ success: true, ...data });
+    } catch (error) { return next(error); }
+  }
 
-/**
- * Converte os erros do Zod para o padrão utilizado
- * pelo backend do InfinityCondo.
- */
-function formatValidationErrors(zodError) {
-  return zodError.issues.map((issue) => ({
-    field:
-      issue.path.length > 0
-        ? issue.path.join(".")
-        : null,
-    message: issue.message,
-    code: issue.code,
-  }));
+  async removeRead(req, res, next) {
+    try {
+      const data = await NotificationService.removeReadByUser(req.user.id, req.user.condominiumId);
+      return res.json({ success: true, ...data });
+    } catch (error) { return next(error); }
+  }
+
+  async index(req, res, next) {
+    try {
+      const condominiumId = req.user.condominiumId;
+      const { recipientUserId, targetRole, type, module, unreadOnly } = req.query;
+      let data;
+      if (unreadOnly === true && recipientUserId) data = await NotificationService.findUnreadByUser(recipientUserId, condominiumId);
+      else if (recipientUserId) data = await NotificationService.findByUser(recipientUserId, condominiumId);
+      else if (targetRole) data = await NotificationService.findByTargetRole(condominiumId, targetRole);
+      else if (type) data = await NotificationService.findByType(condominiumId, type);
+      else if (module) data = await NotificationService.findByModule(condominiumId, module);
+      else data = await NotificationService.findByCondominium(condominiumId);
+      return res.json({ success: true, data });
+    } catch (error) { return next(error); }
+  }
+
+  async create(req, res, next) {
+    try {
+      const condominiumId = req.user.condominiumId;
+      const { recipientUserId, targetRole, ...data } = req.body;
+      const notification = recipientUserId
+        ? await NotificationService.createForUser(condominiumId, recipientUserId, data)
+        : await NotificationService.createForRole(condominiumId, targetRole, data);
+      return res.status(201).json({ success: true, message: "Notificação criada com sucesso.", data: notification });
+    } catch (error) { return next(error); }
+  }
+
+  async show(req, res, next) {
+    try {
+      const data = await NotificationService.findById(req.params.id, req.user.condominiumId);
+      return res.json({ success: true, data });
+    } catch (error) { return next(error); }
+  }
+
+  async markAsRead(req, res, next) {
+    try {
+      const data = await NotificationService.markAsRead(req.params.id, req.user.id, req.user.condominiumId);
+      return res.json({ success: true, message: "Notificação marcada como lida.", data });
+    } catch (error) { return next(error); }
+  }
+
+  async remove(req, res, next) {
+    try {
+      const data = await NotificationService.remove(req.params.id, req.user.id, req.user.condominiumId);
+      return res.json({ success: true, ...data });
+    } catch (error) { return next(error); }
+  }
 }
 
-/**
- * Middleware genérico para validação de body.
- */
-function validateBody(schema) {
-  return (req, res, next) => {
-    const result = schema.safeParse(
-      req.body ?? {}
-    );
-
-    if (!result.success) {
-      return next(
-        new ApiError(
-          "Dados inválidos.",
-          422,
-          formatValidationErrors(
-            result.error
-          )
-        )
-      );
-    }
-
-    req.body = result.data;
-
-    return next();
-  };
-}
-
-/**
- * Middleware genérico para validação de parâmetros.
- */
-function validateParams(schema) {
-  return (req, res, next) => {
-    const result = schema.safeParse(
-      req.params ?? {}
-    );
-
-    if (!result.success) {
-      return next(
-        new ApiError(
-          "Parâmetros inválidos.",
-          422,
-          formatValidationErrors(
-            result.error
-          )
-        )
-      );
-    }
-
-    req.params = result.data;
-
-    return next();
-  };
-}
-
-/**
- * Middleware genérico para validação de query string.
- */
-function validateQuery(schema) {
-  return (req, res, next) => {
-    const result = schema.safeParse(
-      req.query ?? {}
-    );
-
-    if (!result.success) {
-      return next(
-        new ApiError(
-          "Filtros inválidos.",
-          422,
-          formatValidationErrors(
-            result.error
-          )
-        )
-      );
-    }
-
-    req.query = result.data;
-
-    return next();
-  };
-}
-
-/**
- * UUID utilizado em IDs do sistema.
- */
-const uuidSchema = z
-  .string()
-  .uuid(
-    "O identificador informado é inválido."
-  );
-
-/**
- * Prioridade normalizada para caixa alta.
- */
-const prioritySchema = z
-  .string()
-  .trim()
-  .transform((value) =>
-    value.toUpperCase()
-  )
-  .refine(
-    (value) =>
-      NOTIFICATION_PRIORITIES.includes(
-        value
-      ),
-    {
-      message:
-        "Prioridade de notificação inválida.",
-    }
-  );
-
-/**
- * Perfil destinatário normalizado para caixa alta.
- */
-const targetRoleSchema = z
-  .string()
-  .trim()
-  .transform((value) =>
-    value.toUpperCase()
-  )
-  .refine(
-    (value) =>
-      NOTIFICATION_TARGET_ROLES.includes(
-        value
-      ),
-    {
-      message:
-        "Perfil destinatário inválido.",
-    }
-  );
-
-/**
- * Texto obrigatório reutilizado nos campos principais.
- */
-const requiredText = (
-  min,
-  max,
-  label
-) =>
-  z
-    .string()
-    .trim()
-    .min(
-      min,
-      `${label} deve possuir pelo menos ${min} caracteres.`
-    )
-    .max(
-      max,
-      `${label} deve possuir no máximo ${max} caracteres.`
-    );
-
-/**
- * Texto opcional.
- *
- * String vazia é convertida para null.
- */
-const optionalText = (
-  max,
-  label
-) =>
-  z
-    .string()
-    .trim()
-    .max(
-      max,
-      `${label} deve possuir no máximo ${max} caracteres.`
-    )
-    .optional()
-    .nullable()
-    .transform((value) =>
-      value === "" ? null : value
-    );
-
-/**
- * Texto opcional que segue padrão interno em caixa alta.
- */
-const optionalUppercaseText = (
-  max,
-  label
-) =>
-  z
-    .string()
-    .trim()
-    .max(
-      max,
-      `${label} deve possuir no máximo ${max} caracteres.`
-    )
-    .transform((value) =>
-      value.toUpperCase()
-    )
-    .optional()
-    .nullable()
-    .transform((value) =>
-      value === "" ? null : value
-    );
-
-/**
- * =====================================================
- * SCHEMAS
- * =====================================================
- */
-
-/**
- * Criação manual de notificação.
- *
- * Esse schema pode ser usado futuramente por uma rota
- * administrativa, caso o condomínio precise disparar
- * notificações diretamente pelo painel.
- */
-export const createNotificationSchema =
-  z
-    .object({
-      recipientUserId:
-        uuidSchema
-          .optional()
-          .nullable(),
-
-      targetRole:
-        targetRoleSchema
-          .optional()
-          .nullable(),
-
-      title:
-        requiredText(
-          2,
-          200,
-          "O título"
-        ),
-
-      message:
-        requiredText(
-          2,
-          5000,
-          "A mensagem"
-        ),
-
-      type:
-        requiredText(
-          2,
-          100,
-          "O tipo"
-        )
-          .transform((value) =>
-            value.toUpperCase()
-          ),
-
-      origin:
-        optionalUppercaseText(
-          100,
-          "A origem"
-        ),
-
-      module:
-        optionalUppercaseText(
-          100,
-          "O módulo"
-        ),
-
-      referenceId:
-        optionalText(
-          150,
-          "A referência"
-        ),
-
-      apartmentLabel:
-        optionalText(
-          150,
-          "A identificação do apartamento"
-        ),
-
-      priority:
-        prioritySchema
-          .optional()
-          .default("NORMAL"),
-    })
-    .strict()
-    .superRefine(
-      (data, ctx) => {
-        if (
-          !data.recipientUserId &&
-          !data.targetRole
-        ) {
-          ctx.addIssue({
-            code:
-              z.ZodIssueCode.custom,
-            path: [
-              "recipientUserId",
-            ],
-            message:
-              "Informe um usuário destinatário ou um perfil destinatário.",
-          });
-        }
-
-        if (
-          data.recipientUserId &&
-          data.targetRole
-        ) {
-          ctx.addIssue({
-            code:
-              z.ZodIssueCode.custom,
-            path: [
-              "targetRole",
-            ],
-            message:
-              "Informe apenas um usuário destinatário ou um perfil destinatário.",
-          });
-        }
-      }
-    );
-
-/**
- * Parâmetro padrão de uma notificação.
- */
-export const notificationIdParamsSchema =
-  z
-    .object({
-      id:
-        uuidSchema,
-    })
-    .strict();
-
-/**
- * Filtros administrativos disponíveis.
- */
-export const notificationListQuerySchema =
-  z
-    .object({
-      recipientUserId:
-        uuidSchema.optional(),
-
-      targetRole:
-        targetRoleSchema.optional(),
-
-      type:
-        z
-          .string()
-          .trim()
-          .min(
-            1,
-            "O tipo informado é inválido."
-          )
-          .max(
-            100,
-            "O tipo deve possuir no máximo 100 caracteres."
-          )
-          .transform((value) =>
-            value.toUpperCase()
-          )
-          .optional(),
-
-      module:
-        z
-          .string()
-          .trim()
-          .min(
-            1,
-            "O módulo informado é inválido."
-          )
-          .max(
-            100,
-            "O módulo deve possuir no máximo 100 caracteres."
-          )
-          .transform((value) =>
-            value.toUpperCase()
-          )
-          .optional(),
-
-      unreadOnly: z
-        .enum([
-          "true",
-          "false",
-        ])
-        .transform((value) =>
-          value === "true"
-        )
-        .optional(),
-    })
-    .strict();
-
-/**
- * =====================================================
- * MIDDLEWARES EXPORTADOS
- * =====================================================
- */
-
-/**
- * Valida criação manual de notificação.
- */
-export const validateCreateNotification =
-  validateBody(
-    createNotificationSchema
-  );
-
-/**
- * Valida o ID da notificação.
- */
-export const validateNotificationId =
-  validateParams(
-    notificationIdParamsSchema
-  );
-
-/**
- * Valida filtros de listagem.
- */
-export const validateNotificationListQuery =
-  validateQuery(
-    notificationListQuerySchema
-  );
-
-/**
- * Exportação agrupada para facilitar testes
- * e reutilização futura.
- */
-export default {
-  NOTIFICATION_PRIORITIES,
-  NOTIFICATION_TARGET_ROLES,
-  createNotificationSchema,
-  notificationIdParamsSchema,
-  notificationListQuerySchema,
-  validateCreateNotification,
-  validateNotificationId,
-  validateNotificationListQuery,
-};
+export default new NotificationController();

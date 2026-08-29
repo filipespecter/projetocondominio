@@ -76,6 +76,11 @@ function Login() {
     setCarregando,
   ] = useState(false);
 
+  const [trocaObrigatoria, setTrocaObrigatoria] = useState(false);
+  const [novaSenha, setNovaSenha] = useState("");
+  const [confirmacaoNovaSenha, setConfirmacaoNovaSenha] = useState("");
+  const [trocandoSenha, setTrocandoSenha] = useState(false);
+
   /**
    * =====================================================
    * CONFIGURAÇÃO VISUAL DOS PERFIS
@@ -557,6 +562,12 @@ function Login() {
         return;
       }
 
+      if (usuarioBackend?.mustChangePassword === true) {
+        setTrocaObrigatoria(true);
+        setErro("");
+        return;
+      }
+
       /**
        * 3. Confirma o token usando /auth/me.
        *
@@ -676,6 +687,38 @@ function Login() {
     }
   }
 
+  async function concluirTrocaObrigatoria() {
+    if (trocandoSenha) return;
+    setErro("");
+
+    if (novaSenha.length < 8) {
+      setErro("A nova senha deve possuir pelo menos 8 caracteres.");
+      return;
+    }
+    if (novaSenha !== confirmacaoNovaSenha) {
+      setErro("A confirmação da nova senha não corresponde.");
+      return;
+    }
+
+    setTrocandoSenha(true);
+    try {
+      await authApi.changePassword({
+        currentPassword: senha,
+        newPassword: novaSenha,
+        newPasswordConfirmation: confirmacaoNovaSenha,
+      });
+      const usuarioConfirmado = await authApi.me();
+      const dadosSessao = montarDadosSessao(usuarioConfirmado);
+      salvarSessao(dadosSessao);
+      setTrocaObrigatoria(false);
+      navigate(obterRotaDestino(), { replace: true });
+    } catch (error) {
+      setErro(error?.message ?? "Não foi possível alterar a senha.");
+    } finally {
+      setTrocandoSenha(false);
+    }
+  }
+
   /**
    * =====================================================
    * MODAL DE RECUPERAÇÃO DE SENHA
@@ -702,6 +745,31 @@ function Login() {
     ) {
       fazerLogin();
     }
+  }
+
+  if (trocaObrigatoria) {
+    return (
+      <div style={styles.container}>
+        <div style={{ ...styles.formSide, width: "min(520px, 100%)", borderRadius: "32px", boxShadow: "0 30px 80px rgba(88,28,135,0.16)", zIndex: 2 }}>
+          <div style={{ ...styles.iconCircle, background: perfil.gradient }}><FaKey size={38} color="white" /></div>
+          <span style={styles.profileBadge}>Primeiro acesso</span>
+          <h1 style={styles.title}>Crie sua nova senha</h1>
+          <p style={styles.subtitle}>Por segurança, a senha temporária precisa ser alterada antes de acessar o sistema.</p>
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>Nova senha</label>
+            <input type="password" style={styles.input} value={novaSenha} onChange={(e) => setNovaSenha(e.target.value)} autoFocus />
+          </div>
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>Confirmar nova senha</label>
+            <input type="password" style={styles.input} value={confirmacaoNovaSenha} onChange={(e) => setConfirmacaoNovaSenha(e.target.value)} />
+          </div>
+          {erro ? <div style={styles.errorBox}>{erro}</div> : null}
+          <button type="button" style={{ ...styles.button, background: perfil.gradient }} disabled={trocandoSenha} onClick={concluirTrocaObrigatoria}>
+            {trocandoSenha ? "Alterando senha..." : "Salvar nova senha e entrar"}
+          </button>
+        </div>
+      </div>
+    );
   }
 
   /**

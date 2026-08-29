@@ -8,17 +8,30 @@ class OccurrenceRepository extends BaseRepository {
   /**
    * Relacionamentos retornados nas consultas.
    */
+  get safeUserSelect() {
+    return {
+      id: true,
+      condominiumId: true,
+      name: true,
+      username: true,
+      email: true,
+      phone: true,
+      role: true,
+      status: true,
+    };
+  }
+
   get defaultInclude() {
     return {
       apartment: true,
-      createdBy: true,
-      assignedTo: true,
+      createdBy: { select: this.safeUserSelect },
+      assignedTo: { select: this.safeUserSelect },
       replies: {
         where: {
           deletedAt: null,
         },
         include: {
-          author: true,
+          author: { select: this.safeUserSelect },
         },
         orderBy: {
           createdAt: "asc",

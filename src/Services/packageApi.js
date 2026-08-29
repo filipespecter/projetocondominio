@@ -57,6 +57,15 @@ const packageApi = {
     );
   },
 
+  async deliver(id, payload = {}) {
+    return unwrap(
+      await api.patch(
+        `/v1/packages/${id}/deliver`,
+        payload
+      )
+    );
+  },
+
   async generatePickupCredential(id) {
     return unwrap(
       await api.post(

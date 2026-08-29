@@ -1,0 +1,42 @@
+INFINITYCONDO - PACOTE DE PADRONIZACAO DOCKER LOCAL
+
+OBJETIVO
+Subir Frontend + Backend + PostgreSQL em ambiente Docker isolado, sem usar o PostgreSQL original da maquina.
+
+SERVICOS
+- frontend: http://localhost:5173
+- backend: http://localhost:3333
+- postgres Docker: localhost:5433 (porta externa apenas para diagnostico local)
+
+BANCO
+O banco Docker chama infinitycondo_homolog e usa volume persistente infinitycondo_postgres_data.
+Nao aponta para o banco original do usuario.
+
+PRIMEIRO USO
+No PowerShell, na raiz do projeto:
+
+powershell -ExecutionPolicy Bypass -File .\docker\PRIMEIRA_INICIALIZACAO.ps1
+
+Depois abra:
+http://localhost:5173
+
+Credenciais locais de homologacao da Central:
+usuario: staradmin
+senha: InfinityDocker!2026
+
+IMPORTANTE: credenciais DEV apenas. Nunca usar em VPS/producao.
+
+COMANDOS
+Iniciar: powershell -ExecutionPolicy Bypass -File .\docker\INICIAR.ps1
+Parar: powershell -ExecutionPolicy Bypass -File .\docker\PARAR.ps1
+Status: powershell -ExecutionPolicy Bypass -File .\docker\STATUS.ps1
+Logs: powershell -ExecutionPolicy Bypass -File .\docker\LOGS.ps1
+Validar: powershell -ExecutionPolicy Bypass -File .\docker\VALIDAR.ps1
+Resetar banco Docker: powershell -ExecutionPolicy Bypass -File .\docker\RESETAR_BANCO_TESTE.ps1
+
+PERSISTENCIA
+docker compose down NAO apaga o banco.
+O banco so e removido com down -v ou pelo script RESETAR_BANCO_TESTE.ps1.
+
+PROXIMA ETAPA
+Depois que este pacote funcionar no PC principal e em pelo menos outro PC, adaptar a mesma arquitetura para VPS Hostinger + Nginx + HTTPS.

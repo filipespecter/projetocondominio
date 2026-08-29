@@ -67,7 +67,7 @@ function PlatformCondominiums() {
         platformApi.condominiums
           .pending(),
         platformApi.plans
-          .list(),
+          .active(),
       ]);
 
       setItems(

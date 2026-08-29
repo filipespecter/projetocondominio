@@ -5,6 +5,19 @@ class NotificationRepository extends BaseRepository {
     super("notification");
   }
 
+  get safeUserSelect() {
+    return {
+      id: true,
+      condominiumId: true,
+      name: true,
+      username: true,
+      email: true,
+      phone: true,
+      role: true,
+      status: true,
+    };
+  }
+
   /**
    * Busca uma notificação pelo ID dentro do condomínio.
    */
@@ -17,7 +30,7 @@ class NotificationRepository extends BaseRepository {
       },
       {
         include: {
-          recipient: true,
+          recipient: { select: this.safeUserSelect },
         },
       }
     );
@@ -34,7 +47,7 @@ class NotificationRepository extends BaseRepository {
       },
       {
         include: {
-          recipient: true,
+          recipient: { select: this.safeUserSelect },
         },
         orderBy: {
           createdAt: "desc",

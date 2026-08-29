@@ -1,0 +1,31 @@
+INFINITYCONDO — VARREDURA / CORREÇÕES DOCKER + FLUXOS — 2026-08-29
+
+Base analisada:
+projetocondominio(20260829-134632).zip
+
+CORREÇÕES INCLUÍDAS
+1. Onboarding público alinhado com condominium + contact; não recebe credenciais.
+2. Central usa endpoint de planos ativos ao preparar aprovação.
+3. Seed Docker garante planos de homologação em development (Básico/Completo) e não faz isso em production.
+4. Primeira inicialização Docker executa prisma:deploy ANTES do seed.
+5. Dockerfile do backend não grava credencial real de banco para prisma generate; usa URL dummy apenas no build.
+6. NotificationController reconstruído com os métodos realmente chamados pelas rotas.
+7. NotificationRepository não retorna passwordHash do recipient.
+8. ReservationController ganhou myReservations(), utilizado por GET /reservations/my.
+9. packageApi ganhou deliver(), usado pela tela de encomendas do síndico.
+10. AuditLogService ganhou findByUserAndPeriod() e countByAction().
+11. NoticeService ganhou findByCategory() e findByApartment().
+12. OccurrenceRepository usa select seguro para usuários/autores; não retorna passwordHash.
+13. OccurrenceController remove respostas internal da listagem /occurrences/my para RESIDENT.
+14. Primeiro acesso: login detecta mustChangePassword=true e obriga troca da senha temporária antes de entrar no dashboard.
+15. Testes de contrato ampliados de 12 para 16 cenários.
+
+VALIDAÇÃO EXECUTADA NESTE PACOTE
+- node --check nos arquivos backend alterados: OK.
+- node --test backend/tests/*.test.js: 16/16 PASS.
+- Build/lint do frontend NÃO foram afirmados como executados neste ambiente, porque o node_modules do ZIP era Windows e a reinstalação local excedeu a janela do executor. Rode os comandos abaixo no seu Docker/Windows após aplicar.
+
+IMPORTANTE
+- Este pacote não substitui os testes E2E dos devs.
+- WhatsApp e Mercado Pago continuam dependentes de credenciais/HTTPS/webhooks e não são homologados por este pacote.
+- Não use credenciais de homologação em produção.

@@ -167,6 +167,14 @@ const platformApi = {
   },
 
   plans: {
+    async active() {
+      return listOf(
+        await api.get(
+          "/v1/platform/plans/active"
+        )
+      );
+    },
+
     async list() {
       return listOf(
         await api.get(

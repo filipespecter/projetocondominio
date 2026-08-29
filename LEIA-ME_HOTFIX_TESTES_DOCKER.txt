@@ -1,0 +1,12 @@
+HOTFIX TESTES DOCKER — 2026-08-29
+
+Motivo: os testes de contrato calculavam a raiz do projeto a partir de /app dentro
+do container backend. Isso fazia caminhos válidos virarem /backend/... e /src/...
+fora do container, gerando ENOENT.
+
+Correção:
+- compose monta o repositório em /workspace somente leitura;
+- PROJECT_ROOT=/workspace;
+- business-contract.test.js usa PROJECT_ROOT quando disponível.
+
+Não altera regra de negócio nem interface.

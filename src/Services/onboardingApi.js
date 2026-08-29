@@ -1,4 +1,4 @@
-/**
+﻿/**
  * =====================================================
  * INFINITYCONDO - API DE ONBOARDING
  * =====================================================
@@ -24,15 +24,17 @@ import { api } from "./api.js";
  *
  * POST /api/v1/onboarding/condominium
  *
- * O backend cria de forma transacional:
+ * Regra atual:
  *
- * - Condominium;
- * - CONDOMINIUM_ADMIN;
- * - AuditLog inicial.
+ * - cria apenas a solicitação do condomínio;
+ * - registra os dados do responsável pelo cadastro;
+ * - condomínio permanece PENDING;
+ * - NÃO cria usuário/senha nesta etapa;
+ * - credenciais são definidas posteriormente pela Central Star.
  */
 export async function registerCondominium({
   condominium,
-  administrator,
+  contact,
 }) {
   const response =
     await api.post(
@@ -87,25 +89,16 @@ export async function registerCondominium({
             null,
         },
 
-        administrator: {
+        contact: {
           name:
-            administrator.name,
-
-          username:
-            administrator.username,
+            contact.name,
 
           email:
-            administrator.email,
+            contact.email,
 
           phone:
-            administrator.phone ||
+            contact.phone ||
             null,
-
-          password:
-            administrator.password,
-
-          passwordConfirmation:
-            administrator.passwordConfirmation,
         },
       },
       {

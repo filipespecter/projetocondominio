@@ -102,9 +102,18 @@ class OccurrenceController {
             req.user.condominiumId
           );
 
+      const safeData = req.user.role === "RESIDENT"
+        ? data.map((item) => ({
+            ...item,
+            replies: Array.isArray(item.replies)
+              ? item.replies.filter((reply) => reply.internal !== true)
+              : [],
+          }))
+        : data;
+
       return res.json({
         success: true,
-        data,
+        data: safeData,
       });
     } catch (error) {
       return next(error);

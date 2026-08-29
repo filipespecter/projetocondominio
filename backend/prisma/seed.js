@@ -286,6 +286,29 @@ async function main() {
     }`
   );
   console.log("");
+  const shouldSeedHomologationPlans =
+    String(process.env.NODE_ENV ?? "development").toLowerCase() !== "production" &&
+    String(process.env.SEED_HOMOLOGATION_PLANS ?? "true").toLowerCase() !== "false";
+
+  if (shouldSeedHomologationPlans) {
+    const plans = [
+      { name: "Plano Básico", code: "BASICO", description: "Plano de homologação local", monthlyPriceInCents: 25000, billingCycle: "MONTHLY", active: true, displayOrder: 1 },
+      { name: "Plano Completo", code: "COMPLETO", description: "Plano de homologação local completo", monthlyPriceInCents: 35000, billingCycle: "MONTHLY", active: true, displayOrder: 2 },
+    ];
+
+    for (const plan of plans) {
+      await prisma.plan.upsert({
+        where: { code: plan.code },
+        update: {
+          name: plan.name, description: plan.description, monthlyPriceInCents: plan.monthlyPriceInCents,
+          billingCycle: plan.billingCycle, active: true, displayOrder: plan.displayOrder, deletedAt: null,
+        },
+        create: plan,
+      });
+    }
+    console.log("Planos de homologação local garantidos.");
+  }
+
   console.log(
     "Senha não exibida por segurança."
   );
