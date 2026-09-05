@@ -1,3 +1,4 @@
+import { confirmDialog } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useState } from "react";
 import configurationApi from "../../Services/configurationApi.js";
 
@@ -110,7 +111,7 @@ function Configuracoes() {
     if (!isMestre) return alert("Apenas o Síndico Mestre pode excluir usuários.");
     const usuario = usuariosSindico.find((u) => u.id === id);
     if (usuario?.perfil === "mestre") return alert("O usuário mestre não pode ser excluído.");
-    if (!window.confirm("Deseja excluir este usuário administrativo?")) return;
+    if (!await confirmDialog("Deseja excluir este usuário administrativo?")) return;
     await executar(async () => { await configurationApi.removeUser(id); await carregarTudo(); }, "Usuário excluído com sucesso.");
   }
 
@@ -299,7 +300,7 @@ function Configuracoes() {
                 <div style={styles.colorPreviewBody}>
                   <strong>{config.nomeCondominio || "Nome do condomínio"}</strong>
                   <span>
-                    Cor salva para uso futuro no backend e tema do cliente.
+                    Cor principal aplicada à identidade visual do condomínio.
                   </span>
                 </div>
               </div>
@@ -617,7 +618,7 @@ function Configuracoes() {
               />
             </Campo>
 
-            <Campo label="JWT ativo no backend">
+            <Campo label="Sessão autenticada ativa">
               <select
                 value={segurancaConfig.jwtAtivo ? "Sim" : "Não"}
                 onChange={(e) =>
@@ -649,7 +650,7 @@ function Configuracoes() {
               />
             </Campo>
 
-            <Campo label="Refresh token futuro">
+            <Campo label="Renovação segura de sessão">
               <select
                 value={segurancaConfig.refreshToken ? "Ativo" : "Inativo"}
                 onChange={(e) =>
@@ -735,7 +736,7 @@ function Configuracoes() {
         <section style={styles.panel}>
           <div style={styles.panelHeader}>
             <div>
-              <span style={styles.panelBadgeGold}>Integração futura</span>
+              <span style={styles.panelBadgeGold}>Integração WhatsApp</span>
               <h2 style={styles.panelTitle}>WhatsApp Business</h2>
             </div>
 
@@ -745,8 +746,7 @@ function Configuracoes() {
           </div>
 
           <div style={styles.warningBox}>
-            Esta área prepara o front para integração futura com API de WhatsApp.
-            O envio real só funcionará após conexão com backend.
+            Configure as preferências de comunicação do condomínio pelo WhatsApp.
           </div>
 
           <div style={styles.formGrid}>
@@ -1039,7 +1039,7 @@ function Configuracoes() {
 
             <ToggleCard
               title="Backup automático"
-              description="Reservado para uso futuro com backend."
+              description="Mantém cópias periódicas conforme a política de backup configurada."
               checked={preferencias.backupAutomatico}
               onChange={(valor) =>
                 setPreferencias({ ...preferencias, backupAutomatico: valor })

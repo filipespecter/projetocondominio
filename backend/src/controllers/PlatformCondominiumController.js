@@ -113,6 +113,36 @@ class PlatformCondominiumController {
     }
   }
 
+
+  /**
+   * PATCH /api/v1/platform/condominiums/:id/plan
+   */
+  async changePlan(req, res, next) {
+    try {
+      const requestContext = {
+        requestId: req.requestId ?? null,
+        ipAddress: req.ip ?? null,
+        userAgent: req.headers["user-agent"] ?? null,
+      };
+
+      const result = await PlatformCondominiumService.changeClientPlan(
+        req.params.id,
+        req.body?.planId,
+        req.user,
+        requestContext
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Plano do cliente alterado com sucesso.",
+        data: result,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+
   /**
    * GET /api/v1/platform/condominiums/:id
    *

@@ -1,3 +1,4 @@
+import { confirmDialog, promptDialog } from "../../components/GlobalDialogs.jsx";
 import {
   useEffect,
   useState,
@@ -37,6 +38,16 @@ function PlatformOperations() {
   ] = useState(null);
 
   const [
+    databaseStats,
+    setDatabaseStats,
+  ] = useState(null);
+
+  const [
+    resetting,
+    setResetting,
+  ] = useState(false);
+
+  const [
     loading,
     setLoading,
   ] = useState(true);
@@ -54,11 +65,13 @@ function PlatformOperations() {
       const [
         jobData,
         backupData,
+        dbData,
       ] = await Promise.all([
         platformApi.operations
           .jobs(),
         platformApi.operations
           .backups(),
+        platformApi.operations.databaseStatistics().catch(() => null),
       ]);
 
       setScheduler(
@@ -86,6 +99,7 @@ function PlatformOperations() {
         backupData?.statistics ??
         null
       );
+      setDatabaseStats(dbData);
     } catch (err) {
       setError(
         err?.message ??
@@ -147,6 +161,31 @@ function PlatformOperations() {
     }
   }
 
+  async function resetHomologation() {
+    const phrase = await promptDialog(
+      "Esta ação apaga os dados operacionais de homologação, preserva a conta proprietária, planos e estrutura do banco. Um backup é criado antes da limpeza. Digite ZERAR HOMOLOGACAO para continuar.",
+      { title: "Zerar ambiente de homologação", placeholder: "ZERAR HOMOLOGACAO" }
+    );
+    if (phrase === null) return;
+    if (String(phrase).trim().toUpperCase() !== "ZERAR HOMOLOGACAO") {
+      setError("Confirmação inválida. Nenhum dado foi apagado.");
+      return;
+    }
+    const confirmed = await confirmDialog(
+      "Tem certeza? O InfinityCondo criará um backup e removerá todos os dados de clientes do ambiente de homologação.",
+      { title: "Confirmação final", danger: true }
+    );
+    if (!confirmed) return;
+    setResetting(true); setError("");
+    try {
+      const result = await platformApi.operations.resetHomologation(phrase);
+      setDatabaseStats(result?.statistics ?? null);
+      await load();
+      alert("Ambiente de homologação zerado com sucesso. O backup de segurança foi preservado.");
+    } catch (err) { setError(err?.message ?? "Não foi possível zerar o ambiente de homologação."); }
+    finally { setResetting(false); }
+  }
+
   if (loading) {
     return (
       <PlatformLoading text="Carregando operações..." />
@@ -158,7 +197,7 @@ function PlatformOperations() {
       <PlatformPageHeader
         eyebrow="INFRAESTRUTURA"
         title="Jobs e backups"
-        description="Operações do Bloco 9 consumidas diretamente pelo frontend da Central."
+        description="Monitoramento de rotinas automáticas, integridade operacional e backups da plataforma."
         action={
           <PlatformButton
             onClick={backup}
@@ -268,6 +307,37 @@ function PlatformOperations() {
         )}
       </PlatformCard>
 
+      {databaseStats && (
+        <PlatformCard style={{ marginTop: "18px" }}>
+          <div style={styles.databaseHeader}>
+            <div>
+              <strong>Banco / Ambiente de Teste</strong>
+              <p style={styles.text}>Visão segura da base de homologação e ferramenta de reinicialização controlada.</p>
+            </div>
+            <PlatformButton variant="danger" disabled={resetting} onClick={resetHomologation}>
+              {resetting ? "Zerando..." : "Zerar homologação"}
+            </PlatformButton>
+          </div>
+          <div style={styles.databaseGrid}>
+            {[
+              ["Condomínios", databaseStats.condominiums],
+              ["Usuários de clientes", databaseStats.users],
+              ["Moradores", databaseStats.residents],
+              ["Apartamentos", databaseStats.apartments],
+              ["Encomendas", databaseStats.packages],
+              ["Reservas", databaseStats.reservations],
+              ["Despesas", databaseStats.expenses],
+              ["SAs", databaseStats.tickets],
+              ["Auditoria", databaseStats.auditLogs],
+              ["Backups", databaseStats.backups],
+            ].map(([label, value]) => (
+              <div key={label} style={styles.databaseMetric}><span>{label}</span><strong>{value ?? 0}</strong></div>
+            ))}
+          </div>
+          <p style={styles.dangerNote}>A limpeza só existe fora de produção, exige PLATFORM_OWNER, confirmação textual e backup prévio.</p>
+        </PlatformCard>
+      )}
+
       <PlatformCard
         style={{
           marginTop: "18px",
@@ -334,6 +404,10 @@ function PlatformOperations() {
 }
 
 const styles = {
+  databaseHeader: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", flexWrap: "wrap" },
+  databaseGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: "10px", marginTop: "14px" },
+  databaseMetric: { padding: "12px", borderRadius: "11px", background: "#faf8fc", border: "1px solid #eee8f5", display: "grid", gap: "5px" },
+  dangerNote: { margin: "12px 0 0", padding: "10px 12px", borderRadius: "10px", background: "#fff7ed", color: "#9a3412", border: "1px solid #fed7aa", fontSize: "11px" },
   actions: {
     display: "flex",
     gap: "8px",

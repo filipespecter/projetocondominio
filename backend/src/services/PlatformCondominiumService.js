@@ -1,6 +1,7 @@
 import condominiumRepository from "../repositories/CondominiumRepository.js";
 import { ApiError } from "../utils/ApiError.js";
 import prisma from "../config/prisma.js";
+import AuditLogService from "./AuditLogService.js";
 
 /**
  * =====================================================
@@ -438,6 +439,101 @@ class PlatformCondominiumService {
       },
     };
   }
+
+
+  /**
+   * Troca o plano de um cliente já aprovado sem reiniciar o ciclo de cobrança.
+   */
+  async changeClientPlan(condominiumId, planId, platformAdmin, requestContext = null) {
+    if (!platformAdmin?.id || !["PLATFORM_OWNER", "PLATFORM_ADMIN"].includes(platformAdmin.role)) {
+      throw new ApiError("Administrador da plataforma não identificado.", 403);
+    }
+
+    if (!condominiumId || !planId) {
+      throw new ApiError("Condomínio e plano são obrigatórios.", 400);
+    }
+
+    const condominium = await prisma.condominium.findFirst({
+      where: { id: condominiumId, deletedAt: null },
+    });
+
+    if (!condominium) {
+      throw new ApiError("Condomínio não encontrado.", 404);
+    }
+
+    if (!["TRIAL", "ACTIVE", "SUSPENDED"].includes(condominium.status)) {
+      throw new ApiError("Somente clientes já aprovados e não cancelados podem trocar de plano.", 409);
+    }
+
+    const plan = await prisma.plan.findFirst({
+      where: { id: planId, active: true, deletedAt: null },
+    });
+
+    if (!plan) {
+      throw new ApiError("Plano não encontrado ou indisponível.", 400);
+    }
+
+    const subscription = await prisma.subscription.findFirst({
+      where: {
+        condominiumId,
+        status: { in: ["TRIAL", "ACTIVE", "OVERDUE", "SUSPENDED"] },
+      },
+      orderBy: { createdAt: "desc" },
+      include: { plan: true },
+    });
+
+    if (!subscription) {
+      throw new ApiError("Cliente não possui assinatura ativa para troca de plano.", 409);
+    }
+
+    if (subscription.planId === plan.id) {
+      throw new ApiError("O cliente já utiliza este plano.", 409);
+    }
+
+    const beforeData = {
+      planId: subscription.planId,
+      planCode: subscription.plan?.code ?? null,
+      planName: subscription.plan?.name ?? null,
+      priceInCents: subscription.priceInCents,
+      billingCycle: subscription.billingCycle,
+      currentPeriodStart: subscription.currentPeriodStart,
+      currentPeriodEnd: subscription.currentPeriodEnd,
+      nextDueDate: subscription.nextDueDate,
+    };
+
+    const updated = await prisma.subscription.update({
+      where: { id: subscription.id },
+      data: {
+        planId: plan.id,
+        priceInCents: plan.monthlyPriceInCents,
+        billingCycle: plan.billingCycle,
+      },
+      include: { plan: true },
+    });
+
+    await AuditLogService.logUpdate({
+      condominiumId,
+      user: platformAdmin,
+      module: "SUBSCRIPTION_PLAN",
+      referenceId: subscription.id,
+      beforeData,
+      afterData: {
+        planId: updated.planId,
+        planCode: updated.plan?.code ?? null,
+        planName: updated.plan?.name ?? null,
+        priceInCents: updated.priceInCents,
+        billingCycle: updated.billingCycle,
+        currentPeriodStart: updated.currentPeriodStart,
+        currentPeriodEnd: updated.currentPeriodEnd,
+        nextDueDate: updated.nextDueDate,
+      },
+      details: "Plano comercial do cliente alterado pela Central.",
+      requestContext,
+    });
+
+    return { condominiumId, subscription: updated };
+  }
+
 
   /**
    * Estatísticas rápidas para a Central.

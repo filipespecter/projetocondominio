@@ -1,3 +1,4 @@
+import { confirmDialog } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useState } from "react";
 import visitorApi from "../../Services/visitorApi";
 
@@ -376,7 +377,7 @@ function Visitantes() {
 
   async function excluirVisitante(id) {
     if (
-      !window.confirm(
+      !await confirmDialog(
         "Deseja realmente excluir este visitante?"
       )
     ) {

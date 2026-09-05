@@ -285,7 +285,7 @@ function DashboardPorteiro() {
                 ●
               </span>
               <span>
-                Dados carregados do backend
+                Dados atualizados da operação
               </span>
             </div>
 

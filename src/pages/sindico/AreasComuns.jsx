@@ -1,3 +1,4 @@
+import { confirmDialog } from "../../components/GlobalDialogs.jsx";
 import {
   useEffect,
   useState,
@@ -338,7 +339,7 @@ function AreasComuns() {
 
   async function excluirArea(id) {
     if (
-      !window.confirm(
+      !await confirmDialog(
         "Deseja excluir essa área?"
       )
     ) {

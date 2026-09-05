@@ -10,6 +10,7 @@ import platformAdminMiddleware from "../middlewares/platformAdminMiddleware.js";
 
 import {
   platformManagementMiddleware,
+  platformOwnerMiddleware,
 } from "../middlewares/platformAccessMiddleware.js";
 
 const platformOperationsRoutes =
@@ -85,6 +86,19 @@ platformOperationsRoutes.patch(
         res,
         next
       )
+);
+
+
+platformOperationsRoutes.get(
+  "/database/statistics",
+  platformOwnerMiddleware,
+  (req, res, next) => PlatformOperationsController.databaseStatistics(req, res, next)
+);
+
+platformOperationsRoutes.post(
+  "/database/reset-homologation",
+  platformOwnerMiddleware,
+  (req, res, next) => PlatformOperationsController.resetHomologation(req, res, next)
 );
 
 /**

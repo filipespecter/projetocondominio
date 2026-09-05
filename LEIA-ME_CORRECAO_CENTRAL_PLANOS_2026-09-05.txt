@@ -1,0 +1,26 @@
+INFINITYCONDO — CORREÇÃO CENTRAL / PLANOS — 05/09/2026
+
+Pacote incremental criado sobre o ZIP mais recente enviado pelo usuário.
+
+CORREÇÕES:
+- Dashboard: total principal não soma REJECTED/CANCELED como condomínios correntes.
+- Pendentes continuam filtrados estritamente por status PENDING.
+- Planos: catálogo Básico/Completo é garantido também em tempo de execução, além do seed.
+- Aprovação: a Central volta a receber planos ativos para vinculação.
+- Planos: tela exibe Básico/Completo, quantidade de vínculos e permite Vincular/Trocar cliente já aprovado.
+- Nova rota administrativa PATCH /api/v1/platform/condominiums/:id/plan.
+- Troca de plano preserva o período vigente e os dados do cliente.
+- Auditoria: listagem global usa consulta escalar defensiva para evitar falha 500 causada por includes relacionais na listagem.
+- Auditoria: removido botão duplicado de backup.
+- Textos internos/de desenvolvimento removidos das telas alteradas.
+- Limpeza de import não utilizado em AuthService.
+
+VALIDAÇÃO LOCAL DO PACOTE:
+- backend npm test: 30/30 pass, 0 fail.
+- ESLint: 0 erros, 0 warnings.
+- Build Vite não foi executável neste container por binding nativo Linux do Rolldown ausente no node_modules vindo do Windows. Validar via Docker no ambiente do projeto.
+
+IMPORTANTE:
+- Não contém migration nova.
+- Não remove módulos ou regras antigas.
+- Aplicar sobre o projeto atual com Expand-Archive -Force e depois rebuild Docker.

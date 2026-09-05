@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import PlatformSupportController from "../controllers/PlatformSupportController.js";
+import SupportTicketController from "../controllers/SupportTicketController.js";
 
 import {
   authMiddleware,
@@ -18,6 +19,21 @@ const platformSupportRoutes =
 platformSupportRoutes.use(
   authMiddleware,
   platformAdminMiddleware
+);
+
+platformSupportRoutes.get(
+  "/tickets/statistics",
+  (req, res, next) => SupportTicketController.stats(req, res, next)
+);
+
+platformSupportRoutes.get(
+  "/tickets",
+  (req, res, next) => SupportTicketController.platform(req, res, next)
+);
+
+platformSupportRoutes.patch(
+  "/tickets/:id",
+  (req, res, next) => SupportTicketController.update(req, res, next)
 );
 
 platformSupportRoutes.get(

@@ -1,3 +1,4 @@
+import { confirmDialog, promptDialog } from "../../components/GlobalDialogs.jsx";
 import {
   useEffect,
   useState,
@@ -439,7 +440,7 @@ function Avisos() {
 
   async function excluirAviso(id) {
     if (
-      !window.confirm(
+      !await confirmDialog(
         "Deseja excluir este aviso?"
       )
     ) {
@@ -491,7 +492,7 @@ function Avisos() {
       ) {
         const resolution =
           respostaTexto.trim() ||
-          window.prompt(
+          await promptDialog(
             "Informe a resolução:"
           );
 

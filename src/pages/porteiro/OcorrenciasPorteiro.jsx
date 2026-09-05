@@ -1,3 +1,4 @@
+import { confirmDialog } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useState } from "react";
 import occurrenceApi from "../../Services/occurrenceApi.js";
 
@@ -17,7 +18,7 @@ function OcorrenciasPorteiro() {
   function validarOcorrencia(){if(!novaOcorrencia.categoria||String(novaOcorrencia.titulo).trim().length<3||String(novaOcorrencia.descricao).trim().length<5){alert("Preencha categoria, título e descrição.");return false;}return true;}
   function limparFormulario(){setNovaOcorrencia(estadoInicial);}
   async function registrarOcorrencia(){if(!validarOcorrencia())return;try{await occurrenceApi.create({apartmentId:novaOcorrencia.apartamentoId||null,type:typeBack[novaOcorrencia.tipo]??"OCCURRENCE",category:novaOcorrencia.categoria,priority:priorityBack[novaOcorrencia.prioridade]??"MEDIUM",title:novaOcorrencia.titulo.trim(),description:novaOcorrencia.descricao.trim(),shift:turnoAtual(),dutyDate:new Date().toISOString().slice(0,10)});limparFormulario();await carregar();}catch(e){alert(e?.message??"Não foi possível registrar a ocorrência.");}}
-  async function excluirRegistro(id){if(!window.confirm("Deseja cancelar este registro?"))return;try{await occurrenceApi.cancel(id);await carregar();}catch(e){alert(e?.message??"Não foi possível cancelar a ocorrência.");}}
+  async function excluirRegistro(id){if(!await confirmDialog("Deseja cancelar este registro?"))return;try{await occurrenceApi.cancel(id);await carregar();}catch(e){alert(e?.message??"Não foi possível cancelar a ocorrência.");}}
   function correspondeBusca(item){const t=busca.toLowerCase();return item.titulo?.toLowerCase().includes(t)||item.descricao?.toLowerCase().includes(t)||item.categoria?.toLowerCase().includes(t)||item.apartamento?.toLowerCase().includes(t)||item.status?.toLowerCase().includes(t);}
   const encaminhadas=ocorrencias.filter(i=>i.status!=="Resolvido"&&i.status!=="Fechado"&&i.status!=="Cancelado"&&correspondeBusca(i));
   const historico=ocorrencias.filter(i=>(i.status==="Resolvido"||i.status==="Fechado"||i.status==="Cancelado")&&correspondeBusca(i));

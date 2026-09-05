@@ -21,12 +21,14 @@ import {
   FaCog,
   FaSignOutAlt,
   FaHardHat,
-  FaWallet
+  FaWallet,
+  FaHeadset
 } from "react-icons/fa";
 
 import { contarNaoLidas } from "../Services/notificacaoService";
 import authApi from "../Services/authApi.js";
 import NotificationCenter from "../components/NotificationCenter.jsx";
+import GlobalSearch from "../components/GlobalSearch.jsx";
 
 function DashboardLayout() {
   const navigate = useNavigate();
@@ -354,6 +356,13 @@ function DashboardLayout() {
             />
 
             <MenuItem
+              to="/dashboard/suporte"
+              active={itemAtivo("/dashboard/suporte")}
+              icon={<FaHeadset />}
+              label="Suporte"
+            />
+
+            <MenuItem
               to="/dashboard/configuracoes"
               active={itemAtivo("/dashboard/configuracoes")}
               icon={<FaCog />}
@@ -381,6 +390,7 @@ function DashboardLayout() {
       </aside>
 
       <main style={styles.content}>
+        <GlobalSearch />
         <Outlet />
       </main>
     </div>

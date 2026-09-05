@@ -330,3 +330,113 @@ test("Central possui carteira de clientes com ciclo contado desde a ativação",
   assert.match(approval, /const nextDueDate = this\.addBillingCycle\(approvedAt, billingCycle\)/);
   assert.match(app, /path="clientes"/);
 });
+
+test("Central garante catálogo Básico/Completo também em tempo de execução", async () => {
+  const service = await source("backend/src/services/PlanService.js");
+  assert.match(service, /ensureDefaultCatalog/);
+  assert.match(service, /code:\s*"BASICO"/);
+  assert.match(service, /code:\s*"COMPLETO"/);
+  assert.match(service, /await this\.ensureDefaultCatalog\(\)/);
+});
+
+test("dashboard não soma solicitações rejeitadas ou canceladas no total principal", async () => {
+  const dashboard = await source("backend/src/services/PlatformDashboardService.js");
+  assert.match(dashboard, /in:\s*\["PENDING",\s*"TRIAL",\s*"ACTIVE",\s*"SUSPENDED"\]/);
+});
+
+test("planos permitem trocar o plano de cliente já aprovado pela Central", async () => {
+  const page = await source("src/pages/platform/PlatformPlans.jsx");
+  const api = await source("src/Services/platformApi.js");
+  const routes = await source("backend/src/routes/platform-condominium.routes.js");
+  const service = await source("backend/src/services/PlatformCondominiumService.js");
+  assert.match(page, /Vincular \/ trocar cliente/);
+  assert.match(api, /changePlan/);
+  assert.match(routes, /\/:id\/plan/);
+  assert.match(service, /changeClientPlan/);
+});
+
+test("suporte possui SA persistente com classificação, prioridade e acompanhamento do cliente", async () => {
+  const schema = await source("backend/prisma/schema.prisma");
+  const service = await source("backend/src/services/SupportTicketService.js");
+  const platform = await source("src/pages/platform/PlatformSupport.jsx");
+  const syndic = await source("src/pages/sindico/Suporte.jsx");
+  assert.match(schema, /model\s+SupportTicket\s*\{/);
+  assert.match(schema, /SupportTicketPriority/);
+  assert.match(service, /CRITICAL/);
+  assert.match(service, /WAITING_CUSTOMER/);
+  assert.match(platform, /Solicitações de Atendimento/);
+  assert.match(platform, /Assumir/);
+  assert.match(syndic, /Nova solicitação/);
+  assert.match(syndic, /SA-/);
+});
+
+test("financeiro da Star possui painel executivo, gráficos e exportações PDF e Excel", async () => {
+  const page = await source("src/pages/platform/PlatformFinance.jsx");
+  const api = await source("src/Services/platformApi.js");
+  const routes = await source("backend/src/routes/platform-charge.routes.js");
+  assert.match(page, /exportExecutivePdf/);
+  assert.match(page, /exportExecutiveExcel/);
+  assert.match(page, /Evolução financeira/);
+  assert.match(page, /ResponsiveContainer/);
+  assert.match(api, /allCharges/);
+  assert.match(routes, /PlatformChargeController\.index/);
+});
+
+test("dashboard da Central é executivo e combina carteira, financeiro, suporte e operação", async () => {
+  const page = await source("src/pages/platform/PlatformDashboard.jsx");
+  assert.match(page, /Dashboard executivo/);
+  assert.match(page, /Status dos condomínios/);
+  assert.match(page, /Receita e exposição/);
+  assert.match(page, /SAs abertas/);
+  assert.match(page, /SAÚDE DA PLATAFORMA/i);
+});
+
+test("homologação pode ser zerada somente pelo owner, fora de produção e após backup", async () => {
+  const service = await source("backend/src/services/HomologationService.js");
+  const routes = await source("backend/src/routes/platform-operations.routes.js");
+  const page = await source("src/pages/platform/PlatformOperations.jsx");
+  assert.match(service, /NODE_ENV === "production"/);
+  assert.match(service, /PLATFORM_OWNER/);
+  assert.match(service, /ZERAR HOMOLOGACAO/);
+  assert.match(service, /BackupService\.createBackup/);
+  assert.match(routes, /platformOwnerMiddleware/);
+  assert.match(page, /Banco \/ Ambiente de Teste/);
+  assert.match(page, /Zerar homologação/);
+});
+
+test("exportação de relatórios registra auditoria própria sem usar registro operacional", async () => {
+  const api = await source("src/Services/reportApi.js");
+  const routes = await source("backend/src/routes/audit.routes.js");
+  const controller = await source("backend/src/controllers/AuditLogController.js");
+  assert.match(api, /\/v1\/audit\/report-export/);
+  assert.doesNotMatch(api, /operational-records.*REPORT_EXPORT/);
+  assert.match(routes, /report-export/);
+  assert.match(controller, /REPORT_EXPORT/);
+});
+
+test("encomendas atrasadas são calculadas por tempo real de recebimento", async () => {
+  const page = await source("src/pages/sindico/Encomendas.jsx");
+  assert.match(page, /LIMITE_ATRASO_DIAS = 3/);
+  assert.match(page, /receivedAtRaw/);
+  assert.doesNotMatch(page, /const atrasadas = \[\]/);
+});
+
+test("piloto remove diálogos nativos de confirmação e adiciona busca global e onboarding guiado", async () => {
+  const dialogs = await source("src/components/GlobalDialogs.jsx");
+  const search = await source("src/components/GlobalSearch.jsx");
+  const layout = await source("src/layout/DashboardLayout.jsx");
+  const dashboard = await source("src/pages/sindico/DashboardSindico.jsx");
+  assert.match(dialogs, /confirmDialog/);
+  assert.match(dialogs, /window\.alert =/);
+  assert.match(search, /Buscar morador, apartamento, visitante, encomenda ou ocorrência/);
+  assert.match(layout, /<GlobalSearch/);
+  assert.match(dashboard, /Configure seu condomínio/);
+});
+
+test("BI utiliza históricos derivados dos registros reais em vez de coleções fixas vazias", async () => {
+  const bi = await source("src/Services/biService.js");
+  assert.match(bi, /visitantes_historico = visitantesTodos\.filter/);
+  assert.match(bi, /encomendas_historico = encomendasTodas\.filter/);
+  assert.match(bi, /historico_ocorrencias = ocorrenciasTodas\.filter/);
+  assert.doesNotMatch(bi, /cacheDados\.visitantes_historico = \[\]/);
+});

@@ -21,7 +21,7 @@ const reportApi={
     return {moradores,apartamentos,porteiros,visitantes,encomendas,reservas,areasComuns,avisos,prestadores,ocorrencias,sugestoes:ocorrencias.filter(x=>["SUGGESTION","COMPLAINT","REQUEST"].includes(String(x.type||x.category||"").toUpperCase())),movimentacoes,auditoria:Array.isArray(auditoria)?auditoria:(auditoria?.items||[]),configuracoes:usuario?.condominium||{},usuario};
   },
   async registrarExportacao({tipo,titulo,periodo}){
-    return api.post("/v1/operational-records",{type:"REPORT_EXPORT",title:`${titulo} - ${tipo}`,description:`Relatório exportado em ${tipo}. Período: ${periodo}.`});
+    return api.post("/v1/audit/report-export",{type:tipo,title:titulo,period:periodo});
   }
 };
 export default reportApi;

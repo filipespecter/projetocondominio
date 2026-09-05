@@ -29,6 +29,14 @@ class ChargeRepository extends BaseRepository {
     };
   }
 
+
+  async findAllPlatform() {
+    return this.findMany(
+      {},
+      { include: this.defaultInclude, orderBy: { dueDate: "desc" } }
+    );
+  }
+
   async findById(id) {
     return this.findUnique(
       { id },

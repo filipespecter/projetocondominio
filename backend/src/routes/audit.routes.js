@@ -123,6 +123,13 @@ auditRoutes.get(
  * Sem filtros, retorna todo o histórico
  * pertencente ao condomínio autenticado.
  */
+
+auditRoutes.post(
+  "/report-export",
+  administrativeRoles,
+  (req, res, next) => AuditLogController.reportExport(req, res, next)
+);
+
 auditRoutes.get(
   "/",
   administrativeRoles,

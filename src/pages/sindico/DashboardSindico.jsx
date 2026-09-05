@@ -147,6 +147,15 @@ function DashboardSindico() {
   function larguraGrafico(valor) {
     return `${Math.max((valor / maxGrafico) * 100, valor > 0 ? 8 : 0)}%`;
   }
+
+  const onboardingSteps = [
+    { label: "Cadastrar apartamentos", done: dados.apartamentos > 0, to: "/dashboard/apartamentos" },
+    { label: "Cadastrar moradores", done: dados.moradores > 0, to: "/dashboard/moradores" },
+    { label: "Cadastrar porteiros", done: dados.porteiros > 0, to: "/dashboard/porteiros" },
+    { label: "Configurar áreas comuns", done: dados.areasComuns > 0, to: "/dashboard/areas-comuns" },
+  ];
+  const onboardingDone = onboardingSteps.filter((step) => step.done).length;
+  const onboardingComplete = onboardingDone === onboardingSteps.length;
     return (
     <div style={styles.container}>
       <div style={styles.hero}>
@@ -181,6 +190,27 @@ function DashboardSindico() {
           <span style={styles.heroStatus}>tempo real</span>
         </div>
       </div>
+
+      {!onboardingComplete && (
+        <section style={styles.onboardingCard}>
+          <div style={styles.onboardingHeader}>
+            <div>
+              <span style={styles.onboardingBadge}>PRIMEIROS PASSOS</span>
+              <h2 style={styles.onboardingTitle}>Configure seu condomínio</h2>
+              <p style={styles.onboardingText}>Complete a estrutura inicial para liberar toda a operação do InfinityCondo.</p>
+            </div>
+            <strong style={styles.onboardingProgress}>{onboardingDone}/{onboardingSteps.length}</strong>
+          </div>
+          <div style={styles.onboardingSteps}>
+            {onboardingSteps.map((step) => (
+              <button key={step.label} style={{...styles.onboardingStep,...(step.done?styles.onboardingStepDone:{})}} onClick={() => navigate(step.to)}>
+                <span style={styles.onboardingCheck}>{step.done ? "✓" : "→"}</span>
+                <span>{step.label}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div style={styles.quickActions}>
         <button
@@ -512,6 +542,16 @@ function ManualItem({ number, title, text }) {
 }
 
 const styles = {
+  onboardingCard: { background: "#fff", border: "1px solid #e9e1f2", borderRadius: "18px", padding: "18px", marginBottom: "18px", boxShadow: "0 12px 34px rgba(59,24,88,.07)" },
+  onboardingHeader: { display: "flex", justifyContent: "space-between", gap: "14px", alignItems: "center", flexWrap: "wrap" },
+  onboardingBadge: { fontSize: "10px", fontWeight: 900, letterSpacing: "1px", color: "#7c3aed" },
+  onboardingTitle: { margin: "5px 0 4px", color: "#31213c", fontSize: "19px" },
+  onboardingText: { margin: 0, color: "#776a80", fontSize: "12px" },
+  onboardingProgress: { width: "54px", height: "54px", borderRadius: "16px", display: "grid", placeItems: "center", background: "linear-gradient(135deg,#5b21b6,#7c3aed)", color: "#fff", fontSize: "16px" },
+  onboardingSteps: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: "10px", marginTop: "14px" },
+  onboardingStep: { border: "1px solid #e5ddee", background: "#faf8fc", borderRadius: "12px", padding: "11px 12px", display: "flex", alignItems: "center", gap: "9px", color: "#4a3b55", fontWeight: 800, cursor: "pointer", textAlign: "left" },
+  onboardingStepDone: { background: "#f0fdf4", borderColor: "#bbf7d0", color: "#166534" },
+  onboardingCheck: { width: "24px", height: "24px", borderRadius: "8px", display: "grid", placeItems: "center", background: "#ede9fe", color: "#6d28d9", fontWeight: 900 },
   container: {
     width: "100%",
     fontFamily: "Arial",

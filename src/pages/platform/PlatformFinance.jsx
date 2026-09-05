@@ -5,6 +5,10 @@ import {
 } from "react";
 
 import authApi from "../../Services/authApi.js";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import platformApi from "../../Services/platformApi.js";
 
 import {
@@ -97,6 +101,11 @@ function PlatformFinance() {
   const [
     charges,
     setCharges,
+  ] = useState([]);
+
+  const [
+    allCharges,
+    setAllCharges,
   ] = useState([]);
 
   const [
@@ -209,6 +218,7 @@ function PlatformFinance() {
       const [
         statistics,
         condominiumResponse,
+        platformCharges,
       ] = await Promise.all([
         platformApi.finance
           .chargeStatistics(),
@@ -216,6 +226,7 @@ function PlatformFinance() {
           .list(
             "?limit=100&sortBy=name&sortOrder=asc"
           ),
+        platformApi.finance.allCharges(),
       ]);
 
       const fallbackItems =
@@ -232,6 +243,7 @@ function PlatformFinance() {
             );
 
       setStats(statistics);
+      setAllCharges(Array.isArray(platformCharges) ? platformCharges : []);
       setCondominiums(
         Array.isArray(
           fallbackItems
@@ -596,6 +608,75 @@ function PlatformFinance() {
     }
   }
 
+
+  const executive = useMemo(() => {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthCharges = allCharges.filter((item) => new Date(item.paidAt ?? item.createdAt ?? item.dueDate) >= monthStart);
+    const paid = allCharges.filter((item) => item.status === "PAID");
+    const pending = allCharges.filter((item) => item.status === "PENDING");
+    const overdue = allCharges.filter((item) => item.status === "OVERDUE");
+    const sum = (list) => list.reduce((acc, item) => acc + Number(item.amountInCents ?? 0), 0);
+    const activeClients = condominiums.filter((item) => ["ACTIVE", "TRIAL"].includes(item.status)).length;
+    const revenueMonth = sum(monthCharges.filter((item) => item.status === "PAID"));
+    const totalPaid = sum(paid);
+    const totalPending = sum(pending);
+    const totalOverdue = sum(overdue);
+    const ticket = activeClients ? Math.round((totalPaid || revenueMonth) / activeClients) : 0;
+    return { revenueMonth, totalPaid, totalPending, totalOverdue, activeClients, ticket };
+  }, [allCharges, condominiums]);
+
+  const monthlyChart = useMemo(() => {
+    const months = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i -= 1) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({ key: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`, name: d.toLocaleDateString("pt-BR", { month: "short" }), recebido: 0, pendente: 0 });
+    }
+    const map = new Map(months.map((m) => [m.key, m]));
+    allCharges.forEach((item) => {
+      const d = new Date(item.paidAt ?? item.createdAt ?? item.dueDate);
+      if (Number.isNaN(d.getTime())) return;
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+      const row = map.get(key); if (!row) return;
+      if (item.status === "PAID") row.recebido += Number(item.amountInCents ?? 0);
+      if (["PENDING","OVERDUE"].includes(item.status)) row.pendente += Number(item.amountInCents ?? 0);
+    });
+    return months;
+  }, [allCharges]);
+
+  function exportExecutivePdf() {
+    const doc = new jsPDF();
+    doc.setFontSize(18); doc.text("InfinityCondo — Financeiro Star", 14, 18);
+    doc.setFontSize(10); doc.text(`Emitido em ${new Date().toLocaleString("pt-BR")}`, 14, 25);
+    autoTable(doc, { startY: 31, head: [["Indicador","Valor"]], body: [
+      ["Receita recebida no mês", money(executive.revenueMonth)],
+      ["Receita recebida acumulada", money(executive.totalPaid)],
+      ["Pendente", money(executive.totalPending)],
+      ["Inadimplência", money(executive.totalOverdue)],
+      ["Clientes ativos", String(executive.activeClients)],
+      ["Ticket médio estimado", money(executive.ticket)],
+    ]});
+    autoTable(doc, { startY: (doc.lastAutoTable?.finalY ?? 70) + 8, head: [["Cliente","Vencimento","Status","Valor","Plano"]], body: allCharges.map((item) => [item.condominium?.name ?? "-", dateLabel(item.dueDate), STATUS_LABELS[item.status] ?? item.status, money(item.amountInCents), item.subscription?.plan?.name ?? "-"]) });
+    doc.save(`financeiro-star-${new Date().toISOString().slice(0,10)}.pdf`);
+  }
+
+  function exportExecutiveExcel() {
+    const wb = XLSX.utils.book_new();
+    const summary = XLSX.utils.json_to_sheet([
+      { Indicador: "Receita recebida no mês", Valor: executive.revenueMonth / 100 },
+      { Indicador: "Receita recebida acumulada", Valor: executive.totalPaid / 100 },
+      { Indicador: "Pendente", Valor: executive.totalPending / 100 },
+      { Indicador: "Inadimplência", Valor: executive.totalOverdue / 100 },
+      { Indicador: "Clientes ativos", Valor: executive.activeClients },
+      { Indicador: "Ticket médio estimado", Valor: executive.ticket / 100 },
+    ]);
+    const rows = allCharges.map((item) => ({ Cliente: item.condominium?.name ?? "", Plano: item.subscription?.plan?.name ?? "", Status: STATUS_LABELS[item.status] ?? item.status, Vencimento: dateLabel(item.dueDate), Valor: Number(item.amountInCents ?? 0) / 100, PagoEm: dateLabel(item.paidAt), Provedor: item.provider ?? "" }));
+    XLSX.utils.book_append_sheet(wb, summary, "Resumo");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "Cobranças");
+    XLSX.writeFile(wb, `financeiro-star-${new Date().toISOString().slice(0,10)}.xlsx`);
+  }
+
   if (loading) {
     return (
       <PlatformLoading text="Carregando financeiro..." />
@@ -607,14 +688,13 @@ function PlatformFinance() {
       <PlatformPageHeader
         eyebrow="OWNER ONLY"
         title="Financeiro da Star Infinity Code"
-        description="Cobranças, PIX e boleto processados pelo backend. A integração externa depende das credenciais do Mercado Pago no ambiente."
+        description="Gestão executiva de cobranças, recebimentos, PIX, boleto e indicadores financeiros da Star Infinity Code."
         action={
-          <PlatformButton
-            variant="secondary"
-            onClick={loadBase}
-          >
-            Atualizar
-          </PlatformButton>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <PlatformButton variant="secondary" onClick={exportExecutivePdf}>Exportar PDF</PlatformButton>
+            <PlatformButton variant="secondary" onClick={exportExecutiveExcel}>Exportar Excel</PlatformButton>
+            <PlatformButton variant="secondary" onClick={loadBase}>Atualizar</PlatformButton>
+          </div>
         }
       />
 
@@ -628,7 +708,22 @@ function PlatformFinance() {
         </div>
       )}
 
-      <div style={styles.statsGrid}>
+      <div style={styles.executiveGrid}>
+        <PlatformCard><span style={styles.label}>Receita no mês</span><strong style={styles.executiveValue}>{money(executive.revenueMonth)}</strong><small style={styles.miniLabel}>recebido</small></PlatformCard>
+        <PlatformCard><span style={styles.label}>Pendente</span><strong style={styles.executiveValue}>{money(executive.totalPending)}</strong><small style={styles.miniLabel}>a receber</small></PlatformCard>
+        <PlatformCard><span style={styles.label}>Inadimplência</span><strong style={{...styles.executiveValue,color:executive.totalOverdue>0?"#b91c1c":"#4c1d95"}}>{money(executive.totalOverdue)}</strong><small style={styles.miniLabel}>vencido</small></PlatformCard>
+        <PlatformCard><span style={styles.label}>Clientes ativos</span><strong style={styles.executiveValue}>{executive.activeClients}</strong><small style={styles.miniLabel}>carteira atual</small></PlatformCard>
+        <PlatformCard><span style={styles.label}>Ticket médio</span><strong style={styles.executiveValue}>{money(executive.ticket)}</strong><small style={styles.miniLabel}>estimado</small></PlatformCard>
+      </div>
+
+      <PlatformCard style={{ marginTop: 18 }}>
+        <div style={styles.sectionHeader}><div><h3 style={styles.sectionTitle}>Evolução financeira</h3><p style={styles.help}>Recebimentos e valores em aberto nos últimos seis meses.</p></div></div>
+        <div style={{ height: 280, marginTop: 12 }}>
+          <ResponsiveContainer width="100%" height="100%"><BarChart data={monthlyChart}><CartesianGrid strokeDasharray="3 3" vertical={false}/><XAxis dataKey="name"/><YAxis tickFormatter={(v)=>`R$${Math.round(v/100)}`}/><Tooltip formatter={(v)=>money(v)}/><Bar dataKey="recebido" name="Recebido" fill="#6d28d9" radius={[6,6,0,0]}/><Bar dataKey="pendente" name="Pendente" fill="#c4b5fd" radius={[6,6,0,0]}/></BarChart></ResponsiveContainer>
+        </div>
+      </PlatformCard>
+
+      <div style={{...styles.statsGrid, marginTop: 18}}>
         {Object.entries(
           stats ?? {}
         ).map(
@@ -848,7 +943,7 @@ function PlatformFinance() {
 
         {methodType === "BOLETO" && (
           <p style={styles.warning}>
-            Para boleto, o cadastro do condomínio precisa possuir e-mail, CEP, rua, número, bairro, cidade e estado. O backend valida esses dados antes de chamar o Mercado Pago.
+            Para boleto, o cadastro do condomínio precisa possuir e-mail, CEP, rua, número, bairro, cidade e estado. Esses dados são validados antes da emissão do boleto.
           </p>
         )}
       </PlatformCard>
@@ -1135,6 +1230,8 @@ function PlatformFinance() {
 }
 
 const styles = {
+  executiveGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: "14px" },
+  executiveValue: { display: "block", marginTop: "9px", color: "#4c1d95", fontSize: "23px" },
   statsGrid: {
     display: "grid",
     gridTemplateColumns:

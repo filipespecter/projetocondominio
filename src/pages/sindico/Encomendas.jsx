@@ -1,3 +1,4 @@
+import { confirmDialog, promptDialog } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useState } from "react";
 import packageApi from "../../Services/packageApi.js";
 
@@ -130,6 +131,7 @@ function Encomendas() {
         item.receivedAt
           ? new Date(item.receivedAt).toLocaleDateString("pt-BR")
           : "",
+      receivedAtRaw: item.receivedAt ?? item.createdAt ?? null,
       retiradaEm:
         item.deliveredAt
           ? new Date(item.deliveredAt).toLocaleString("pt-BR")
@@ -245,7 +247,14 @@ function Encomendas() {
       (e) => e.status === "Entregue"
     );
 
-  const atrasadas = [];
+  const LIMITE_ATRASO_DIAS = 3;
+  const agora = Date.now();
+  const atrasadas = encomendas.filter((e) => {
+    if (e.status !== "Recebido" || !e.receivedAtRaw) return false;
+    const recebidoEm = new Date(e.receivedAtRaw).getTime();
+    if (Number.isNaN(recebidoEm)) return false;
+    return agora - recebidoEm >= LIMITE_ATRASO_DIAS * 24 * 60 * 60 * 1000;
+  });
 
   function limparCodigo(valor) {
     return normalizarCodigo(valor);
@@ -349,7 +358,7 @@ function Encomendas() {
     try {
       if (status === "Entregue") {
         const retiradoPor =
-          window.prompt(
+          await promptDialog(
             "Nome de quem retirou a encomenda:"
           );
 
@@ -368,7 +377,7 @@ function Encomendas() {
 
       if (status === "Atrasado") {
         alert(
-          "O backend não possui status manual de atraso. A encomenda permanece como Recebido até a retirada."
+          "Encomendas recebidas há 3 dias ou mais são sinalizadas automaticamente como atrasadas até a retirada."
         );
       }
     } catch (error) {
@@ -392,7 +401,7 @@ function Encomendas() {
 
   async function excluirEncomenda(id) {
     if (
-      !window.confirm(
+      !await confirmDialog(
         "Deseja excluir este registro?"
       )
     ) {

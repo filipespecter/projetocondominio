@@ -45,6 +45,11 @@ class ChargeService {
     return date;
   }
 
+
+  async findAllPlatform() {
+    return chargeRepository.findAllPlatform();
+  }
+
   async findById(id) {
     const charge =
       await chargeRepository

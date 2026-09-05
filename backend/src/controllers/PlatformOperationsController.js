@@ -1,6 +1,7 @@
 import JobRegistryService from "../services/JobRegistryService.js";
 import SchedulerService from "../services/SchedulerService.js";
 import BackupService from "../services/BackupService.js";
+import HomologationService from "../services/HomologationService.js";
 import { ApiError } from "../utils/ApiError.js";
 
 class PlatformOperationsController {
@@ -157,6 +158,25 @@ class PlatformOperationsController {
     } catch (error) {
       return next(error);
     }
+  }
+
+
+  async databaseStatistics(req, res, next) {
+    try {
+      const data = await HomologationService.statistics(req.user);
+      return res.status(200).json({ success: true, message: "Estatísticas do ambiente carregadas.", data });
+    } catch (error) { return next(error); }
+  }
+
+  async resetHomologation(req, res, next) {
+    try {
+      const data = await HomologationService.reset({
+        phrase: req.body?.phrase,
+        user: req.user,
+        requestContext: { requestId: req.requestId ?? null, ipAddress: req.ip ?? null, userAgent: req.get?.("user-agent") ?? null },
+      });
+      return res.status(200).json({ success: true, message: "Ambiente de homologação zerado com sucesso.", data });
+    } catch (error) { return next(error); }
   }
 
   async backups(

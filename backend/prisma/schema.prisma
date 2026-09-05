@@ -219,6 +219,21 @@ enum SupportSessionStatus {
   EXPIRED
 }
 
+enum SupportTicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_CUSTOMER
+  RESOLVED
+  CLOSED
+}
+
 enum CommunicationChannel {
   WHATSAPP
   EMAIL
@@ -379,6 +394,7 @@ model Condominium {
   providerAccesses  ProviderAccess[]
   operationalRecords OperationalRecord[]
   supportSessions   SupportSession[]
+  supportTickets    SupportTicket[]
   communicationLogs CommunicationLog[]
   jobExecutions     JobExecution[]
   systemEvents      SystemEvent[]
@@ -487,6 +503,8 @@ model User {
   approvedCondominiums Condominium[] @relation("CondominiumApprovedBy")
   rejectedCondominiums Condominium[] @relation("CondominiumRejectedBy")
   supportSessions      SupportSession[] @relation("SupportSessionPlatformAdmin")
+  openedSupportTickets SupportTicket[] @relation("SupportTicketOpenedBy")
+  assignedSupportTickets SupportTicket[] @relation("SupportTicketAssignedTo")
   communicationsReceived CommunicationLog[] @relation("CommunicationRecipient")
   createdBackups       BackupRecord[] @relation("BackupCreatedBy")
   operationalRecordsCreated OperationalRecord[] @relation("OperationalRecordCreatedBy")
@@ -1142,6 +1160,36 @@ model SupportSession {
   @@index([condominiumId, status])
   @@index([requestId])
   @@index([startedAt])
+}
+
+model SupportTicket {
+  id String @id @default(uuid()) @db.Uuid
+  condominiumId String @db.Uuid
+  openedByUserId String @db.Uuid
+  assignedToUserId String? @db.Uuid
+
+  ticketNumber Int @unique @default(autoincrement())
+  title String
+  description String
+  category String
+  priority SupportTicketPriority @default(MEDIUM)
+  status SupportTicketStatus @default(OPEN)
+  resolution String?
+  metadata Json?
+  openedAt DateTime @default(now())
+  firstResponseAt DateTime?
+  resolvedAt DateTime?
+  closedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  condominium Condominium @relation(fields: [condominiumId], references: [id], onDelete: Restrict)
+  openedBy User @relation("SupportTicketOpenedBy", fields: [openedByUserId], references: [id], onDelete: Restrict)
+  assignedTo User? @relation("SupportTicketAssignedTo", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+
+  @@index([condominiumId, status, openedAt])
+  @@index([priority, status, openedAt])
+  @@index([assignedToUserId, status])
 }
 
 model CommunicationLog {

@@ -139,6 +139,18 @@ platformCondominiumRoutes.post(
     )
 );
 
+
+/**
+ * Upgrade/downgrade de cliente já aprovado.
+ */
+platformCondominiumRoutes.patch(
+  "/:id/plan",
+  platformManagementMiddleware,
+  (req, res, next) =>
+    PlatformCondominiumController.changePlan(req, res, next)
+);
+
+
 /**
  * Ficha completa.
  *

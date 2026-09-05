@@ -1,3 +1,4 @@
+import { confirmDialog, promptDialog } from "../../components/GlobalDialogs.jsx";
 import {
   useEffect,
   useState,
@@ -426,7 +427,7 @@ function Reservas() {
         status === "recusada"
       ) {
         const motivo =
-          window.prompt(
+          await promptDialog(
             "Informe o motivo da recusa:"
           );
 
@@ -476,7 +477,7 @@ function Reservas() {
 
   async function excluirReserva(id) {
     if (
-      !window.confirm(
+      !await confirmDialog(
         "Deseja excluir esta reserva?"
       )
     ) {

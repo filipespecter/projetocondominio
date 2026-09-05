@@ -143,6 +143,22 @@ class AuditLogController {
     }
   }
 
+  async reportExport(req, res, next) {
+    try {
+      const { type, title, period } = req.body ?? {};
+      const data = await AuditLogService.logCreate({
+        condominiumId: req.user.condominiumId,
+        user: req.user,
+        module: "REPORT_EXPORT",
+        referenceId: null,
+        afterData: { type, title, period, exportedAt: new Date().toISOString() },
+        details: `Relatório exportado em ${type ?? "ARQUIVO"}: ${title ?? "Relatório"}. Período: ${period ?? "-"}.`,
+        requestContext: { requestId: req.requestId ?? null, ipAddress: req.ip ?? null, userAgent: req.get?.("user-agent") ?? null },
+      });
+      return res.status(201).json({ success: true, data });
+    } catch (error) { return next(error); }
+  }
+
   /**
    * =====================================================
    * BUSCA POR ID

@@ -1,3 +1,4 @@
+import { confirmDialog } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useState } from "react";
 import doormanApi from "../../Services/doormanApi";
 
@@ -131,7 +132,7 @@ function Porteiros() {
   }
 
   async function excluirPorteiro(id) {
-    if (!window.confirm("Deseja realmente excluir este porteiro?")) return;
+    if (!await confirmDialog("Deseja realmente excluir este porteiro?")) return;
     try { await doormanApi.remove(id); await carregar(); }
     catch (error) { alert(error?.message ?? "Não foi possível excluir o porteiro."); }
   }

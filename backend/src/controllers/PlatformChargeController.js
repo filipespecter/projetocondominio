@@ -1,6 +1,13 @@
 import ChargeService from "../services/ChargeService.js";
 
 class PlatformChargeController {
+  async index(req, res, next) {
+    try {
+      const result = await ChargeService.findAllPlatform();
+      return res.status(200).json({ success: true, message: "Cobranças da plataforma carregadas com sucesso.", data: result });
+    } catch (error) { return next(error); }
+  }
+
   getRequestContext(req) {
     return {
       requestId: req.requestId ?? null,

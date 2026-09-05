@@ -20,6 +20,7 @@ import dashboardRoutes from "./dashboard.routes.js";
 import analyticsRoutes from "./analytics.routes.js";
 import configurationRoutes from "./configuration.routes.js";
 import expenseRoutes from "./expense.routes.js";
+import supportTicketRoutes from "./support-ticket.routes.js";
 
 import platformDashboardRoutes from "./platform-dashboard.routes.js";
 import platformCondominiumRoutes from "./platform-condominium.routes.js";
@@ -175,6 +176,8 @@ router.use(
 );
 
 
+
+router.use("/v1/support-tickets", supportTicketRoutes);
 
 /**
  * =====================================================

@@ -1,0 +1,15 @@
+INFINITYCONDO - HOTFIX 38 TESTES - 2026-09-05
+
+Correcoes incrementais sobre a FUSAO FINAL DO PILOTO:
+1. PlanService garante catalogo BASICO/COMPLETO e PlanFeature em runtime.
+2. Dashboard Central exclui REJECTED/CANCELED do total principal.
+3. Central permite vincular/trocar plano de cliente aprovado.
+4. Upgrade/downgrade preserva datas do ciclo atual e dados existentes.
+5. Mudanca de plano gera auditoria.
+
+Validacao feita na copia da fusao:
+- backend npm test: 38 testes / 38 pass / 0 fail
+- ESLint frontend src: 0 erros
+- node --check nos arquivos backend alterados: OK
+
+Depois de aplicar, reconstruir containers e repetir testes/lint/build.

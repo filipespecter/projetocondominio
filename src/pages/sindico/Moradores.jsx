@@ -1,3 +1,4 @@
+import { confirmDialog } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useState } from "react";
 import apartmentApi from "../../Services/apartmentApi";
 import residentApi from "../../Services/residentApi";
@@ -140,7 +141,7 @@ function Moradores() {
   }
 
   async function excluirMorador(id) {
-    if (!window.confirm("Deseja realmente excluir este morador?")) return;
+    if (!await confirmDialog("Deseja realmente excluir este morador?")) return;
     try { await residentApi.remove(id); await carregar(); }
     catch (error) { alert(error?.message ?? "Não foi possível excluir o morador."); }
   }

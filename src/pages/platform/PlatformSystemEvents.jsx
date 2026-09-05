@@ -126,7 +126,7 @@ function PlatformSystemEvents() {
       <PlatformPageHeader
         eyebrow="OPERAÇÃO"
         title="Eventos do sistema"
-        description="Eventos técnicos registrados pelo backend."
+        description="Eventos técnicos e operacionais registrados pela plataforma."
       />
 
       <PlatformError message={error} />

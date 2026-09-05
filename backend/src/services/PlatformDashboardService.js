@@ -136,6 +136,9 @@ class PlatformDashboardService {
     ] = await Promise.all([
       prisma.condominium.count({
         where: {
+          status: {
+            in: ["PENDING", "TRIAL", "ACTIVE", "SUSPENDED"],
+          },
           deletedAt: null,
         },
       }),

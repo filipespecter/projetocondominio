@@ -1,3 +1,4 @@
+import { confirmDialog } from "../../components/GlobalDialogs.jsx";
 import {
   useEffect,
   useState,
@@ -244,7 +245,7 @@ function ReservasMorador() {
 
   async function cancelarReserva(id) {
     if (
-      !window.confirm(
+      !await confirmDialog(
         "Deseja cancelar esta reserva?"
       )
     ) {

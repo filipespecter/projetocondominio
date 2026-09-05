@@ -96,6 +96,15 @@ const platformApi = {
         )
       );
     },
+
+    async changePlan(id, planId) {
+      return dataOf(
+        await api.patch(
+          `/v1/platform/condominiums/${id}/plan`,
+          { planId }
+        )
+      );
+    },
   },
 
   users: {
@@ -298,6 +307,10 @@ const platformApi = {
   },
 
   support: {
+    async tickets(params = "") { return dataOf(await api.get(`/v1/platform/support/tickets${params}`)) ?? []; },
+    async ticketStatistics() { return dataOf(await api.get("/v1/platform/support/tickets/statistics")); },
+    async updateTicket(id, payload) { return dataOf(await api.patch(`/v1/platform/support/tickets/${id}`, payload)); },
+
     async current() {
       return dataOf(
         await api.get(
@@ -334,6 +347,9 @@ const platformApi = {
   },
 
   operations: {
+    async databaseStatistics() { return dataOf(await api.get("/v1/platform/operations/database/statistics")); },
+    async resetHomologation(phrase) { return dataOf(await api.post("/v1/platform/operations/database/reset-homologation", { phrase })); },
+
     async jobs() {
       return dataOf(
         await api.get(
@@ -397,6 +413,8 @@ const platformApi = {
   },
 
   finance: {
+    async allCharges() { return listOf(await api.get("/v1/platform/charges")); },
+
     async chargeStatistics() {
       return dataOf(
         await api.get(

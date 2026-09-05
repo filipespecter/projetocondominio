@@ -2,12 +2,93 @@ import BaseService from "./BaseService.js";
 import AuditLogService from "./AuditLogService.js";
 
 import planRepository from "../repositories/PlanRepository.js";
+import prisma from "../config/prisma.js";
 
 import { ApiError } from "../utils/ApiError.js";
 
 class PlanService extends BaseService {
   constructor() {
     super(planRepository);
+  }
+
+
+  /**
+   * Garante os planos comerciais oficiais e a matriz de recursos em tempo de execução.
+   */
+  async ensureDefaultCatalog() {
+    const plans = [
+      {
+        name: "Plano Básico",
+        code: "BASICO",
+        description: "Operação essencial do condomínio.",
+        monthlyPriceInCents: 25000,
+        billingCycle: "MONTHLY",
+        active: true,
+        displayOrder: 1,
+      },
+      {
+        name: "Plano Completo",
+        code: "COMPLETO",
+        description: "Operação completa com financeiro, BI, comprovantes e automações premium.",
+        monthlyPriceInCents: 35000,
+        billingCycle: "MONTHLY",
+        active: true,
+        displayOrder: 2,
+      },
+    ];
+
+    const savedPlans = {};
+    for (const plan of plans) {
+      savedPlans[plan.code] = await prisma.plan.upsert({
+        where: { code: plan.code },
+        update: { ...plan, deletedAt: null },
+        create: plan,
+      });
+    }
+
+    const featureDefinitions = [
+      ["EXPENSES", "Controle de despesas", "Cadastro, categorias e gestão financeira básica"],
+      ["EXPENSE_EXPORT", "Exportação financeira", "PDF e planilha do financeiro"],
+      ["PACKAGE_PROOF", "Comprovante de encomenda", "Foto opcional na retirada"],
+      ["ADVANCED_REPORTS", "Relatórios avançados", "Relatórios e exportações avançadas"],
+      ["BI_DASHBOARD", "BI e indicadores", "Dashboards e análises avançadas"],
+      ["WHATSAPP", "WhatsApp automático", "Comunicações automáticas por WhatsApp"],
+      ["AI_ASSISTANT", "IA Star", "Assistente inteligente futuro"],
+    ];
+
+    const savedFeatures = {};
+    for (const [code, name, description] of featureDefinitions) {
+      savedFeatures[code] = await prisma.feature.upsert({
+        where: { code },
+        update: { name, description, active: true, deletedAt: null },
+        create: { code, name, description, active: true, valueType: "BOOLEAN" },
+      });
+    }
+
+    const completeFeatures = Object.keys(savedFeatures);
+    for (const [planCode, enabledCodes] of [
+      ["BASICO", []],
+      ["COMPLETO", completeFeatures],
+    ]) {
+      for (const [featureCode, feature] of Object.entries(savedFeatures)) {
+        await prisma.planFeature.upsert({
+          where: {
+            planId_featureId: {
+              planId: savedPlans[planCode].id,
+              featureId: feature.id,
+            },
+          },
+          update: { enabled: enabledCodes.includes(featureCode) },
+          create: {
+            planId: savedPlans[planCode].id,
+            featureId: feature.id,
+            enabled: enabledCodes.includes(featureCode),
+          },
+        });
+      }
+    }
+
+    return savedPlans;
   }
 
   /**
@@ -269,6 +350,7 @@ class PlanService extends BaseService {
    * Lista todos os planos não removidos.
    */
   async findAll() {
+    await this.ensureDefaultCatalog();
     return planRepository.findAll();
   }
 
@@ -276,6 +358,7 @@ class PlanService extends BaseService {
    * Lista somente planos ativos.
    */
   async findActive() {
+    await this.ensureDefaultCatalog();
     return planRepository.findActive();
   }
 

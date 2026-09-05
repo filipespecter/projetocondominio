@@ -1,3 +1,4 @@
+import { confirmDialog } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useState } from "react";
 import apartmentApi from "../../Services/apartmentApi";
 import residentApi from "../../Services/residentApi";
@@ -160,7 +161,7 @@ function Apartamentos() {
   }
 
   async function excluirApartamento(id) {
-    if (!window.confirm("Deseja realmente excluir este apartamento?")) return;
+    if (!await confirmDialog("Deseja realmente excluir este apartamento?")) return;
     try {
       await apartmentApi.remove(id);
       await carregar();

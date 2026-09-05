@@ -16,6 +16,12 @@ platformChargeRoutes.use(
   platformOwnerMiddleware
 );
 
+
+platformChargeRoutes.get(
+  "/",
+  (req, res, next) => PlatformChargeController.index(req, res, next)
+);
+
 platformChargeRoutes.get(
   "/statistics",
   (req, res, next) =>
