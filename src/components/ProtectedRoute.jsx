@@ -14,7 +14,7 @@ import authApi, {
 
 function ProtectedRoute({
   children,
-  tipo,
+  tipoPermitido,
 }) {
   const location =
     useLocation();
@@ -51,7 +51,7 @@ function ProtectedRoute({
         if (
           !user ||
           !tipoFrontendAceitaRole(
-            tipo,
+            tipoPermitido,
             user.role
           )
         ) {
@@ -65,7 +65,7 @@ function ProtectedRoute({
         }
 
         if (
-          tipo !== "platform" &&
+          tipoPermitido !== "platform" &&
           !user.condominiumId
         ) {
           authApi.clearAuthTokens();
@@ -98,7 +98,7 @@ function ProtectedRoute({
     return () => {
       mounted = false;
     };
-  }, [tipo]);
+  }, [tipoPermitido]);
 
   if (
     status === "CHECKING"
@@ -125,7 +125,7 @@ function ProtectedRoute({
   ) {
     return (
       <Navigate
-        to={`/login/${tipo}`}
+        to={`/login/${tipoPermitido}`}
         state={{
           from: location,
         }}

@@ -1,0 +1,45 @@
+INFINITYCONDO — PACOTE PILOTO / CENTRAL + MELHORIAS GERAIS
+Star Infinity Code — 04/09/2026
+
+OBJETIVO
+Pacote incremental sobre a versão já validada. Não remove os fluxos antigos aprovados.
+
+PRINCIPAIS AJUSTES
+- Central: dashboard executivo, carteira de clientes, planos, financeiro Star, suporte/SA e banco/homologação.
+- Condomínios: pendências filtradas por status real; ações de cliente aprovado (plano/status/ciclo) sem voltar para fila pendente.
+- Planos: Básico e Completo exibidos/vinculáveis pela Central.
+- Financeiro Star: visão executiva de cobranças/receita e exportações já existentes preservadas.
+- Suporte/SA: abertura pelo cliente e desk da Central com categoria, prioridade, status e organização.
+- Auditoria: repository defensivo para evitar derrubar a Central por relação histórica inconsistente; histórico e soft delete preservados.
+- Banco/Homologação: visão segura, backup e reset protegido apenas fora de produção, com confirmação forte.
+- Busca global e checklist de onboarding para o síndico.
+- Responsividade geral: layouts Central/Síndico/Porteiro/Morador, safe-area iOS, inputs 16px no mobile, toque e grids adaptativos.
+- Textos de desenvolvimento/proxima fase não são exibidos nas novas telas do piloto.
+
+REGRAS PRESERVADAS
+- Login sem código do condomínio.
+- Recuperação de senha por e-mail + código temporário.
+- Primeiro acesso com troca obrigatória de senha.
+- Multi-tenant e proteção de features por plano.
+- Financeiro do condomínio, encomendas, QR/código, comprovante fotográfico, reservas, moradores, porteiros, visitantes, prestadores, avisos, ocorrências e notificações.
+- Mercado Pago/WhatsApp existentes não são removidos.
+- Docker/PostgreSQL/PWA permanecem.
+
+VALIDAÇÃO REALIZADA NESTE PACOTE
+- Backend: 27/27 testes existentes passando.
+- ESLint: 0 erros e 0 warnings após os ajustes.
+- Build local desta sessão não foi concluído por incompatibilidade do binding nativo do Rolldown no ambiente Linux desta ferramenta; valide no Docker do projeto com npm run build, como nas atualizações anteriores.
+
+APLICAÇÃO
+1) Extraia este ZIP sobre C:\Users\Filipe Fernandes\Desktop\projetocondominio com -Force.
+2) docker compose up -d --build
+3) docker compose exec backend npm run prisma:deploy
+4) docker compose exec backend node prisma/seed.js
+5) docker compose exec backend npm test
+6) docker compose exec frontend npm run lint
+7) docker compose exec frontend npm run build
+
+IMPORTANTE
+- Não use docker compose down -v.
+- Não execute npm audit fix automaticamente.
+- O reset de homologação deve permanecer bloqueado em produção.

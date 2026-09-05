@@ -96,6 +96,7 @@ class PlatformAuditService {
         query.search,
       startDate,
       endDate,
+      includeDeleted: query.includeDeleted === "true",
     };
 
     const { items, total } =
@@ -219,6 +220,14 @@ class PlatformAuditService {
         normalized,
       auditLogs,
     };
+  }
+
+
+  async archive(id, platformUser, reason = null) {
+    if (platformUser?.role !== "PLATFORM_OWNER") throw new ApiError("Somente o proprietário da plataforma pode apagar registros da visualização da auditoria.",403);
+    const log = await PlatformAuditRepository.findById(id);
+    if (!log || log.deletedAt) throw new ApiError("Registro de auditoria não encontrado.",404);
+    return PlatformAuditRepository.softDelete(id, platformUser.id, String(reason ?? "").trim() || "Removido da visualização pelo proprietário da plataforma.");
   }
 
   async statistics() {

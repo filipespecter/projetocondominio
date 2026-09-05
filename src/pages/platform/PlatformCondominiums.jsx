@@ -67,7 +67,7 @@ function PlatformCondominiums() {
         platformApi.condominiums
           .pending(),
         platformApi.plans
-          .active(),
+          .list(),
       ]);
 
       setItems(
@@ -125,7 +125,7 @@ function PlatformCondominiums() {
       username: baseUsername,
       password: "",
       passwordConfirmation: "",
-      dueDay: 10,
+      gracePeriodDays: 5,
       initialStatus: "ACTIVE",
       billingCycle: activePlan.billingCycle ?? "MONTHLY",
       priceInCents: activePlan.monthlyPriceInCents ?? 0,
@@ -163,12 +163,11 @@ function PlatformCondominiums() {
         approvalTarget.id,
         {
           ...approvalForm,
-          dueDay: Number(approvalForm.dueDay),
+          gracePeriodDays: Number(approvalForm.gracePeriodDays),
           priceInCents: Number(approvalForm.priceInCents),
         }
       );
       setApprovedAccess({
-        condominiumCode: result?.condominium?.code ?? approvalTarget.code,
         username: result?.administrator?.username ?? approvalForm.username,
         password: approvalForm.password,
       });
@@ -369,14 +368,17 @@ function PlatformCondominiums() {
               <div style={styles.modalBody}>
                 <div style={styles.successBox}>
                   <strong>Acesso liberado com sucesso.</strong>
-                  <span>Código: {approvedAccess.condominiumCode ?? "-"}</span>
                   <span>Usuário: {approvedAccess.username}</span>
                   <span>Senha temporária: {approvedAccess.password}</span>
-                  <small>Entregue estas credenciais ao síndico. No primeiro acesso a troca de senha é obrigatória.</small>
+                  <small>Entregue usuário e senha temporária ao síndico. O login não exige código do condomínio e, no primeiro acesso, a troca de senha é obrigatória.</small>
                 </div>
               </div>
             ) : (
               <div style={styles.modalBody}>
+                <div style={styles.billingNotice}>
+                  <strong>Ciclo individual de cobrança</strong>
+                  <span>O dia em que você confirmar a aprovação será o primeiro dia da assinatura. A próxima cobrança será calculada automaticamente um ciclo depois.</span>
+                </div>
                 <div style={styles.formGrid}>
                   <label style={styles.field}><span style={styles.label}>Plano *</span>
                     <select style={styles.input} value={approvalForm.planId} onChange={(e) => {
@@ -391,7 +393,7 @@ function PlatformCondominiums() {
                     <select style={styles.input} value={approvalForm.initialStatus} onChange={(e)=>updateApproval("initialStatus",e.target.value)}><option value="ACTIVE">Ativo</option><option value="TRIAL">Teste</option></select>
                   </label>
                   <label style={styles.field}><span style={styles.label}>Usuário *</span><input style={styles.input} value={approvalForm.username} onChange={(e)=>updateApproval("username",e.target.value)} required minLength={3}/></label>
-                  <label style={styles.field}><span style={styles.label}>Dia do vencimento *</span><input style={styles.input} type="number" min="1" max="31" value={approvalForm.dueDay} onChange={(e)=>updateApproval("dueDay",e.target.value)} required/></label>
+                  <label style={styles.field}><span style={styles.label}>Tolerância após vencimento (dias)</span><input style={styles.input} type="number" min="0" max="30" value={approvalForm.gracePeriodDays} onChange={(e)=>updateApproval("gracePeriodDays",e.target.value)}/></label>
                   <label style={styles.field}><span style={styles.label}>Senha temporária *</span><input style={styles.input} type="password" value={approvalForm.password} onChange={(e)=>updateApproval("password",e.target.value)} required minLength={8}/></label>
                   <label style={styles.field}><span style={styles.label}>Confirmar senha *</span><input style={styles.input} type="password" value={approvalForm.passwordConfirmation} onChange={(e)=>updateApproval("passwordConfirmation",e.target.value)} required minLength={8}/></label>
                   <label style={styles.field}><span style={styles.label}>Administrador *</span><input style={styles.input} value={approvalForm.adminName} onChange={(e)=>updateApproval("adminName",e.target.value)} required/></label>
@@ -576,6 +578,18 @@ const styles = {
     padding: "22px",
   },
 
+  billingNotice: {
+    display: "grid",
+    gap: "6px",
+    padding: "14px 16px",
+    marginBottom: "16px",
+    borderRadius: "16px",
+    background: "linear-gradient(135deg, rgba(124,58,237,0.10), rgba(168,85,247,0.06))",
+    border: "1px solid rgba(124,58,237,0.18)",
+    color: "#4c1d95",
+    fontSize: "13px",
+    lineHeight: 1.45,
+  },
   formGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))",

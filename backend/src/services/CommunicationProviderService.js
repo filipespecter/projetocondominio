@@ -1,4 +1,5 @@
 import WhatsAppProvider from "./providers/WhatsAppProvider.js";
+import EmailProvider from "./providers/EmailProvider.js";
 import { ApiError } from "../utils/ApiError.js";
 
 class CommunicationProviderService {
@@ -62,14 +63,8 @@ class CommunicationProviderService {
       return WhatsAppProvider;
     }
 
-    if (
-      normalizedChannel ===
-      "EMAIL"
-    ) {
-      throw new ApiError(
-        "Provider de e-mail ainda não configurado.",
-        501
-      );
+    if (normalizedChannel === "EMAIL") {
+      return EmailProvider;
     }
 
     throw new ApiError(

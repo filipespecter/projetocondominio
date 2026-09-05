@@ -1,0 +1,42 @@
+INFINITYCONDO — CENTRAL CLIENTES + LOGIN SEM CÓDIGO + CICLO INDIVIDUAL
+Star Infinity Code
+
+Atualizações deste pacote:
+
+1) LOGIN
+- Remove o código do condomínio da tela de login.
+- Login passa a usar usuário OU e-mail + senha.
+- O portal selecionado (síndico, porteiro, morador ou Central) restringe os perfis aceitos.
+- Caso exista identificador duplicado, o backend recusa a ambiguidade em vez de escolher uma conta errada.
+
+2) RECUPERAÇÃO DE SENHA
+- Continua por e-mail cadastrado.
+- Código temporário de 6 dígitos continua sendo o único código apresentado ao usuário.
+- Não solicita código do condomínio.
+
+3) CENTRAL > CLIENTES
+- Nova rota /platform/clientes.
+- Menu Clientes na Central.
+- Busca por condomínio, responsável, e-mail, telefone e endereço.
+- Filtros por status e plano.
+- Cards: clientes ativos, Básico, Completo, receita mensal estimada e novos no mês.
+- Ficha do cliente: endereço, contato principal, administrador, usuários, último acesso, plano, tempo ativo, valor, próxima cobrança e tolerância.
+
+4) CICLO INDIVIDUAL DE COBRANÇA
+- A confirmação da aprovação vira o primeiro instante da assinatura.
+- Próxima cobrança = um ciclo após a ativação, preservando o dia do calendário quando possível.
+- Não existe mais campo obrigatório de “dia do vencimento” na aprovação.
+- Ex.: ativado em 05/09 -> próxima cobrança mensal em 05/10.
+- Meses sem o mesmo dia usam o último dia válido do mês.
+- Tolerância após vencimento configurável de 0 a 30 dias; padrão visual 5 dias.
+
+5) COMPATIBILIDADE
+- Mantém as atualizações anteriores de autenticação, planos/features, auditoria, backup, financeiro e comprovantes contidas no pacote-base.
+- Não cria nova migration: os campos de assinatura necessários já existem no schema atual.
+
+VALIDAÇÃO APÓS APLICAR:
+1. docker compose up -d --build
+2. docker compose exec backend npm test
+3. docker compose exec frontend npm run lint
+4. docker compose exec frontend npm run build
+5. testar manualmente login sem código, recuperação, Central > Clientes e aprovação de novo condomínio.

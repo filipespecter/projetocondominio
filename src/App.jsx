@@ -35,6 +35,7 @@ import Relatorios from "./pages/sindico/Relatorios";
 import BIAnalytics from "./pages/sindico/BIAnalytics";
 import BIMonitor from "./pages/sindico/BIMonitor";
 import Configuracoes from "./pages/sindico/Configuracoes";
+import Financeiro from "./pages/sindico/Financeiro";
 
 import DashboardPorteiro from "./pages/porteiro/DashboardPorteiro";
 import EncomendasPorteiro from "./pages/porteiro/EncomendasPorteiro";
@@ -44,6 +45,7 @@ import OcorrenciasPorteiro from "./pages/porteiro/OcorrenciasPorteiro";
 
 import PlatformDashboard from "./pages/platform/PlatformDashboard";
 import PlatformCondominiums from "./pages/platform/PlatformCondominiums";
+import PlatformClients from "./pages/platform/PlatformClients";
 import PlatformUsers from "./pages/platform/PlatformUsers";
 import PlatformPlans from "./pages/platform/PlatformPlans";
 import PlatformFinance from "./pages/platform/PlatformFinance";
@@ -191,6 +193,11 @@ function App() {
           />
 
           <Route
+            path="clientes"
+            element={<PlatformClients />}
+          />
+
+          <Route
             path="usuarios"
             element={<PlatformUsers />}
           />
@@ -248,6 +255,7 @@ function App() {
           <Route path="relatorios" element={<Relatorios />} />
           <Route path="bi-analytics" element={<BIAnalytics />} />
           <Route path="bi-monitor" element={<BIMonitor />} />
+          <Route path="financeiro" element={<Financeiro />} />
           <Route path="configuracoes" element={<Configuracoes />} />
           <Route path="prestadores" element={<Prestadores />} />
         </Route>

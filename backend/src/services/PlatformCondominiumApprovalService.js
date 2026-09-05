@@ -103,6 +103,19 @@ class PlatformCondominiumApprovalService {
     return dueDay;
   }
 
+  normalizeGracePeriod(value) {
+    const days = value === undefined || value === null || value === "" ? 5 : Number(value);
+
+    if (!Number.isInteger(days) || days < 0 || days > 30) {
+      throw new ApiError(
+        "A tolerância após o vencimento deve estar entre 0 e 30 dias.",
+        400
+      );
+    }
+
+    return days;
+  }
+
   lastDayOfMonth(
     year,
     month
@@ -188,10 +201,7 @@ class PlatformCondominiumApprovalService {
     return candidate;
   }
 
-  addBillingCycle(
-    date,
-    billingCycle
-  ) {
+  addBillingCycle(date, billingCycle) {
     const months = {
       MONTHLY: 1,
       QUARTERLY: 3,
@@ -199,28 +209,20 @@ class PlatformCondominiumApprovalService {
       ANNUAL: 12,
     };
 
-    const amount =
-      months[billingCycle];
+    const amount = months[billingCycle];
 
     if (!amount) {
-      throw new ApiError(
-        "Ciclo de cobrança inválido.",
-        400
-      );
+      throw new ApiError("Ciclo de cobrança inválido.", 400);
     }
 
-    const result =
-      new Date(date);
+    const source = new Date(date);
+    const sourceDay = source.getDate();
+    const target = new Date(source);
+    target.setDate(1);
+    target.setMonth(target.getMonth() + amount);
+    target.setDate(Math.min(sourceDay, this.lastDayOfMonth(target.getFullYear(), target.getMonth())));
 
-    const targetMonth =
-      result.getMonth() +
-      amount;
-
-    result.setMonth(
-      targetMonth
-    );
-
-    return result;
+    return target;
   }
 
   async approve(
@@ -310,11 +312,6 @@ class PlatformCondominiumApprovalService {
       );
     }
 
-    const dueDay =
-      this.normalizeDueDay(
-        data.dueDay
-      );
-
     const priceInCents =
       this.normalizePrice(
         data.priceInCents ??
@@ -325,30 +322,12 @@ class PlatformCondominiumApprovalService {
       data.billingCycle ??
       plan.billingCycle;
 
-    const approvedAt =
-      new Date();
-
-    const nextDueDate =
-      this.calculateNextDueDate(
-        approvedAt,
-        dueDay
-      );
-
-    const currentPeriodStart =
-      approvedAt;
-
-    let currentPeriodEnd =
-      this.addBillingCycle(
-        currentPeriodStart,
-        billingCycle
-      );
-
-    currentPeriodEnd =
-      this.dateWithDueDay(
-        currentPeriodEnd.getFullYear(),
-        currentPeriodEnd.getMonth(),
-        dueDay
-      );
+    const approvedAt = new Date();
+    const currentPeriodStart = approvedAt;
+    const dueDay = approvedAt.getDate();
+    const nextDueDate = this.addBillingCycle(approvedAt, billingCycle);
+    const currentPeriodEnd = nextDueDate;
+    const gracePeriodDays = this.normalizeGracePeriod(data.gracePeriodDays);
 
     const initialStatus =
       data.initialStatus ===
@@ -478,8 +457,7 @@ class PlatformCondominiumApprovalService {
 
         dueDay,
 
-        gracePeriodDays:
-          30,
+        gracePeriodDays,
 
         currentPeriodStart,
         currentPeriodEnd,

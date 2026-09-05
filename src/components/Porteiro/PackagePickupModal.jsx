@@ -5,6 +5,7 @@ import {
 
 import packageApi from "../../Services/packageApi.js";
 import QrCameraScanner from "./QrCameraScanner.jsx";
+import { imageFileToDataUrl } from "../../utils/imageCompression.js";
 
 function PackagePickupModal({
   method,
@@ -17,6 +18,8 @@ function PackagePickupModal({
     useState(null);
   const [loading, setLoading] =
     useState(false);
+  const [deliveryProofImageDataUrl, setDeliveryProofImageDataUrl] = useState(null);
+  const [deliveryProofName, setDeliveryProofName] = useState("");
 
   const [isPrimary, setIsPrimary] =
     useState(true);
@@ -101,6 +104,17 @@ function PackagePickupModal({
     }
   }
 
+  async function handleProofFile(file) {
+    if (!file) { setDeliveryProofImageDataUrl(null); setDeliveryProofName(""); return; }
+    try {
+      const dataUrl = await imageFileToDataUrl(file, { maxWidth: 1280, quality: 0.7 });
+      setDeliveryProofImageDataUrl(dataUrl);
+      setDeliveryProofName(file.name);
+    } catch (error) {
+      alert(error?.message ?? "Não foi possível preparar a foto.");
+    }
+  }
+
   async function confirm() {
     if (!packageRecord?.id) {
       return;
@@ -115,6 +129,7 @@ function PackagePickupModal({
       withdrawnDocument: null,
       withdrawnResidentBlock: null,
       withdrawnResidentApartment: null,
+      deliveryProofImageDataUrl,
     };
 
     if (!isPrimary) {
@@ -533,7 +548,18 @@ function PackagePickupModal({
                 Voltar
               </button>
 
-              <button
+              <div style={styles.proofBox}>
+              <div>
+                <strong>📷 Comprovante de entrega (opcional)</strong>
+                <p style={styles.proofText}>Anexe uma foto do pacote ou comprovante. A imagem é compactada antes do envio.</p>
+              </div>
+              <label style={styles.fileLabel}>
+                {deliveryProofName ? "✓ Foto pronta" : "Selecionar foto"}
+                <input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" style={{display:"none"}} onChange={(e)=>handleProofFile(e.target.files?.[0])} />
+              </label>
+            </div>
+
+            <button
                 type="button"
                 disabled={loading}
                 style={styles.primary}
@@ -771,6 +797,9 @@ const styles = {
     gap: "10px",
     flexWrap: "wrap",
   },
+  proofBox: { marginTop: "18px", padding: "16px", borderRadius: "16px", border: "1px solid #ddd6fe", background: "linear-gradient(135deg,#faf5ff,#ffffff)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "14px", flexWrap: "wrap" },
+  proofText: { margin: "5px 0 0", color: "#6b7280", fontSize: "12px", lineHeight: 1.45 },
+  fileLabel: { cursor: "pointer", background: "#6d28d9", color: "white", padding: "10px 13px", borderRadius: "11px", fontSize: "12px", fontWeight: "800", whiteSpace: "nowrap" },
 };
 
 export default PackagePickupModal;

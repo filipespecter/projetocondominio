@@ -155,6 +155,13 @@ class PackageController {
     }
   }
 
+  async deliveryProof(req, res, next) {
+    try {
+      const data = await PackageService.getDeliveryProof(req.params.id, req.user.condominiumId);
+      return res.json({ success: true, data });
+    } catch (error) { return next(error); }
+  }
+
   async show(req, res, next) {
     try {
       const data =

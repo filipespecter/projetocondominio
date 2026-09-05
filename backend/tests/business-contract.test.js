@@ -67,7 +67,7 @@ test("aprovação exige credenciais e vencimento válidos", async () => {
     password: "SenhaTeste123!",
     passwordConfirmation: "SenhaTeste123!",
     planId: "123e4567-e89b-12d3-a456-426614174000",
-    dueDay: 10,
+    gracePeriodDays: 5,
     initialStatus: "ACTIVE",
     billingCycle: "MONTHLY",
     adminName: "Síndico Teste",
@@ -87,7 +87,7 @@ test("aprovação rejeita senha divergente", async () => {
     password: "SenhaTeste123!",
     passwordConfirmation: "OutraSenha123!",
     planId: "123e4567-e89b-12d3-a456-426614174000",
-    dueDay: 10,
+    gracePeriodDays: 5,
   });
   assert.ok(result.error);
 });
@@ -148,11 +148,12 @@ test("reserva contém validação de conflito e limite diário", async () => {
   assert.match(text, /"APPROVED"/);
 });
 
-test("frontend de aprovação envia credenciais, plano e vencimento", async () => {
+test("frontend de aprovação envia credenciais, plano e ciclo individual", async () => {
   const text = await source("src/pages/platform/PlatformCondominiums.jsx");
-  for (const field of ["username", "password", "passwordConfirmation", "planId", "dueDay", "billingEmail", "billingPhone"]) {
+  for (const field of ["username", "password", "passwordConfirmation", "planId", "gracePeriodDays", "billingEmail", "billingPhone"]) {
     assert.match(text, new RegExp(field), field);
   }
+  assert.doesNotMatch(text, /Dia do vencimento \*/);
 });
 
 test("cadastro público usa contact e não envia administrator", async () => {
@@ -195,4 +196,137 @@ test("Docker de primeira inicialização aplica migrations antes do seed", async
   const text = await source("docker/PRIMEIRA_INICIALIZACAO.ps1");
   assert.match(text, /npm run prisma:deploy/);
   assert.ok(text.indexOf("npm run prisma:deploy") < text.indexOf("node prisma/seed.js"));
+});
+
+
+test("ProtectedRoute usa tipoPermitido e nunca monta login com prop tipo antiga", async () => {
+  const route = await source("src/components/ProtectedRoute.jsx");
+  const app = await source("src/App.jsx");
+
+  assert.match(route, /function\s+ProtectedRoute\(\{[\s\S]*tipoPermitido/);
+  assert.match(route, /tipoFrontendAceitaRole\(\s*tipoPermitido,/s);
+  assert.match(route, /to=\{`\/login\/\$\{tipoPermitido\}`\}/);
+  assert.doesNotMatch(route, /to=\{`\/login\/\$\{tipo\}`\}/);
+  assert.match(app, /<ProtectedRoute\s+tipoPermitido="sindico">/);
+  assert.match(app, /<ProtectedRoute\s+tipoPermitido="porteiro">/);
+  assert.match(app, /<ProtectedRoute\s+tipoPermitido="morador">/);
+});
+
+test("Docker frontend inclui configuração do ESLint para validação no container", async () => {
+  const dockerfile = await source("Dockerfile");
+  assert.match(dockerfile, /COPY\s+eslint\.config\.js\s+\.\//);
+});
+
+test("financeiro básico é multi-tenant e possui categorias, despesas e exportação", async () => {
+  const schema = await source("backend/prisma/schema.prisma");
+  const routes = await source("backend/src/routes/expense.routes.js");
+  const service = await source("backend/src/services/ExpenseService.js");
+  const page = await source("src/pages/sindico/Financeiro.jsx");
+  assert.match(schema, /model\s+ExpenseCategory\s*\{/);
+  assert.match(schema, /model\s+Expense\s*\{/);
+  assert.match(service, /condominiumId/);
+  assert.match(routes, /CONDOMINIUM_ADMIN/);
+  assert.match(routes, /MANAGER/);
+  assert.match(page, /exportPdf/);
+  assert.match(page, /exportXlsx/);
+  assert.match(page, /Resumo por categoria/);
+});
+
+test("retirada de encomenda aceita comprovante fotográfico opcional e o armazena fora do banco", async () => {
+  const schema = await source("backend/prisma/schema.prisma");
+  const service = await source("backend/src/services/PackageService.js");
+  const modal = await source("src/components/Porteiro/PackagePickupModal.jsx");
+  assert.match(schema, /deliveryProofFilePath\s+String\?/);
+  assert.match(service, /saveImageDataUrl/);
+  assert.match(service, /"package-proofs"/);
+  assert.match(modal, /Comprovante de entrega \(opcional\)/);
+  assert.match(modal, /deliveryProofImageDataUrl/);
+});
+
+test("recuperação de senha usa código por e-mail com expiração, uso único e limite de tentativas", async () => {
+  const schema = await source("backend/prisma/schema.prisma");
+  const service = await source("backend/src/services/AuthService.js");
+  const routes = await source("backend/src/routes/auth.routes.js");
+  const login = await source("src/pages/login.jsx");
+  assert.match(schema, /model\s+PasswordResetCode\s*\{/);
+  assert.match(service, /10\s*\*\s*60\s*\*\s*1000/);
+  assert.match(service, /attempts\s*>=\s*5/);
+  assert.match(service, /usedAt/);
+  assert.match(routes, /password-reset\/request/);
+  assert.match(routes, /password-reset\/confirm/);
+  assert.match(login, /Código de 6 dígitos/);
+  assert.match(login, /Criar nova senha/);
+});
+
+test("planos Básico e Completo possuem matriz de features e proteção premium no backend", async () => {
+  const seed = await source("backend/prisma/seed.js");
+  const middleware = await source("backend/src/middlewares/featureAccessMiddleware.js");
+  const expenses = await source("backend/src/routes/expense.routes.js");
+  const index = await source("backend/src/routes/index.js");
+  assert.match(seed, /code:"BASICO"/);
+  assert.match(seed, /code:"COMPLETO"/);
+  for (const feature of ["EXPENSES","PACKAGE_PROOF","BI_DASHBOARD","WHATSAPP","AI_ASSISTANT"]) assert.match(seed, new RegExp(feature));
+  assert.match(middleware, /FEATURE_NOT_AVAILABLE/);
+  assert.match(expenses, /requireFeature\("EXPENSES"\)/);
+  assert.match(index, /requireFeature\("BI_DASHBOARD"\)/);
+});
+
+test("auditoria da Central possui histórico, exclusão lógica exclusiva do owner e backup integrado", async () => {
+  const schema = await source("backend/prisma/schema.prisma");
+  const routes = await source("backend/src/routes/platform-audit.routes.js");
+  const service = await source("backend/src/services/PlatformAuditService.js");
+  const page = await source("src/pages/platform/PlatformAudit.jsx");
+  assert.match(schema, /deletedAt\s+DateTime\?/);
+  assert.match(service, /PLATFORM_OWNER/);
+  assert.match(service, /softDelete/);
+  assert.match(routes, /platformAuditRoutes\.delete/);
+  assert.match(page, />Histórico</);
+  assert.match(page, />Apagar</);
+  assert.match(page, /Gerar backup agora/);
+  assert.match(page, /operations\.backups/);
+});
+
+test("e-mail de recuperação possui provider real configurável sem depender de senha visível", async () => {
+  const provider = await source("backend/src/services/providers/EmailProvider.js");
+  const env = await source("backend/.env.docker.example");
+  assert.match(provider, /RESEND/);
+  assert.match(provider, /EMAIL_API_KEY/);
+  assert.match(provider, /EMAIL_FROM/);
+  assert.match(env, /EMAIL_PROVIDER=CONSOLE/);
+  assert.doesNotMatch(provider, /passwordHash/);
+});
+
+
+test("login do condomínio não exige código e usa usuário ou e-mail conforme o portal", async () => {
+  const login = await source("src/pages/login.jsx");
+  const api = await source("src/Services/authApi.js");
+  const service = await source("backend/src/services/AuthService.js");
+  assert.doesNotMatch(login, /Código do condomínio/);
+  assert.doesNotMatch(login, /condominioCodigo/);
+  assert.match(api, /portalType/);
+  assert.match(service, /findLoginCandidates/);
+  assert.match(service, /rolesForPortal/);
+});
+
+test("recuperação de senha usa somente e-mail e código temporário, sem código do condomínio", async () => {
+  const validator = await source("backend/src/validators/authValidator.js");
+  const login = await source("src/pages/login.jsx");
+  assert.match(validator, /portalTypeSchema/);
+  assert.doesNotMatch(validator, /condominiumCodeSchema/);
+  assert.doesNotMatch(login, /Código do condomínio usado/);
+  assert.match(login, /Código de 6 dígitos/);
+});
+
+test("Central possui carteira de clientes com ciclo contado desde a ativação", async () => {
+  const page = await source("src/pages/platform/PlatformClients.jsx");
+  const service = await source("backend/src/services/PlatformCondominiumService.js");
+  const approval = await source("backend/src/services/PlatformCondominiumApprovalService.js");
+  const app = await source("src/App.jsx");
+  assert.match(page, /Receita mensal estimada/);
+  assert.match(page, /Tempo de plano/);
+  assert.match(page, /Próxima cobrança/);
+  assert.match(service, /async\s+listClients\s*\(/);
+  assert.match(approval, /const currentPeriodStart = approvedAt/);
+  assert.match(approval, /const nextDueDate = this\.addBillingCycle\(approvedAt, billingCycle\)/);
+  assert.match(app, /path="clientes"/);
 });

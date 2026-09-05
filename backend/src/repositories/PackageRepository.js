@@ -609,6 +609,10 @@ class PackageRepository extends BaseRepository {
             null,
           pickupCodeHash:
             null,
+          deliveryProofFilePath:
+            data.deliveryProofFilePath ?? null,
+          deliveryProofMimeType:
+            data.deliveryProofMimeType ?? null,
         }
       );
 

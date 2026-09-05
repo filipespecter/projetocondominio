@@ -55,6 +55,14 @@ const platformApi = {
       );
     },
 
+    async clients(params = "") {
+      return dataOf(
+        await api.get(
+          `/v1/platform/condominiums/clients${params}`
+        )
+      );
+    },
+
     async statistics() {
       return dataOf(
         await api.get(
@@ -229,6 +237,8 @@ const platformApi = {
   },
 
   audit: {
+    async show(id) { return dataOf(await api.get(`/v1/platform/audit/${id}`)); },
+    async remove(id, reason = "") { return dataOf(await api.delete(`/v1/platform/audit/${id}`, { body: { reason } })); },
     async list() {
       return dataOf(
         await api.get(

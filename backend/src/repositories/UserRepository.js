@@ -91,6 +91,43 @@ class UserRepository extends BaseRepository {
     );
   }
 
+
+  async findLoginCandidates(identifier, roles = null) {
+    const normalized = String(identifier ?? "").trim().toLowerCase();
+
+    const where = {
+      deletedAt: null,
+      OR: [
+        { username: normalized },
+        { email: normalized },
+      ],
+    };
+
+    if (Array.isArray(roles) && roles.length > 0) {
+      where.role = { in: roles };
+    }
+
+    return this.findMany(where, {
+      include: this.defaultInclude,
+      take: 3,
+      orderBy: { createdAt: "asc" },
+    });
+  }
+
+  async findPasswordResetCandidates(email, roles = null) {
+    const normalized = String(email ?? "").trim().toLowerCase();
+    const where = { email: normalized, deletedAt: null };
+
+    if (Array.isArray(roles) && roles.length > 0) {
+      where.role = { in: roles };
+    }
+
+    return this.findMany(where, {
+      include: this.defaultInclude,
+      take: 3,
+      orderBy: { createdAt: "asc" },
+    });
+  }
   async findPlatformUserByUsername(
     username
   ) {

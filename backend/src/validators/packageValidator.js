@@ -378,6 +378,9 @@ export const confirmPickupSchema =
           50,
           "O apartamento"
         ),
+
+      deliveryProofImageDataUrl:
+        z.string().max(1200000).optional().nullable(),
     })
     .strict();
 

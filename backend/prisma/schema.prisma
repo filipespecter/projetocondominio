@@ -359,6 +359,8 @@ model Condominium {
 
   users            User[] @relation("CondominiumUsers")
   subscriptions    Subscription[]
+  expenseCategories ExpenseCategory[]
+  expenses          Expense[]
   paymentMethods   PaymentMethod[]
   charges          Charge[]
   apartments       Apartment[]
@@ -660,6 +662,9 @@ model Package {
   receivedBy  User?       @relation("PackageReceivedBy", fields: [receivedByUserId], references: [id], onDelete: SetNull)
   deliveredBy User?       @relation("PackageDeliveredBy", fields: [deliveredByUserId], references: [id], onDelete: SetNull)
 
+  deliveryProofFilePath String?
+  deliveryProofMimeType String?
+
   @@index([condominiumId, status])
   @@index([condominiumId, apartmentId, status])
   @@index([pickupTokenHash])
@@ -842,6 +847,62 @@ model Notification {
   @@index([createdAt])
 }
 
+model ExpenseCategory {
+  id            String   @id @default(uuid()) @db.Uuid
+  condominiumId String   @db.Uuid
+  name          String
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  condominium Condominium @relation(fields: [condominiumId], references: [id], onDelete: Restrict)
+  expenses    Expense[]
+
+  @@unique([condominiumId, name])
+  @@index([condominiumId, active])
+  @@index([deletedAt])
+}
+
+model Expense {
+  id              String   @id @default(uuid()) @db.Uuid
+  condominiumId   String   @db.Uuid
+  categoryId      String   @db.Uuid
+  expenseDate     DateTime
+  description     String
+  supplier        String?
+  paymentMethod   String?
+  amountInCents   Int
+  notes            String?
+  receiptFilePath  String?
+  receiptMimeType  String?
+  createdByUserId  String?  @db.Uuid
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  deletedAt        DateTime?
+
+  condominium Condominium   @relation(fields: [condominiumId], references: [id], onDelete: Restrict)
+  category    ExpenseCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@index([condominiumId, expenseDate])
+  @@index([condominiumId, categoryId])
+  @@index([deletedAt])
+}
+
+
+model PasswordResetCode {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  codeHash  String
+  expiresAt DateTime
+  usedAt    DateTime?
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([userId, expiresAt])
+  @@index([createdAt])
+}
+
 model AuditLog {
   id               String  @id @default(uuid()) @db.Uuid
   condominiumId    String? @db.Uuid
@@ -860,6 +921,9 @@ model AuditLog {
   ipAddress   String?
   userAgent   String?
   createdAt   DateTime @default(now())
+  deletedAt   DateTime?
+  deletedByUserId String? @db.Uuid
+  deletionReason String?
 
   condominium  Condominium?   @relation(fields: [condominiumId], references: [id], onDelete: SetNull)
   user         User?           @relation("AuditLogUser", fields: [userId], references: [id], onDelete: SetNull)
@@ -871,6 +935,7 @@ model AuditLog {
   @@index([supportSessionId, createdAt])
   @@index([requestId])
   @@index([referenceId])
+  @@index([deletedAt])
 }
 
 model ServiceProvider {

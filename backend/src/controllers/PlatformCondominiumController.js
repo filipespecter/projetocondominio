@@ -95,6 +95,25 @@ class PlatformCondominiumController {
   }
 
   /**
+   * GET /api/v1/platform/condominiums/clients
+   *
+   * Visão comercial/operacional dos clientes da Star.
+   */
+  async clients(req, res, next) {
+    try {
+      const result = await PlatformCondominiumService.listClients(req.query);
+
+      return res.status(200).json({
+        success: true,
+        message: "Clientes carregados com sucesso.",
+        data: result,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  /**
    * GET /api/v1/platform/condominiums/:id
    *
    * Abre a ficha administrativa completa

@@ -96,6 +96,10 @@ const packageApi = {
     );
   },
 
+  async deliveryProof(id) {
+    return unwrap(await api.get(`/v1/packages/${id}/delivery-proof`));
+  },
+
   async remove(id) {
     return api.delete(
       `/v1/packages/${id}`

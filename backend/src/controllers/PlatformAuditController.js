@@ -54,6 +54,14 @@ class PlatformAuditController {
     }
   }
 
+
+  async archive(req, res, next) {
+    try {
+      const result = await PlatformAuditService.archive(req.params.id, req.user, req.body?.reason);
+      return res.status(200).json({ success:true, message:"Registro removido da visualização da auditoria com rastreabilidade preservada.", data:result });
+    } catch(error) { return next(error); }
+  }
+
   async condominiumTimeline(
     req,
     res,

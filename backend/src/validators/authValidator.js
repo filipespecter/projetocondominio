@@ -46,41 +46,16 @@ function validateBody(schema) {
   };
 }
 
-/**
- * Condomínio:
- * obrigatório para usuários vinculados a condomínio;
- * opcional para PLATFORM_ADMIN.
- *
- * A regra final sobre sua obrigatoriedade permanece
- * no AuthService, pois depende do tipo de usuário.
- */
-const condominiumCodeSchema = z
-  .string()
-  .trim()
-  .min(
-    2,
-    "O código do condomínio deve possuir pelo menos 2 caracteres."
-  )
-  .max(
-    50,
-    "O código do condomínio deve possuir no máximo 50 caracteres."
-  )
-  .transform((value) =>
-    value.toUpperCase()
-  )
-  .optional()
-  .or(z.literal(""))
-  .transform((value) =>
-    value === "" ? undefined : value
-  );
+const portalTypeSchema = z
+  .enum(["platform", "sindico", "porteiro", "morador"])
+  .optional();
 
 /**
  * Validação do login.
  */
 export const loginSchema = z
   .object({
-    condominiumCode:
-      condominiumCodeSchema,
+    portalType: portalTypeSchema,
 
     username: z
       .string({
@@ -213,6 +188,26 @@ export const changePasswordSchema = z
     }
   });
 
+
+
+export const requestPasswordResetSchema = z.object({
+  portalType: portalTypeSchema,
+  email: z.string().trim().email("Informe um e-mail válido.").max(200).transform(v => v.toLowerCase()),
+}).strict();
+
+export const confirmPasswordResetSchema = z.object({
+  portalType: portalTypeSchema,
+  email: z.string().trim().email("Informe um e-mail válido.").max(200).transform(v => v.toLowerCase()),
+  code: z.string().trim().regex(/^\d{6}$/, "Informe o código de 6 dígitos."),
+  newPassword: z.string().min(8, "A nova senha deve possuir pelo menos 8 caracteres.").max(128),
+  newPasswordConfirmation: z.string().min(1),
+}).strict().superRefine((data, ctx) => {
+  if (data.newPassword !== data.newPasswordConfirmation) ctx.addIssue({ code: z.ZodIssueCode.custom, path:["newPasswordConfirmation"], message:"A confirmação da nova senha não corresponde." });
+});
+
+export const validateRequestPasswordReset = validateBody(requestPasswordResetSchema);
+export const validateConfirmPasswordReset = validateBody(confirmPasswordResetSchema);
+
 /**
  * Middlewares utilizados pelas rotas de autenticação.
  */
@@ -232,4 +227,8 @@ export default {
   validateLogin,
   validateRefresh,
   validateChangePassword,
+  requestPasswordResetSchema,
+  confirmPasswordResetSchema,
+  validateRequestPasswordReset,
+  validateConfirmPasswordReset,
 };

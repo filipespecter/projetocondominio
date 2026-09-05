@@ -45,6 +45,8 @@ class PlatformAuditRepository {
   buildWhere(filters = {}) {
     const where = {};
 
+    if (!filters.includeDeleted) { where.deletedAt = null; }
+
     if (filters.condominiumId) {
       where.condominiumId = filters.condominiumId;
     }
@@ -190,6 +192,10 @@ class PlatformAuditRepository {
     });
   }
 
+  async softDelete(id, deletedByUserId, deletionReason = null) {
+    return prisma.auditLog.update({ where:{id}, data:{deletedAt:new Date(),deletedByUserId,deletionReason}, include:this.include });
+  }
+
   async statistics() {
     const [
       total,
@@ -200,10 +206,11 @@ class PlatformAuditRepository {
       unresolvedEvents,
       criticalUnresolvedEvents,
     ] = await Promise.all([
-      prisma.auditLog.count(),
+      prisma.auditLog.count({where:{deletedAt:null}}),
 
       prisma.auditLog.count({
         where: {
+          deletedAt: null,
           createdAt: {
             gte: new Date(
               new Date().setHours(0, 0, 0, 0)

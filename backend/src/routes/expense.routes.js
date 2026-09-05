@@ -1,0 +1,16 @@
+import { Router } from "express";
+import ExpenseController from "../controllers/ExpenseController.js";
+import { authorizeRoles } from "../middlewares/authMiddleware.js";
+import { requireFeature } from "../middlewares/featureAccessMiddleware.js";
+const router=Router();
+router.use(authorizeRoles("CONDOMINIUM_ADMIN","MANAGER"), requireFeature("EXPENSES"));
+router.get("/categories",(req,res,next)=>ExpenseController.categories(req,res,next));
+router.post("/categories",(req,res,next)=>ExpenseController.createCategory(req,res,next));
+router.patch("/categories/:id",(req,res,next)=>ExpenseController.updateCategory(req,res,next));
+router.delete("/categories/:id",(req,res,next)=>ExpenseController.removeCategory(req,res,next));
+router.get("/:id/receipt",(req,res,next)=>ExpenseController.receipt(req,res,next));
+router.get("/",(req,res,next)=>ExpenseController.list(req,res,next));
+router.post("/",(req,res,next)=>ExpenseController.create(req,res,next));
+router.patch("/:id",(req,res,next)=>ExpenseController.update(req,res,next));
+router.delete("/:id",(req,res,next)=>ExpenseController.remove(req,res,next));
+export default router;

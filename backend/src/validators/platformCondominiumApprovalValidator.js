@@ -96,12 +96,13 @@ const approvalSchema =
           .nonnegative()
           .optional(),
 
-      dueDay:
+      gracePeriodDays:
         z
           .number()
           .int()
-          .min(1)
-          .max(31),
+          .min(0)
+          .max(30)
+          .optional(),
 
       initialStatus:
         z

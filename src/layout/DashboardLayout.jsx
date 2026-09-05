@@ -20,7 +20,8 @@ import {
   FaBuilding,
   FaCog,
   FaSignOutAlt,
-  FaHardHat
+  FaHardHat,
+  FaWallet
 } from "react-icons/fa";
 
 import { contarNaoLidas } from "../Services/notificacaoService";
@@ -329,6 +330,13 @@ function DashboardLayout() {
               active={itemAtivo("/dashboard/relatorios")}
               icon={<FaChartPie />}
               label="Relatórios"
+            />
+
+            <MenuItem
+              to="/dashboard/financeiro"
+              active={itemAtivo("/dashboard/financeiro")}
+              icon={<FaWallet />}
+              label="Financeiro"
             />
 
             <MenuItem

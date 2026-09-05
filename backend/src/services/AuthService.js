@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import AuditLogService from "./AuditLogService.js";
 
 import userRepository from "../repositories/UserRepository.js";
@@ -7,6 +8,8 @@ import Jwt from "../utils/Jwt.js";
 import Password from "../utils/Password.js";
 import env from "../config/env.js";
 import { ApiError } from "../utils/ApiError.js";
+import prisma from "../config/prisma.js";
+import CommunicationProviderService from "./CommunicationProviderService.js";
 
 class AuthService {
   /**
@@ -43,7 +46,7 @@ class AuthService {
    * Confere os dados mínimos do login.
    */
   validateLoginData({
-    condominiumCode,
+    portalType,
     username,
     password,
   }) {
@@ -62,12 +65,7 @@ class AuthService {
     }
 
     return {
-      condominiumCode:
-        condominiumCode
-          ? String(condominiumCode)
-              .trim()
-              .toUpperCase()
-          : null,
+      portalType: String(portalType ?? "").trim().toLowerCase() || null,
 
       username:
         this.normalizeUsername(username),
@@ -173,33 +171,38 @@ class AuthService {
    * Sem condominiumCode:
    * somente usuário interno da Central Star.
    */
-  async findUserForLogin({
-    condominiumCode,
-    username,
-  }) {
-    if (!condominiumCode) {
-      return userRepository
-        .findPlatformUserByUsername(
-          username
-        );
+  rolesForPortal(portalType) {
+    const map = {
+      platform: ["PLATFORM_OWNER", "PLATFORM_ADMIN", "PLATFORM_SUPPORT"],
+      sindico: ["CONDOMINIUM_ADMIN", "MANAGER"],
+      porteiro: ["DOORMAN"],
+      morador: ["RESIDENT"],
+    };
+
+    return map[String(portalType ?? "").trim().toLowerCase()] ?? null;
+  }
+
+  async findUserForLogin({ portalType, username }) {
+    const roles = this.rolesForPortal(portalType);
+
+    if (!roles) {
+      throw new ApiError("Perfil de acesso inválido.", 400);
     }
 
-    const condominium =
-      await condominiumRepository.findByCode(
-        condominiumCode
+    const candidates = await userRepository.findLoginCandidates(username, roles);
+
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    if (candidates.length > 1) {
+      throw new ApiError(
+        "Existe mais de uma conta com este identificador. Entre com o e-mail cadastrado ou solicite à Central Star a atualização do usuário.",
+        409
       );
+    }
 
-    this.validateCondominiumAccess(
-      condominium
-    );
-
-    const user =
-      await userRepository.findByUsername(
-        username,
-        condominium.id
-      );
-
-    return user;
+    return candidates[0];
   }
 
   /**
@@ -264,7 +267,7 @@ class AuthService {
     requestContext = null
   ) {
     const {
-      condominiumCode,
+      portalType,
       username,
       password,
     } = this.validateLoginData(
@@ -273,7 +276,7 @@ class AuthService {
 
     const user =
       await this.findUserForLogin({
-        condominiumCode,
+        portalType,
         username,
       });
 
@@ -645,6 +648,64 @@ class AuthService {
       updatedUser
     );
   }
+
+  normalizeEmail(email) { return String(email ?? "").trim().toLowerCase(); }
+  hashResetCode(code) { return crypto.createHash("sha256").update(String(code)).digest("hex"); }
+
+  async findUserForPasswordReset({ portalType, email }) {
+    const normalizedEmail = this.normalizeEmail(email);
+    const roles = this.rolesForPortal(portalType);
+
+    if (!roles || !normalizedEmail) {
+      return null;
+    }
+
+    const candidates = await userRepository.findPasswordResetCandidates(normalizedEmail, roles);
+
+    if (candidates.length !== 1) {
+      return null;
+    }
+
+    return candidates[0];
+  }
+
+  async requestPasswordReset(data, requestContext = null) {
+    const user = await this.findUserForPasswordReset(data ?? {});
+    const generic = { message: "Se o e-mail informado estiver cadastrado, enviaremos um código de recuperação." };
+    if (!user || !user.email) return generic;
+    this.validateUserAccess(user);
+    const code = String(crypto.randomInt(0, 1000000)).padStart(6, "0");
+    const codeHash = this.hashResetCode(code);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    await prisma.passwordResetCode.updateMany({ where: { userId: user.id, usedAt: null }, data: { usedAt: new Date() } });
+    await prisma.passwordResetCode.create({ data: { userId: user.id, codeHash, expiresAt } });
+    await CommunicationProviderService.send({
+      channel: "EMAIL", recipient: user.email, subject: "InfinityCondo - código para redefinir sua senha",
+      content: `Seu código de recuperação InfinityCondo é ${code}. Ele expira em 10 minutos e só pode ser usado uma vez. Se você não solicitou esta alteração, ignore esta mensagem.`,
+    });
+    await AuditLogService.createLog({ condominiumId:user.condominiumId, userId:user.id, userName:user.name, userRole:user.role, action:"PASSWORD_RESET_REQUEST", module:"AUTH", details:"Código de recuperação de senha solicitado.", referenceId:user.id, ipAddress:requestContext?.ipAddress ?? null, userAgent:requestContext?.userAgent ?? null });
+    return generic;
+  }
+
+  async confirmPasswordReset(data, requestContext = null) {
+    const user = await this.findUserForPasswordReset(data ?? {});
+    if (!user) throw new ApiError("Código inválido ou expirado.", 400);
+    const record = await prisma.passwordResetCode.findFirst({ where: { userId:user.id, usedAt:null, expiresAt:{ gt:new Date() } }, orderBy:{createdAt:"desc"} });
+    if (!record || record.attempts >= 5) throw new ApiError("Código inválido ou expirado.", 400);
+    const matches = crypto.timingSafeEqual(Buffer.from(record.codeHash), Buffer.from(this.hashResetCode(data.code)));
+    if (!matches) {
+      await prisma.passwordResetCode.update({ where:{id:record.id}, data:{attempts:{increment:1}} });
+      throw new ApiError("Código inválido ou expirado.", 400);
+    }
+    if (!data.newPassword || String(data.newPassword).length < 8 || data.newPassword !== data.newPasswordConfirmation) throw new ApiError("Nova senha inválida.", 400);
+    const passwordHash = await Password.hash(String(data.newPassword));
+    await userRepository.updatePassword(user.id, passwordHash, false);
+    await prisma.passwordResetCode.update({ where:{id:record.id}, data:{usedAt:new Date()} });
+    await prisma.passwordResetCode.updateMany({ where:{userId:user.id,usedAt:null}, data:{usedAt:new Date()} });
+    await AuditLogService.createLog({ condominiumId:user.condominiumId, userId:user.id, userName:user.name, userRole:user.role, action:"PASSWORD_RESET_CONFIRMED", module:"AUTH", details:"Senha redefinida por código enviado ao e-mail cadastrado.", referenceId:user.id, ipAddress:requestContext?.ipAddress ?? null, userAgent:requestContext?.userAgent ?? null });
+    return { message:"Senha redefinida com sucesso. Faça login com a nova senha." };
+  }
+
 }
 
 export default new AuthService();

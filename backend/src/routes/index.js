@@ -19,6 +19,7 @@ import auditRoutes from "./audit.routes.js";
 import dashboardRoutes from "./dashboard.routes.js";
 import analyticsRoutes from "./analytics.routes.js";
 import configurationRoutes from "./configuration.routes.js";
+import expenseRoutes from "./expense.routes.js";
 
 import platformDashboardRoutes from "./platform-dashboard.routes.js";
 import platformCondominiumRoutes from "./platform-condominium.routes.js";
@@ -41,6 +42,7 @@ import {
 } from "../middlewares/authMiddleware.js";
 
 import subscriptionAccessMiddleware from "../middlewares/subscriptionAccessMiddleware.js";
+import { requireFeature } from "../middlewares/featureAccessMiddleware.js";
 
 export const router = Router();
 
@@ -449,6 +451,12 @@ router.use(
  * =====================================================
  */
 router.use(
+  "/v1/expenses",
+  ...operationalGuards,
+  expenseRoutes
+);
+
+router.use(
   "/v1/apartments",
   ...operationalGuards,
   apartmentRoutes
@@ -612,6 +620,7 @@ router.use(
 router.use(
   "/v1/analytics",
   ...operationalGuards,
+  requireFeature("BI_DASHBOARD"),
   analyticsRoutes
 );
 

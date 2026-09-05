@@ -96,6 +96,16 @@ platformCondominiumRoutes.get(
 );
 
 /**
+ * Clientes ativos/contratados da plataforma.
+ * Mantida antes de /:id.
+ */
+platformCondominiumRoutes.get(
+  "/clients",
+  (req, res, next) =>
+    PlatformCondominiumController.clients(req, res, next)
+);
+
+/**
  * Aprovação comercial.
  *
  * Somente PLATFORM_ADMIN autenticado.

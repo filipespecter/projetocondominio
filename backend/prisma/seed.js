@@ -286,28 +286,40 @@ async function main() {
     }`
   );
   console.log("");
-  const shouldSeedHomologationPlans =
-    String(process.env.NODE_ENV ?? "development").toLowerCase() !== "production" &&
-    String(process.env.SEED_HOMOLOGATION_PLANS ?? "true").toLowerCase() !== "false";
+  const plans = [
+    { name:"Plano Básico", code:"BASICO", description:"Operação essencial do condomínio.", monthlyPriceInCents:25000, billingCycle:"MONTHLY", active:true, displayOrder:1 },
+    { name:"Plano Completo", code:"COMPLETO", description:"Operação completa com financeiro, BI, comprovantes e automações premium.", monthlyPriceInCents:35000, billingCycle:"MONTHLY", active:true, displayOrder:2 },
+  ];
+  const savedPlans = {};
+  for (const plan of plans) {
+    savedPlans[plan.code] = await prisma.plan.upsert({ where:{code:plan.code}, update:{...plan,deletedAt:null}, create:plan });
+  }
 
-  if (shouldSeedHomologationPlans) {
-    const plans = [
-      { name: "Plano Básico", code: "BASICO", description: "Plano de homologação local", monthlyPriceInCents: 25000, billingCycle: "MONTHLY", active: true, displayOrder: 1 },
-      { name: "Plano Completo", code: "COMPLETO", description: "Plano de homologação local completo", monthlyPriceInCents: 35000, billingCycle: "MONTHLY", active: true, displayOrder: 2 },
-    ];
-
-    for (const plan of plans) {
-      await prisma.plan.upsert({
-        where: { code: plan.code },
-        update: {
-          name: plan.name, description: plan.description, monthlyPriceInCents: plan.monthlyPriceInCents,
-          billingCycle: plan.billingCycle, active: true, displayOrder: plan.displayOrder, deletedAt: null,
-        },
-        create: plan,
+  const featureDefinitions = [
+    ["EXPENSES","Controle de despesas","Cadastro, categorias e gestão financeira básica"],
+    ["EXPENSE_EXPORT","Exportação financeira","PDF e planilha do financeiro"],
+    ["PACKAGE_PROOF","Comprovante de encomenda","Foto opcional na retirada"],
+    ["ADVANCED_REPORTS","Relatórios avançados","Relatórios e exportações avançadas"],
+    ["BI_DASHBOARD","BI e indicadores","Dashboards e análises avançadas"],
+    ["WHATSAPP","WhatsApp automático","Comunicações automáticas por WhatsApp"],
+    ["AI_ASSISTANT","IA Star","Assistente inteligente futuro"],
+  ];
+  const savedFeatures = {};
+  for (const [code,name,description] of featureDefinitions) {
+    savedFeatures[code] = await prisma.feature.upsert({ where:{code}, update:{name,description,active:true,deletedAt:null}, create:{code,name,description,active:true,valueType:"BOOLEAN"} });
+  }
+  const completeFeatures = Object.keys(savedFeatures);
+  const basicFeatures = [];
+  for (const [planCode, enabledCodes] of [["BASICO",basicFeatures],["COMPLETO",completeFeatures]]) {
+    for (const [featureCode, feature] of Object.entries(savedFeatures)) {
+      await prisma.planFeature.upsert({
+        where:{planId_featureId:{planId:savedPlans[planCode].id,featureId:feature.id}},
+        update:{enabled:enabledCodes.includes(featureCode)},
+        create:{planId:savedPlans[planCode].id,featureId:feature.id,enabled:enabledCodes.includes(featureCode)},
       });
     }
-    console.log("Planos de homologação local garantidos.");
   }
+  console.log("Planos Básico/Completo e matriz de recursos garantidos.");
 
   console.log(
     "Senha não exibida por segurança."

@@ -6,6 +6,7 @@ import {
   authMiddleware,
   authorizeRoles,
 } from "../middlewares/authMiddleware.js";
+import { requireFeature } from "../middlewares/featureAccessMiddleware.js";
 
 import {
   validatePackageId,
@@ -45,6 +46,12 @@ const operationalRoles =
  * Somente a administração pode editar
  * ou remover registros.
  */
+
+const packageProofFeature = (req,res,next) => {
+  if (!req.body?.deliveryProofImageDataUrl) return next();
+  return requireFeature("PACKAGE_PROOF")(req,res,next);
+};
+
 const administrativeRoles =
   authorizeRoles(
     "CONDOMINIUM_ADMIN",
@@ -225,6 +232,7 @@ packageRoutes.post(
   operationalRoles,
   validatePackageId,
   validateConfirmPickup,
+  packageProofFeature,
   (req, res, next) =>
     PackageController.confirmPickup(
       req,

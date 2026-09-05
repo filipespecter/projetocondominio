@@ -1,5 +1,6 @@
 import condominiumRepository from "../repositories/CondominiumRepository.js";
 import { ApiError } from "../utils/ApiError.js";
+import prisma from "../config/prisma.js";
 
 /**
  * =====================================================
@@ -276,6 +277,166 @@ class PlatformCondominiumService {
     }
 
     return condominium;
+  }
+
+  async listClients(query = {}) {
+    const page = Math.max(Number(query.page) || 1, 1);
+    const limit = Math.min(Math.max(Number(query.limit) || 20, 1), 100);
+    const search = String(query.search ?? "").trim();
+    const status = query.status ? this.normalizeStatus(query.status) : null;
+    const planCode = String(query.planCode ?? "").trim().toUpperCase();
+
+    const where = {
+      deletedAt: null,
+      status: status || { in: ["TRIAL", "ACTIVE", "SUSPENDED", "CANCELED"] },
+    };
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { legalName: { contains: search, mode: "insensitive" } },
+        { contactName: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+        { phone: { contains: search } },
+        { addressLine: { contains: search, mode: "insensitive" } },
+        { city: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+    if (planCode) {
+      where.subscriptions = {
+        some: {
+          plan: { code: planCode },
+          status: { in: ["TRIAL", "ACTIVE", "OVERDUE", "SUSPENDED"] },
+        },
+      };
+    }
+
+    const [rows, total] = await Promise.all([
+      prisma.condominium.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: [{ activatedAt: "desc" }, { createdAt: "desc" }],
+        include: {
+          subscriptions: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            include: { plan: true },
+          },
+          users: {
+            where: { deletedAt: null },
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              email: true,
+              phone: true,
+              role: true,
+              status: true,
+              lastLoginAt: true,
+            },
+          },
+        },
+      }),
+      prisma.condominium.count({ where }),
+    ]);
+
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const [activeClients, basicClients, completeClients, newThisMonth, recurring] = await Promise.all([
+      prisma.condominium.count({ where: { deletedAt: null, status: { in: ["TRIAL", "ACTIVE"] } } }),
+      prisma.subscription.count({ where: { status: { in: ["TRIAL", "ACTIVE"] }, plan: { code: "BASICO" } } }),
+      prisma.subscription.count({ where: { status: { in: ["TRIAL", "ACTIVE"] }, plan: { code: "COMPLETO" } } }),
+      prisma.condominium.count({ where: { deletedAt: null, activatedAt: { gte: startOfMonth } } }),
+      prisma.subscription.aggregate({
+        where: { status: { in: ["TRIAL", "ACTIVE"] } },
+        _sum: { priceInCents: true },
+      }),
+    ]);
+
+    const items = rows.map((condominium) => {
+      const subscription = condominium.subscriptions[0] ?? null;
+      const administrator = condominium.users.find((user) =>
+        ["CONDOMINIUM_ADMIN", "MANAGER"].includes(user.role)
+      ) ?? null;
+      const activeSince = condominium.activatedAt ?? condominium.approvedAt ?? subscription?.currentPeriodStart ?? condominium.createdAt;
+      const activeMs = Math.max(0, now.getTime() - new Date(activeSince).getTime());
+      const activeDays = Math.floor(activeMs / 86400000);
+
+      let billingStatus = "SEM_ASSINATURA";
+      if (subscription) {
+        if (subscription.status === "CANCELED") billingStatus = "CANCELADO";
+        else if (subscription.status === "SUSPENDED") billingStatus = "SUSPENSO";
+        else if (subscription.nextDueDate && new Date(subscription.nextDueDate) < now) billingStatus = "ATRASADO";
+        else billingStatus = "EM_DIA";
+      }
+
+      return {
+        id: condominium.id,
+        code: condominium.code,
+        name: condominium.name,
+        legalName: condominium.legalName,
+        document: condominium.document,
+        status: condominium.status,
+        email: condominium.email,
+        phone: condominium.phone,
+        contactName: condominium.contactName,
+        address: {
+          postalCode: condominium.postalCode,
+          addressLine: condominium.addressLine,
+          addressNumber: condominium.addressNumber,
+          addressExtra: condominium.addressExtra,
+          neighborhood: condominium.neighborhood,
+          city: condominium.city,
+          state: condominium.state,
+        },
+        activatedAt: condominium.activatedAt,
+        approvedAt: condominium.approvedAt,
+        clientSince: activeSince,
+        activeDays,
+        usersCount: condominium.users.length,
+        administrator,
+        lastLoginAt: condominium.users.reduce((latest, user) => {
+          if (!user.lastLoginAt) return latest;
+          if (!latest || new Date(user.lastLoginAt) > new Date(latest)) return user.lastLoginAt;
+          return latest;
+        }, null),
+        subscription: subscription ? {
+          id: subscription.id,
+          status: subscription.status,
+          billingStatus,
+          priceInCents: subscription.priceInCents,
+          billingCycle: subscription.billingCycle,
+          currentPeriodStart: subscription.currentPeriodStart,
+          currentPeriodEnd: subscription.currentPeriodEnd,
+          nextDueDate: subscription.nextDueDate,
+          gracePeriodDays: subscription.gracePeriodDays,
+          billingContactName: subscription.billingContactName,
+          billingEmail: subscription.billingEmail,
+          billingPhone: subscription.billingPhone,
+          plan: subscription.plan ? { id: subscription.plan.id, code: subscription.plan.code, name: subscription.plan.name } : null,
+        } : null,
+      };
+    });
+
+    return {
+      items,
+      summary: {
+        activeClients,
+        basicClients,
+        completeClients,
+        newThisMonth,
+        estimatedMonthlyRevenueInCents: recurring._sum.priceInCents ?? 0,
+      },
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.max(Math.ceil(total / limit), 1),
+      },
+    };
   }
 
   /**

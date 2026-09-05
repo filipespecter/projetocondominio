@@ -14,6 +14,7 @@ import {
   FaChartLine,
   FaBuilding,
   FaUsers,
+  FaAddressBook,
   FaTags,
   FaFileInvoiceDollar,
   FaClipboardList,
@@ -45,6 +46,17 @@ const menu = [
     label: "Condomínios",
     icon: <FaBuilding />,
     to: "/platform/condominios",
+    enabled: true,
+    roles: [
+      "PLATFORM_OWNER",
+      "PLATFORM_ADMIN",
+      "PLATFORM_SUPPORT",
+    ],
+  },
+  {
+    label: "Clientes",
+    icon: <FaAddressBook />,
+    to: "/platform/clientes",
     enabled: true,
     roles: [
       "PLATFORM_OWNER",

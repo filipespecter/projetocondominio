@@ -160,13 +160,13 @@ export function tipoFrontendAceitaRole(
  * Payload esperado pelo backend:
  *
  * {
- *   condominiumCode,
+ *   portalType,
  *   username,
  *   password
  * }
  */
 export async function login({
-  condominiumCode,
+  portalType,
   username,
   password,
 }) {
@@ -174,14 +174,10 @@ export async function login({
     await api.post(
       "/v1/auth/login",
       {
-        condominiumCode:
-          condominiumCode
-            ? String(
-                condominiumCode
-              )
-                .trim()
-                .toUpperCase()
-            : undefined,
+        portalType:
+          String(portalType ?? "")
+            .trim()
+            .toLowerCase() || undefined,
 
         username:
           String(
@@ -351,6 +347,18 @@ export async function changePassword({
   return response?.data ?? null;
 }
 
+
+
+export async function requestPasswordReset({ portalType, email }) {
+  const response = await api.post("/v1/auth/password-reset/request", { portalType: portalType || undefined, email }, { authenticated:false });
+  return response?.data ?? null;
+}
+
+export async function confirmPasswordReset({ portalType, email, code, newPassword, newPasswordConfirmation }) {
+  const response = await api.post("/v1/auth/password-reset/confirm", { portalType: portalType || undefined, email, code, newPassword, newPasswordConfirmation }, { authenticated:false });
+  return response?.data ?? null;
+}
+
 /**
  * =====================================================
  * STATUS LOCAL DA AUTENTICAÇÃO
@@ -420,6 +428,8 @@ const authApi = {
   refresh,
   logout,
   changePassword,
+  requestPasswordReset,
+  confirmPasswordReset,
   hasAccessToken,
   clearAuthTokens,
   roleParaTipoFrontend,

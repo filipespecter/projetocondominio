@@ -1,0 +1,42 @@
+:root { color-scheme: light; }
+* { -webkit-tap-highlight-color: transparent; }
+html, body, #root { margin: 0; min-height: 100%; width: 100%; }
+body { overflow-x: hidden; }
+button, input, select, textarea { font: inherit; }
+button, a { touch-action: manipulation; }
+img, svg { max-width: 100%; }
+
+@media (max-width: 900px) {
+  .condo-shell { display: block !important; min-height: 100vh !important; }
+  .condo-sidebar {
+    position: relative !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-height: 48vh !important;
+    padding: 18px 16px !important;
+    overflow-y: auto !important;
+    box-shadow: 0 10px 35px rgba(76,29,149,.18) !important;
+  }
+  .condo-main { width: 100% !important; box-sizing: border-box !important; padding: 18px 14px 38px !important; }
+  .pilot-two-col { grid-template-columns: 1fr !important; }
+  .pilot-hero { grid-template-columns: 1fr !important; flex-direction: column !important; align-items: stretch !important; }
+  .pilot-global-search { width: 100% !important; }
+  table { font-size: 12px; }
+}
+
+@media (max-width: 640px) {
+  .condo-sidebar { max-height: 42vh !important; }
+  .condo-main { padding: 14px 10px 32px !important; }
+  .pilot-onboarding { padding: 15px !important; border-radius: 18px !important; }
+  input, select, textarea { font-size: 16px !important; } /* evita zoom automático no iOS */
+  button { min-height: 42px; }
+}
+
+@supports (padding: max(0px)) {
+  .condo-main, .platform-main {
+    padding-left: max(12px, env(safe-area-inset-left)) !important;
+    padding-right: max(12px, env(safe-area-inset-right)) !important;
+    padding-bottom: max(24px, env(safe-area-inset-bottom)) !important;
+  }
+}

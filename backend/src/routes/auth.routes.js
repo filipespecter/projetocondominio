@@ -6,6 +6,8 @@ import {
   validateLogin,
   validateRefresh,
   validateChangePassword,
+  validateRequestPasswordReset,
+  validateConfirmPasswordReset,
 } from "../validators/authValidator.js";
 
 import {
@@ -51,6 +53,20 @@ authRoutes.post(
       res,
       next
     )
+);
+
+
+
+authRoutes.post(
+  "/password-reset/request",
+  validateRequestPasswordReset,
+  (req, res, next) => AuthController.requestPasswordReset(req, res, next)
+);
+
+authRoutes.post(
+  "/password-reset/confirm",
+  validateConfirmPasswordReset,
+  (req, res, next) => AuthController.confirmPasswordReset(req, res, next)
 );
 
 /**

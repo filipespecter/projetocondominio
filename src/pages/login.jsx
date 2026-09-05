@@ -1,4 +1,4 @@
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 import {
   FaShieldAlt,
@@ -37,18 +37,12 @@ import authApi, {
 function Login() {
   const { tipo } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
 
   /**
    * =====================================================
    * ESTADOS DA TELA
    * =====================================================
    */
-  const [condominioCodigo, setCondominioCodigo] =
-    useState(
-      location.state?.condominiumCode ?? ""
-    );
-
   const [usuario, setUsuario] =
     useState("");
 
@@ -75,6 +69,14 @@ function Login() {
     carregando,
     setCarregando,
   ] = useState(false);
+
+  const [recuperacaoEtapa, setRecuperacaoEtapa] = useState(1);
+  const [recuperacaoEmail, setRecuperacaoEmail] = useState("");
+  const [recuperacaoCodigo, setRecuperacaoCodigo] = useState("");
+  const [recuperacaoNovaSenha, setRecuperacaoNovaSenha] = useState("");
+  const [recuperacaoConfirmacao, setRecuperacaoConfirmacao] = useState("");
+  const [recuperacaoMensagem, setRecuperacaoMensagem] = useState("");
+  const [recuperacaoCarregando, setRecuperacaoCarregando] = useState(false);
 
   const [trocaObrigatoria, setTrocaObrigatoria] = useState(false);
   const [novaSenha, setNovaSenha] = useState("");
@@ -482,28 +484,6 @@ function Login() {
     const senhaDigitada =
       senha;
 
-    const codigoDigitado =
-      condominioCodigo
-        .trim()
-        .toUpperCase();
-
-    /**
-     * O código do condomínio é obrigatório somente
-     * para os portais pertencentes a um condomínio.
-     *
-     * Usuários internos da plataforma não pertencem a condomínio.
-     */
-    if (
-      tipo !== "platform" &&
-      !codigoDigitado
-    ) {
-      setErro(
-        "Informe o código do condomínio"
-      );
-
-      return;
-    }
-
     if (
       !usuarioDigitado ||
       !senhaDigitada
@@ -523,16 +503,9 @@ function Login() {
        */
       const resultadoLogin =
         await authApi.login({
-          condominiumCode:
-            tipo === "platform"
-              ? undefined
-              : codigoDigitado,
-
-          username:
-            usuarioDigitado,
-
-          password:
-            senhaDigitada,
+          portalType: tipo,
+          username: usuarioDigitado,
+          password: senhaDigitada,
         });
 
       const usuarioBackend =
@@ -727,12 +700,30 @@ function Login() {
    * Mantido visualmente como na versão atual.
    */
   function abrirRecuperacaoSenha() {
-    setRecuperarSenha(true);
-    setErro("");
+    setRecuperarSenha(true); setErro(""); setRecuperacaoEtapa(1); setRecuperacaoMensagem("");
+    setRecuperacaoEmail(""); setRecuperacaoCodigo(""); setRecuperacaoNovaSenha(""); setRecuperacaoConfirmacao("");
   }
 
-  function fecharRecuperacaoSenha() {
-    setRecuperarSenha(false);
+  function fecharRecuperacaoSenha() { setRecuperarSenha(false); setRecuperacaoMensagem(""); }
+
+  async function enviarCodigoRecuperacao() {
+    if (!recuperacaoEmail.trim()) return setRecuperacaoMensagem("Informe o e-mail cadastrado.");
+    setRecuperacaoCarregando(true); setRecuperacaoMensagem("");
+    try {
+      await authApi.requestPasswordReset({ portalType: tipo, email: recuperacaoEmail.trim().toLowerCase() });
+      setRecuperacaoEtapa(2); setRecuperacaoMensagem("Código enviado. Confira o e-mail cadastrado. Ele expira em 10 minutos.");
+    } catch (error) { setRecuperacaoMensagem(error?.message ?? "Não foi possível enviar o código."); }
+    finally { setRecuperacaoCarregando(false); }
+  }
+
+  async function redefinirSenhaRecuperacao() {
+    setRecuperacaoCarregando(true); setRecuperacaoMensagem("");
+    try {
+      await authApi.confirmPasswordReset({ portalType: tipo, email: recuperacaoEmail.trim().toLowerCase(), code: recuperacaoCodigo.trim(), newPassword: recuperacaoNovaSenha, newPasswordConfirmation: recuperacaoConfirmacao });
+      setRecuperacaoMensagem("Senha redefinida com sucesso. Você já pode entrar com a nova senha.");
+      setTimeout(() => fecharRecuperacaoSenha(), 1200);
+    } catch (error) { setRecuperacaoMensagem(error?.message ?? "Não foi possível redefinir a senha."); }
+    finally { setRecuperacaoCarregando(false); }
   }
 
   /**
@@ -781,7 +772,7 @@ function Login() {
    *
    * A única inclusão visual necessária para a
    * autenticação multi-condomínio é o campo
-   * "Código do condomínio".
+   * O acesso é identificado pelo usuário ou e-mail e pelo perfil do portal.
    */
   return (
     <div style={styles.container}>
@@ -833,45 +824,6 @@ function Login() {
             {perfil.subtitulo}
           </p>
 
-          {/**
-           * =============================================
-           * CÓDIGO DO CONDOMÍNIO
-           * =============================================
-           *
-           * Usa exatamente o mesmo estilo do campo
-           * de usuário para não quebrar o design.
-           */}
-          {tipo !== "platform" && (
-            <div
-              style={
-                styles.inputGroup
-              }
-            >
-              <label
-                style={styles.label}
-              >
-                Código do condomínio
-              </label>
-
-              <input
-                style={styles.input}
-                placeholder="Digite o código do condomínio"
-                value={
-                  condominioCodigo
-                }
-                onChange={(e) =>
-                  setCondominioCodigo(
-                    e.target.value
-                  )
-                }
-                onKeyDown={
-                  handleKeyPress
-                }
-                autoComplete="organization"
-              />
-            </div>
-          )}
-
           <div
             style={
               styles.inputGroup
@@ -885,7 +837,7 @@ function Login() {
 
             <input
               style={styles.input}
-              placeholder="Digite seu usuário"
+              placeholder="Digite seu usuário ou e-mail"
               value={usuario}
               onChange={(e) =>
                 setUsuario(
@@ -1142,64 +1094,25 @@ function Login() {
        * =================================================
        */}
       {recuperarSenha && (
-        <div
-          style={
-            styles.modalOverlay
-          }
-        >
-          <div
-            style={
-              styles.warningModal
-            }
-          >
-            <div
-              style={
-                styles.warningIcon
-              }
-            >
-              🔐
+        <div style={styles.modalOverlay}>
+          <div style={{ ...styles.warningModal, width: "min(480px, calc(100vw - 32px))" }}>
+            <div style={styles.warningIcon}>🔐</div>
+            <h2 style={styles.warningTitle}>Recuperar acesso</h2>
+            <p style={styles.warningText}>O código será enviado somente para o e-mail cadastrado no InfinityCondo.</p>
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>E-mail cadastrado</label>
+              <input type="email" style={styles.input} value={recuperacaoEmail} disabled={recuperacaoEtapa === 2} onChange={(e)=>setRecuperacaoEmail(e.target.value)} placeholder="seuemail@exemplo.com" />
             </div>
-
-            <h2
-              style={
-                styles.warningTitle
-              }
-            >
-              Recuperação de senha
-            </h2>
-
-            <p
-              style={
-                styles.warningText
-              }
-            >
-              A recuperação automática será integrada ao backend
-              em uma etapa específica de segurança.
-            </p>
-
-            <p
-              style={
-                styles.warningText
-              }
-            >
-              Por enquanto, solicite a redefinição ao administrador
-              do condomínio ou à Star Infinity Code.
-            </p>
-
-            <div
-              style={
-                styles.warningActions
-              }
-            >
-              <button
-                style={
-                  styles.changeNowButton
-                }
-                onClick={
-                  fecharRecuperacaoSenha
-                }
-              >
-                Entendi
+            {recuperacaoEtapa === 2 && (<>
+              <div style={styles.inputGroup}><label style={styles.label}>Código de 6 dígitos</label><input inputMode="numeric" maxLength={6} style={styles.input} value={recuperacaoCodigo} onChange={(e)=>setRecuperacaoCodigo(e.target.value.replace(/\D/g, ""))} /></div>
+              <div style={styles.inputGroup}><label style={styles.label}>Nova senha</label><input type="password" style={styles.input} value={recuperacaoNovaSenha} onChange={(e)=>setRecuperacaoNovaSenha(e.target.value)} /></div>
+              <div style={styles.inputGroup}><label style={styles.label}>Confirmar nova senha</label><input type="password" style={styles.input} value={recuperacaoConfirmacao} onChange={(e)=>setRecuperacaoConfirmacao(e.target.value)} /></div>
+            </>)}
+            {recuperacaoMensagem && <div style={{...styles.errorBox,background:"#f5f3ff",color:"#5b21b6",borderColor:"#ddd6fe"}}>{recuperacaoMensagem}</div>}
+            <div style={{...styles.warningActions,gap:"10px"}}>
+              <button type="button" style={styles.changeNowButton} onClick={fecharRecuperacaoSenha}>Cancelar</button>
+              <button type="button" style={{...styles.changeNowButton,background:perfil.gradient,color:"white"}} disabled={recuperacaoCarregando} onClick={recuperacaoEtapa===1?enviarCodigoRecuperacao:redefinirSenhaRecuperacao}>
+                {recuperacaoCarregando ? "Processando..." : recuperacaoEtapa===1 ? "Enviar código" : "Criar nova senha"}
               </button>
             </div>
           </div>

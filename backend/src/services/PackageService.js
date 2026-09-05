@@ -9,6 +9,7 @@ import residentRepository from "../repositories/ResidentRepository.js";
 
 import { ApiError } from "../utils/ApiError.js";
 import PickupCredential from "../utils/PickupCredential.js";
+import { saveImageDataUrl, imageAsDataUrl } from "../utils/imageUpload.js";
 
 class PackageService extends BaseService {
   constructor() {
@@ -474,6 +475,15 @@ class PackageService extends BaseService {
     };
   }
 
+  async getDeliveryProof(id, condominiumId) {
+    const record = await packageRepository.findById(id, condominiumId);
+    if (!record) throw new ApiError("Encomenda não encontrada.", 404);
+    if (!record.deliveryProofFilePath) throw new ApiError("Esta entrega não possui comprovante fotográfico.", 404);
+    const dataUrl = await imageAsDataUrl(record.deliveryProofFilePath, record.deliveryProofMimeType);
+    if (!dataUrl) throw new ApiError("Comprovante indisponível.", 404);
+    return { dataUrl, mimeType: record.deliveryProofMimeType };
+  }
+
   async confirmPickup(
     id,
     condominiumId,
@@ -589,6 +599,12 @@ class PackageService extends BaseService {
     const before =
       validated.package;
 
+    const deliveryProof =
+      await saveImageDataUrl(
+        data.deliveryProofImageDataUrl,
+        "package-proofs"
+      );
+
     const updated =
       await packageRepository
         .confirmPickup(
@@ -605,6 +621,10 @@ class PackageService extends BaseService {
               data.method,
             pickupPersonType,
             pickupResidentId,
+            deliveryProofFilePath:
+              deliveryProof?.filePath ?? null,
+            deliveryProofMimeType:
+              deliveryProof?.mimeType ?? null,
           }
         );
 

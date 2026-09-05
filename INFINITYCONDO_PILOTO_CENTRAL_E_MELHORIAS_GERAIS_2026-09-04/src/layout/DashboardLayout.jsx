@@ -1,0 +1,695 @@
+import { useEffect, useState } from "react";
+
+import {
+  Link,
+  Outlet,
+  useNavigate,
+  useLocation
+} from "react-router-dom";
+
+import {
+  FaChartPie,
+  FaChartLine,
+  FaUsers,
+  FaUserShield,
+  FaBox,
+  FaBell,
+  FaCalendarAlt,
+  FaDoorOpen,
+  FaClipboardList,
+  FaBuilding,
+  FaCog,
+  FaSignOutAlt,
+  FaHardHat,
+  FaWallet,
+  FaHeadset
+} from "react-icons/fa";
+
+import { contarNaoLidas } from "../Services/notificacaoService";
+import authApi from "../Services/authApi.js";
+import NotificationCenter from "../components/NotificationCenter.jsx";
+
+function DashboardLayout() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [perfilCondominio, setPerfilCondominio] = useState({
+    nomeCondominio: "InfinityCondo",
+    logoUrl: "",
+    plano: "Completo"
+  });
+
+  const [notificacoesNaoLidas, setNotificacoesNaoLidas] = useState(0);
+
+  const planoAtual = perfilCondominio?.plano || "Completo";
+  const possuiBI = planoAtual === "Completo";
+  const textoPlano = possuiBI ? "Completo" : "Básico";
+
+  const [
+    usuarioLogado,
+    setUsuarioLogado,
+  ] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function carregarContexto() {
+      try {
+        const user =
+          await authApi.me();
+
+        if (!mounted) {
+          return;
+        }
+
+        if (
+          ![
+            "CONDOMINIUM_ADMIN",
+            "MANAGER",
+          ].includes(
+            user?.role
+          )
+        ) {
+          navigate(
+            "/login/sindico",
+            {
+              replace: true,
+            }
+          );
+
+          return;
+        }
+
+        setUsuarioLogado({
+          ...user,
+          nome:
+            user.name ??
+            "Administrador",
+          perfilAdmin:
+            user.role ===
+            "MANAGER"
+              ? "sub"
+              : "master",
+        });
+
+        const condominium =
+          user.condominium ??
+          {};
+
+        setPerfilCondominio({
+          nomeCondominio:
+            condominium.name ??
+            "Condomínio",
+          logoUrl:
+            condominium.logoUrl ??
+            "",
+          plano:
+            condominium.subscription
+              ?.plan
+              ?.name ??
+            "Completo",
+        });
+
+        await carregarNotificacoes();
+      } catch {
+        if (mounted) {
+          navigate(
+            "/login/sindico",
+            {
+              replace: true,
+            }
+          );
+        }
+      }
+    }
+
+    carregarContexto();
+    carregarNotificacoes();
+
+    const interval =
+      setInterval(
+        () => {
+          carregarNotificacoes();
+        },
+        15000
+      );
+
+    return () => {
+      mounted = false;
+      clearInterval(
+        interval
+      );
+    };
+  }, [navigate]);
+
+  async function carregarNotificacoes() {
+    try {
+      setNotificacoesNaoLidas(
+        await contarNaoLidas()
+      );
+    } catch {
+      setNotificacoesNaoLidas(0);
+    }
+  }
+
+  if (!usuarioLogado) {
+    return null;
+  }
+
+  function sair() {
+    authApi
+      .logout()
+      .finally(() => {
+        navigate(
+          "/",
+          {
+            replace: true,
+          }
+        );
+      });
+  }
+
+  function itemAtivo(path) {
+    return location.pathname === path;
+  }
+
+  return (
+    <div className="condo-shell" style={styles.container}>
+      
+      <NotificationCenter />
+<aside className="condo-sidebar" style={styles.sidebar}>
+        <div style={styles.sidebarGlow}></div>
+        <div style={styles.sidebarGrid}></div>
+
+        <div style={styles.sidebarContent}>
+          <div style={styles.logoContainer}>
+            <div style={styles.logoIcon}>
+              {perfilCondominio.logoUrl ? (
+                <img
+                  src={perfilCondominio.logoUrl}
+                  alt="Logo do condomínio"
+                  style={styles.logoImage}
+                />
+              ) : (
+                "🏢"
+              )}
+            </div>
+
+            <div>
+              <h2 style={styles.logo}>
+                {perfilCondominio.nomeCondominio || "InfinityCondo"}
+              </h2>
+
+              <p style={styles.logoSub}>
+                Painel Executivo
+              </p>
+            </div>
+          </div>
+
+          <div style={styles.premiumBadge}>
+            ✨ Plano {textoPlano}
+          </div>
+
+          {notificacoesNaoLidas > 0 && (
+            <div style={styles.notificationBox}>
+              <FaBell />
+
+              <span>
+                {notificacoesNaoLidas} notificação
+                {notificacoesNaoLidas > 1 ? "ões" : ""} pendente
+                {notificacoesNaoLidas > 1 ? "s" : ""}
+              </span>
+            </div>
+          )}
+
+          <div style={styles.userBox}>
+            <div style={styles.userAvatar}>
+              {usuarioLogado?.perfilAdmin === "sub" ? "🛡️" : "👑"}
+            </div>
+
+            <div>
+              <div style={styles.userName}>
+                {usuarioLogado?.nome || "Administrador"}
+              </div>
+
+              <div style={styles.userRole}>
+                {usuarioLogado?.perfilAdmin === "sub"
+                  ? "Subsíndico"
+                  : "Síndico Mestre"}
+              </div>
+
+              <div style={styles.onlineLine}>
+                <span style={styles.onlineDot}></span>
+                Online agora
+              </div>
+            </div>
+          </div>
+
+          <MenuGroup title="VISÃO GERAL">
+            <MenuItem
+              to="/dashboard/sindico"
+              active={itemAtivo("/dashboard/sindico")}
+              icon={<FaChartPie />}
+              label="Dashboard"
+            />
+          </MenuGroup>
+
+          <MenuGroup title="GESTÃO">
+            <MenuItem
+              to="/dashboard/apartamentos"
+              active={itemAtivo("/dashboard/apartamentos")}
+              icon={<FaBuilding />}
+              label="Apartamentos"
+            />
+
+            <MenuItem
+              to="/dashboard/moradores"
+              active={itemAtivo("/dashboard/moradores")}
+              icon={<FaUsers />}
+              label="Moradores"
+            />
+
+            <MenuItem
+              to="/dashboard/porteiros"
+              active={itemAtivo("/dashboard/porteiros")}
+              icon={<FaUserShield />}
+              label="Porteiros"
+            />
+
+            <MenuItem
+              to="/dashboard/prestadores"
+              active={itemAtivo("/dashboard/prestadores")}
+              icon={<FaHardHat />}
+              label="Prestadores"
+            />
+          </MenuGroup>
+
+          <MenuGroup title="OPERAÇÃO">
+            <MenuItem
+              to="/dashboard/encomendas"
+              active={itemAtivo("/dashboard/encomendas")}
+              icon={<FaBox />}
+              label="Encomendas"
+            />
+
+            <MenuItem
+              to="/dashboard/visitantes"
+              active={itemAtivo("/dashboard/visitantes")}
+              icon={<FaClipboardList />}
+              label="Visitantes"
+            />
+
+            <MenuItem
+              to="/dashboard/reservas"
+              active={itemAtivo("/dashboard/reservas")}
+              icon={<FaCalendarAlt />}
+              label="Reservas"
+            />
+
+            <MenuItem
+              to="/dashboard/areas-comuns"
+              active={itemAtivo("/dashboard/areas-comuns")}
+              icon={<FaDoorOpen />}
+              label="Áreas comuns"
+            />
+          </MenuGroup>
+
+          <MenuGroup title="ANÁLISE E GESTÃO">
+            <MenuItem
+              to="/dashboard/avisos"
+              active={itemAtivo("/dashboard/avisos")}
+              icon={<FaBell />}
+              label={
+                notificacoesNaoLidas > 0
+                  ? `Avisos (${notificacoesNaoLidas})`
+                  : "Avisos"
+              }
+            />
+
+            <MenuItem
+              to="/dashboard/relatorios"
+              active={itemAtivo("/dashboard/relatorios")}
+              icon={<FaChartPie />}
+              label="Relatórios"
+            />
+
+            <MenuItem
+              to="/dashboard/financeiro"
+              active={itemAtivo("/dashboard/financeiro")}
+              icon={<FaWallet />}
+              label="Financeiro"
+            />
+
+            <MenuItem
+              to="/dashboard/bi-analytics"
+              active={itemAtivo("/dashboard/bi-analytics")}
+              icon={<FaChartLine />}
+              label="BI Analytics"
+            />
+
+            <MenuItem
+              to="/dashboard/bi-monitor"
+              active={itemAtivo("/dashboard/bi-monitor")}
+              icon={<FaChartLine />}
+              label="BI Monitor"
+            />
+
+            <MenuItem
+              to="/dashboard/suporte"
+              active={itemAtivo("/dashboard/suporte")}
+              icon={<FaHeadset />}
+              label="Suporte Star"
+            />
+
+            <MenuItem
+              to="/dashboard/configuracoes"
+              active={itemAtivo("/dashboard/configuracoes")}
+              icon={<FaCog />}
+              label="Configurações"
+            />
+          </MenuGroup>
+        </div>
+
+        <div style={styles.footer}>
+          <div style={styles.footerCard}>
+            <p style={styles.footerTitle}>
+              InfinityCondo
+            </p>
+
+            <p style={styles.footerText}>
+              Gestão condominial inteligente por Star Infinity Code.
+            </p>
+          </div>
+
+          <button style={styles.logoutButton} onClick={sair}>
+            <FaSignOutAlt />
+            Encerrar sessão
+          </button>
+        </div>
+      </aside>
+
+      <main className="condo-main" style={styles.content}>
+        <Outlet />
+      </main>
+    </div>
+  );
+}
+
+function MenuGroup({ title, children }) {
+  return (
+    <div style={styles.menuGroup}>
+      <div style={styles.menuGroupTitle}>
+        {title}
+      </div>
+
+      <nav style={styles.menu}>
+        {children}
+      </nav>
+    </div>
+  );
+}
+
+function MenuItem({ to, active, icon, label }) {
+  return (
+    <Link
+      to={to}
+      style={{
+        ...styles.menuItem,
+        ...(active ? styles.active : {})
+      }}
+    >
+      <span style={styles.menuIcon}>
+        {icon}
+      </span>
+
+      <span>
+        {label}
+      </span>
+    </Link>
+  );
+}
+
+const styles = {
+  container: {
+    display: "flex",
+    minHeight: "100vh",
+    background:
+      "linear-gradient(180deg,#ffffff,#f8f5ff)",
+    fontFamily: "Arial"
+  },
+
+  sidebar: {
+    width: "310px",
+    minWidth: "310px",
+    minHeight: "100vh",
+    background:
+      "radial-gradient(circle at top left,rgba(168,85,247,0.22),transparent 32%), linear-gradient(180deg,#2e1065,#4c1d95,#6d28d9)",
+    padding: "26px 20px",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
+    boxShadow: "12px 0 45px rgba(88,28,135,0.24)",
+    color: "white",
+    overflowY: "auto",
+    boxSizing: "border-box"
+  },
+
+  logoContainer: {
+    display: "flex",
+    alignItems: "center",
+    gap: "14px",
+    marginBottom: "14px"
+  },
+
+  logoIcon: {
+    width: "62px",
+    height: "62px",
+    borderRadius: "22px",
+    background:
+      "linear-gradient(135deg,rgba(255,255,255,0.18),rgba(255,255,255,0.08))",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "30px",
+    boxShadow:
+      "inset 0 0 0 1px rgba(255,255,255,0.14), 0 14px 30px rgba(0,0,0,0.18)",
+    backdropFilter: "blur(12px)",
+    overflow: "hidden"
+  },
+
+  logoImage: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover"
+  },
+
+  logo: {
+    color: "white",
+    margin: 0,
+    fontSize: "22px",
+    fontWeight: "900",
+    letterSpacing: "-0.4px"
+  },
+
+  logoSub: {
+    margin: "4px 0 0",
+    color: "rgba(255,255,255,0.68)",
+    fontSize: "12px",
+    textTransform: "uppercase",
+    letterSpacing: "1px",
+    fontWeight: "800"
+  },
+
+  premiumBadge: {
+    display: "inline-flex",
+    alignItems: "center",
+    width: "fit-content",
+    background:
+      "linear-gradient(135deg,rgba(250,204,21,0.26),rgba(255,255,255,0.10))",
+    border: "1px solid rgba(250,204,21,0.28)",
+    color: "#fef9c3",
+    padding: "9px 13px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "900",
+    marginBottom: "18px"
+  },
+
+  notificationBox: {
+    background: "rgba(250,204,21,0.16)",
+    border: "1px solid rgba(250,204,21,0.28)",
+    color: "#fef9c3",
+    borderRadius: "17px",
+    padding: "12px 13px",
+    marginBottom: "18px",
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    fontSize: "13px",
+    fontWeight: "900"
+  },
+
+  userBox: {
+    background:
+      "linear-gradient(135deg,rgba(255,255,255,0.13),rgba(255,255,255,0.07))",
+    border: "1px solid rgba(255,255,255,0.14)",
+    borderRadius: "26px",
+    padding: "16px",
+    display: "flex",
+    alignItems: "center",
+    gap: "13px",
+    marginBottom: "26px",
+    boxShadow: "0 18px 38px rgba(0,0,0,0.20)",
+    backdropFilter: "blur(14px)"
+  },
+
+  userAvatar: {
+    width: "56px",
+    height: "56px",
+    borderRadius: "19px",
+    background:
+      "linear-gradient(135deg,#7c3aed,#a855f7)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "26px",
+    flexShrink: 0,
+    boxShadow: "0 12px 24px rgba(34,197,94,0.22)"
+  },
+
+  userName: {
+    color: "white",
+    fontWeight: "900",
+    fontSize: "15px"
+  },
+
+  userRole: {
+    color: "rgba(255,255,255,0.70)",
+    fontSize: "12px",
+    marginTop: "3px",
+    fontWeight: "600"
+  },
+
+  onlineLine: {
+    marginTop: "7px",
+    display: "flex",
+    alignItems: "center",
+    gap: "7px",
+    color: "#ddd6fe",
+    fontSize: "12px",
+    fontWeight: "800"
+  },
+
+  onlineDot: {
+    width: "8px",
+    height: "8px",
+    borderRadius: "50%",
+    background: "#a855f7",
+    boxShadow: "0 0 0 5px rgba(34,197,94,0.16)"
+  },
+
+  menuGroup: {
+    marginBottom: "18px"
+  },
+
+  menuGroupTitle: {
+    color: "rgba(255,255,255,0.38)",
+    fontSize: "11px",
+    fontWeight: "900",
+    letterSpacing: "1.6px",
+    margin: "0 0 10px 6px"
+  },
+
+  menu: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px"
+  },
+
+  menuItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    color: "rgba(255,255,255,0.86)",
+    textDecoration: "none",
+    padding: "13px 14px",
+    borderRadius: "18px",
+    fontSize: "14px",
+    fontWeight: "850",
+    transition: "0.2s",
+    background: "rgba(255,255,255,0.055)",
+    border: "1px solid rgba(255,255,255,0.06)"
+  },
+
+  menuIcon: {
+    width: "36px",
+    height: "36px",
+    borderRadius: "14px",
+    background: "rgba(255,255,255,0.10)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0
+  },
+
+  active: {
+    background:
+      "linear-gradient(135deg,#7c3aed,#a855f7)",
+    color: "white",
+    border: "1px solid rgba(255,255,255,0.24)",
+    boxShadow:
+      "0 14px 28px rgba(34,197,94,0.28)"
+  },
+
+  footer: {
+    marginTop: "24px"
+  },
+
+  footerCard: {
+    background:
+      "linear-gradient(135deg,rgba(255,255,255,0.11),rgba(255,255,255,0.06))",
+    border: "1px solid rgba(255,255,255,0.11)",
+    borderRadius: "23px",
+    padding: "16px",
+    marginBottom: "14px"
+  },
+
+  footerTitle: {
+    margin: 0,
+    fontSize: "14px",
+    fontWeight: "900"
+  },
+
+  footerText: {
+    margin: "7px 0 0",
+    color: "rgba(255,255,255,0.62)",
+    fontSize: "12px",
+    lineHeight: "1.45"
+  },
+
+  logoutButton: {
+    width: "100%",
+    background: "rgba(255,255,255,0.10)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    color: "white",
+    padding: "14px",
+    borderRadius: "17px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "10px",
+    cursor: "pointer",
+    fontWeight: "900"
+  },
+
+  content: {
+    flex: 1,
+    padding: "34px",
+    overflowY: "auto",
+    background:
+      "radial-gradient(circle at top right,rgba(187,247,208,0.28),transparent 26%), linear-gradient(180deg,#f8fafc,#ecfdf5)",
+    boxSizing: "border-box"
+  }
+};
+
+export default DashboardLayout;

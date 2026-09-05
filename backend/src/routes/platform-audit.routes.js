@@ -7,6 +7,7 @@ import {
 } from "../middlewares/authMiddleware.js";
 
 import platformAdminMiddleware from "../middlewares/platformAdminMiddleware.js";
+import { platformOwnerMiddleware } from "../middlewares/platformAccessMiddleware.js";
 
 const platformAuditRoutes =
   Router();
@@ -138,6 +139,13 @@ platformAuditRoutes.get(
         res,
         next
       )
+);
+
+
+platformAuditRoutes.delete(
+  "/:id",
+  platformOwnerMiddleware,
+  (req,res,next) => PlatformAuditController.archive(req,res,next)
 );
 
 export default platformAuditRoutes;

@@ -106,6 +106,17 @@ class AuthController extends BaseController {
       result.message
     );
   }
+
+  async requestPasswordReset(req, res) {
+    const result = await AuthService.requestPasswordReset(req.body, this.getRequestContext(req));
+    return this.success(res, result.message, result);
+  }
+
+  async confirmPasswordReset(req, res) {
+    const result = await AuthService.confirmPasswordReset(req.body, this.getRequestContext(req));
+    return this.success(res, result.message, result);
+  }
+
 }
 
 export default new AuthController();

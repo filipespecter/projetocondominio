@@ -1,139 +1,29 @@
-import {
-  useEffect,
-  useState,
-} from "react";
-
+import { useEffect, useState } from "react";
 import platformApi from "../../Services/platformApi.js";
+import { PlatformButton, PlatformCard, PlatformEmpty, PlatformError, PlatformLoading, PlatformPageHeader, platformTableStyles } from "../../components/PlatformUi.jsx";
 
-import {
-  PlatformCard,
-  PlatformEmpty,
-  PlatformError,
-  PlatformLoading,
-  PlatformPageHeader,
-  platformTableStyles,
-} from "../../components/PlatformUi.jsx";
-
-function PlatformAudit() {
-  const [
-    items,
-    setItems,
-  ] = useState([]);
-
-  const [
-    loading,
-    setLoading,
-  ] = useState(true);
-
-  const [
-    error,
-    setError,
-  ] = useState("");
-
-  useEffect(() => {
-    platformApi.audit
-      .list()
-      .then((data) => {
-        setItems(
-          Array.isArray(data)
-            ? data
-            : (
-                data?.items ??
-                data?.data ??
-                []
-              )
-        );
-      })
-      .catch((err) => {
-        setError(
-          err?.message ??
-          "Falha ao carregar auditoria."
-        );
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, []);
-
-  if (loading) {
-    return (
-      <PlatformLoading text="Carregando auditoria..." />
-    );
-  }
-
-  return (
-    <div>
-      <PlatformPageHeader
-        eyebrow="RASTREABILIDADE"
-        title="Auditoria global"
-        description="Ações registradas pelo backend, com usuário, módulo e contexto."
-      />
-
-      <PlatformError
-        message={error}
-      />
-
-      <PlatformCard>
-        {items.length === 0 ? (
-          <PlatformEmpty />
-        ) : (
-          <div style={platformTableStyles.wrapper}>
-            <table style={platformTableStyles.table}>
-              <thead>
-                <tr>
-                  <th style={platformTableStyles.th}>
-                    Data
-                  </th>
-                  <th style={platformTableStyles.th}>
-                    Usuário
-                  </th>
-                  <th style={platformTableStyles.th}>
-                    Ação
-                  </th>
-                  <th style={platformTableStyles.th}>
-                    Módulo
-                  </th>
-                  <th style={platformTableStyles.th}>
-                    Detalhes
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {items.map((item) => (
-                  <tr key={item.id}>
-                    <td style={platformTableStyles.td}>
-                      {item.createdAt
-                        ? new Date(
-                            item.createdAt
-                          ).toLocaleString(
-                            "pt-BR"
-                          )
-                        : "-"}
-                    </td>
-                    <td style={platformTableStyles.td}>
-                      {item.userName ??
-                        item.user?.name ??
-                        "-"}
-                    </td>
-                    <td style={platformTableStyles.td}>
-                      {item.action ?? "-"}
-                    </td>
-                    <td style={platformTableStyles.td}>
-                      {item.module ?? "-"}
-                    </td>
-                    <td style={platformTableStyles.td}>
-                      {item.details ?? "-"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </PlatformCard>
-    </div>
-  );
+function PlatformAudit(){
+  const [items,setItems]=useState([]); const [loading,setLoading]=useState(true); const [error,setError]=useState("");
+  const [selected,setSelected]=useState(null); const [confirmDelete,setConfirmDelete]=useState(null); const [backups,setBackups]=useState([]); const [backupStats,setBackupStats]=useState(null); const [busy,setBusy]=useState(false);
+  async function load(){ setLoading(true); setError(""); try{ const [auditData,backupData]=await Promise.all([platformApi.audit.list(),platformApi.operations.backups()]); setItems(Array.isArray(auditData)?auditData:(auditData?.items??auditData?.data??[])); setBackups(backupData?.items??[]); setBackupStats(backupData?.statistics??null); }catch(err){setError(err?.message??"Falha ao carregar auditoria.");}finally{setLoading(false);} }
+  useEffect(()=>{load();},[]);
+  async function history(item){ try{ setSelected(await platformApi.audit.show(item.id)); }catch(err){setError(err?.message??"Falha ao abrir histórico.");} }
+  async function remove(){ if(!confirmDelete) return; setBusy(true); try{ await platformApi.audit.remove(confirmDelete.id,"Removido manualmente pelo proprietário da plataforma."); setConfirmDelete(null); await load(); }catch(err){setError(err?.message??"Não foi possível remover o registro.");}finally{setBusy(false);} }
+  async function createBackup(){ setBusy(true); try{await platformApi.operations.createBackup(); await load();}catch(err){setError(err?.message??"Falha ao gerar backup.");}finally{setBusy(false);} }
+  if(loading) return <PlatformLoading text="Carregando auditoria e backups..."/>;
+  return <div>
+    <PlatformPageHeader eyebrow="RASTREABILIDADE E PROTEÇÃO" title="Auditoria global" description="Histórico detalhado das ações da plataforma, com backup operacional integrado." action={<PlatformButton onClick={createBackup} disabled={busy}>Gerar backup agora</PlatformButton>} />
+    <PlatformError message={error}/>
+    <div style={styles.metrics}><div style={styles.metric}><span>Registros visíveis</span><strong>{items.length}</strong></div><div style={styles.metric}><span>Backups verificados</span><strong>{backupStats?.verified??0}</strong></div><div style={styles.metric}><span>Backups recentes</span><strong>{backups.length}</strong></div></div>
+    <PlatformCard><div style={styles.cardTitle}><div><strong>Histórico da plataforma</strong><p>Use “Histórico” para abrir todos os dados do evento.</p></div></div>
+      {items.length===0?<PlatformEmpty text="Nenhum registro de auditoria."/>:<div style={platformTableStyles.wrapper}><table style={platformTableStyles.table}><thead><tr><th style={platformTableStyles.th}>Data</th><th style={platformTableStyles.th}>Usuário</th><th style={platformTableStyles.th}>Ação</th><th style={platformTableStyles.th}>Módulo</th><th style={platformTableStyles.th}>Detalhes</th><th style={platformTableStyles.th}>Ações</th></tr></thead><tbody>{items.map(item=><tr key={item.id}><td style={platformTableStyles.td}>{item.createdAt?new Date(item.createdAt).toLocaleString("pt-BR"):"-"}</td><td style={platformTableStyles.td}>{item.userName??item.user?.name??"-"}</td><td style={platformTableStyles.td}>{item.action??"-"}</td><td style={platformTableStyles.td}>{item.module??"-"}</td><td style={platformTableStyles.td}>{item.details??"-"}</td><td style={platformTableStyles.td}><div style={styles.actions}><PlatformButton variant="secondary" onClick={()=>history(item)}>Histórico</PlatformButton><PlatformButton variant="danger" onClick={()=>setConfirmDelete(item)}>Apagar</PlatformButton></div></td></tr>)}</tbody></table></div>}
+    </PlatformCard>
+    <PlatformCard style={{marginTop:18}}><div style={styles.cardTitle}><div><strong>Backups da plataforma</strong><p>Histórico operacional do PostgreSQL e arquivos de backup.</p></div><PlatformButton variant="secondary" onClick={createBackup} disabled={busy}>Backup manual</PlatformButton></div>
+      {backups.length===0?<PlatformEmpty text="Nenhum backup registrado."/>:<div style={platformTableStyles.wrapper}><table style={platformTableStyles.table}><thead><tr><th style={platformTableStyles.th}>Data</th><th style={platformTableStyles.th}>Arquivo</th><th style={platformTableStyles.th}>Status</th><th style={platformTableStyles.th}>Tipo</th></tr></thead><tbody>{backups.slice(0,10).map(b=><tr key={b.id}><td style={platformTableStyles.td}>{b.createdAt?new Date(b.createdAt).toLocaleString("pt-BR"):"-"}</td><td style={platformTableStyles.td}>{b.fileName??"-"}</td><td style={platformTableStyles.td}>{b.status??"-"}</td><td style={platformTableStyles.td}>{b.trigger??"-"}</td></tr>)}</tbody></table></div>}
+    </PlatformCard>
+    {selected&&<div style={styles.overlay}><div style={styles.modal}><div style={styles.modalHead}><div><span style={styles.badge}>HISTÓRICO</span><h2>Detalhes do evento</h2></div><button style={styles.close} onClick={()=>setSelected(null)}>×</button></div><div style={styles.detailGrid}>{[["Data",selected.createdAt?new Date(selected.createdAt).toLocaleString("pt-BR"):"-"],["Usuário",selected.userName??selected.user?.name??"-"],["Perfil",selected.userRole??"-"],["Ação",selected.action??"-"],["Módulo",selected.module??"-"],["Request ID",selected.requestId??"-"],["Referência",selected.referenceId??"-"]].map(([k,v])=><div style={styles.detail} key={k}><span>{k}</span><strong>{v}</strong></div>)}</div><div style={styles.long}><span>Detalhes</span><p>{selected.details??"Sem detalhes adicionais."}</p></div>{selected.beforeData&&<div style={styles.code}><b>Antes</b><pre>{JSON.stringify(selected.beforeData,null,2)}</pre></div>}{selected.afterData&&<div style={styles.code}><b>Depois</b><pre>{JSON.stringify(selected.afterData,null,2)}</pre></div>}</div></div>}
+    {confirmDelete&&<div style={styles.overlay}><div style={{...styles.modal,maxWidth:440}}><span style={styles.badge}>CONFIRMAÇÃO</span><h2>Apagar da visualização?</h2><p style={{color:"#6b7280",lineHeight:1.6}}>O registro será ocultado da auditoria normal, mas permanecerá preservado no banco para rastreabilidade e segurança.</p><div style={styles.actions}><PlatformButton variant="secondary" onClick={()=>setConfirmDelete(null)}>Cancelar</PlatformButton><PlatformButton variant="danger" disabled={busy} onClick={remove}>{busy?"Processando...":"Apagar"}</PlatformButton></div></div></div>}
+  </div>;
 }
-
+const styles={metrics:{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:14,marginBottom:18},metric:{padding:20,borderRadius:20,background:"linear-gradient(145deg,#170d2d,#4c1d95)",color:"white",boxShadow:"0 18px 42px rgba(76,29,149,.18)",display:"flex",flexDirection:"column",gap:8},cardTitle:{display:"flex",alignItems:"center",justifyContent:"space-between",gap:15,marginBottom:16},actions:{display:"flex",gap:8,flexWrap:"wrap"},overlay:{position:"fixed",inset:0,background:"rgba(15,8,30,.65)",backdropFilter:"blur(8px)",display:"grid",placeItems:"center",padding:20,zIndex:9999},modal:{width:"min(760px,96vw)",maxHeight:"88vh",overflow:"auto",background:"white",borderRadius:26,padding:26,boxShadow:"0 35px 90px rgba(15,8,30,.3)"},modalHead:{display:"flex",justifyContent:"space-between",alignItems:"flex-start"},close:{border:0,background:"#f3f4f6",borderRadius:12,width:38,height:38,fontSize:24,cursor:"pointer"},badge:{fontSize:11,fontWeight:800,letterSpacing:1.4,color:"#7c3aed"},detailGrid:{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:12,margin:"18px 0"},detail:{padding:14,border:"1px solid #ede9fe",borderRadius:16,display:"flex",flexDirection:"column",gap:6},long:{padding:16,borderRadius:16,background:"#faf7ff"},code:{marginTop:14,padding:16,borderRadius:16,background:"#171026",color:"#ede9fe",overflow:"auto"}};
 export default PlatformAudit;

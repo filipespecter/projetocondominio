@@ -1,0 +1,31 @@
+import { useEffect, useMemo, useState } from "react";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { FaFileExcel, FaFilePdf, FaMoneyBillWave } from "react-icons/fa";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
+import platformApi from "../../Services/platformApi.js";
+import PlatformFinance from "./PlatformFinance.jsx";
+import { PlatformCard, PlatformError, PlatformLoading, PlatformPageHeader } from "../../components/PlatformUi.jsx";
+
+const money=c=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(c||0)/100);
+const date=v=>v?new Date(v).toLocaleDateString("pt-BR"):"—";
+function PlatformFinanceExecutive(){
+ const [charges,setCharges]=useState([]),[clients,setClients]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState("");
+ async function load(){setLoading(true);setError("");try{const [c,cl]=await Promise.all([platformApi.finance.allCharges(),platformApi.condominiums.clients("?limit=100")]);setCharges(Array.isArray(c)?c:[]);setClients(cl);}catch(e){setError(e?.message??"Não foi possível carregar a gestão financeira.");}finally{setLoading(false);}}
+ useEffect(()=>{load();},[]);
+ const stats=useMemo(()=>{const sum=status=>charges.filter(c=>status.includes(c.status)).reduce((a,c)=>a+Number(c.amountInCents||0),0);return{paid:sum(["PAID"]),pending:sum(["PENDING"]),overdue:sum(["OVERDUE"]),refunded:sum(["REFUNDED"])}},[charges]);
+ const chart=useMemo(()=>["PAID","PENDING","OVERDUE","FAILED","REFUNDED"].map(status=>({status,value:charges.filter(c=>c.status===status).reduce((a,c)=>a+Number(c.amountInCents||0)/100,0)})),[charges]);
+ function rows(){return charges.map(c=>({Condomínio:c.condominium?.name??"—",Plano:c.subscription?.plan?.name??"—",Status:c.status,Vencimento:date(c.dueDate),Valor:Number(c.amountInCents||0)/100,Pago_em:c.paidAt?date(c.paidAt):"—",Provedor:c.provider??"—"}));}
+ function exportExcel(){const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows()),"Cobranças");XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([{Indicador:"MRR estimado",Valor:Number(clients?.summary?.estimatedMonthlyRevenueInCents||0)/100},{Indicador:"Recebido",Valor:stats.paid/100},{Indicador:"Pendente",Valor:stats.pending/100},{Indicador:"Vencido",Valor:stats.overdue/100}]),"Resumo");XLSX.writeFile(wb,"financeiro-star-infinity.xlsx");}
+ function exportPdf(){const doc=new jsPDF({orientation:"landscape"});doc.setFontSize(18);doc.text("Star Infinity Code • Financeiro Executivo",14,16);doc.setFontSize(10);doc.text(`MRR estimado: ${money(clients?.summary?.estimatedMonthlyRevenueInCents)}   Recebido: ${money(stats.paid)}   Pendente: ${money(stats.pending)}   Vencido: ${money(stats.overdue)}`,14,24);autoTable(doc,{startY:31,head:[["Condomínio","Plano","Status","Vencimento","Valor","Pago em","Provedor"]],body:rows().map(r=>[r.Condomínio,r.Plano,r.Status,r.Vencimento,new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(r.Valor),r.Pago_em,r.Provedor]),styles:{fontSize:8},headStyles:{fillColor:[91,33,182]}});doc.save("financeiro-star-infinity.pdf");}
+ if(loading&&!clients)return <PlatformLoading text="Carregando financeiro executivo..."/>;
+ return <div style={s.page}><PlatformPageHeader eyebrow="FINANCEIRO STAR" title="Gestão Financeira da Plataforma" description="Receita recorrente, recebimentos, pendências, inadimplência e exportações executivas da Star Infinity Code."/><PlatformError message={error}/>
+ <section style={s.hero} className="pilot-hero"><div><span style={s.kicker}>MRR ESTIMADO</span><h2 style={s.heroValue}>{money(clients?.summary?.estimatedMonthlyRevenueInCents)}</h2><p style={s.heroText}>{clients?.summary?.activeClients??0} clientes ativos • ticket médio {money((clients?.summary?.estimatedMonthlyRevenueInCents||0)/Math.max(clients?.summary?.activeClients||1,1))}</p></div><FaMoneyBillWave style={{fontSize:42,opacity:.75}}/></section>
+ <div style={s.metrics}>{[["Recebido",stats.paid],["Pendente",stats.pending],["Vencido",stats.overdue],["Reembolsado",stats.refunded]].map(([l,v])=><PlatformCard key={l}><span style={s.label}>{l}</span><strong style={s.value}>{money(v)}</strong></PlatformCard>)}</div>
+ <div style={s.actions}><button type="button" style={s.pdf} onClick={exportPdf}><FaFilePdf/> Exportar PDF</button><button type="button" style={s.excel} onClick={exportExcel}><FaFileExcel/> Exportar Excel</button></div>
+ <PlatformCard><h3 style={s.title}>Distribuição financeira</h3><div style={s.chart}><ResponsiveContainer width="100%" height="100%"><BarChart data={chart}><CartesianGrid strokeDasharray="3 3" vertical={false}/><XAxis dataKey="status"/><YAxis/><Tooltip formatter={v=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(v)}/><Bar dataKey="value" fill="#6d28d9" radius={[10,10,0,0]}/></BarChart></ResponsiveContainer></div></PlatformCard>
+ <section style={s.legacy}><span style={s.kicker}>OPERAÇÃO DE COBRANÇA</span><h3 style={s.title}>Cobranças e Mercado Pago</h3><PlatformFinance/></section></div>
+}
+const s={page:{display:"grid",gap:18},hero:{padding:27,borderRadius:27,background:"linear-gradient(135deg,#241047,#5b21b6 58%,#8b5cf6)",color:"white",display:"flex",justifyContent:"space-between",alignItems:"center",gap:20,boxShadow:"0 25px 65px rgba(76,29,149,.22)"},kicker:{fontSize:10,fontWeight:900,letterSpacing:1.5,opacity:.8},heroValue:{fontSize:"clamp(34px,6vw,52px)",margin:"7px 0 2px"},heroText:{margin:0,color:"rgba(255,255,255,.78)"},metrics:{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:12},label:{display:"block",fontSize:11,fontWeight:850,color:"#756d7d"},value:{display:"block",fontSize:21,color:"#4c1d95",marginTop:7},actions:{display:"flex",gap:10,justifyContent:"flex-end",flexWrap:"wrap"},pdf:{border:0,borderRadius:13,padding:"12px 16px",background:"#7f1d1d",color:"white",fontWeight:850,cursor:"pointer",display:"inline-flex",gap:8,alignItems:"center"},excel:{border:0,borderRadius:13,padding:"12px 16px",background:"#166534",color:"white",fontWeight:850,cursor:"pointer",display:"inline-flex",gap:8,alignItems:"center"},title:{margin:"5px 0 14px",color:"#2e174f"},chart:{height:260},legacy:{display:"grid",gap:8,marginTop:4}};
+export default PlatformFinanceExecutive;

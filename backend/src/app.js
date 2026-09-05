@@ -57,7 +57,7 @@ app.use(
  */
 app.use(
   express.json({
-    limit: "1mb",
+    limit: "2mb",
 
     verify: (
       req,
@@ -79,7 +79,7 @@ app.use(
 app.use(
   express.urlencoded({
     extended: true,
-    limit: "1mb"
+    limit: "2mb"
   })
 );
 

@@ -1,0 +1,42 @@
+INFINITYCONDO — ATUALIZAÇÃO FINAL PRÉ-HOMOLOGAÇÃO
+04/09/2026
+
+1. ENCOMENDAS
+- Porteiro continua validando retirada por QR Code ou código de 6 dígitos.
+- Após validar a credencial, pode anexar foto opcional do pacote/comprovante.
+- A imagem é compactada no navegador antes do envio.
+- Backend aceita somente JPG/PNG/WEBP e limita o tamanho.
+- Arquivo fica no volume persistente de uploads do Docker; o banco guarda apenas a referência.
+- Comprovante continua isolado pelo condominiumId.
+
+2. FINANCEIRO BÁSICO DO SÍNDICO
+Novo menu: Dashboard > Financeiro.
+Escopo propositalmente simples: controle de DESPESAS, não contabilidade completa.
+
+Inclui:
+- categorias personalizadas por condomínio;
+- ativar/desativar categorias;
+- cadastro, edição e exclusão lógica de despesas;
+- data, categoria, descrição, fornecedor, forma de pagamento, valor e observação;
+- comprovante de despesa opcional;
+- filtro por competência, categoria e pesquisa;
+- total do mês, quantidade, ticket médio e maior categoria;
+- gráficos por categoria;
+- PDF agrupado pelas categorias do síndico;
+- Excel com abas Lançamentos e Resumo por categoria;
+- auditoria das alterações;
+- isolamento multi-tenant pelo condominiumId.
+
+3. BANCO
+Nova migration:
+20260904102000_add_expenses_and_package_proofs
+
+APÓS APLICAR O ZIP:
+docker compose up -d --build
+docker compose exec backend npm run prisma:deploy
+docker compose exec backend npm test
+docker compose exec frontend npm run lint
+docker compose exec frontend npm run build
+
+IMPORTANTE:
+Não executar docker compose down -v no ambiente que contenha dados que devem ser preservados.

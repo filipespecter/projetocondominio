@@ -1,0 +1,29 @@
+INFINITYCONDO - FECHAMENTO DE AUTENTICACAO, PLANOS, AUDITORIA E BACKUP
+
+Inclui:
+- Esqueci minha senha real: e-mail -> código de 6 dígitos -> nova senha.
+- Código expira em 10 minutos, uso único e máximo de 5 tentativas.
+- Provider de e-mail RESEND para produção e CONSOLE apenas para desenvolvimento local.
+- Reset administrativo já existente na Central preservado e auditado.
+- Planos Básico e Completo garantidos pelo seed.
+- Matriz de Feature/PlanFeature criada no seed.
+- Financeiro, comprovante de encomenda, BI, relatórios avançados, WhatsApp e IA classificados como premium/Completo.
+- Backend protege Financeiro e BI por feature; foto da encomenda só exige premium quando realmente enviada.
+- Auditoria da Central ganha botão Histórico, detalhes completos e Apagar.
+- “Apagar” é exclusão lógica e exclusiva do PLATFORM_OWNER: o registro continua preservado para rastreabilidade.
+- Auditoria mostra backups recentes e permite gerar backup manual.
+- Mercado Pago permanece infraestrutura de cobrança da Star, não benefício de plano.
+
+APLICAÇÃO:
+1) Expandir o ZIP na raiz do projeto com -Force.
+2) docker compose up -d --build
+3) docker compose exec backend npm run prisma:deploy
+4) docker compose exec backend node prisma/seed.js
+5) docker compose exec backend npm test
+6) docker compose exec frontend npm run lint
+7) docker compose exec frontend npm run build
+
+PRODUÇÃO:
+- Não usar EMAIL_PROVIDER=CONSOLE.
+- Configurar EMAIL_PROVIDER=RESEND, EMAIL_API_KEY e EMAIL_FROM.
+- Configurar Meta/WhatsApp e Mercado Pago somente no ambiente público HTTPS.
