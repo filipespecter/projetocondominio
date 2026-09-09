@@ -1,4 +1,5 @@
 import PlatformAuditRepository from "../repositories/PlatformAuditRepository.js";
+import AuditLogService from "./AuditLogService.js";
 import { ApiError } from "../utils/ApiError.js";
 
 class PlatformAuditService {
@@ -223,11 +224,55 @@ class PlatformAuditService {
   }
 
 
+  normalizeArchiveReason(reason) {
+    const normalized = String(reason ?? "").trim();
+    if (normalized.length < 5) {
+      throw new ApiError("Informe um motivo com pelo menos 5 caracteres para ocultar registros da auditoria.", 400);
+    }
+    if (normalized.length > 500) {
+      throw new ApiError("O motivo da ocultação deve possuir no máximo 500 caracteres.", 400);
+    }
+    return normalized;
+  }
+
+  ensureOwner(platformUser) {
+    if (platformUser?.role !== "PLATFORM_OWNER") {
+      throw new ApiError("Somente o proprietário da plataforma pode alterar a visualização da auditoria.", 403);
+    }
+  }
+
   async archive(id, platformUser, reason = null) {
-    if (platformUser?.role !== "PLATFORM_OWNER") throw new ApiError("Somente o proprietário da plataforma pode apagar registros da visualização da auditoria.",403);
+    this.ensureOwner(platformUser);
+    const normalizedReason = this.normalizeArchiveReason(reason);
     const log = await PlatformAuditRepository.findById(id);
-    if (!log || log.deletedAt) throw new ApiError("Registro de auditoria não encontrado.",404);
-    return PlatformAuditRepository.softDelete(id, platformUser.id, String(reason ?? "").trim() || "Removido da visualização pelo proprietário da plataforma.");
+    if (!log || log.deletedAt) throw new ApiError("Registro de auditoria não encontrado.", 404);
+    return PlatformAuditRepository.softDelete(id, platformUser.id, normalizedReason);
+  }
+
+  async archiveVisible(platformUser, reason = null, requestContext = null) {
+    this.ensureOwner(platformUser);
+    const normalizedReason = this.normalizeArchiveReason(reason);
+    const result = await PlatformAuditRepository.softDeleteVisible(platformUser.id, normalizedReason);
+
+    await AuditLogService.createLog({
+      condominiumId: null,
+      userId: platformUser.id,
+      userName: platformUser.name ?? null,
+      userRole: platformUser.role,
+      action: "ARCHIVE_VIEW",
+      module: "AUDIT",
+      details: `Visualização da auditoria limpa logicamente. ${result.count} registro(s) ocultado(s).`,
+      requestId: requestContext?.requestId ?? null,
+      afterData: {
+        archivedCount: result.count,
+        archivedAt: result.archivedAt,
+        reason: normalizedReason,
+      },
+      ipAddress: requestContext?.ipAddress ?? null,
+      userAgent: requestContext?.userAgent ?? null,
+    });
+
+    return result;
   }
 
   async statistics() {

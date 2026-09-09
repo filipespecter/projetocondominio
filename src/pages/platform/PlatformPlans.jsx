@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import platformApi from "../../Services/platformApi.js";
 import { PlatformButton, PlatformCard, PlatformEmpty, PlatformError, PlatformLoading, PlatformPageHeader } from "../../components/PlatformUi.jsx";
 
-const premiumCodes = new Set(["EXPENSES","EXPENSE_EXPORT","PACKAGE_PROOF","ADVANCED_REPORTS","BI_DASHBOARD","WHATSAPP","AI_ASSISTANT"]);
+const premiumCodes = new Set(["EXPENSES","EXPENSE_EXPORT","PACKAGE_PROOF","ADVANCED_REPORTS","BI_DASHBOARD","WHATSAPP"]);
 function money(cents){ return new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(cents??0)/100); }
 
 function PlatformPlans(){

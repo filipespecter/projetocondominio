@@ -88,19 +88,69 @@ class SupportTicketService {
   async update(id, payload, platformUser) {
     const current = await prisma.supportTicket.findUnique({ where: { id } });
     if (!current) throw new ApiError("Solicitação de atendimento não encontrada.", 404);
+    if (!platformUser?.id) throw new ApiError("Responsável da plataforma não identificado.", 401);
+
+    const allowedStatuses = ["OPEN", "IN_PROGRESS", "WAITING_CUSTOMER", "RESOLVED", "CLOSED"];
+    const allowedPriorities = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
     const data = {};
-    if (payload.status) data.status = payload.status;
-    if (payload.priority) data.priority = payload.priority;
+
+    if (payload.status) {
+      const status = String(payload.status).trim().toUpperCase();
+      if (!allowedStatuses.includes(status)) throw new ApiError("Status de atendimento inválido.", 400);
+      data.status = status;
+    }
+
+    if (payload.priority) {
+      const priority = String(payload.priority).trim().toUpperCase();
+      if (!allowedPriorities.includes(priority)) throw new ApiError("Prioridade de atendimento inválida.", 400);
+      data.priority = priority;
+    }
+
     if (payload.category) data.category = String(payload.category).trim();
-    if (payload.resolution !== undefined) data.resolution = String(payload.resolution ?? "").trim() || null;
     if (payload.assignToMe) data.assignedToUserId = platformUser.id;
+
     const now = new Date();
-    if (!current.firstResponseAt && (payload.status === "IN_PROGRESS" || payload.assignToMe)) data.firstResponseAt = now;
-    if (payload.status === "RESOLVED") data.resolvedAt = now;
-    if (payload.status === "CLOSED") data.closedAt = now;
+    if (!current.firstResponseAt && (data.status === "IN_PROGRESS" || payload.assignToMe)) {
+      data.firstResponseAt = now;
+    }
+
+    if (data.status === "RESOLVED") {
+      const resolution = String(payload.resolution ?? "").trim();
+      if (resolution.length < 5) {
+        throw new ApiError("Descreva a solução aplicada com pelo menos 5 caracteres.", 400);
+      }
+      if (resolution.length > 2000) {
+        throw new ApiError("A solução aplicada deve possuir no máximo 2000 caracteres.", 400);
+      }
+      data.resolution = resolution;
+      data.resolvedAt = now;
+      data.closedAt = null;
+      if (!current.assignedToUserId) data.assignedToUserId = platformUser.id;
+      if (!current.firstResponseAt) data.firstResponseAt = now;
+    } else if (payload.resolution !== undefined) {
+      data.resolution = String(payload.resolution ?? "").trim() || null;
+    }
+
+    if (data.status === "CLOSED") {
+      if (current.status !== "RESOLVED" && !current.resolvedAt) {
+        throw new ApiError("Resolva a solicitação antes de encerrá-la.", 409);
+      }
+      data.closedAt = now;
+    }
+
+    if (["OPEN", "IN_PROGRESS", "WAITING_CUSTOMER"].includes(data.status)) {
+      data.resolvedAt = null;
+      data.closedAt = null;
+    }
+
     return prisma.supportTicket.update({
-      where: { id }, data,
-      include: { condominium: true, openedBy: { select: { id: true, name: true, email: true } }, assignedTo: { select: { id: true, name: true } } },
+      where: { id },
+      data,
+      include: {
+        condominium: true,
+        openedBy: { select: { id: true, name: true, email: true } },
+        assignedTo: { select: { id: true, name: true } },
+      },
     });
   }
 }

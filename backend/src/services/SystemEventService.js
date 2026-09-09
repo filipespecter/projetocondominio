@@ -31,10 +31,32 @@ class SystemEventService {
     return SystemEventRepository.createEvent({ ...data, severity: String(data.severity ?? "INFO").trim().toUpperCase() });
   }
 
-  async resolve(id, user, notes = null) {
+  async resolve(id, user, payload = {}) {
     const event = await this.findById(id);
     if (event.resolvedAt) throw new ApiError("Este evento já está resolvido.", 409);
-    return SystemEventRepository.resolve(id, user.id, notes ? String(notes).trim() : null);
+    if (!user?.id) throw new ApiError("Responsável pela resolução não identificado.", 401);
+
+    const resolutionAction = String(
+      payload?.resolutionAction ?? payload?.resolutionNotes ?? ""
+    ).trim();
+    const resolutionComment = String(payload?.resolutionComment ?? "").trim() || null;
+
+    if (resolutionAction.length < 5) {
+      throw new ApiError("Descreva a ação tomada com pelo menos 5 caracteres.", 400);
+    }
+    if (resolutionAction.length > 1000) {
+      throw new ApiError("A ação tomada deve possuir no máximo 1000 caracteres.", 400);
+    }
+    if (resolutionComment && resolutionComment.length > 2000) {
+      throw new ApiError("A observação deve possuir no máximo 2000 caracteres.", 400);
+    }
+
+    return SystemEventRepository.resolve(
+      id,
+      user.id,
+      resolutionAction,
+      resolutionComment
+    );
   }
 
   async reopen(id) {

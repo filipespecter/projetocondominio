@@ -53,7 +53,6 @@ class PlanService extends BaseService {
       ["ADVANCED_REPORTS", "Relatórios avançados", "Relatórios e exportações avançadas"],
       ["BI_DASHBOARD", "BI e indicadores", "Dashboards e análises avançadas"],
       ["WHATSAPP", "WhatsApp automático", "Comunicações automáticas por WhatsApp"],
-      ["AI_ASSISTANT", "IA Star", "Assistente inteligente futuro"],
     ];
 
     const savedFeatures = {};

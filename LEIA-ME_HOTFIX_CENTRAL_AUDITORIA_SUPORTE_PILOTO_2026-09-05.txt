@@ -1,0 +1,66 @@
+INFINITYCONDO — HOTFIX CENTRAL / AUDITORIA / SUPORTE / EVENTOS
+Data: 2026-09-05
+Aplicar SOMENTE sobre a versão do piloto validada no commit 1b64411 ou descendente direto na branch homolog.
+
+OBJETIVO
+Corrigir os erros 500 encontrados no teste manual da Central e alinhar Auditoria, Eventos, Suporte e Planos ao comportamento de um piloto real.
+
+CORREÇÕES
+1. Auditoria
+- migration de reparo idempotente garante deletedAt/deletedByUserId/deletionReason em bancos de homologação antigos;
+- listagem usa relacionamentos mínimos para reduzir fragilidade;
+- não existe conceito de "Resolver" na Auditoria;
+- ação individual passa a ser "Ocultar" com motivo obrigatório;
+- novo botão "Limpar visualização" para PLATFORM_OWNER;
+- limpeza é SOMENTE lógica: registros permanecem no banco;
+- a própria limpeza gera novo registro de auditoria.
+
+2. Eventos do sistema
+- "Resolver" fica exclusivamente em Eventos;
+- ação tomada é obrigatória;
+- observação é opcional;
+- responsável e data/hora são registrados;
+- tela separa Em aberto / Resolvidos / Todos;
+- reabertura limpa os dados da resolução anterior;
+- validações HTTP 4xx normais deixam de poluir Eventos; somente falhas técnicas 5xx viram SystemEvent.
+
+3. Suporte / SA
+- migration de reparo garante a tabela SupportTicket e seus índices/relacionamentos;
+- resolução da SA exige solução aplicada;
+- responsável é registrado automaticamente quando necessário;
+- data da primeira resposta e data da resolução são preservadas;
+- SA precisa ser resolvida antes de ser encerrada;
+- filtro de SAs críticas corrigido;
+- tela passa a exibir solução aplicada.
+
+4. Planos / piloto comercial
+- IA Star / AI_ASSISTANT removida do catálogo visível, seed, runtime e tela de planos;
+- migration remove vínculos antigos da IA com PlanFeature e arquiva a Feature antiga;
+- nenhuma tela do piloto anuncia recurso futuro não entregue.
+
+5. Reparo do banco
+Nova migration:
+backend/prisma/migrations/20260905130000_repair_support_audit_events/migration.sql
+
+Ela é idempotente e deve ser aplicada com prisma:deploy.
+
+VALIDAÇÃO REALIZADA NA CÓPIA DE TRABALHO
+- backend: 42 testes / 42 pass / 0 fail;
+- frontend src: ESLint sem erros;
+- sintaxe dos arquivos backend alterados: OK.
+- build final deve ser validado no Docker do projeto, pois o ambiente de geração do hotfix não possui o binding nativo Linux do Rolldown/Vite contido na instalação Windows original.
+
+ORDEM DE APLICAÇÃO NO PC DO PROJETO
+1. confirmar branch homolog;
+2. extrair este ZIP na raiz do projeto com -Force;
+3. docker compose up -d --build;
+4. docker compose exec backend npm run prisma:deploy;
+5. docker compose exec backend node prisma/seed.js;
+6. docker compose exec backend npm test;
+7. docker compose exec frontend npm run lint;
+8. docker compose exec frontend npm run build;
+9. docker compose ps;
+10. repetir teste manual de Suporte, Auditoria, Eventos e Planos.
+
+NÃO usar docker compose down -v.
+NÃO aplicar diretamente na main.

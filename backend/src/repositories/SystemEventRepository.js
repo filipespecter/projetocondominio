@@ -59,12 +59,33 @@ class SystemEventRepository extends BaseRepository {
     }, { include: this.defaultInclude });
   }
 
-  async resolve(id, resolvedByUserId, resolutionNotes = null) {
-    return this.update({ id }, { resolvedByUserId, resolvedAt: new Date(), resolutionNotes }, { include: this.defaultInclude });
+  async resolve(id, resolvedByUserId, resolutionAction, resolutionComment = null) {
+    const legacyNotes = [resolutionAction, resolutionComment].filter(Boolean).join(" — ");
+    return this.update(
+      { id },
+      {
+        resolvedByUserId,
+        resolvedAt: new Date(),
+        resolutionAction,
+        resolutionComment,
+        resolutionNotes: legacyNotes || null,
+      },
+      { include: this.defaultInclude }
+    );
   }
 
   async reopen(id) {
-    return this.update({ id }, { resolvedByUserId: null, resolvedAt: null, resolutionNotes: null }, { include: this.defaultInclude });
+    return this.update(
+      { id },
+      {
+        resolvedByUserId: null,
+        resolvedAt: null,
+        resolutionAction: null,
+        resolutionComment: null,
+        resolutionNotes: null,
+      },
+      { include: this.defaultInclude }
+    );
   }
 
   async statistics() {

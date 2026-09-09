@@ -13,7 +13,7 @@ class PlatformAuditRepository {
     };
   }
 
-  get include() {
+  get listInclude() {
     return {
       condominium: {
         select: {
@@ -26,6 +26,12 @@ class PlatformAuditRepository {
       user: {
         select: this.safeUserSelect,
       },
+    };
+  }
+
+  get include() {
+    return {
+      ...this.listInclude,
       supportSession: {
         select: {
           id: true,
@@ -153,7 +159,7 @@ class PlatformAuditRepository {
     const [items, total] = await Promise.all([
       prisma.auditLog.findMany({
         where,
-        include: this.include,
+        include: this.listInclude,
         orderBy: {
           createdAt: "desc",
         },
@@ -193,7 +199,28 @@ class PlatformAuditRepository {
   }
 
   async softDelete(id, deletedByUserId, deletionReason = null) {
-    return prisma.auditLog.update({ where:{id}, data:{deletedAt:new Date(),deletedByUserId,deletionReason}, include:this.include });
+    return prisma.auditLog.update({
+      where: { id },
+      data: { deletedAt: new Date(), deletedByUserId, deletionReason },
+      include: this.include,
+    });
+  }
+
+  async softDeleteVisible(deletedByUserId, deletionReason) {
+    const archivedAt = new Date();
+    const result = await prisma.auditLog.updateMany({
+      where: { deletedAt: null },
+      data: {
+        deletedAt: archivedAt,
+        deletedByUserId,
+        deletionReason,
+      },
+    });
+
+    return {
+      count: result.count,
+      archivedAt,
+    };
   }
 
   async statistics() {

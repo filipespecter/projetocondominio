@@ -39,8 +39,10 @@ export async function errorHandler(error, req, res, _next) {
   const statusCode = Number(error.statusCode) >= 400 ? Number(error.statusCode) : 500;
   const isProduction = process.env.NODE_ENV === "production";
 
-  if (statusCode >= 500) console.error(error);
-  await registerSystemEvent(error, req, statusCode);
+  if (statusCode >= 500) {
+    console.error(error);
+    await registerSystemEvent(error, req, statusCode);
+  }
 
   return res.status(statusCode).json({
     success: false,

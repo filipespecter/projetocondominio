@@ -248,6 +248,7 @@ const platformApi = {
   audit: {
     async show(id) { return dataOf(await api.get(`/v1/platform/audit/${id}`)); },
     async remove(id, reason = "") { return dataOf(await api.delete(`/v1/platform/audit/${id}`, { body: { reason } })); },
+    async clearView(reason = "") { return dataOf(await api.post("/v1/platform/audit/clear-view", { reason })); },
     async list() {
       return dataOf(
         await api.get(
@@ -282,16 +283,11 @@ const platformApi = {
       );
     },
 
-    async resolve(
-      id,
-      resolutionNotes = ""
-    ) {
+    async resolve(id, payload = {}) {
       return dataOf(
         await api.patch(
           `/v1/platform/system-events/${id}/resolve`,
-          {
-            resolutionNotes,
-          }
+          payload
         )
       );
     },

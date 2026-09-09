@@ -1315,10 +1315,12 @@ model SystemEvent {
 
   details Json?
 
-  occurredAt       DateTime @default(now())
-  resolvedAt       DateTime?
-  resolutionNotes  String?
-  createdAt        DateTime @default(now())
+  occurredAt        DateTime @default(now())
+  resolvedAt        DateTime?
+  resolutionAction  String?
+  resolutionComment String?
+  resolutionNotes   String?
+  createdAt         DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
   condominium Condominium? @relation(fields: [condominiumId], references: [id], onDelete: SetNull)

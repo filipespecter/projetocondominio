@@ -113,6 +113,13 @@ platformAuditRoutes.get(
  * ?page=1
  * ?limit=20
  */
+platformAuditRoutes.post(
+  "/clear-view",
+  platformOwnerMiddleware,
+  (req, res, next) =>
+    PlatformAuditController.clearView(req, res, next)
+);
+
 platformAuditRoutes.get(
   "/",
   (req, res, next) =>

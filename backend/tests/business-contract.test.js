@@ -265,7 +265,8 @@ test("planos Básico e Completo possuem matriz de features e proteção premium 
   const index = await source("backend/src/routes/index.js");
   assert.match(seed, /code:"BASICO"/);
   assert.match(seed, /code:"COMPLETO"/);
-  for (const feature of ["EXPENSES","PACKAGE_PROOF","BI_DASHBOARD","WHATSAPP","AI_ASSISTANT"]) assert.match(seed, new RegExp(feature));
+  for (const feature of ["EXPENSES","PACKAGE_PROOF","BI_DASHBOARD","WHATSAPP"]) assert.match(seed, new RegExp(feature));
+  assert.doesNotMatch(seed, /AI_ASSISTANT|IA Star|Assistente inteligente futuro/);
   assert.match(middleware, /FEATURE_NOT_AVAILABLE/);
   assert.match(expenses, /requireFeature\("EXPENSES"\)/);
   assert.match(index, /requireFeature\("BI_DASHBOARD"\)/);
@@ -280,8 +281,12 @@ test("auditoria da Central possui histórico, exclusão lógica exclusiva do own
   assert.match(service, /PLATFORM_OWNER/);
   assert.match(service, /softDelete/);
   assert.match(routes, /platformAuditRoutes\.delete/);
-  assert.match(page, />Histórico</);
-  assert.match(page, />Apagar</);
+  assert.match(routes, /\/clear-view/);
+  assert.match(service, /archiveVisible/);
+  assert.match(page, /Detalhes/);
+  assert.match(page, /Ocultar/);
+  assert.match(page, /Limpar visualização/);
+  assert.doesNotMatch(page, />Resolver</);
   assert.match(page, /Gerar backup agora/);
   assert.match(page, /operations\.backups/);
 });
@@ -366,8 +371,53 @@ test("suporte possui SA persistente com classificação, prioridade e acompanham
   assert.match(service, /WAITING_CUSTOMER/);
   assert.match(platform, /Solicitações de Atendimento/);
   assert.match(platform, /Assumir/);
+  assert.match(platform, /Solução aplicada/);
+  assert.match(service, /Descreva a solução aplicada/);
   assert.match(syndic, /Nova solicitação/);
   assert.match(syndic, /SA-/);
+});
+
+test("reparo do piloto garante storage de suporte, auditoria e resolução estruturada de eventos", async () => {
+  const migration = await source("backend/prisma/migrations/20260905130000_repair_support_audit_events/migration.sql");
+  const schema = await source("backend/prisma/schema.prisma");
+  assert.match(migration, /CREATE TABLE IF NOT EXISTS "SupportTicket"/);
+  assert.match(migration, /ALTER TABLE "AuditLog" ADD COLUMN IF NOT EXISTS "deletedAt"/);
+  assert.match(migration, /ALTER TABLE "SystemEvent" ADD COLUMN IF NOT EXISTS "resolutionAction"/);
+  assert.match(migration, /DELETE FROM "PlanFeature"/);
+  assert.match(migration, /AI_ASSISTANT/);
+  assert.match(schema, /resolutionAction\s+String\?/);
+  assert.match(schema, /resolutionComment\s+String\?/);
+});
+
+test("eventos do sistema registram falhas técnicas 5xx sem poluir a fila com validações 4xx", async () => {
+  const handler = await source("backend/src/middlewares/errorHandler.js");
+  assert.match(handler, /if \(statusCode >= 500\)/);
+  assert.match(handler, /await registerSystemEvent/);
+  assert.doesNotMatch(handler, /await registerSystemEvent\(error, req, statusCode\);\n\s*return res/);
+});
+
+test("eventos técnicos exigem ação tomada e registram responsável, data e observação opcional", async () => {
+  const service = await source("backend/src/services/SystemEventService.js");
+  const repository = await source("backend/src/repositories/SystemEventRepository.js");
+  const page = await source("src/pages/platform/PlatformSystemEvents.jsx");
+  assert.match(service, /Descreva a ação tomada/);
+  assert.match(repository, /resolvedByUserId/);
+  assert.match(repository, /resolvedAt: new Date\(\)/);
+  assert.match(repository, /resolutionAction/);
+  assert.match(repository, /resolutionComment/);
+  assert.match(page, /Ação tomada \*/);
+  assert.match(page, /Observação/);
+  assert.match(page, /Em aberto/);
+  assert.match(page, /Resolvidos/);
+});
+
+test("catálogo comercial do piloto não anuncia IA ou recurso futuro não entregue", async () => {
+  const seed = await source("backend/prisma/seed.js");
+  const plans = await source("backend/src/services/PlanService.js");
+  const page = await source("src/pages/platform/PlatformPlans.jsx");
+  for (const content of [seed, plans, page]) {
+    assert.doesNotMatch(content, /IA Star|Assistente inteligente futuro/);
+  }
 });
 
 test("financeiro da Star possui painel executivo, gráficos e exportações PDF e Excel", async () => {

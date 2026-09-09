@@ -62,6 +62,28 @@ class PlatformAuditController {
     } catch(error) { return next(error); }
   }
 
+  async clearView(req, res, next) {
+    try {
+      const requestContext = {
+        requestId: req.requestId ?? null,
+        ipAddress: req.ip ?? null,
+        userAgent: req.headers["user-agent"] ?? null,
+      };
+      const result = await PlatformAuditService.archiveVisible(
+        req.user,
+        req.body?.reason,
+        requestContext
+      );
+      return res.status(200).json({
+        success: true,
+        message: `${result.count} registro(s) ocultado(s) da visualização. A rastreabilidade foi preservada.`,
+        data: result,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
   async condominiumTimeline(
     req,
     res,
