@@ -1,5 +1,6 @@
 import Jwt from "../utils/Jwt.js";
 import { ApiError } from "../utils/ApiError.js";
+import UserSessionService from "../services/UserSessionService.js";
 
 /**
  * Extrai o token Bearer do cabeçalho Authorization.
@@ -77,6 +78,12 @@ export function authMiddleware(
       token,
       payload,
     };
+
+    // Mantém a última atividade operacional do porteiro atualizada sem
+    // atrasar a requisição principal. Falhas de telemetria não bloqueiam o uso.
+    if (req.user.role === "DOORMAN") {
+      void UserSessionService.touch(req.user.id).catch(() => null);
+    }
 
     return next();
   } catch (error) {

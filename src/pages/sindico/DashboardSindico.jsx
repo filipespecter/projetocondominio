@@ -275,23 +275,23 @@ function DashboardSindico() {
           <div style={styles.cardIconLight}>👥</div>
         </div>
 
-        <KpiCard icon="🏢" label="Apartamentos" value={dados.apartamentos} color="#6d28d9" bg="#f3e8ff" />
-        <KpiCard icon="🏠" label="Aptos ocupados" value={dados.apartamentosOcupados} color="#6d28d9" bg="#f3e8ff" />
-        <KpiCard icon="👑" label="Moradores principais" value={dados.moradoresPrincipais} color="#6d28d9" bg="#ede9fe" />
-        <KpiCard icon="👨‍👩‍👧" label="Dependentes" value={dados.dependentes} color="#7c3aed" bg="#ede9fe" />
-        <KpiCard icon="🛡️" label="Porteiros" value={dados.porteiros} color="#6d28d9" bg="#ede9fe" />
+        <KpiCard icon="🏢" label="Apartamentos" value={dados.apartamentos} color="var(--ic-primary-strong)" bg="var(--ic-primary-soft)" />
+        <KpiCard icon="🏠" label="Aptos ocupados" value={dados.apartamentosOcupados} color="var(--ic-primary-strong)" bg="var(--ic-primary-soft)" />
+        <KpiCard icon="👑" label="Moradores principais" value={dados.moradoresPrincipais} color="var(--ic-primary-strong)" bg="var(--ic-primary-soft-2)" />
+        <KpiCard icon="👨‍👩‍👧" label="Dependentes" value={dados.dependentes} color="var(--ic-primary)" bg="var(--ic-primary-soft-2)" />
+        <KpiCard icon="🛡️" label="Porteiros" value={dados.porteiros} color="var(--ic-primary-strong)" bg="var(--ic-primary-soft-2)" />
         <KpiCard icon="🧰" label="Prestadores" value={dados.prestadores} color="#92400e" bg="#fef3c7" />
         <KpiCard icon="🔧" label="Prestadores em execução" value={dados.prestadoresExecucao} color="#92400e" bg="#fef3c7" />
-        <KpiCard icon="✅" label="Prestadores finalizados" value={dados.prestadoresFinalizados} color="#6d28d9" bg="#f3e8ff" />
+        <KpiCard icon="✅" label="Prestadores finalizados" value={dados.prestadoresFinalizados} color="var(--ic-primary-strong)" bg="var(--ic-primary-soft)" />
         <KpiCard icon="📦" label="Encomendas pendentes" value={dados.encomendas} color="#7c2d12" bg="#ffedd5" />
-        <KpiCard icon="👤" label="Visitantes" value={dados.visitantes} color="#7c3aed" bg="#ede9fe" />
+        <KpiCard icon="👤" label="Visitantes" value={dados.visitantes} color="var(--ic-primary)" bg="var(--ic-primary-soft-2)" />
         <KpiCard icon="📅" label="Reservas pendentes" value={dados.reservas} color="#be123c" bg="#ffe4e6" />
         <KpiCard icon="💬" label="Ocorrências abertas" value={dados.ocorrencias} color="#dc2626" bg="#fee2e2" />
-        <KpiCard icon="💡" label="Sugestões abertas" value={dados.sugestoes} color="#6d28d9" bg="#f3e8ff" />
+        <KpiCard icon="💡" label="Sugestões abertas" value={dados.sugestoes} color="var(--ic-primary-strong)" bg="var(--ic-primary-soft)" />
         <KpiCard icon="⚠️" label="Reclamações abertas" value={dados.reclamacoes} color="#b91c1c" bg="#fee2e2" />
         <KpiCard icon="📢" label="Central do síndico" value={dados.avisos} color="#92400e" bg="#fef3c7" />
         <KpiCard icon="🔔" label="Notificações pendentes" value={dados.notificacoes} color="#92400e" bg="#fef3c7" />
-        <KpiCard icon="🧾" label="Auditoria" value={dados.auditoria} color="#7c3aed" bg="#f3e8ff" />
+        <KpiCard icon="🧾" label="Auditoria" value={dados.auditoria} color="var(--ic-primary)" bg="var(--ic-primary-soft)" />
         <KpiCard icon="🛠️" label="Áreas em manutenção" value={dados.areasManutencao} color="#dc2626" bg="#fee2e2" />
       </div>
 
@@ -514,7 +514,7 @@ function PriorityItem({ icon, label, value, alert }) {
       <strong
         style={{
           ...styles.priorityValue,
-          color: alert ? "#dc2626" : "#6d28d9"
+          color: alert ? "#dc2626" : "var(--ic-primary-strong)"
         }}
       >
         {value}
@@ -544,14 +544,14 @@ function ManualItem({ number, title, text }) {
 const styles = {
   onboardingCard: { background: "#fff", border: "1px solid #e9e1f2", borderRadius: "18px", padding: "18px", marginBottom: "18px", boxShadow: "0 12px 34px rgba(59,24,88,.07)" },
   onboardingHeader: { display: "flex", justifyContent: "space-between", gap: "14px", alignItems: "center", flexWrap: "wrap" },
-  onboardingBadge: { fontSize: "10px", fontWeight: 900, letterSpacing: "1px", color: "#7c3aed" },
+  onboardingBadge: { fontSize: "10px", fontWeight: 900, letterSpacing: "1px", color: "var(--ic-primary)" },
   onboardingTitle: { margin: "5px 0 4px", color: "#31213c", fontSize: "19px" },
   onboardingText: { margin: 0, color: "#776a80", fontSize: "12px" },
-  onboardingProgress: { width: "54px", height: "54px", borderRadius: "16px", display: "grid", placeItems: "center", background: "linear-gradient(135deg,#5b21b6,#7c3aed)", color: "#fff", fontSize: "16px" },
+  onboardingProgress: { width: "54px", height: "54px", borderRadius: "16px", display: "grid", placeItems: "center", background: "linear-gradient(135deg,var(--ic-primary-dark),var(--ic-primary))", color: "#fff", fontSize: "16px" },
   onboardingSteps: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: "10px", marginTop: "14px" },
   onboardingStep: { border: "1px solid #e5ddee", background: "#faf8fc", borderRadius: "12px", padding: "11px 12px", display: "flex", alignItems: "center", gap: "9px", color: "#4a3b55", fontWeight: 800, cursor: "pointer", textAlign: "left" },
   onboardingStepDone: { background: "#f0fdf4", borderColor: "#bbf7d0", color: "#166534" },
-  onboardingCheck: { width: "24px", height: "24px", borderRadius: "8px", display: "grid", placeItems: "center", background: "#ede9fe", color: "#6d28d9", fontWeight: 900 },
+  onboardingCheck: { width: "24px", height: "24px", borderRadius: "8px", display: "grid", placeItems: "center", background: "var(--ic-primary-soft-2)", color: "var(--ic-primary-strong)", fontWeight: 900 },
   container: {
     width: "100%",
     fontFamily: "Arial",
@@ -560,7 +560,7 @@ const styles = {
 
   hero: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.22),transparent 36%), linear-gradient(135deg,#2e1065,#4c1d95,#6d28d9)",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.22),transparent 36%), linear-gradient(135deg,var(--ic-primary-deepest),var(--ic-primary-deep),var(--ic-primary-strong))",
     borderRadius: "34px",
     padding: "34px",
     color: "white",
@@ -569,7 +569,7 @@ const styles = {
     alignItems: "center",
     gap: "30px",
     marginBottom: "26px",
-    boxShadow: "0 24px 60px rgba(124,58,237,0.20)",
+    boxShadow: "0 24px 60px rgb(var(--ic-primary-rgb) / 0.20)",
     position: "relative",
     overflow: "hidden"
   },
@@ -603,7 +603,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "10px",
-    color: "#f3e8ff",
+    color: "var(--ic-primary-soft)",
     fontSize: "14px",
     fontWeight: "700"
   },
@@ -612,7 +612,7 @@ const styles = {
     width: "9px",
     height: "9px",
     borderRadius: "50%",
-    background: "#a855f7",
+    background: "var(--ic-primary-bright)",
     boxShadow: "0 0 0 5px rgba(34,197,94,0.16)"
   },
 
@@ -639,8 +639,8 @@ const styles = {
   },
 
   heroStatus: {
-    background: "#f3e8ff",
-    color: "#6d28d9",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary-strong)",
     padding: "8px 12px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -655,7 +655,7 @@ const styles = {
   },
 
   quickPrimary: {
-    background: "linear-gradient(135deg,#4c1d95,#7c3aed)",
+    background: "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary))",
     color: "white",
     border: "none",
     padding: "22px",
@@ -665,7 +665,7 @@ const styles = {
     alignItems: "center",
     gap: "16px",
     textAlign: "left",
-    boxShadow: "0 16px 35px rgba(124,58,237,0.20)"
+    boxShadow: "0 16px 35px rgb(var(--ic-primary-rgb) / 0.20)"
   },
 
   quickButton: {
@@ -697,7 +697,7 @@ const styles = {
     width: "54px",
     height: "54px",
     borderRadius: "18px",
-    background: "#f3e8ff",
+    background: "var(--ic-primary-soft)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -712,14 +712,14 @@ const styles = {
   },
 
   cardPrimary: {
-    background: "linear-gradient(135deg,#4c1d95,#7c3aed)",
+    background: "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary))",
     borderRadius: "26px",
     padding: "24px",
     color: "white",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    boxShadow: "0 16px 35px rgba(124,58,237,0.18)"
+    boxShadow: "0 16px 35px rgb(var(--ic-primary-rgb) / 0.18)"
   },
 
   cardLabelLight: {
@@ -800,7 +800,7 @@ const styles = {
 
   controlPanel: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.18),transparent 34%), linear-gradient(135deg,#4c1d95,#5b21b6)",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.18),transparent 34%), linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary-dark))",
     color: "white",
     borderRadius: "30px",
     padding: "28px",
@@ -858,8 +858,8 @@ const styles = {
   manualButton: {
     width: "100%",
     marginTop: "20px",
-    background: "#f3e8ff",
-    color: "#6d28d9",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary-strong)",
     border: "none",
     padding: "14px",
     borderRadius: "16px",
@@ -877,7 +877,7 @@ const styles = {
 
   sectionTitle: {
     margin: 0,
-    color: "#4c1d95",
+    color: "var(--ic-primary-deep)",
     fontSize: "25px"
   },
 
@@ -889,8 +889,8 @@ const styles = {
   },
 
   sectionBadge: {
-    background: "#f3e8ff",
-    color: "#6d28d9",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary-strong)",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -924,7 +924,7 @@ const styles = {
     width: "34px",
     height: "34px",
     borderRadius: "12px",
-    background: "#f3e8ff",
+    background: "var(--ic-primary-soft)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center"
@@ -939,13 +939,13 @@ const styles = {
 
   chartFill: {
     height: "100%",
-    background: "linear-gradient(135deg,#7c3aed,#a855f7)",
+    background: "linear-gradient(135deg,var(--ic-primary),var(--ic-primary-bright))",
     borderRadius: "999px"
   },
 
   chartValue: {
     textAlign: "right",
-    color: "#4c1d95"
+    color: "var(--ic-primary-deep)"
   },
 
   activityCard: {
@@ -965,15 +965,15 @@ const styles = {
 
   activityTitle: {
     margin: 0,
-    color: "#4c1d95",
+    color: "var(--ic-primary-deep)",
     fontSize: "25px"
   },
 
   viewAll: {
-    color: "#6d28d9",
+    color: "var(--ic-primary-strong)",
     fontSize: "13px",
     fontWeight: "900",
-    background: "#f3e8ff",
+    background: "var(--ic-primary-soft)",
     padding: "8px 12px",
     borderRadius: "999px"
   },
@@ -1020,7 +1020,7 @@ const styles = {
     width: "46px",
     height: "46px",
     borderRadius: "16px",
-    background: "#f3e8ff",
+    background: "var(--ic-primary-soft)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1036,7 +1036,7 @@ const styles = {
     display: "inline-block",
     background: "white",
     border: "1px solid #e5e7eb",
-    color: "#6d28d9",
+    color: "var(--ic-primary-strong)",
     padding: "5px 9px",
     borderRadius: "999px",
     fontSize: "11px",
@@ -1083,7 +1083,7 @@ const styles = {
 
   modalHero: {
     background:
-      "linear-gradient(135deg,#4c1d95,#6d28d9)",
+      "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary-strong))",
     color: "white",
     borderRadius: "28px",
     padding: "28px",
@@ -1137,8 +1137,8 @@ const styles = {
 
   manualNumber: {
     display: "inline-block",
-    background: "#f3e8ff",
-    color: "#6d28d9",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary-strong)",
     padding: "7px 10px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1148,7 +1148,7 @@ const styles = {
 
   manualTitle: {
     margin: "0 0 8px",
-    color: "#4c1d95"
+    color: "var(--ic-primary-deep)"
   },
 
   manualText: {

@@ -17,7 +17,7 @@ function SugestoesMorador() {
   useEffect(()=>{carregar();},[]);
   function limparFormulario(){setForm(estadoInicial);}
   async function enviarSolicitacao(){if(!form.categoria||String(form.titulo).trim().length<3||String(form.descricao).trim().length<5){alert("Preencha categoria, título e descrição.");return;}try{await occurrenceApi.create({type:typeBack[form.tipo]??"COMPLAINT",category:form.categoria,priority:priorityBack[form.prioridade]??"MEDIUM",title:form.titulo.trim(),description:form.descricao.trim()});limparFormulario();await carregar();alert("Solicitação enviada ao síndico.");}catch(e){alert(e?.message??"Não foi possível enviar sua solicitação.");}}
-  function obterStatus(status){if(status==="Resolvido")return{texto:"Resolvido",fundo:"#dcfce7",cor:"#166534"};if(status==="Ciente")return{texto:"Ciente",fundo:"#dbeafe",cor:"#1d4ed8"};if(status==="Em Tratamento")return{texto:"Em Tratamento",fundo:"#ede9fe",cor:"#6d28d9"};if(status==="Cancelado")return{texto:"Cancelado",fundo:"#fee2e2",cor:"#b91c1c"};return{texto:"Novo",fundo:"#fef3c7",cor:"#92400e"};}
+  function obterStatus(status){if(status==="Resolvido")return{texto:"Resolvido",fundo:"#dcfce7",cor:"#166534"};if(status==="Ciente")return{texto:"Ciente",fundo:"#dbeafe",cor:"#1d4ed8"};if(status==="Em Tratamento")return{texto:"Em Tratamento",fundo:"var(--ic-primary-soft-2)",cor:"var(--ic-primary-strong)"};if(status==="Cancelado")return{texto:"Cancelado",fundo:"#fee2e2",cor:"#b91c1c"};return{texto:"Novo",fundo:"#fef3c7",cor:"#92400e"};}
   const minhasSolicitacoes=ocorrencias.filter(i=>{const t=busca.toLowerCase();const ok=!t||i.titulo?.toLowerCase().includes(t)||i.descricao?.toLowerCase().includes(t)||i.categoria?.toLowerCase().includes(t);return ok&&(filtroStatus==="Todos"||obterStatus(i.status).texto===filtroStatus);});
   const pendentes=ocorrencias.filter(i=>!["Resolvido","Cancelado"].includes(i.status)).length;
   const resolvidas=ocorrencias.filter(i=>i.status==="Resolvido").length;
@@ -444,7 +444,7 @@ const styles = {
     minWidth: 0,
     flexWrap: "wrap",
     background:
-      "linear-gradient(135deg,#2e1065,#4c1d95,#7c3aed)",
+      "linear-gradient(135deg,var(--ic-primary-deepest),var(--ic-primary-deep),var(--ic-primary))",
     borderRadius: "30px",
     padding: "32px",
     color: "white",
@@ -454,7 +454,7 @@ const styles = {
     gap: "28px",
     marginBottom: "26px",
     boxShadow:
-      "0 22px 55px rgba(124,58,237,0.24), 0 0 38px rgba(168,85,247,0.12)",
+      "0 22px 55px rgb(var(--ic-primary-rgb) / 0.24), 0 0 38px rgb(var(--ic-primary-bright-rgb) / 0.12)",
     border: "1px solid rgba(255,255,255,0.18)"
   },
 
@@ -486,7 +486,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "10px",
-    color: "#ede9fe",
+    color: "var(--ic-primary-soft-2)",
     fontSize: "14px",
     fontWeight: "600",
     flexWrap: "wrap"
@@ -496,9 +496,9 @@ const styles = {
     width: "9px",
     height: "9px",
     borderRadius: "50%",
-    background: "#a855f7",
+    background: "var(--ic-primary-bright)",
     boxShadow:
-      "0 0 0 5px rgba(168,85,247,0.18)"
+      "0 0 0 5px rgb(var(--ic-primary-bright-rgb) / 0.18)"
   },
 
   apBadge: {
@@ -533,8 +533,8 @@ const styles = {
   },
 
   heroStatus: {
-    background: "#ede9fe",
-    color: "#6d28d9",
+    background: "var(--ic-primary-soft-2)",
+    color: "var(--ic-primary-strong)",
     padding: "8px 12px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -552,7 +552,7 @@ const styles = {
 
   cardPrimary: {
     background:
-      "linear-gradient(135deg,#4c1d95,#7c3aed)",
+      "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary))",
     borderRadius: "24px",
     padding: "24px",
     color: "white",
@@ -560,12 +560,12 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "center",
     boxShadow:
-      "0 16px 36px rgba(124,58,237,0.24), 0 0 28px rgba(168,85,247,0.12)"
+      "0 16px 36px rgb(var(--ic-primary-rgb) / 0.24), 0 0 28px rgb(var(--ic-primary-bright-rgb) / 0.12)"
   },
 
   card: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.08),transparent 34%), white",
     borderRadius: "24px",
     padding: "24px",
     display: "flex",
@@ -573,7 +573,7 @@ const styles = {
     gap: "18px",
     boxShadow:
       "0 16px 40px rgba(88,28,135,0.08)",
-    border: "1px solid #ede9fe"
+    border: "1px solid var(--ic-primary-soft-2)"
   },
 
   cardLabelLight: {
@@ -608,7 +608,7 @@ const styles = {
     width: "54px",
     height: "54px",
     borderRadius: "18px",
-    background: "#f3e8ff",
+    background: "var(--ic-primary-soft)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -630,7 +630,7 @@ const styles = {
     width: "54px",
     height: "54px",
     borderRadius: "18px",
-    background: "#ede9fe",
+    background: "var(--ic-primary-soft-2)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -645,7 +645,7 @@ const styles = {
 
   cardNumberGreen: {
     margin: "8px 0 0",
-    color: "#7c3aed",
+    color: "var(--ic-primary)",
     fontSize: "34px"
   },
 
@@ -657,7 +657,7 @@ const styles = {
 
   cardNumberBlue: {
     margin: "8px 0 0",
-    color: "#7c3aed",
+    color: "var(--ic-primary)",
     fontSize: "34px"
   },
 
@@ -673,24 +673,24 @@ const styles = {
     minWidth: 0,
     overflow: "hidden",
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.08),transparent 34%), white",
     borderRadius: "28px",
     padding: "26px",
     boxShadow:
       "0 18px 45px rgba(88,28,135,0.09)",
-    border: "1px solid #ede9fe"
+    border: "1px solid var(--ic-primary-soft-2)"
   },
 
   listCard: {
     minWidth: 0,
     overflow: "hidden",
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.08),transparent 34%), white",
     borderRadius: "28px",
     padding: "26px",
     boxShadow:
       "0 18px 45px rgba(88,28,135,0.09)",
-    border: "1px solid #ede9fe"
+    border: "1px solid var(--ic-primary-soft-2)"
   },
 
   sectionHeader: {
@@ -704,7 +704,7 @@ const styles = {
 
   sectionTitle: {
     margin: 0,
-    color: "#4c1d95",
+    color: "var(--ic-primary-deep)",
     fontSize: "24px"
   },
 
@@ -716,8 +716,8 @@ const styles = {
   },
 
   sectionBadge: {
-    background: "#faf5ff",
-    color: "#6d28d9",
+    background: "var(--ic-primary-soft-3)",
+    color: "var(--ic-primary-strong)",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -738,7 +738,7 @@ const styles = {
     minWidth: 0,
     padding: "14px 15px",
     borderRadius: "15px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     fontSize: "14px",
     background: "#fbfaff",
@@ -753,7 +753,7 @@ const styles = {
     minHeight: "140px",
     padding: "14px 15px",
     borderRadius: "15px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     fontSize: "14px",
     background: "#fbfaff",
@@ -767,7 +767,7 @@ const styles = {
   submitButton: {
     width: "100%",
     background:
-      "linear-gradient(135deg,#4c1d95,#7c3aed)",
+      "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary))",
     color: "white",
     border: "none",
     padding: "15px",
@@ -807,7 +807,7 @@ const styles = {
     flex: "1 1 210px",
     padding: "13px 14px",
     borderRadius: "15px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     background: "#fbfaff",
     boxSizing: "border-box"
@@ -816,14 +816,14 @@ const styles = {
   filter: {
     padding: "13px 14px",
     borderRadius: "15px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     background: "#fbfaff"
   },
 
   empty: {
     background: "#fbfaff",
-    border: "1px dashed #c4b5fd",
+    border: "1px dashed var(--ic-primary-border)",
     borderRadius: "22px",
     padding: "45px",
     textAlign: "center"
@@ -852,7 +852,7 @@ const styles = {
 
   solicitacaoCard: {
     background: "#fbfaff",
-    border: "1px solid #ddd6fe",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "24px",
     padding: "22px"
   },
@@ -874,8 +874,8 @@ const styles = {
   },
 
   typeBadge: {
-    background: "#ede9fe",
-    color: "#6d28d9",
+    background: "var(--ic-primary-soft-2)",
+    color: "var(--ic-primary-strong)",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -883,8 +883,8 @@ const styles = {
   },
 
   categoryBadge: {
-    background: "#faf5ff",
-    color: "#7c3aed",
+    background: "var(--ic-primary-soft-3)",
+    color: "var(--ic-primary)",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -930,9 +930,9 @@ const styles = {
   },
 
   responseBox: {
-    background: "#faf5ff",
-    border: "1px solid #ddd6fe",
-    color: "#7c3aed",
+    background: "var(--ic-primary-soft-3)",
+    border: "1px solid var(--ic-primary-border-soft)",
+    color: "var(--ic-primary)",
     padding: "14px",
     borderRadius: "16px",
     fontSize: "14px"

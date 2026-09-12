@@ -99,7 +99,7 @@ function Login() {
         "Acesso restrito à administração global da plataforma.",
 
       gradient:
-        "linear-gradient(135deg,#130c24,#4c1d95,#7c3aed)",
+        "linear-gradient(135deg,#130c24,var(--ic-primary-deep),var(--ic-primary))",
 
       icon:
         <FaShieldAlt
@@ -126,7 +126,7 @@ function Login() {
         "Acesso executivo para gestão completa do condomínio.",
 
       gradient:
-        "linear-gradient(135deg,#4c1d95,#7c3aed,#a855f7)",
+        "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary),var(--ic-primary-bright))",
 
       icon:
         <FaShieldAlt
@@ -153,7 +153,7 @@ function Login() {
         "Controle operacional de visitantes, encomendas e ocorrências.",
 
       gradient:
-        "linear-gradient(135deg,#312e81,#6d28d9,#8b5cf6)",
+        "linear-gradient(135deg,#312e81,var(--ic-primary-strong),var(--ic-primary-light))",
 
       icon:
         <FaIdBadge
@@ -180,7 +180,7 @@ function Login() {
         "Acompanhe avisos, reservas, encomendas e solicitações.",
 
       gradient:
-        "linear-gradient(135deg,#1e1b4b,#7c3aed,#c084fc)",
+        "linear-gradient(135deg,#1e1b4b,var(--ic-primary),#c084fc)",
 
       icon:
         <FaUserCircle
@@ -1108,7 +1108,7 @@ function Login() {
               <div style={styles.inputGroup}><label style={styles.label}>Nova senha</label><input type="password" style={styles.input} value={recuperacaoNovaSenha} onChange={(e)=>setRecuperacaoNovaSenha(e.target.value)} /></div>
               <div style={styles.inputGroup}><label style={styles.label}>Confirmar nova senha</label><input type="password" style={styles.input} value={recuperacaoConfirmacao} onChange={(e)=>setRecuperacaoConfirmacao(e.target.value)} /></div>
             </>)}
-            {recuperacaoMensagem && <div style={{...styles.errorBox,background:"#f5f3ff",color:"#5b21b6",borderColor:"#ddd6fe"}}>{recuperacaoMensagem}</div>}
+            {recuperacaoMensagem && <div style={{...styles.errorBox,background:"var(--ic-primary-soft-4)",color:"var(--ic-primary-dark)",borderColor:"var(--ic-primary-border-soft)"}}>{recuperacaoMensagem}</div>}
             <div style={{...styles.warningActions,gap:"10px"}}>
               <button type="button" style={styles.changeNowButton} onClick={fecharRecuperacaoSenha}>Cancelar</button>
               <button type="button" style={{...styles.changeNowButton,background:perfil.gradient,color:"white"}} disabled={recuperacaoCarregando} onClick={recuperacaoEtapa===1?enviarCodigoRecuperacao:redefinirSenhaRecuperacao}>
@@ -1206,7 +1206,7 @@ const styles = {
   container: {
     minHeight: "100vh",
     background:
-      "radial-gradient(circle at top left,rgba(124,58,237,0.22),transparent 32%), radial-gradient(circle at bottom right,rgba(168,85,247,0.16),transparent 28%), radial-gradient(circle at center,rgba(59,130,246,0.08),transparent 38%), linear-gradient(135deg,#ffffff,#f8f5ff 48%,#ffffff)",
+      "radial-gradient(circle at top left,rgb(var(--ic-primary-rgb) / 0.22),transparent 32%), radial-gradient(circle at bottom right,rgb(var(--ic-primary-bright-rgb) / 0.16),transparent 28%), radial-gradient(circle at center,rgba(59,130,246,0.08),transparent 38%), linear-gradient(135deg,#ffffff,#f8f5ff 48%,#ffffff)",
     display: "flex",
     justifyContent:
       "center",
@@ -1225,7 +1225,7 @@ const styles = {
     height: "360px",
     borderRadius: "50%",
     background:
-      "rgba(124,58,237,0.15)",
+      "rgb(var(--ic-primary-rgb) / 0.15)",
     filter: "blur(80px)",
     top: "-120px",
     left: "-100px",
@@ -1237,7 +1237,7 @@ const styles = {
     height: "320px",
     borderRadius: "50%",
     background:
-      "rgba(168,85,247,0.12)",
+      "rgb(var(--ic-primary-bright-rgb) / 0.12)",
     filter: "blur(85px)",
     bottom: "-110px",
     right: "-90px",
@@ -1247,7 +1247,7 @@ const styles = {
     position: "absolute",
     inset: 0,
     backgroundImage:
-      "linear-gradient(rgba(124,58,237,0.08) 1px, transparent 1px), linear-gradient(90deg,rgba(124,58,237,0.08) 1px, transparent 1px)",
+      "linear-gradient(rgb(var(--ic-primary-rgb) / 0.08) 1px, transparent 1px), linear-gradient(90deg,rgb(var(--ic-primary-rgb) / 0.08) 1px, transparent 1px)",
     backgroundSize:
       "44px 44px",
     maskImage:
@@ -1264,7 +1264,7 @@ const styles = {
     width: "900px",
     maxWidth: "86%",
     color:
-      "rgba(109,40,217,0.13)",
+      "rgb(var(--ic-primary-strong-rgb) / 0.13)",
     fontSize: "18px",
     fontWeight: "900",
     letterSpacing: "12px",
@@ -1281,9 +1281,9 @@ const styles = {
     gridTemplateColumns:
       "1fr 0.95fr",
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.13),transparent 35%), linear-gradient(180deg,rgba(255,255,255,0.95),rgba(251,250,255,0.88))",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.13),transparent 35%), linear-gradient(180deg,rgba(255,255,255,0.95),rgba(251,250,255,0.88))",
     border:
-      "1px solid rgba(124,58,237,0.18)",
+      "1px solid rgb(var(--ic-primary-rgb) / 0.18)",
     borderRadius: "40px",
     boxShadow:
       "0 35px 90px rgba(88,28,135,0.16), inset 0 0 0 1px rgba(255,255,255,0.75)",
@@ -1303,13 +1303,13 @@ const styles = {
       "center",
     position: "relative",
     background:
-      "radial-gradient(circle at top left,rgba(124,58,237,0.08),transparent 32%), rgba(255,255,255,0.94)",
+      "radial-gradient(circle at top left,rgb(var(--ic-primary-rgb) / 0.08),transparent 32%), rgba(255,255,255,0.94)",
   },
 
   infoSide: {
     padding: "48px",
     background:
-      "radial-gradient(circle at top right,rgba(255,255,255,0.20),transparent 34%), radial-gradient(circle at bottom left,rgba(168,85,247,0.24),transparent 38%), linear-gradient(145deg,#2e1065,#4c1d95,#7c3aed)",
+      "radial-gradient(circle at top right,rgba(255,255,255,0.20),transparent 34%), radial-gradient(circle at bottom left,rgb(var(--ic-primary-bright-rgb) / 0.24),transparent 38%), linear-gradient(145deg,var(--ic-primary-deepest),var(--ic-primary-deep),var(--ic-primary))",
     borderLeft:
       "1px solid rgba(255,255,255,0.18)",
     color: "white",
@@ -1327,7 +1327,7 @@ const styles = {
     top: "24px",
     left: "24px",
     border:
-      "1px solid #ddd6fe",
+      "1px solid var(--ic-primary-border-soft)",
     background: "#ffffff",
     padding:
       "10px 14px",
@@ -1337,9 +1337,9 @@ const styles = {
     alignItems: "center",
     gap: "8px",
     fontWeight: "800",
-    color: "#6d28d9",
+    color: "var(--ic-primary-strong)",
     boxShadow:
-      "0 10px 24px rgba(124,58,237,0.10)",
+      "0 10px 24px rgb(var(--ic-primary-rgb) / 0.10)",
   },
 
   logoBox: {
@@ -1353,7 +1353,7 @@ const styles = {
     width: "100%",
     display: "block",
     filter:
-      "drop-shadow(0 0 24px rgba(124,58,237,0.30))",
+      "drop-shadow(0 0 24px rgb(var(--ic-primary-rgb) / 0.30))",
   },
 
   iconCircle: {
@@ -1367,15 +1367,15 @@ const styles = {
     margin:
       "4px 0 16px",
     boxShadow:
-      "0 18px 40px rgba(124,58,237,0.24), 0 0 35px rgba(168,85,247,0.18)",
+      "0 18px 40px rgb(var(--ic-primary-rgb) / 0.24), 0 0 35px rgb(var(--ic-primary-bright-rgb) / 0.18)",
   },
 
   profileBadge: {
     width: "fit-content",
-    background: "#f3e8ff",
-    color: "#6d28d9",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary-strong)",
     border:
-      "1px solid #ddd6fe",
+      "1px solid var(--ic-primary-border-soft)",
     padding:
       "8px 13px",
     borderRadius: "999px",
@@ -1417,14 +1417,14 @@ const styles = {
     padding: "16px",
     borderRadius: "17px",
     border:
-      "1px solid #ddd6fe",
+      "1px solid var(--ic-primary-border-soft)",
     fontSize: "15px",
     outline: "none",
     background: "#ffffff",
     color: "#111827",
     boxSizing: "border-box",
     boxShadow:
-      "0 10px 26px rgba(124,58,237,0.06)",
+      "0 10px 26px rgb(var(--ic-primary-rgb) / 0.06)",
   },
 
   passwordWrap: {
@@ -1433,12 +1433,12 @@ const styles = {
     alignItems: "center",
     borderRadius: "17px",
     border:
-      "1px solid #ddd6fe",
+      "1px solid var(--ic-primary-border-soft)",
     background: "#ffffff",
     boxSizing: "border-box",
     overflow: "hidden",
     boxShadow:
-      "0 10px 26px rgba(124,58,237,0.06)",
+      "0 10px 26px rgb(var(--ic-primary-rgb) / 0.06)",
   },
 
   passwordInput: {
@@ -1459,7 +1459,7 @@ const styles = {
     border: "none",
     background:
       "transparent",
-    color: "#6d28d9",
+    color: "var(--ic-primary-strong)",
     cursor: "pointer",
     fontSize: "18px",
   },
@@ -1468,7 +1468,7 @@ const styles = {
     border: "none",
     background:
       "transparent",
-    color: "#6d28d9",
+    color: "var(--ic-primary-strong)",
     cursor: "pointer",
     fontWeight: "900",
     display: "flex",
@@ -1504,9 +1504,9 @@ const styles = {
     cursor: "pointer",
     marginTop: "8px",
     background:
-      "linear-gradient(135deg,#6d28d9,#a855f7)",
+      "linear-gradient(135deg,var(--ic-primary-strong),var(--ic-primary-bright))",
     boxShadow:
-      "0 18px 38px rgba(124,58,237,0.28), 0 0 32px rgba(168,85,247,0.18)",
+      "0 18px 38px rgb(var(--ic-primary-rgb) / 0.28), 0 0 32px rgb(var(--ic-primary-bright-rgb) / 0.18)",
   },
 
   registrationBox: {
@@ -1514,7 +1514,7 @@ const styles = {
     marginTop: "16px",
     padding: "15px",
     border:
-      "1px solid #ddd6fe",
+      "1px solid var(--ic-primary-border-soft)",
     borderRadius: "17px",
     background:
       "linear-gradient(180deg,#faf7ff,#ffffff)",
@@ -1534,7 +1534,7 @@ const styles = {
   registrationButton: {
     border: "none",
     background: "transparent",
-    color: "#6d28d9",
+    color: "var(--ic-primary-strong)",
     cursor: "pointer",
     fontWeight: "900",
     fontSize: "13px",
@@ -1544,7 +1544,7 @@ const styles = {
   footerText: {
     margin:
       "22px 0 0",
-    color: "#7c3aed",
+    color: "var(--ic-primary)",
     fontSize: "12px",
     fontWeight: "800",
   },
@@ -1630,7 +1630,7 @@ const styles = {
       "1px solid rgba(255,255,255,0.18)",
     borderRadius: "22px",
     padding: "18px",
-    color: "#f5f3ff",
+    color: "var(--ic-primary-soft-4)",
   },
 
   modalOverlay: {
@@ -1653,13 +1653,13 @@ const styles = {
     background:
       "linear-gradient(180deg,#ffffff,#fbfaff)",
     border:
-      "1px solid #ddd6fe",
+      "1px solid var(--ic-primary-border-soft)",
     borderRadius: "32px",
     padding: "34px",
     color: "#111827",
     textAlign: "center",
     boxShadow:
-      "0 35px 90px rgba(88,28,135,0.26), 0 0 40px rgba(168,85,247,0.14)",
+      "0 35px 90px rgba(88,28,135,0.26), 0 0 40px rgb(var(--ic-primary-bright-rgb) / 0.14)",
   },
 
   warningIcon: {
@@ -1669,7 +1669,7 @@ const styles = {
     margin:
       "0 auto 18px",
     background:
-      "linear-gradient(135deg,#6d28d9,#a855f7)",
+      "linear-gradient(135deg,var(--ic-primary-strong),var(--ic-primary-bright))",
     color: "white",
     display: "flex",
     alignItems: "center",
@@ -1699,7 +1699,7 @@ const styles = {
   changeNowButton: {
     flex: 1,
     background:
-      "linear-gradient(135deg,#6d28d9,#a855f7)",
+      "linear-gradient(135deg,var(--ic-primary-strong),var(--ic-primary-bright))",
     color: "white",
     border: "none",
     padding: "14px",
@@ -1711,9 +1711,9 @@ const styles = {
   continueButton: {
     flex: 1,
     background: "#ffffff",
-    color: "#6d28d9",
+    color: "var(--ic-primary-strong)",
     border:
-      "1px solid #c4b5fd",
+      "1px solid var(--ic-primary-border)",
     padding: "14px",
     borderRadius: "16px",
     cursor: "pointer",

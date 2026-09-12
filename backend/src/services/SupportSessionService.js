@@ -17,6 +17,8 @@ import { ApiError } from "../utils/ApiError.js";
  * temporário de suporte.
  */
 class SupportSessionService {
+  isSchemaUnavailable(error) { return ["P2021", "P2022"].includes(error?.code); }
+
   get maxIdleMinutes() {
     return 30;
   }
@@ -95,10 +97,17 @@ class SupportSessionService {
         1000
       );
 
-    await SupportSessionRepository
-      .expireInactiveBefore(
-        referenceDate
-      );
+    try {
+      await SupportSessionRepository
+        .expireInactiveBefore(
+          referenceDate
+        );
+    } catch (error) {
+      // Durante atualização de uma instalação antiga, a Central deve continuar
+      // abrindo mesmo antes da migration de suporte estar aplicada.
+      if (this.isSchemaUnavailable(error)) return;
+      throw error;
+    }
   }
 
   async start(
@@ -248,10 +257,12 @@ class SupportSessionService {
 
     await this.expireOldSessions();
 
-    return SupportSessionRepository
-      .findActiveByPlatformAdmin(
-        platformAdmin.id
-      );
+    try {
+      return await SupportSessionRepository.findActiveByPlatformAdmin(platformAdmin.id);
+    } catch (error) {
+      if (this.isSchemaUnavailable(error)) return null;
+      throw error;
+    }
   }
 
   async findById(
@@ -293,10 +304,12 @@ class SupportSessionService {
       platformAdmin
     );
 
-    return SupportSessionRepository
-      .listByPlatformAdmin(
-        platformAdmin.id
-      );
+    try {
+      return await SupportSessionRepository.listByPlatformAdmin(platformAdmin.id);
+    } catch (error) {
+      if (this.isSchemaUnavailable(error)) return [];
+      throw error;
+    }
   }
 
   async close(

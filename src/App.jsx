@@ -37,6 +37,11 @@ import BIAnalytics from "./pages/sindico/BIAnalytics";
 import BIMonitor from "./pages/sindico/BIMonitor";
 import Configuracoes from "./pages/sindico/Configuracoes";
 import Financeiro from "./pages/sindico/Financeiro";
+import Ativos from "./pages/sindico/Ativos";
+import Fornecedores from "./pages/sindico/Fornecedores";
+import Contratos from "./pages/sindico/Contratos";
+import DocumentosCondominio from "./pages/shared/DocumentosCondominio";
+import Assembleias from "./pages/shared/Assembleias";
 
 import DashboardPorteiro from "./pages/porteiro/DashboardPorteiro";
 import EncomendasPorteiro from "./pages/porteiro/EncomendasPorteiro";
@@ -60,6 +65,8 @@ import AvisosMorador from "./pages/morador/AvisosMorador";
 import EncomendasMorador from "./pages/morador/EncomendasMorador";
 import ReservasMorador from "./pages/morador/ReservasMorador";
 import SugestoesMorador from "./pages/morador/SugestoesMorador";
+import VisitantesMorador from "./pages/morador/VisitantesMorador";
+import ServicosApartamentoMorador from "./pages/morador/ServicosApartamentoMorador";
 
 function Home() {
   const navigate = useNavigate();
@@ -88,8 +95,8 @@ function Home() {
               icon={<FaUserShield />}
               title="Síndico / Adm"
               description="Acesso corporativo ao sistema e gestão total do condomínio"
-              color="#7c3aed"
-              buttonColor="#7c3aed"
+              color="var(--ic-primary)"
+              buttonColor="var(--ic-primary)"
             />
           </div>
 
@@ -98,8 +105,8 @@ function Home() {
               icon={<FaBuilding />}
               title="Porteiro"
               description="Acesso para registro de encomendas, visitantes e consultas"
-              color="#6d28d9"
-              buttonColor="#6d28d9"
+              color="var(--ic-primary-strong)"
+              buttonColor="var(--ic-primary-strong)"
             />
           </div>
 
@@ -108,8 +115,8 @@ function Home() {
               icon={<FaUser />}
               title="Morador"
               description="Acesso para acompanhar encomendas, reservas e avisos"
-              color="#8b5cf6"
-              buttonColor="#8b5cf6"
+              color="var(--ic-primary-light)"
+              buttonColor="var(--ic-primary-light)"
             />
           </div>
 
@@ -258,6 +265,11 @@ function App() {
           <Route path="bi-analytics" element={<BIAnalytics />} />
           <Route path="bi-monitor" element={<BIMonitor />} />
           <Route path="financeiro" element={<Financeiro />} />
+          <Route path="documentos" element={<DocumentosCondominio />} />
+          <Route path="assembleias" element={<Assembleias />} />
+          <Route path="ativos" element={<Ativos />} />
+          <Route path="fornecedores" element={<Fornecedores />} />
+          <Route path="contratos" element={<Contratos />} />
           <Route path="configuracoes" element={<Configuracoes />} />
           <Route path="prestadores" element={<Prestadores />} />
         </Route>
@@ -284,6 +296,8 @@ function App() {
           <Route path="visitantes" element={<VisitantesPorteiro />} />
           <Route path="moradores" element={<MoradoresPorteiro />} />
           <Route path="ocorrencias" element={<OcorrenciasPorteiro />} />
+          <Route path="documentos" element={<DocumentosCondominio />} />
+          <Route path="assembleias" element={<Assembleias />} />
         </Route>
 
         <Route
@@ -299,6 +313,10 @@ function App() {
           <Route path="encomendas" element={<EncomendasMorador />} />
           <Route path="reservas" element={<ReservasMorador />} />
           <Route path="sugestoes" element={<SugestoesMorador />} />
+          <Route path="visitantes" element={<VisitantesMorador />} />
+          <Route path="servicos-apartamento" element={<ServicosApartamentoMorador />} />
+          <Route path="documentos" element={<DocumentosCondominio />} />
+          <Route path="assembleias" element={<Assembleias />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
@@ -311,7 +329,7 @@ const styles = {
   container: {
     minHeight: "100vh",
     background:
-      "radial-gradient(circle at top left, rgba(124,58,237,0.18), transparent 32%), radial-gradient(circle at bottom right, rgba(168,85,247,0.14), transparent 30%), linear-gradient(135deg,#ffffff,#f8f5ff 45%,#ffffff)",
+      "radial-gradient(circle at top left, rgb(var(--ic-primary-rgb) / 0.18), transparent 32%), radial-gradient(circle at bottom right, rgb(var(--ic-primary-bright-rgb) / 0.14), transparent 30%), linear-gradient(135deg,#ffffff,#f8f5ff 45%,#ffffff)",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
@@ -329,7 +347,7 @@ const styles = {
     width: "360px",
     height: "360px",
     borderRadius: "50%",
-    background: "rgba(124,58,237,0.12)",
+    background: "rgb(var(--ic-primary-rgb) / 0.12)",
     filter: "blur(70px)",
     top: "-100px",
     left: "-80px"
@@ -351,7 +369,7 @@ const styles = {
     maxWidth: "1280px",
     minHeight: "720px",
     background: "rgba(255,255,255,0.82)",
-    border: "1px solid rgba(124,58,237,0.12)",
+    border: "1px solid rgb(var(--ic-primary-rgb) / 0.12)",
     boxShadow: "0 30px 80px rgba(88,28,135,0.12)",
     borderRadius: "42px",
     display: "flex",
@@ -368,20 +386,20 @@ const styles = {
     width: "92px",
     height: "92px",
     borderRadius: "30px",
-    background: "linear-gradient(135deg,#4c1d95,#7c3aed,#a855f7)",
+    background: "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary),var(--ic-primary-bright))",
     color: "white",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "56px",
     marginBottom: "18px",
-    boxShadow: "0 22px 50px rgba(124,58,237,0.28)"
+    boxShadow: "0 22px 50px rgb(var(--ic-primary-rgb) / 0.28)"
   },
 
   brandBadge: {
-    background: "#f3e8ff",
-    color: "#6d28d9",
-    border: "1px solid #ddd6fe",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary-strong)",
+    border: "1px solid var(--ic-primary-border-soft)",
     padding: "9px 14px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -422,14 +440,14 @@ const styles = {
     minHeight: "40px",
     padding: "0 18px",
     borderRadius: "999px",
-    border: "1px solid rgba(76,29,149,0.22)",
-    background: "rgba(76,29,149,0.07)",
-    color: "#4c1d95",
+    border: "1px solid rgb(var(--ic-primary-deep-rgb) / 0.22)",
+    background: "rgb(var(--ic-primary-deep-rgb) / 0.07)",
+    color: "var(--ic-primary-deep)",
     fontSize: "12px",
     fontWeight: "900",
     letterSpacing: "0.2px",
     cursor: "pointer",
-    boxShadow: "0 8px 22px rgba(76,29,149,0.08)"
+    boxShadow: "0 8px 22px rgb(var(--ic-primary-deep-rgb) / 0.08)"
   },
 
   footer: {

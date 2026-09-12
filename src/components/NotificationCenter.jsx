@@ -319,13 +319,13 @@ const styles = {
     position: "relative",
     width: "48px",
     height: "48px",
-    border: "1px solid #ddd6fe",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "16px",
     background:
-      "linear-gradient(135deg,#ffffff,#f5f3ff)",
-    color: "#6d28d9",
+      "linear-gradient(135deg,#ffffff,var(--ic-primary-soft-4))",
+    color: "var(--ic-primary-strong)",
     boxShadow:
-      "0 12px 32px rgba(76,29,149,0.18)",
+      "0 12px 32px rgb(var(--ic-primary-deep-rgb) / 0.18)",
     cursor: "pointer",
     fontSize: "18px",
     display: "grid",
@@ -358,10 +358,10 @@ const styles = {
     maxHeight: "76vh",
     overflow: "hidden",
     background: "white",
-    border: "1px solid #ddd6fe",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "24px",
     boxShadow:
-      "0 28px 80px rgba(46,16,101,0.28)",
+      "0 28px 80px rgb(var(--ic-primary-deepest-rgb) / 0.28)",
   },
 
   header: {
@@ -370,26 +370,26 @@ const styles = {
     alignItems: "center",
     justifyContent: "space-between",
     gap: "12px",
-    borderBottom: "1px solid #ede9fe",
+    borderBottom: "1px solid var(--ic-primary-soft-2)",
   },
 
   eyebrow: {
     display: "block",
     fontSize: "9px",
     letterSpacing: "2px",
-    color: "#8b5cf6",
+    color: "var(--ic-primary-light)",
     fontWeight: "900",
   },
 
   title: {
     margin: "3px 0 0",
-    color: "#4c1d95",
+    color: "var(--ic-primary-deep)",
     fontSize: "19px",
   },
 
   unread: {
-    background: "#f3e8ff",
-    color: "#6d28d9",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary-strong)",
     borderRadius: "999px",
     padding: "6px 9px",
     fontSize: "10px",
@@ -400,14 +400,14 @@ const styles = {
     display: "flex",
     gap: "8px",
     padding: "10px 12px",
-    background: "#faf5ff",
-    borderBottom: "1px solid #ede9fe",
+    background: "var(--ic-primary-soft-3)",
+    borderBottom: "1px solid var(--ic-primary-soft-2)",
   },
 
   toolButton: {
-    border: "1px solid #ddd6fe",
+    border: "1px solid var(--ic-primary-border-soft)",
     background: "white",
-    color: "#6d28d9",
+    color: "var(--ic-primary-strong)",
     padding: "8px 10px",
     borderRadius: "11px",
     cursor: "pointer",
@@ -427,7 +427,7 @@ const styles = {
   item: {
     position: "relative",
     padding: "13px 36px 13px 13px",
-    border: "1px solid #ede9fe",
+    border: "1px solid var(--ic-primary-soft-2)",
     borderRadius: "15px",
     marginBottom: "8px",
     cursor: "pointer",
@@ -436,8 +436,8 @@ const styles = {
 
   itemUnread: {
     background:
-      "linear-gradient(135deg,#faf5ff,#ffffff)",
-    borderColor: "#c4b5fd",
+      "linear-gradient(135deg,var(--ic-primary-soft-3),#ffffff)",
+    borderColor: "var(--ic-primary-border)",
   },
 
   itemTop: {

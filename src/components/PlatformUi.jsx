@@ -86,14 +86,14 @@ export function PlatformButton({
 }) {
   const variants = {
     primary: {
-      background: "linear-gradient(135deg,#6d28d9,#4c1d95)",
+      background: "linear-gradient(135deg,var(--ic-primary-strong),var(--ic-primary-deep))",
       color: "#ffffff",
       border: "1px solid #c8a85c",
     },
     secondary: {
       background: "#ffffff",
-      color: "#5b21b6",
-      border: "1px solid #ddd6fe",
+      color: "var(--ic-primary-dark)",
+      border: "1px solid var(--ic-primary-border-soft)",
     },
     danger: {
       background: "#ffffff",
@@ -199,7 +199,7 @@ const styles = {
     border: "1px solid #e9e1ef",
     borderRadius: "20px",
     boxShadow:
-      "0 14px 36px rgba(46,16,101,0.06)",
+      "0 14px 36px rgb(var(--ic-primary-deepest-rgb) / 0.06)",
     padding: "22px",
   },
 

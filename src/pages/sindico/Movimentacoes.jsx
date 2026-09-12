@@ -130,10 +130,10 @@ function Movimentacoes() {
   }
 
   const COLORS = [
-    "#6d28d9",
-    "#7c3aed",
-    "#a855f7",
-    "#ddd6fe"
+    "var(--ic-primary-strong)",
+    "var(--ic-primary)",
+    "var(--ic-primary-bright)",
+    "var(--ic-primary-border-soft)"
   ];
 
   const totalGeral =
@@ -168,7 +168,7 @@ function Movimentacoes() {
             <Line
               type="monotone"
               dataKey="valor"
-              stroke="#6d28d9"
+              stroke="var(--ic-primary-strong)"
               strokeWidth={4}
             />
 
@@ -203,7 +203,7 @@ function Movimentacoes() {
 
             <Bar
               dataKey="value"
-              fill="#7c3aed"
+              fill="var(--ic-primary)"
               radius={[8, 8, 0, 0]}
             />
 
@@ -283,8 +283,8 @@ function Movimentacoes() {
             <Area
               type="monotone"
               dataKey="valor"
-              stroke="#7c3aed"
-              fill="#ddd6fe"
+              stroke="var(--ic-primary)"
+              fill="var(--ic-primary-border-soft)"
               strokeWidth={3}
             />
 
@@ -493,7 +493,7 @@ const styles = {
 
   title: {
     fontSize: "34px",
-    color: "#6d28d9",
+    color: "var(--ic-primary-strong)",
     margin: 0
   },
 
@@ -512,14 +512,14 @@ const styles = {
   select: {
     padding: "12px 14px",
     borderRadius: "12px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     background: "white"
   },
 
   pdfButton: {
     background:
-      "linear-gradient(135deg,#6d28d9,#7c3aed)",
+      "linear-gradient(135deg,var(--ic-primary-strong),var(--ic-primary))",
     color: "white",
     border: "none",
     padding: "12px 18px",
@@ -540,7 +540,7 @@ const styles = {
 
   card: {
     background:
-      "linear-gradient(135deg,#6d28d9,#7c3aed)",
+      "linear-gradient(135deg,var(--ic-primary-strong),var(--ic-primary))",
     color: "white",
     padding: "24px",
     borderRadius: "22px",
@@ -579,7 +579,7 @@ const styles = {
 
   chartTitle: {
     margin: 0,
-    color: "#6d28d9"
+    color: "var(--ic-primary-strong)"
   },
 
   chartSubtitle: {

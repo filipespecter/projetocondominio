@@ -1057,7 +1057,7 @@ const styles = {
     minWidth: 0,
     flexWrap: "wrap",
     background:
-      "radial-gradient(circle at top right,rgba(255,255,255,0.18),transparent 28%), radial-gradient(circle at bottom left,rgba(168,85,247,0.26),transparent 34%), linear-gradient(135deg,#2e1065,#4c1d95,#7c3aed)",
+      "radial-gradient(circle at top right,rgba(255,255,255,0.18),transparent 28%), radial-gradient(circle at bottom left,rgb(var(--ic-primary-bright-rgb) / 0.26),transparent 34%), linear-gradient(135deg,var(--ic-primary-deepest),var(--ic-primary-deep),var(--ic-primary))",
     borderRadius: "42px",
     padding: "40px",
     color: "white",
@@ -1067,7 +1067,7 @@ const styles = {
     gap: "34px",
     marginBottom: "26px",
     boxShadow:
-      "0 30px 80px rgba(88,28,135,0.26), 0 0 46px rgba(168,85,247,0.16)",
+      "0 30px 80px rgba(88,28,135,0.26), 0 0 46px rgb(var(--ic-primary-bright-rgb) / 0.16)",
     border: "1px solid rgba(255,255,255,0.18)",
     overflow: "hidden",
     position: "relative"
@@ -1140,7 +1140,7 @@ const styles = {
   },
 
   heroButton: {
-    background: "linear-gradient(135deg,#6d28d9,#8b5cf6,#a855f7)",
+    background: "linear-gradient(135deg,var(--ic-primary-strong),var(--ic-primary-light),var(--ic-primary-bright))",
     color: "white",
     border: "1px solid rgba(255,255,255,0.22)",
     padding: "16px 22px",
@@ -1148,15 +1148,15 @@ const styles = {
     cursor: "pointer",
     fontWeight: "900",
     boxShadow:
-      "0 18px 34px rgba(124,58,237,0.28), 0 0 28px rgba(168,85,247,0.18)"
+      "0 18px 34px rgb(var(--ic-primary-rgb) / 0.28), 0 0 28px rgb(var(--ic-primary-bright-rgb) / 0.18)"
   },
 
   controlStrip: {
     minWidth: 0,
     flexWrap: "wrap",
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
-    border: "1px solid #ddd6fe",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), white",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "30px",
     padding: "20px",
     display: "flex",
@@ -1177,7 +1177,7 @@ const styles = {
     left: "16px",
     top: "50%",
     transform: "translateY(-50%)",
-    color: "#7c3aed",
+    color: "var(--ic-primary)",
     fontWeight: "900"
   },
 
@@ -1185,7 +1185,7 @@ const styles = {
     width: "100%",
     padding: "15px 16px 15px 44px",
     borderRadius: "17px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     background: "#fbfaff",
     color: "#111827",
@@ -1197,7 +1197,7 @@ const styles = {
     width: "170px",
     padding: "15px 16px",
     borderRadius: "17px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     background: "#fbfaff",
     color: "#111827",
@@ -1205,9 +1205,9 @@ const styles = {
   },
 
   compactStats: {
-    background: "#f3e8ff",
-    border: "1px solid #ddd6fe",
-    color: "#6d28d9",
+    background: "var(--ic-primary-soft)",
+    border: "1px solid var(--ic-primary-border-soft)",
+    color: "var(--ic-primary-strong)",
     padding: "12px 14px",
     borderRadius: "18px",
     display: "flex",
@@ -1221,8 +1221,8 @@ const styles = {
     minWidth: 0,
     overflow: "hidden",
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), linear-gradient(180deg,#ffffff,#fbfaff)",
-    border: "1px solid #ede9fe",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), linear-gradient(180deg,#ffffff,#fbfaff)",
+    border: "1px solid var(--ic-primary-soft-2)",
     borderRadius: "36px",
     padding: "28px",
     boxShadow: "0 20px 60px rgba(88,28,135,0.10)"
@@ -1239,9 +1239,9 @@ const styles = {
 
   panelLabel: {
     display: "inline-block",
-    background: "#f3e8ff",
-    color: "#6d28d9",
-    border: "1px solid #ddd6fe",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary-strong)",
+    border: "1px solid var(--ic-primary-border-soft)",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "11px",
@@ -1251,15 +1251,15 @@ const styles = {
 
   panelTitle: {
     margin: 0,
-    color: "#2e1065",
+    color: "var(--ic-primary-deepest)",
     fontSize: "27px",
     letterSpacing: "-0.4px"
   },
 
   resultBadge: {
-    background: "#f3e8ff",
-    color: "#6d28d9",
-    border: "1px solid #ddd6fe",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary-strong)",
+    border: "1px solid var(--ic-primary-border-soft)",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1269,7 +1269,7 @@ const styles = {
 
   empty: {
     background: "#fbfaff",
-    border: "1px dashed #c4b5fd",
+    border: "1px dashed var(--ic-primary-border)",
     borderRadius: "28px",
     padding: "46px",
     textAlign: "center"
@@ -1291,14 +1291,14 @@ const styles = {
   },
 
   emptyButton: {
-    background: "linear-gradient(135deg,#6d28d9,#a855f7)",
+    background: "linear-gradient(135deg,var(--ic-primary-strong),var(--ic-primary-bright))",
     color: "white",
     border: "none",
     padding: "13px 18px",
     borderRadius: "15px",
     cursor: "pointer",
     fontWeight: "900",
-    boxShadow: "0 16px 32px rgba(124,58,237,0.22)"
+    boxShadow: "0 16px 32px rgb(var(--ic-primary-rgb) / 0.22)"
   },
 
   noticeGrid: {
@@ -1327,8 +1327,8 @@ const styles = {
 
   noticeCard: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.11),transparent 34%), linear-gradient(180deg,#ffffff,#fbfaff)",
-    border: "1px solid #ede9fe",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.11),transparent 34%), linear-gradient(180deg,#ffffff,#fbfaff)",
+    border: "1px solid var(--ic-primary-soft-2)",
     borderRadius: "30px",
     padding: "22px",
     boxShadow: "0 18px 42px rgba(88,28,135,0.10)",
@@ -1338,8 +1338,8 @@ const styles = {
 
   card: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.11),transparent 34%), linear-gradient(180deg,#ffffff,#fbfaff)",
-    border: "1px solid #ede9fe",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.11),transparent 34%), linear-gradient(180deg,#ffffff,#fbfaff)",
+    border: "1px solid var(--ic-primary-soft-2)",
     borderRadius: "30px",
     padding: "22px",
     boxShadow: "0 18px 42px rgba(88,28,135,0.10)",
@@ -1359,9 +1359,9 @@ const styles = {
     width: "58px",
     height: "58px",
     borderRadius: "20px",
-    background: "linear-gradient(135deg,#f3e8ff,#faf5ff)",
-    border: "1px solid #ddd6fe",
-    color: "#6d28d9",
+    background: "linear-gradient(135deg,var(--ic-primary-soft),var(--ic-primary-soft-3))",
+    border: "1px solid var(--ic-primary-border-soft)",
+    color: "var(--ic-primary-strong)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1373,8 +1373,8 @@ const styles = {
     width: "58px",
     height: "58px",
     borderRadius: "20px",
-    background: "linear-gradient(135deg,#f3e8ff,#faf5ff)",
-    border: "1px solid #ddd6fe",
+    background: "linear-gradient(135deg,var(--ic-primary-soft),var(--ic-primary-soft-3))",
+    border: "1px solid var(--ic-primary-border-soft)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1398,9 +1398,9 @@ const styles = {
   },
 
   categoryBadge: {
-    background: "#f3e8ff",
-    color: "#6d28d9",
-    border: "1px solid #ddd6fe",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary-strong)",
+    border: "1px solid var(--ic-primary-border-soft)",
     padding: "8px 11px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1408,9 +1408,9 @@ const styles = {
   },
 
   originBadge: {
-    background: "#ede9fe",
-    color: "#4c1d95",
-    border: "1px solid #ddd6fe",
+    background: "var(--ic-primary-soft-2)",
+    color: "var(--ic-primary-deep)",
+    border: "1px solid var(--ic-primary-border-soft)",
     padding: "8px 11px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1418,9 +1418,9 @@ const styles = {
   },
 
   statusBadge: {
-    background: "#f5f3ff",
-    color: "#6d28d9",
-    border: "1px solid #ddd6fe",
+    background: "var(--ic-primary-soft-4)",
+    color: "var(--ic-primary-strong)",
+    border: "1px solid var(--ic-primary-border-soft)",
     padding: "8px 11px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1430,7 +1430,7 @@ const styles = {
   dateBadge: {
     background: "#fbfaff",
     color: "#6b7280",
-    border: "1px solid #ede9fe",
+    border: "1px solid var(--ic-primary-soft-2)",
     padding: "8px 11px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1476,9 +1476,9 @@ const styles = {
   },
 
   responseBox: {
-    background: "#f3e8ff",
-    border: "1px solid #ddd6fe",
-    color: "#4c1d95",
+    background: "var(--ic-primary-soft)",
+    border: "1px solid var(--ic-primary-border-soft)",
+    color: "var(--ic-primary-deep)",
     borderRadius: "18px",
     padding: "14px",
     marginTop: "14px",
@@ -1490,7 +1490,7 @@ const styles = {
     minHeight: "90px",
     padding: "14px",
     borderRadius: "16px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     background: "#fbfaff",
     resize: "vertical",
@@ -1507,9 +1507,9 @@ const styles = {
   },
 
   buttonSmall: {
-    background: "#f3e8ff",
-    color: "#6d28d9",
-    border: "1px solid #ddd6fe",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary-strong)",
+    border: "1px solid var(--ic-primary-border-soft)",
     padding: "10px 12px",
     borderRadius: "14px",
     cursor: "pointer",
@@ -1517,8 +1517,8 @@ const styles = {
   },
 
   editButton: {
-    background: "#ede9fe",
-    color: "#6d28d9",
+    background: "var(--ic-primary-soft-2)",
+    color: "var(--ic-primary-strong)",
     border: "none",
     padding: "11px 13px",
     borderRadius: "14px",
@@ -1537,14 +1537,14 @@ const styles = {
   },
 
   saveResponseButton: {
-    background: "linear-gradient(135deg,#6d28d9,#a855f7)",
+    background: "linear-gradient(135deg,var(--ic-primary-strong),var(--ic-primary-bright))",
     color: "white",
     border: "none",
     padding: "11px 13px",
     borderRadius: "14px",
     cursor: "pointer",
     fontWeight: "900",
-    boxShadow: "0 14px 28px rgba(124,58,237,0.22)"
+    boxShadow: "0 14px 28px rgb(var(--ic-primary-rgb) / 0.22)"
   },
 
   modalBackground: {
@@ -1567,7 +1567,7 @@ const styles = {
     overflowY: "auto",
     boxSizing: "border-box",
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), #fbfaff",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), #fbfaff",
     padding: "26px",
     borderRadius: "36px",
     boxShadow: "0 34px 90px rgba(88,28,135,0.30)",
@@ -1578,7 +1578,7 @@ const styles = {
     minWidth: 0,
     flexWrap: "wrap",
     background:
-      "radial-gradient(circle at top right,rgba(255,255,255,0.16),transparent 34%), linear-gradient(135deg,#4c1d95,#7c3aed)",
+      "radial-gradient(circle at top right,rgba(255,255,255,0.16),transparent 34%), linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary))",
     color: "white",
     borderRadius: "28px",
     padding: "26px",
@@ -1614,14 +1614,14 @@ const styles = {
 
   modalSectionTitle: {
     margin: "0 0 16px",
-    color: "#4c1d95",
+    color: "var(--ic-primary-deep)",
     fontSize: "18px",
     fontWeight: "900"
   },
 
   modalSection: {
     background: "white",
-    border: "1px solid #ede9fe",
+    border: "1px solid var(--ic-primary-soft-2)",
     borderRadius: "26px",
     padding: "20px"
   },
@@ -1656,7 +1656,7 @@ const styles = {
     minWidth: 0,
     padding: "15px",
     borderRadius: "16px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     fontSize: "14px",
     background: "#fbfaff",
@@ -1671,7 +1671,7 @@ const styles = {
     minHeight: "120px",
     padding: "15px",
     borderRadius: "16px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     fontSize: "14px",
     background: "#fbfaff",
@@ -1690,7 +1690,7 @@ const styles = {
 
   saveButton: {
     flex: 1,
-    background: "linear-gradient(135deg,#6d28d9,#8b5cf6,#a855f7)",
+    background: "linear-gradient(135deg,var(--ic-primary-strong),var(--ic-primary-light),var(--ic-primary-bright))",
     color: "white",
     border: "none",
     padding: "14px",
@@ -1698,14 +1698,14 @@ const styles = {
     cursor: "pointer",
     fontWeight: "900",
     boxShadow:
-      "0 18px 34px rgba(124,58,237,0.28), 0 0 28px rgba(168,85,247,0.18)"
+      "0 18px 34px rgb(var(--ic-primary-rgb) / 0.28), 0 0 28px rgb(var(--ic-primary-bright-rgb) / 0.18)"
   },
 
   cancelButton: {
     flex: 1,
-    background: "#f5f3ff",
-    color: "#4c1d95",
-    border: "1px solid #ddd6fe",
+    background: "var(--ic-primary-soft-4)",
+    color: "var(--ic-primary-deep)",
+    border: "1px solid var(--ic-primary-border-soft)",
     padding: "14px",
     borderRadius: "17px",
     cursor: "pointer",

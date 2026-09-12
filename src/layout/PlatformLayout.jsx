@@ -458,7 +458,7 @@ const styles = {
     padding: "24px 18px",
     boxSizing: "border-box",
     background:
-      "linear-gradient(180deg,#130c24 0%,#20103d 55%,#2e1065 100%)",
+      "linear-gradient(180deg,#130c24 0%,#20103d 55%,var(--ic-primary-deepest) 100%)",
     boxShadow:
       "10px 0 35px rgba(38,20,66,0.12)",
     color: "#ffffff",
@@ -522,7 +522,7 @@ const styles = {
     gap: "11px",
     padding: "0 12px",
     borderRadius: "10px",
-    color: "#ddd6fe",
+    color: "var(--ic-primary-border-soft)",
     textDecoration: "none",
     fontSize: "13px",
     fontWeight: "600",
@@ -532,9 +532,9 @@ const styles = {
   menuItemActive: {
     color: "#ffffff",
     background:
-      "linear-gradient(90deg,#7c3aed,#9333ea)",
+      "linear-gradient(90deg,var(--ic-primary),var(--ic-primary-bright))",
     boxShadow:
-      "0 8px 22px rgba(124,58,237,0.26)",
+      "0 8px 22px rgb(var(--ic-primary-rgb) / 0.26)",
   },
 
   menuItemDisabled: {
@@ -554,7 +554,7 @@ const styles = {
 
   soon: {
     marginLeft: "auto",
-    color: "#c4b5fd",
+    color: "var(--ic-primary-border)",
     fontSize: "8px",
     letterSpacing: "0.4px",
   },
@@ -615,7 +615,7 @@ const styles = {
     padding: "9px 12px",
     borderRadius: "999px",
     background: "#f4f0ff",
-    color: "#5b21b6",
+    color: "var(--ic-primary-dark)",
     fontSize: "12px",
     fontWeight: "700",
   },
@@ -627,7 +627,7 @@ const styles = {
     borderRadius: "12px",
     border: "1px solid #e6deeb",
     background: "#ffffff",
-    color: "#5b21b6",
+    color: "var(--ic-primary-dark)",
     alignItems: "center",
     justifyContent: "center",
     cursor: "pointer",

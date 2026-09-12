@@ -494,7 +494,7 @@ const styles = {
 
   hero: {
     background:
-      "linear-gradient(135deg,#4c1d95,#6d28d9,#7c3aed)",
+      "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary-strong),var(--ic-primary))",
     borderRadius: "30px",
     padding: "32px",
     color: "white",
@@ -503,7 +503,7 @@ const styles = {
     alignItems: "center",
     gap: "30px",
     marginBottom: "26px",
-    boxShadow: "0 22px 55px rgba(124,58,237,0.24), 0 0 38px rgba(168,85,247,0.12)",
+    boxShadow: "0 22px 55px rgb(var(--ic-primary-rgb) / 0.24), 0 0 38px rgb(var(--ic-primary-bright-rgb) / 0.12)",
     border: "1px solid rgba(255,255,255,0.18)",
     position: "relative",
     overflow: "hidden"
@@ -554,8 +554,8 @@ const styles = {
   },
 
   heroStatus: {
-    background: "#f3e8ff",
-    color: "#7c3aed",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary)",
     padding: "8px 12px",
     borderRadius: "999px",
     fontWeight: "700",
@@ -571,23 +571,23 @@ const styles = {
 
   cardPrimary: {
     background:
-      "linear-gradient(135deg,#6d28d9,#8b5cf6)",
+      "linear-gradient(135deg,var(--ic-primary-strong),var(--ic-primary-light))",
     borderRadius: "24px",
     padding: "24px",
     color: "white",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    boxShadow: "0 14px 35px rgba(124,58,237,0.18)"
+    boxShadow: "0 14px 35px rgb(var(--ic-primary-rgb) / 0.18)"
   },
 
   card: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.08),transparent 34%), white",
     borderRadius: "24px",
     padding: "24px",
     boxShadow: "0 16px 40px rgba(88,28,135,0.08)",
-    border: "1px solid #ede9fe"
+    border: "1px solid var(--ic-primary-soft-2)"
   },
 
   cardLabelLight: {
@@ -627,13 +627,13 @@ const styles = {
 
   cardNumberGreen: {
     margin: "10px 0 0",
-    color: "#7c3aed",
+    color: "var(--ic-primary)",
     fontSize: "34px"
   },
 
   cardNumberBlue: {
     margin: "10px 0 0",
-    color: "#7c3aed",
+    color: "var(--ic-primary)",
     fontSize: "34px"
   },
 
@@ -646,20 +646,20 @@ const styles = {
 
   formCard: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.08),transparent 34%), white",
     borderRadius: "28px",
     padding: "26px",
     boxShadow: "0 18px 45px rgba(88,28,135,0.09)",
-    border: "1px solid #ede9fe"
+    border: "1px solid var(--ic-primary-soft-2)"
   },
 
   listCard: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.08),transparent 34%), white",
     borderRadius: "28px",
     padding: "26px",
     boxShadow: "0 18px 45px rgba(88,28,135,0.09)",
-    border: "1px solid #ede9fe"
+    border: "1px solid var(--ic-primary-soft-2)"
   },
 
   sectionTop: {
@@ -672,7 +672,7 @@ const styles = {
 
   sectionTitle: {
     margin: 0,
-    color: "#6d28d9",
+    color: "var(--ic-primary-strong)",
     fontSize: "23px"
   },
 
@@ -684,8 +684,8 @@ const styles = {
   },
 
   lockBadge: {
-    background: "#faf5ff",
-    color: "#7c3aed",
+    background: "var(--ic-primary-soft-3)",
+    color: "var(--ic-primary)",
     padding: "9px 12px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -705,7 +705,7 @@ const styles = {
     width: "100%",
     padding: "14px 15px",
     borderRadius: "15px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     fontSize: "14px",
     marginBottom: "15px",
@@ -718,7 +718,7 @@ const styles = {
     minHeight: "140px",
     padding: "14px 15px",
     borderRadius: "15px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     fontSize: "14px",
     marginBottom: "16px",
@@ -732,14 +732,14 @@ const styles = {
   submitButton: {
     width: "100%",
     background:
-      "linear-gradient(135deg,#6d28d9,#8b5cf6)",
+      "linear-gradient(135deg,var(--ic-primary-strong),var(--ic-primary-light))",
     color: "white",
     border: "none",
     padding: "15px",
     borderRadius: "16px",
     cursor: "pointer",
     fontWeight: "800",
-    boxShadow: "0 12px 25px rgba(124,58,237,0.20)"
+    boxShadow: "0 12px 25px rgb(var(--ic-primary-rgb) / 0.20)"
   },
 
   formHint: {
@@ -761,7 +761,7 @@ const styles = {
   search: {
     padding: "13px 15px",
     borderRadius: "15px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     minWidth: "260px",
     maxWidth: "100%",
@@ -770,7 +770,7 @@ const styles = {
 
   tabs: {
     display: "flex",
-    background: "#f5f3ff",
+    background: "var(--ic-primary-soft-4)",
     padding: "6px",
     borderRadius: "18px",
     marginBottom: "22px",
@@ -790,8 +790,8 @@ const styles = {
 
   tabActive: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
-    color: "#6d28d9",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.08),transparent 34%), white",
+    color: "var(--ic-primary-strong)",
     boxShadow: "0 6px 18px rgba(15,23,42,0.08)"
   },
 
@@ -800,7 +800,7 @@ const styles = {
     borderRadius: "22px",
     padding: "45px",
     textAlign: "center",
-    border: "1px dashed #c4b5fd"
+    border: "1px dashed var(--ic-primary-border)"
   },
 
   emptyIcon: {
@@ -835,14 +835,14 @@ const styles = {
     width: "14px",
     height: "14px",
     borderRadius: "50%",
-    background: "#8b5cf6",
+    background: "var(--ic-primary-light)",
     marginTop: "26px",
-    boxShadow: "0 0 0 6px #f3e8ff"
+    boxShadow: "0 0 0 6px var(--ic-primary-soft)"
   },
 
   occurrenceCard: {
     background: "#fbfaff",
-    border: "1px solid #ddd6fe",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "24px",
     padding: "22px"
   },
@@ -862,8 +862,8 @@ const styles = {
   },
 
   originBadge: {
-    background: "#f3e8ff",
-    color: "#7c3aed",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary)",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -887,8 +887,8 @@ const styles = {
   },
 
   priorityLow: {
-    background: "#f3e8ff",
-    color: "#7c3aed"
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary)"
   },
 
   priorityMedium: {
@@ -926,8 +926,8 @@ const styles = {
   },
 
   statusResolved: {
-    background: "#f3e8ff",
-    color: "#7c3aed"
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary)"
   },
 
   description: {
@@ -955,9 +955,9 @@ const styles = {
   },
 
   resolvedBox: {
-    background: "#faf5ff",
-    border: "1px solid #ddd6fe",
-    color: "#7c3aed",
+    background: "var(--ic-primary-soft-3)",
+    border: "1px solid var(--ic-primary-border-soft)",
+    color: "var(--ic-primary)",
     padding: "14px",
     borderRadius: "16px",
     fontSize: "14px"

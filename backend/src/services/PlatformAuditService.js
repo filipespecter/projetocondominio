@@ -3,6 +3,10 @@ import AuditLogService from "./AuditLogService.js";
 import { ApiError } from "../utils/ApiError.js";
 
 class PlatformAuditService {
+  isSchemaUnavailable(error) {
+    return ["P2021", "P2022"].includes(error?.code);
+  }
+
   parseDate(value, endOfDay = false) {
     if (!value) {
       return null;
@@ -100,13 +104,18 @@ class PlatformAuditService {
       includeDeleted: query.includeDeleted === "true",
     };
 
-    const { items, total } =
-      await PlatformAuditRepository
-        .findPaginated(
-          filters,
-          page,
-          limit
-        );
+    let items = [];
+    let total = 0;
+    try {
+      const result = await PlatformAuditRepository.findPaginated(filters, page, limit);
+      items = result.items;
+      total = result.total;
+    } catch (error) {
+      // Mantém a Central acessível durante atualização de schema. O deploy
+      // correto continua exigindo prisma migrate deploy; aqui evitamos um 500
+      // que inutilize toda a tela administrativa.
+      if (!this.isSchemaUnavailable(error)) throw error;
+    }
 
     return {
       items,
@@ -276,8 +285,21 @@ class PlatformAuditService {
   }
 
   async statistics() {
-    return PlatformAuditRepository
-      .statistics();
+    try {
+      return await PlatformAuditRepository.statistics();
+    } catch (error) {
+      if (!this.isSchemaUnavailable(error)) throw error;
+      return {
+        total: 0,
+        today: 0,
+        platformLevel: 0,
+        supportActions: 0,
+        activeSupportSessions: 0,
+        unresolvedEvents: 0,
+        criticalUnresolvedEvents: 0,
+        schemaPending: true,
+      };
+    }
   }
 }
 

@@ -2,7 +2,6 @@ import crypto from "node:crypto";
 import AuditLogService from "./AuditLogService.js";
 
 import userRepository from "../repositories/UserRepository.js";
-import condominiumRepository from "../repositories/CondominiumRepository.js";
 
 import Jwt from "../utils/Jwt.js";
 import Password from "../utils/Password.js";
@@ -10,6 +9,7 @@ import env from "../config/env.js";
 import { ApiError } from "../utils/ApiError.js";
 import prisma from "../config/prisma.js";
 import CommunicationProviderService from "./CommunicationProviderService.js";
+import UserSessionService from "./UserSessionService.js";
 
 class AuthService {
   /**
@@ -326,6 +326,10 @@ class AuthService {
         null,
     });
 
+    // Sessão operacional persistente para supervisão de equipe. A coleta é
+    // tolerante à ausência da migration para não bloquear o login.
+    await UserSessionService.start(authenticatedUser, requestContext);
+
     return {
       ...tokens,
       user:
@@ -441,6 +445,8 @@ class AuthService {
     await userRepository.registerLogout(
       user.id
     );
+
+    await UserSessionService.endLatest(user.id, "LOGOUT");
 
     await AuditLogService.logLogout({
       user,

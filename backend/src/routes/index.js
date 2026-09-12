@@ -21,6 +21,11 @@ import analyticsRoutes from "./analytics.routes.js";
 import configurationRoutes from "./configuration.routes.js";
 import expenseRoutes from "./expense.routes.js";
 import supportTicketRoutes from "./support-ticket.routes.js";
+import documentRoutes from "./document.routes.js";
+import assetRoutes from "./asset.routes.js";
+import supplierRoutes from "./supplier.routes.js";
+import contractRoutes from "./contract.routes.js";
+import privateServiceRequestRoutes from "./private-service-request.routes.js";
 
 import platformDashboardRoutes from "./platform-dashboard.routes.js";
 import platformCondominiumRoutes from "./platform-condominium.routes.js";
@@ -582,6 +587,31 @@ router.use(
   noticeRoutes
 );
 
+/** Documentos, ativos, fornecedores e contratos do condomínio. */
+router.use(
+  "/v1/documents",
+  ...operationalGuards,
+  documentRoutes
+);
+
+router.use(
+  "/v1/assets",
+  ...operationalGuards,
+  assetRoutes
+);
+
+router.use(
+  "/v1/suppliers",
+  ...operationalGuards,
+  supplierRoutes
+);
+
+router.use(
+  "/v1/contracts",
+  ...operationalGuards,
+  contractRoutes
+);
+
 /**
  * =====================================================
  * NOTIFICAÇÕES
@@ -627,4 +657,10 @@ router.use(
   analyticsRoutes
 );
 
+
+router.use(
+  "/v1/private-service-requests",
+  ...operationalGuards,
+  privateServiceRequestRoutes
+);
 export default router;

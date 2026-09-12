@@ -84,12 +84,16 @@ class NoticeRepository extends BaseRepository {
     );
   }
 
-  async findByCondominium(condominiumId) {
+  async findByCondominium(condominiumId, filters = {}) {
+    const where = {
+      condominiumId,
+      deletedAt: null,
+    };
+
+    if (filters.type) where.type = filters.type;
+
     return this.findMany(
-      {
-        condominiumId,
-        deletedAt: null,
-      },
+      where,
       {
         include: this.defaultInclude,
         orderBy: {
@@ -99,12 +103,16 @@ class NoticeRepository extends BaseRepository {
     );
   }
 
-  async findPublished(condominiumId) {
+  async findPublished(condominiumId, filters = {}) {
+    const where = {
+      condominiumId,
+      ...this.visiblePublishedWhere,
+    };
+
+    if (filters.type) where.type = filters.type;
+
     return this.findMany(
-      {
-        condominiumId,
-        ...this.visiblePublishedWhere,
-      },
+      where,
       {
         include: this.defaultInclude,
         orderBy: {
@@ -226,6 +234,22 @@ class NoticeRepository extends BaseRepository {
           this.normalizeOptionalText(
             data.category
           ),
+        type:
+          String(data.type ?? "NOTICE")
+            .trim()
+            .toUpperCase(),
+        agenda:
+          this.normalizeOptionalText(data.agenda),
+        eventDate:
+          this.normalizeOptionalDate(data.eventDate),
+        eventTime:
+          this.normalizeOptionalText(data.eventTime),
+        eventLocation:
+          this.normalizeOptionalText(data.eventLocation),
+        eventModality:
+          this.normalizeOptionalText(data.eventModality),
+        attachments:
+          data.attachments ?? null,
         priority:
           String(
             data.priority ?? "NORMAL"
@@ -280,6 +304,34 @@ class NoticeRepository extends BaseRepository {
         this.normalizeOptionalText(
           data.category
         );
+    }
+
+    if (data.type !== undefined) {
+      updateData.type = String(data.type).trim().toUpperCase();
+    }
+
+    if (data.agenda !== undefined) {
+      updateData.agenda = this.normalizeOptionalText(data.agenda);
+    }
+
+    if (data.eventDate !== undefined) {
+      updateData.eventDate = this.normalizeOptionalDate(data.eventDate);
+    }
+
+    if (data.eventTime !== undefined) {
+      updateData.eventTime = this.normalizeOptionalText(data.eventTime);
+    }
+
+    if (data.eventLocation !== undefined) {
+      updateData.eventLocation = this.normalizeOptionalText(data.eventLocation);
+    }
+
+    if (data.eventModality !== undefined) {
+      updateData.eventModality = this.normalizeOptionalText(data.eventModality);
+    }
+
+    if (data.attachments !== undefined) {
+      updateData.attachments = data.attachments;
     }
 
     if (data.priority !== undefined) {
@@ -482,6 +534,7 @@ class NoticeRepository extends BaseRepository {
     condominiumId,
     role,
     apartmentId = null,
+    type = null,
   }) {
     const audienceConditions = [
       {
@@ -513,6 +566,7 @@ class NoticeRepository extends BaseRepository {
         condominiumId,
         status: "PUBLISHED",
         deletedAt: null,
+        ...(type ? { type } : {}),
 
         OR: audienceConditions,
 
@@ -559,6 +613,7 @@ class NoticeRepository extends BaseRepository {
     condominiumId,
     role,
     apartmentId = null,
+    type = null,
   }) {
     const audienceConditions = [
       {
@@ -591,6 +646,7 @@ class NoticeRepository extends BaseRepository {
         condominiumId,
         status: "PUBLISHED",
         deletedAt: null,
+        ...(type ? { type } : {}),
 
         OR: audienceConditions,
 

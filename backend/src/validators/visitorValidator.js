@@ -85,7 +85,12 @@ function validateQuery(schema) {
       );
     }
 
-    req.query = result.data;
+    Object.defineProperty(req, "query", {
+      value: result.data,
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    });
     return next();
   };
 }
@@ -295,6 +300,52 @@ export const visitorListQuerySchema =
     })
     .strict();
 
+export const createVisitorInvitationSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(2, "O nome do visitante deve possuir pelo menos 2 caracteres.")
+      .max(150, "O nome do visitante deve possuir no máximo 150 caracteres."),
+    document: optionalText(50, "O documento"),
+    phone: optionalText(20, "O telefone"),
+    visitType: optionalText(100, "O tipo de visita"),
+    notes: optionalText(1000, "As observações"),
+    validFrom: z.string().datetime({ offset: true }, "Informe uma data/hora inicial válida."),
+    validUntil: z.string().datetime({ offset: true }, "Informe uma data/hora final válida."),
+  })
+  .strict()
+  .superRefine((data, context) => {
+    const from = new Date(data.validFrom);
+    const until = new Date(data.validUntil);
+
+    if (until <= from) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["validUntil"],
+        message: "A validade final deve ser posterior ao início.",
+      });
+    }
+
+    if (until.getTime() - from.getTime() > 30 * 24 * 60 * 60 * 1000) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["validUntil"],
+        message: "O convite pode ter validade máxima de 30 dias.",
+      });
+    }
+  });
+
+export const visitorInvitationTokenSchema = z
+  .object({
+    token: z
+      .string()
+      .trim()
+      .min(20, "QR de visitante inválido.")
+      .max(200, "QR de visitante inválido."),
+  })
+  .strict();
+
 export const validateCreateVisitor =
   validateBody(
     createVisitorSchema
@@ -315,14 +366,24 @@ export const validateVisitorListQuery =
     visitorListQuerySchema
   );
 
+export const validateCreateVisitorInvitation =
+  validateBody(createVisitorInvitationSchema);
+
+export const validateVisitorInvitationToken =
+  validateBody(visitorInvitationTokenSchema);
+
 export default {
   VISITOR_STATUSES,
   createVisitorSchema,
   updateVisitorSchema,
   visitorIdParamsSchema,
   visitorListQuerySchema,
+  createVisitorInvitationSchema,
+  visitorInvitationTokenSchema,
   validateCreateVisitor,
   validateUpdateVisitor,
   validateVisitorId,
   validateVisitorListQuery,
+  validateCreateVisitorInvitation,
+  validateVisitorInvitationToken,
 };

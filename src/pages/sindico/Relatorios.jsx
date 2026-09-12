@@ -1269,7 +1269,7 @@ const styles = {
   },
 
   hero: {
-    background: "linear-gradient(135deg,#ffffff,#faf5ff)",
+    background: "linear-gradient(135deg,#ffffff,var(--ic-primary-soft-3))",
     borderRadius: "28px",
     padding: "34px",
     display: "flex",
@@ -1278,14 +1278,14 @@ const styles = {
     alignItems: "center",
     boxShadow: "0 18px 45px rgba(88,28,135,0.09)",
     marginBottom: "24px",
-    border: "1px solid #f3e8ff"
+    border: "1px solid var(--ic-primary-soft)"
   },
 
   heroBadge: {
     display: "inline-block",
-    background: "#f3e8ff",
-    border: "1px solid #ddd6fe",
-    color: "#7c3aed",
+    background: "var(--ic-primary-soft)",
+    border: "1px solid var(--ic-primary-border-soft)",
+    color: "var(--ic-primary)",
     padding: "9px 13px",
     borderRadius: "999px",
     fontWeight: "900",
@@ -1317,7 +1317,7 @@ const styles = {
     minWidth: "140px",
     maxWidth: "100%",
     background: "#ffffff",
-    border: "1px solid #ddd6fe",
+    border: "1px solid var(--ic-primary-border-soft)",
     padding: "16px",
     borderRadius: "18px"
   },
@@ -1326,8 +1326,8 @@ const styles = {
     minWidth: "160px",
     maxWidth: "100%",
     background: "#ecfdf5",
-    border: "1px solid #ddd6fe",
-    color: "#7c3aed",
+    border: "1px solid var(--ic-primary-border-soft)",
+    color: "var(--ic-primary)",
     padding: "16px",
     borderRadius: "18px"
   },
@@ -1342,7 +1342,7 @@ const styles = {
 
   configPanel: {
     background: "#ffffff",
-    border: "1px solid #ddd6fe",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "24px",
     padding: "24px",
     boxShadow: "0 16px 40px rgba(88,28,135,0.08)"
@@ -1354,7 +1354,7 @@ const styles = {
     borderRadius: "24px",
     padding: "28px",
     boxShadow: "0 16px 40px rgba(88,28,135,0.08)",
-    border: "1px solid #ddd6fe"
+    border: "1px solid var(--ic-primary-border-soft)"
   },
 
   panelHeader: {
@@ -1364,8 +1364,8 @@ const styles = {
   panelBadge: {
     display: "inline-block",
     background: "#ecfdf5",
-    color: "#7c3aed",
-    border: "1px solid #ddd6fe",
+    color: "var(--ic-primary)",
+    border: "1px solid var(--ic-primary-border-soft)",
     padding: "7px 11px",
     borderRadius: "999px",
     fontWeight: "900",
@@ -1395,7 +1395,7 @@ const styles = {
   reportButton: {
     background: "#ffffff",
     color: "#111827",
-    border: "1px solid #ddd6fe",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "16px",
     padding: "13px",
     display: "flex",
@@ -1406,8 +1406,8 @@ const styles = {
 
   reportButtonActive: {
     background: "#ecfdf5",
-    color: "#7c3aed",
-    border: "1px solid #a855f7",
+    color: "var(--ic-primary)",
+    border: "1px solid var(--ic-primary-bright)",
     boxShadow: "0 0 0 3px rgba(34,197,94,0.12)"
   },
 
@@ -1419,7 +1419,7 @@ const styles = {
     width: "100%",
     background: "#ffffff",
     color: "#111827",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     borderRadius: "14px",
     padding: "13px",
     outline: "none"
@@ -1429,7 +1429,7 @@ const styles = {
     width: "100%",
     background: "#ffffff",
     color: "#111827",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     borderRadius: "14px",
     padding: "13px",
     outline: "none",
@@ -1441,7 +1441,7 @@ const styles = {
     minHeight: "92px",
     background: "#ffffff",
     color: "#111827",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     borderRadius: "14px",
     padding: "13px",
     outline: "none",
@@ -1454,7 +1454,7 @@ const styles = {
     padding: "14px",
     borderRadius: "18px",
     background: "#fbfaff",
-    border: "1px solid #ddd6fe"
+    border: "1px solid var(--ic-primary-border-soft)"
   },
 
   checkOption: {
@@ -1474,7 +1474,7 @@ const styles = {
   },
 
   primaryButton: {
-    background: "#8b5cf6",
+    background: "var(--ic-primary-light)",
     color: "white",
     border: "none",
     padding: "13px 16px",
@@ -1484,9 +1484,9 @@ const styles = {
   },
 
   secondaryButton: {
-    background: "#f5f3ff",
+    background: "var(--ic-primary-soft-4)",
     color: "#111827",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     padding: "13px 16px",
     borderRadius: "14px",
     cursor: "pointer",
@@ -1524,7 +1524,7 @@ const styles = {
   },
 
   previewSeal: {
-    background: "#8b5cf6",
+    background: "var(--ic-primary-light)",
     whiteSpace: "nowrap",
     color: "white",
     padding: "14px 18px",
@@ -1540,9 +1540,9 @@ const styles = {
   },
 
   summaryBox: {
-    background: "#faf5ff",
-    border: "1px solid #ddd6fe",
-    color: "#5b21b6",
+    background: "var(--ic-primary-soft-3)",
+    border: "1px solid var(--ic-primary-border-soft)",
+    color: "var(--ic-primary-dark)",
     borderRadius: "18px",
     padding: "18px",
     marginBottom: "18px"
@@ -1554,7 +1554,7 @@ const styles = {
 
   tableWrapper: {
     overflowX: "auto",
-    border: "1px solid #ddd6fe",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "16px"
   },
 
@@ -1565,11 +1565,11 @@ const styles = {
   },
 
   th: {
-    background: "#f5f3ff",
+    background: "var(--ic-primary-soft-4)",
     color: "#374151",
     padding: "12px",
     textAlign: "left",
-    borderBottom: "1px solid #ddd6fe"
+    borderBottom: "1px solid var(--ic-primary-border-soft)"
   },
 
   td: {
@@ -1597,7 +1597,7 @@ const styles = {
 
   historyPanel: {
     background: "#ffffff",
-    border: "1px solid #ddd6fe",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "24px",
     padding: "24px",
     marginBottom: "20px",
@@ -1619,7 +1619,7 @@ const styles = {
 
   historyItem: {
     background: "#fbfaff",
-    border: "1px solid #ddd6fe",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "16px",
     padding: "14px",
     display: "grid",

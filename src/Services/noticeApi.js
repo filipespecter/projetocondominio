@@ -79,6 +79,12 @@ const noticeApi = {
       `/v1/notices/${id}`
     );
   },
+
+  async downloadAttachment(id, index) {
+    return unwrap(
+      await api.get(`/v1/notices/${id}/attachments/${index}`)
+    );
+  },
 };
 
 export default noticeApi;

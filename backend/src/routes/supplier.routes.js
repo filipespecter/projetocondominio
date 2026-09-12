@@ -1,0 +1,12 @@
+import { Router } from "express";
+import SupplierController from "../controllers/SupplierController.js";
+import { authMiddleware, authorizeRoles } from "../middlewares/authMiddleware.js";
+import { validateCreateSupplier, validateSupplierId, validateSupplierList, validateUpdateSupplier } from "../validators/supplierValidator.js";
+const routes=Router();
+routes.use(authMiddleware, authorizeRoles("CONDOMINIUM_ADMIN","MANAGER"));
+routes.get("/", validateSupplierList, (req,res,next)=>SupplierController.index(req,res,next));
+routes.post("/", validateCreateSupplier, (req,res,next)=>SupplierController.create(req,res,next));
+routes.get("/:id", validateSupplierId, (req,res,next)=>SupplierController.show(req,res,next));
+routes.patch("/:id", validateSupplierId, validateUpdateSupplier, (req,res,next)=>SupplierController.update(req,res,next));
+routes.delete("/:id", validateSupplierId, (req,res,next)=>SupplierController.remove(req,res,next));
+export default routes;

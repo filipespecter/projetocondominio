@@ -11,6 +11,11 @@ const doormanApi = {
     return response?.data?.data ?? response?.data ?? {};
   },
 
+  async supervision(id, days = 30) {
+    const response = await api.get(`/v1/doormen/${id}/supervision`, { params: { days } });
+    return response?.data?.data ?? response?.data ?? {};
+  },
+
   async create(payload) {
     const response = await api.post("/v1/doormen", payload);
     return response?.data?.data ?? response?.data;

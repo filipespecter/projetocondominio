@@ -1,0 +1,13 @@
+import { Router } from "express";
+import AssetController from "../controllers/AssetController.js";
+import { authMiddleware, authorizeRoles } from "../middlewares/authMiddleware.js";
+import { validateAssetId, validateAssetList, validateCreateAsset, validateUpdateAsset } from "../validators/assetValidator.js";
+const routes=Router();
+routes.use(authMiddleware,authorizeRoles("CONDOMINIUM_ADMIN","MANAGER"));
+routes.get("/",validateAssetList,(req,res,next)=>AssetController.index(req,res,next));
+routes.post("/",validateCreateAsset,(req,res,next)=>AssetController.create(req,res,next));
+routes.get("/:id/download",validateAssetId,(req,res,next)=>AssetController.download(req,res,next));
+routes.get("/:id",validateAssetId,(req,res,next)=>AssetController.show(req,res,next));
+routes.patch("/:id",validateAssetId,validateUpdateAsset,(req,res,next)=>AssetController.update(req,res,next));
+routes.delete("/:id",validateAssetId,(req,res,next)=>AssetController.remove(req,res,next));
+export default routes;

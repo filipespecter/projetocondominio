@@ -375,7 +375,7 @@ const styles = {
 
   hero: {
     background:
-      "linear-gradient(135deg,#2e1065,#4c1d95,#7c3aed)",
+      "linear-gradient(135deg,var(--ic-primary-deepest),var(--ic-primary-deep),var(--ic-primary))",
     borderRadius: "30px",
     padding: "32px",
     color: "white",
@@ -385,7 +385,7 @@ const styles = {
     gap: "28px",
     marginBottom: "26px",
     boxShadow:
-      "0 20px 45px rgba(124,58,237,0.18)"
+      "0 20px 45px rgb(var(--ic-primary-rgb) / 0.18)"
   },
 
   heroBadge: {
@@ -416,7 +416,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "10px",
-    color: "#ede9fe",
+    color: "var(--ic-primary-soft-2)",
     fontSize: "14px",
     fontWeight: "600",
     flexWrap: "wrap"
@@ -426,7 +426,7 @@ const styles = {
     width: "9px",
     height: "9px",
     borderRadius: "50%",
-    background: "#a855f7",
+    background: "var(--ic-primary-bright)",
     boxShadow:
       "0 0 0 5px rgba(56,189,248,0.16)"
   },
@@ -464,8 +464,8 @@ const styles = {
   },
 
   heroStatus: {
-    background: "#ede9fe",
-    color: "#6d28d9",
+    background: "var(--ic-primary-soft-2)",
+    color: "var(--ic-primary-strong)",
     padding: "8px 12px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -482,7 +482,7 @@ const styles = {
 
   actionPrimary: {
     background:
-      "linear-gradient(135deg,#4c1d95,#7c3aed)",
+      "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary))",
     color: "white",
     border: "none",
     padding: "22px",
@@ -493,7 +493,7 @@ const styles = {
     gap: "16px",
     textAlign: "left",
     boxShadow:
-      "0 14px 35px rgba(124,58,237,0.18)"
+      "0 14px 35px rgb(var(--ic-primary-rgb) / 0.18)"
   },
 
   actionButton: {
@@ -531,7 +531,7 @@ const styles = {
     width: "54px",
     height: "54px",
     borderRadius: "18px",
-    background: "#ede9fe",
+    background: "var(--ic-primary-soft-2)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -542,7 +542,7 @@ const styles = {
     width: "54px",
     height: "54px",
     borderRadius: "18px",
-    background: "#ede9fe",
+    background: "var(--ic-primary-soft-2)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -559,7 +559,7 @@ const styles = {
 
   cardPrimary: {
     background:
-      "linear-gradient(135deg,#4c1d95,#7c3aed)",
+      "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary))",
     borderRadius: "24px",
     padding: "24px",
     color: "white",
@@ -567,7 +567,7 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "center",
     boxShadow:
-      "0 14px 35px rgba(124,58,237,0.18)"
+      "0 14px 35px rgb(var(--ic-primary-rgb) / 0.18)"
   },
 
   card: {
@@ -614,7 +614,7 @@ const styles = {
     width: "54px",
     height: "54px",
     borderRadius: "18px",
-    background: "#ede9fe",
+    background: "var(--ic-primary-soft-2)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -625,7 +625,7 @@ const styles = {
     width: "54px",
     height: "54px",
     borderRadius: "18px",
-    background: "#f3e8ff",
+    background: "var(--ic-primary-soft)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -636,7 +636,7 @@ const styles = {
     width: "54px",
     height: "54px",
     borderRadius: "18px",
-    background: "#ede9fe",
+    background: "var(--ic-primary-soft-2)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -651,19 +651,19 @@ const styles = {
 
   cardNumberBlue: {
     margin: "8px 0 0",
-    color: "#7c3aed",
+    color: "var(--ic-primary)",
     fontSize: "34px"
   },
 
   cardNumberGreen: {
     margin: "8px 0 0",
-    color: "#6d28d9",
+    color: "var(--ic-primary-strong)",
     fontSize: "34px"
   },
 
   cardNumberPurple: {
     margin: "8px 0 0",
-    color: "#7c3aed",
+    color: "var(--ic-primary)",
     fontSize: "34px"
   },
 
@@ -701,7 +701,7 @@ const styles = {
 
   sectionTitle: {
     margin: 0,
-    color: "#4c1d95",
+    color: "var(--ic-primary-deep)",
     fontSize: "24px"
   },
 
@@ -713,8 +713,8 @@ const styles = {
   },
 
   sectionBadge: {
-    background: "#f5f3ff",
-    color: "#6d28d9",
+    background: "var(--ic-primary-soft-4)",
+    color: "var(--ic-primary-strong)",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -742,7 +742,7 @@ const styles = {
     width: "44px",
     height: "44px",
     borderRadius: "15px",
-    background: "#ede9fe",
+    background: "var(--ic-primary-soft-2)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -780,11 +780,11 @@ const styles = {
 
   resolvedBox: {
     marginTop: "16px",
-    background: "#faf5ff",
-    border: "1px solid #ddd6fe",
+    background: "var(--ic-primary-soft-3)",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "16px",
     padding: "14px",
-    color: "#6d28d9",
+    color: "var(--ic-primary-strong)",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",

@@ -871,7 +871,7 @@ const styles = {
   hero: {
     minWidth: 0,
     background:
-      "linear-gradient(135deg,#02140b,#5b21b6 55%,#15803d)",
+      "linear-gradient(135deg,#02140b,var(--ic-primary-dark) 55%,#15803d)",
     borderRadius: "36px",
     padding: "34px",
     color: "white",
@@ -891,7 +891,7 @@ const styles = {
     display: "inline-block",
     background: "rgba(255,255,255,0.13)",
     border: "1px solid rgba(255,255,255,0.14)",
-    color: "#f3e8ff",
+    color: "var(--ic-primary-soft)",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -939,8 +939,8 @@ const styles = {
   },
 
   heroButton: {
-    background: "#f3e8ff",
-    color: "#7c3aed",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary)",
     border: "none",
     padding: "15px 20px",
     borderRadius: "17px",
@@ -952,8 +952,8 @@ const styles = {
   controlStrip: {
     minWidth: 0,
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
-    border: "1px solid #ddd6fe",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), white",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "28px",
     padding: "18px",
     marginBottom: "24px",
@@ -966,7 +966,7 @@ const styles = {
   searchWrap: {
     flex: 1,
     background: "#fbfaff",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     borderRadius: "18px",
     display: "flex",
     alignItems: "center",
@@ -974,7 +974,7 @@ const styles = {
   },
 
   searchIcon: {
-    color: "#7c3aed",
+    color: "var(--ic-primary)",
     fontSize: "20px",
     marginRight: "8px"
   },
@@ -992,7 +992,7 @@ const styles = {
     width: "170px",
     padding: "15px",
     borderRadius: "18px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     background: "#fbfaff"
   },
@@ -1008,8 +1008,8 @@ const styles = {
   catalogPanel: {
     minWidth: 0,
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), linear-gradient(180deg,#ffffff,#fbfaff)",
-    border: "1px solid #ede9fe",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), linear-gradient(180deg,#ffffff,#fbfaff)",
+    border: "1px solid var(--ic-primary-soft-2)",
     borderRadius: "34px",
     padding: "28px",
     boxShadow: "0 18px 55px rgba(88,28,135,0.09)"
@@ -1023,8 +1023,8 @@ const styles = {
   },
 
   panelLabel: {
-    background: "#f3e8ff",
-    color: "#7c3aed",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary)",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "11px",
@@ -1033,14 +1033,14 @@ const styles = {
 
   panelTitle: {
     margin: "12px 0 0",
-    color: "#4c1d95",
+    color: "var(--ic-primary-deep)",
     fontSize: "28px"
   },
 
   resultBadge: {
-    background: "#faf5ff",
-    color: "#7c3aed",
-    border: "1px solid #ddd6fe",
+    background: "var(--ic-primary-soft-3)",
+    color: "var(--ic-primary)",
+    border: "1px solid var(--ic-primary-border-soft)",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1059,13 +1059,13 @@ const styles = {
     borderRadius: "30px",
     overflow: "hidden",
     boxShadow: "0 15px 38px rgba(88,28,135,0.07)",
-    border: "1px solid #ede9fe"
+    border: "1px solid var(--ic-primary-soft-2)"
   },
 
   cardCover: {
     height: "130px",
     background:
-      "radial-gradient(circle at top right,rgba(187,247,208,0.60),transparent 34%), linear-gradient(135deg,#4c1d95,#7c3aed)",
+      "radial-gradient(circle at top right,rgba(187,247,208,0.60),transparent 34%), linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary))",
     display: "flex",
     alignItems: "flex-start",
     justifyContent: "space-between",
@@ -1111,16 +1111,16 @@ const styles = {
 
   infoItem: {
     background: "white",
-    border: "1px solid #ede9fe",
+    border: "1px solid var(--ic-primary-soft-2)",
     borderRadius: "17px",
     padding: "13px"
   },
 
   integrationBox: {
     marginTop: "12px",
-    background: "#faf5ff",
-    border: "1px solid #ddd6fe",
-    color: "#7c3aed",
+    background: "var(--ic-primary-soft-3)",
+    border: "1px solid var(--ic-primary-border-soft)",
+    color: "var(--ic-primary)",
     padding: "12px",
     borderRadius: "16px",
     fontSize: "13px"
@@ -1134,8 +1134,8 @@ const styles = {
   },
 
   availableButton: {
-    background: "#f3e8ff",
-    color: "#7c3aed",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary)",
     border: "none",
     padding: "11px",
     borderRadius: "13px",
@@ -1154,8 +1154,8 @@ const styles = {
   },
 
   editButton: {
-    background: "#ede9fe",
-    color: "#6d28d9",
+    background: "var(--ic-primary-soft-2)",
+    color: "var(--ic-primary-strong)",
     border: "none",
     padding: "11px",
     borderRadius: "13px",
@@ -1175,7 +1175,7 @@ const styles = {
 
   empty: {
     background: "#fbfaff",
-    border: "1px dashed #c4b5fd",
+    border: "1px dashed var(--ic-primary-border)",
     borderRadius: "26px",
     padding: "48px",
     textAlign: "center"
@@ -1198,7 +1198,7 @@ const styles = {
 
   emptyButton: {
     background:
-      "linear-gradient(135deg,#5b21b6,#8b5cf6)",
+      "linear-gradient(135deg,var(--ic-primary-dark),var(--ic-primary-light))",
     color: "white",
     border: "none",
     padding: "13px 18px",
@@ -1232,7 +1232,7 @@ const styles = {
 
   modalTop: {
     background:
-      "linear-gradient(135deg,#4c1d95,#7c3aed)",
+      "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary))",
     color: "white",
     borderRadius: "28px",
     padding: "26px",
@@ -1267,7 +1267,7 @@ const styles = {
 
   modalSection: {
     background: "white",
-    border: "1px solid #ede9fe",
+    border: "1px solid var(--ic-primary-soft-2)",
     borderRadius: "26px",
     padding: "20px",
     marginBottom: "15px"
@@ -1275,7 +1275,7 @@ const styles = {
 
   modalSectionTitle: {
     margin: "0 0 16px",
-    color: "#4c1d95"
+    color: "var(--ic-primary-deep)"
   },
 
   formGrid: {
@@ -1300,7 +1300,7 @@ const styles = {
   input: {
     padding: "15px",
     borderRadius: "16px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     fontSize: "14px",
     background: "#fbfaff"
@@ -1315,7 +1315,7 @@ const styles = {
   saveButton: {
     flex: 1,
     background:
-      "linear-gradient(135deg,#5b21b6,#8b5cf6)",
+      "linear-gradient(135deg,var(--ic-primary-dark),var(--ic-primary-light))",
     color: "white",
     border: "none",
     padding: "14px",
@@ -1326,7 +1326,7 @@ const styles = {
 
   cancelButton: {
     flex: 1,
-    background: "#f5f3ff",
+    background: "var(--ic-primary-soft-4)",
     color: "#374151",
     border: "none",
     padding: "14px",

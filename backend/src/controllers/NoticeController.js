@@ -31,7 +31,8 @@ class NoticeController {
           await NoticeService
             .findVisibleForUser(
               condominiumId,
-              req.user
+              req.user,
+              { type: req.query.type }
             );
       } else {
         const {
@@ -40,13 +41,15 @@ class NoticeController {
           category,
           apartmentId,
           publishedOnly,
+          type,
         } = req.query;
 
         if (publishedOnly === true) {
           data =
             await NoticeService
               .findPublished(
-                condominiumId
+                condominiumId,
+                { type }
               );
         } else if (apartmentId) {
           data =
@@ -80,7 +83,8 @@ class NoticeController {
           data =
             await NoticeService
               .findAll(
-                condominiumId
+                condominiumId,
+                { type }
               );
         }
       }
@@ -103,6 +107,24 @@ class NoticeController {
             req.user.condominiumId,
             req.user
           );
+
+      return res.json({
+        success: true,
+        data,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async downloadAttachment(req, res, next) {
+    try {
+      const data = await NoticeService.downloadAttachment(
+        req.params.id,
+        req.params.index,
+        req.user.condominiumId,
+        req.user
+      );
 
       return res.json({
         success: true,

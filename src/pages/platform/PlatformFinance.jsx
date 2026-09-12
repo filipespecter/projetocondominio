@@ -711,7 +711,7 @@ function PlatformFinance() {
       <div style={styles.executiveGrid}>
         <PlatformCard><span style={styles.label}>Receita no mês</span><strong style={styles.executiveValue}>{money(executive.revenueMonth)}</strong><small style={styles.miniLabel}>recebido</small></PlatformCard>
         <PlatformCard><span style={styles.label}>Pendente</span><strong style={styles.executiveValue}>{money(executive.totalPending)}</strong><small style={styles.miniLabel}>a receber</small></PlatformCard>
-        <PlatformCard><span style={styles.label}>Inadimplência</span><strong style={{...styles.executiveValue,color:executive.totalOverdue>0?"#b91c1c":"#4c1d95"}}>{money(executive.totalOverdue)}</strong><small style={styles.miniLabel}>vencido</small></PlatformCard>
+        <PlatformCard><span style={styles.label}>Inadimplência</span><strong style={{...styles.executiveValue,color:executive.totalOverdue>0?"#b91c1c":"var(--ic-primary-deep)"}}>{money(executive.totalOverdue)}</strong><small style={styles.miniLabel}>vencido</small></PlatformCard>
         <PlatformCard><span style={styles.label}>Clientes ativos</span><strong style={styles.executiveValue}>{executive.activeClients}</strong><small style={styles.miniLabel}>carteira atual</small></PlatformCard>
         <PlatformCard><span style={styles.label}>Ticket médio</span><strong style={styles.executiveValue}>{money(executive.ticket)}</strong><small style={styles.miniLabel}>estimado</small></PlatformCard>
       </div>
@@ -719,7 +719,7 @@ function PlatformFinance() {
       <PlatformCard style={{ marginTop: 18 }}>
         <div style={styles.sectionHeader}><div><h3 style={styles.sectionTitle}>Evolução financeira</h3><p style={styles.help}>Recebimentos e valores em aberto nos últimos seis meses.</p></div></div>
         <div style={{ height: 280, marginTop: 12 }}>
-          <ResponsiveContainer width="100%" height="100%"><BarChart data={monthlyChart}><CartesianGrid strokeDasharray="3 3" vertical={false}/><XAxis dataKey="name"/><YAxis tickFormatter={(v)=>`R$${Math.round(v/100)}`}/><Tooltip formatter={(v)=>money(v)}/><Bar dataKey="recebido" name="Recebido" fill="#6d28d9" radius={[6,6,0,0]}/><Bar dataKey="pendente" name="Pendente" fill="#c4b5fd" radius={[6,6,0,0]}/></BarChart></ResponsiveContainer>
+          <ResponsiveContainer width="100%" height="100%"><BarChart data={monthlyChart}><CartesianGrid strokeDasharray="3 3" vertical={false}/><XAxis dataKey="name"/><YAxis tickFormatter={(v)=>`R$${Math.round(v/100)}`}/><Tooltip formatter={(v)=>money(v)}/><Bar dataKey="recebido" name="Recebido" fill="var(--ic-primary-strong)" radius={[6,6,0,0]}/><Bar dataKey="pendente" name="Pendente" fill="var(--ic-primary-border)" radius={[6,6,0,0]}/></BarChart></ResponsiveContainer>
         </div>
       </PlatformCard>
 
@@ -1231,7 +1231,7 @@ function PlatformFinance() {
 
 const styles = {
   executiveGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: "14px" },
-  executiveValue: { display: "block", marginTop: "9px", color: "#4c1d95", fontSize: "23px" },
+  executiveValue: { display: "block", marginTop: "9px", color: "var(--ic-primary-deep)", fontSize: "23px" },
   statsGrid: {
     display: "grid",
     gridTemplateColumns:
@@ -1249,7 +1249,7 @@ const styles = {
   value: {
     display: "block",
     marginTop: "9px",
-    color: "#4c1d95",
+    color: "var(--ic-primary-deep)",
     fontSize: "25px",
   },
 
@@ -1380,7 +1380,7 @@ const styles = {
   },
 
   link: {
-    color: "#6d28d9",
+    color: "var(--ic-primary-strong)",
     fontWeight: "800",
     fontSize: "12px",
     textDecoration: "none",

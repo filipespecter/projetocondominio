@@ -161,9 +161,9 @@ function Moradores() {
   function corStatus(status) {
     if (status === "Ativo") {
       return {
-        background: "#f3e8ff",
-        color: "#7c3aed",
-        border: "#ddd6fe"
+        background: "var(--ic-primary-soft)",
+        color: "var(--ic-primary)",
+        border: "var(--ic-primary-border-soft)"
       };
     }
 
@@ -695,7 +695,7 @@ const styles = {
 
   hero: {
     background:
-      "radial-gradient(circle at top right,rgba(255,255,255,0.18),transparent 30%), radial-gradient(circle at bottom left,rgba(168,85,247,0.24),transparent 34%), linear-gradient(135deg,#2e1065,#4c1d95,#7c3aed)",
+      "radial-gradient(circle at top right,rgba(255,255,255,0.18),transparent 30%), radial-gradient(circle at bottom left,rgb(var(--ic-primary-bright-rgb) / 0.24),transparent 34%), linear-gradient(135deg,var(--ic-primary-deepest),var(--ic-primary-deep),var(--ic-primary))",
     borderRadius: "42px",
     padding: "38px",
     display: "flex",
@@ -704,7 +704,7 @@ const styles = {
     gap: "26px",
     color: "white",
     boxShadow:
-      "0 30px 80px rgba(88,28,135,0.26), 0 0 46px rgba(168,85,247,0.16)",
+      "0 30px 80px rgba(88,28,135,0.26), 0 0 46px rgb(var(--ic-primary-bright-rgb) / 0.16)",
     border: "1px solid rgba(255,255,255,0.18)",
     marginBottom: "24px",
     position: "relative",
@@ -721,7 +721,7 @@ const styles = {
     display: "inline-block",
     background: "rgba(255,255,255,0.14)",
     border: "1px solid rgba(255,255,255,0.22)",
-    color: "#f5f3ff",
+    color: "var(--ic-primary-soft-4)",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -761,8 +761,8 @@ const styles = {
   },
 
   heroButton: {
-    background: "linear-gradient(135deg,#ffffff,#f3e8ff)",
-    color: "#6d28d9",
+    background: "linear-gradient(135deg,#ffffff,var(--ic-primary-soft))",
+    color: "var(--ic-primary-strong)",
     border: "1px solid rgba(255,255,255,0.28)",
     padding: "16px 22px",
     borderRadius: "18px",
@@ -774,8 +774,8 @@ const styles = {
 
   toolbar: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
-    border: "1px solid #ddd6fe",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), white",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "30px",
     padding: "18px",
     marginBottom: "24px",
@@ -788,16 +788,16 @@ const styles = {
   searchWrap: {
     flex: 1,
     background: "#fbfaff",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     borderRadius: "18px",
     display: "flex",
     alignItems: "center",
     padding: "0 14px",
-    boxShadow: "inset 0 0 0 1px rgba(168,85,247,0.04)"
+    boxShadow: "inset 0 0 0 1px rgb(var(--ic-primary-bright-rgb) / 0.04)"
   },
 
   searchIcon: {
-    color: "#7c3aed",
+    color: "var(--ic-primary)",
     fontSize: "20px",
     marginRight: "8px"
   },
@@ -816,7 +816,7 @@ const styles = {
     width: "160px",
     padding: "15px",
     borderRadius: "18px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     background: "#fbfaff",
     color: "#111827"
@@ -832,8 +832,8 @@ const styles = {
 
   registry: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), linear-gradient(180deg,#ffffff,#fbfaff)",
-    border: "1px solid #ddd6fe",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), linear-gradient(180deg,#ffffff,#fbfaff)",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "36px",
     padding: "28px",
     boxShadow: "0 20px 60px rgba(88,28,135,0.10)"
@@ -847,9 +847,9 @@ const styles = {
   },
 
   registryLabel: {
-    background: "#f3e8ff",
-    color: "#7c3aed",
-    border: "1px solid #ddd6fe",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary)",
+    border: "1px solid var(--ic-primary-border-soft)",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "11px",
@@ -858,15 +858,15 @@ const styles = {
 
   registryTitle: {
     margin: "12px 0 0",
-    color: "#4c1d95",
+    color: "var(--ic-primary-deep)",
     fontSize: "28px",
     letterSpacing: "-0.4px"
   },
 
   resultBadge: {
-    background: "#faf5ff",
-    color: "#7c3aed",
-    border: "1px solid #ddd6fe",
+    background: "var(--ic-primary-soft-3)",
+    color: "var(--ic-primary)",
+    border: "1px solid var(--ic-primary-border-soft)",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -883,11 +883,11 @@ const styles = {
     position: "relative",
     overflow: "hidden",
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), linear-gradient(180deg,#ffffff,#fbfaff)",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), linear-gradient(180deg,#ffffff,#fbfaff)",
     borderRadius: "30px",
     padding: "22px",
     boxShadow: "0 18px 42px rgba(88,28,135,0.10)",
-    border: "1px solid #ede9fe"
+    border: "1px solid var(--ic-primary-soft-2)"
   },
 
   cardAccent: {
@@ -895,7 +895,7 @@ const styles = {
     inset: "0 auto 0 0",
     width: "7px",
     background:
-      "linear-gradient(180deg,#6d28d9,#a855f7,#ddd6fe)"
+      "linear-gradient(180deg,var(--ic-primary-strong),var(--ic-primary-bright),var(--ic-primary-border-soft))"
   },
 
   residentMain: {
@@ -910,14 +910,14 @@ const styles = {
     height: "62px",
     borderRadius: "23px",
     background:
-      "linear-gradient(135deg,#4c1d95,#7c3aed,#a855f7)",
+      "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary),var(--ic-primary-bright))",
     color: "white",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "27px",
     fontWeight: "900",
-    boxShadow: "0 16px 30px rgba(124,58,237,0.24)"
+    boxShadow: "0 16px 30px rgb(var(--ic-primary-rgb) / 0.24)"
   },
 
   residentIdentity: {
@@ -960,7 +960,7 @@ const styles = {
 
   dataPill: {
     background: "#ffffff",
-    border: "1px solid #ede9fe",
+    border: "1px solid var(--ic-primary-soft-2)",
     borderRadius: "17px",
     padding: "13px",
     boxShadow: "0 8px 20px rgba(88,28,135,0.04)"
@@ -974,9 +974,9 @@ const styles = {
 
   editButton: {
     flex: 1,
-    background: "#f3e8ff",
-    color: "#7c3aed",
-    border: "1px solid #ddd6fe",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary)",
+    border: "1px solid var(--ic-primary-border-soft)",
     padding: "12px",
     borderRadius: "15px",
     cursor: "pointer",
@@ -996,7 +996,7 @@ const styles = {
 
   empty: {
     background: "#fbfaff",
-    border: "1px dashed #c4b5fd",
+    border: "1px dashed var(--ic-primary-border)",
     borderRadius: "28px",
     padding: "48px",
     textAlign: "center"
@@ -1019,14 +1019,14 @@ const styles = {
 
   emptyButton: {
     background:
-      "linear-gradient(135deg,#6d28d9,#a855f7)",
+      "linear-gradient(135deg,var(--ic-primary-strong),var(--ic-primary-bright))",
     color: "white",
     border: "none",
     padding: "13px 18px",
     borderRadius: "15px",
     cursor: "pointer",
     fontWeight: "900",
-    boxShadow: "0 16px 32px rgba(124,58,237,0.22)"
+    boxShadow: "0 16px 32px rgb(var(--ic-primary-rgb) / 0.22)"
   },
 
   modalBackground: {
@@ -1044,7 +1044,7 @@ const styles = {
   modal: {
     width: "720px",
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), #fbfaff",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), #fbfaff",
     padding: "26px",
     borderRadius: "36px",
     boxShadow: "0 34px 90px rgba(88,28,135,0.30)",
@@ -1053,7 +1053,7 @@ const styles = {
 
   modalTop: {
     background:
-      "radial-gradient(circle at top right,rgba(255,255,255,0.16),transparent 34%), linear-gradient(135deg,#4c1d95,#7c3aed)",
+      "radial-gradient(circle at top right,rgba(255,255,255,0.16),transparent 34%), linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary))",
     color: "white",
     borderRadius: "28px",
     padding: "26px",
@@ -1090,8 +1090,8 @@ const styles = {
 
   formPanel: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
-    border: "1px solid #ede9fe",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.08),transparent 34%), white",
+    border: "1px solid var(--ic-primary-soft-2)",
     borderRadius: "26px",
     padding: "20px",
     display: "grid",
@@ -1121,7 +1121,7 @@ const styles = {
   input: {
     padding: "15px",
     borderRadius: "16px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     fontSize: "14px",
     background: "#fbfaff",
@@ -1138,21 +1138,21 @@ const styles = {
   saveButton: {
     flex: 1,
     background:
-      "linear-gradient(135deg,#6d28d9,#8b5cf6,#a855f7)",
+      "linear-gradient(135deg,var(--ic-primary-strong),var(--ic-primary-light),var(--ic-primary-bright))",
     color: "white",
     border: "none",
     padding: "14px",
     borderRadius: "17px",
     cursor: "pointer",
     fontWeight: "900",
-    boxShadow: "0 18px 34px rgba(124,58,237,0.28), 0 0 28px rgba(168,85,247,0.18)"
+    boxShadow: "0 18px 34px rgb(var(--ic-primary-rgb) / 0.28), 0 0 28px rgb(var(--ic-primary-bright-rgb) / 0.18)"
   },
 
   cancelButton: {
     flex: 1,
-    background: "#f5f3ff",
-    color: "#4c1d95",
-    border: "1px solid #ddd6fe",
+    background: "var(--ic-primary-soft-4)",
+    color: "var(--ic-primary-deep)",
+    border: "1px solid var(--ic-primary-border-soft)",
     padding: "14px",
     borderRadius: "17px",
     cursor: "pointer",

@@ -33,6 +33,14 @@ class VisitorRepository extends BaseRepository {
       authorizedBy: {
         select: this.safeUserSelect,
       },
+      invitedBy: {
+        include: {
+          apartment: true,
+          user: {
+            select: this.safeUserSelect,
+          },
+        },
+      },
     };
   }
 
@@ -414,6 +422,161 @@ class VisitorRepository extends BaseRepository {
       );
 
     return result.count > 0;
+  }
+
+
+  /**
+   * Lista convites antecipados criados por um morador.
+   * O filtro do condomínio é obrigatório para preservar o isolamento multi-tenant.
+   */
+  async findInvitationsForResident(condominiumId, residentId) {
+    return this.findMany(
+      {
+        condominiumId,
+        invitedByResidentId: residentId,
+        invitationTokenHash: { not: null },
+        deletedAt: null,
+      },
+      {
+        include: this.defaultInclude,
+        orderBy: {
+          invitationValidFrom: "desc",
+        },
+      }
+    );
+  }
+
+  async findInvitationByIdForResident(id, condominiumId, residentId) {
+    return this.findFirst(
+      {
+        id,
+        condominiumId,
+        invitedByResidentId: residentId,
+        invitationTokenHash: { not: null },
+        deletedAt: null,
+      },
+      {
+        include: this.defaultInclude,
+      }
+    );
+  }
+
+  /**
+   * Localiza um convite pelo HASH do token e sempre dentro do tenant informado.
+   * O token bruto nunca é persistido.
+   */
+  async findInvitationByTokenHash(condominiumId, invitationTokenHash) {
+    return this.findFirst(
+      {
+        condominiumId,
+        invitationTokenHash,
+        deletedAt: null,
+      },
+      {
+        include: this.defaultInclude,
+      }
+    );
+  }
+
+  async createInvitation(condominiumId, data) {
+    return this.create(
+      {
+        condominiumId,
+        apartmentId: data.apartmentId,
+        name: String(data.name).trim(),
+        document: data.document ? String(data.document).trim() : null,
+        phone: data.phone ? String(data.phone).trim() : null,
+        visitType: data.visitType ? String(data.visitType).trim() : "Convite antecipado",
+        notes: data.notes ? String(data.notes).trim() : null,
+        expectedAt: data.invitationValidFrom,
+        status: "AUTHORIZED",
+        authorizedAt: new Date(),
+        registeredByUserId: data.registeredByUserId,
+        invitedByResidentId: data.invitedByResidentId,
+        invitationTokenHash: data.invitationTokenHash,
+        invitationGeneratedAt: new Date(),
+        invitationValidFrom: data.invitationValidFrom,
+        invitationValidUntil: data.invitationValidUntil,
+        invitationStatus: "AUTHORIZED",
+      },
+      {
+        include: this.defaultInclude,
+      }
+    );
+  }
+
+  async markInvitationExpired(id, condominiumId) {
+    const result = await this.updateMany(
+      {
+        id,
+        condominiumId,
+        invitationTokenHash: { not: null },
+        invitationStatus: { in: ["WAITING", "AUTHORIZED"] },
+        invitationUsedAt: null,
+        invitationCanceledAt: null,
+        deletedAt: null,
+      },
+      {
+        invitationStatus: "EXPIRED",
+      }
+    );
+
+    if (!result.count) return null;
+    return this.findById(id, condominiumId);
+  }
+
+  /**
+   * Consome o convite de forma atômica. A condição inclui status, janela temporal,
+   * hash e tenant para impedir reutilização e corrida entre duas leituras do mesmo QR.
+   */
+  async consumeInvitation(id, condominiumId, invitationTokenHash, authorizedByUserId, now = new Date()) {
+    const result = await this.updateMany(
+      {
+        id,
+        condominiumId,
+        invitationTokenHash,
+        invitationStatus: "AUTHORIZED",
+        invitationUsedAt: null,
+        invitationCanceledAt: null,
+        invitationValidFrom: { lte: now },
+        invitationValidUntil: { gte: now },
+        deletedAt: null,
+      },
+      {
+        invitationStatus: "USED",
+        invitationUsedAt: now,
+        status: "INSIDE",
+        enteredAt: now,
+        authorizedAt: now,
+        authorizedByUserId,
+      }
+    );
+
+    if (!result.count) return null;
+    return this.findById(id, condominiumId);
+  }
+
+  async cancelInvitation(id, condominiumId, residentId) {
+    const now = new Date();
+    const result = await this.updateMany(
+      {
+        id,
+        condominiumId,
+        invitedByResidentId: residentId,
+        invitationTokenHash: { not: null },
+        invitationStatus: { in: ["WAITING", "AUTHORIZED"] },
+        invitationUsedAt: null,
+        deletedAt: null,
+      },
+      {
+        invitationStatus: "CANCELED",
+        invitationCanceledAt: now,
+        status: "CANCELED",
+      }
+    );
+
+    if (!result.count) return null;
+    return this.findById(id, condominiumId);
   }
 
   async countByCondominium(

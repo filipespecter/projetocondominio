@@ -4,7 +4,7 @@ import platformApi from "../../Services/platformApi.js";
 
 const GOLD = "#c8a85c";
 const GOLD_SOFT = "#f6eed9";
-const PURPLE = "#5b21b6";
+const PURPLE = "var(--ic-primary-dark)";
 const DEEP = "#1b102c";
 
 const emptyForm = {
@@ -851,7 +851,7 @@ const styles = {
   page: { width: "100%", color: DEEP, fontFamily: "Inter, Arial, sans-serif" },
   center: { minHeight: 240, display: "grid", placeItems: "center", color: "#746b7f", fontWeight: 700 },
   hero: {
-    background: "linear-gradient(135deg,#24103f 0%,#5b21b6 68%,#7240d4 100%)",
+    background: "linear-gradient(135deg,#24103f 0%,var(--ic-primary-dark) 68%,#7240d4 100%)",
     borderRadius: 30, padding: "34px 36px", color: "white", display: "flex",
     justifyContent: "space-between", alignItems: "center", gap: 24,
     boxShadow: "0 24px 60px rgba(44,18,78,.18)", border: "1px solid rgba(200,168,92,.35)"

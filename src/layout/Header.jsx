@@ -30,8 +30,8 @@ const styles = {
   header: {
     margin: "28px 34px 26px",
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.16),transparent 32%), linear-gradient(135deg,rgba(255,255,255,0.96),rgba(251,250,255,0.92))",
-    border: "1px solid #ede9fe",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.16),transparent 32%), linear-gradient(135deg,rgba(255,255,255,0.96),rgba(251,250,255,0.92))",
+    border: "1px solid var(--ic-primary-soft-2)",
     borderRadius: "30px",
     padding: "24px 26px",
     display: "flex",
@@ -48,7 +48,7 @@ const styles = {
     width: "180px",
     height: "180px",
     borderRadius: "50%",
-    background: "rgba(124,58,237,0.10)",
+    background: "rgb(var(--ic-primary-rgb) / 0.10)",
     filter: "blur(50px)",
     top: "-80px",
     right: "90px"
@@ -72,9 +72,9 @@ const styles = {
 
   badge: {
     display: "inline-block",
-    background: "#f3e8ff",
-    color: "#6d28d9",
-    border: "1px solid #ddd6fe",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary-strong)",
+    border: "1px solid var(--ic-primary-border-soft)",
     padding: "8px 12px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -84,7 +84,7 @@ const styles = {
 
   title: {
     margin: 0,
-    color: "#2e1065",
+    color: "var(--ic-primary-deepest)",
     fontSize: "30px",
     letterSpacing: "-0.5px"
   },
@@ -103,8 +103,8 @@ const styles = {
     alignItems: "center",
     gap: "9px",
     background: "#ffffff",
-    border: "1px solid #ede9fe",
-    color: "#6d28d9",
+    border: "1px solid var(--ic-primary-soft-2)",
+    color: "var(--ic-primary-strong)",
     padding: "10px 14px",
     borderRadius: "999px",
     fontSize: "13px",
@@ -116,8 +116,8 @@ const styles = {
     width: "9px",
     height: "9px",
     borderRadius: "50%",
-    background: "#a855f7",
-    boxShadow: "0 0 0 5px rgba(168,85,247,0.16)"
+    background: "var(--ic-primary-bright)",
+    boxShadow: "0 0 0 5px rgb(var(--ic-primary-bright-rgb) / 0.16)"
   }
 };
 

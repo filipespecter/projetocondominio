@@ -1,0 +1,98 @@
+INFINITYCONDO — PACOTE DE MELHORIAS 2026-09-12
+
+BASE
+- Branch preservada: homolog
+- Base histórica preservada, sem reset das funcionalidades já validadas.
+- O convite QR de visitante foi mantido como estava; não foi removido.
+
+MELHORIAS DESTE PACOTE
+1. Central de Documentos mais profissional e responsiva.
+2. Fornecedores/Prestadores compatíveis com empresa, pessoa física e freelancer.
+3. Contratos com suporte a contrato recorrente e serviço avulso.
+4. Fluxo Morador -> solicitação de serviço no apartamento -> análise do síndico -> Prestadores/Portaria.
+5. Supervisão de porteiros pelo síndico com sessões, tempo conectado, ocorrências, encomendas, visitantes, prestadores, auditoria e alertas operacionais.
+6. Sessões persistentes de usuário para acompanhamento de acesso.
+7. Tratamento defensivo para telas da Central (Auditoria/Suporte) não derrubarem a interface com erro 500 quando o banco ainda estiver aguardando migration.
+8. Padronização visual global: tipografia profissional, espaçamento entre botões/ações e responsividade para desktop, tablet e telas menores.
+9. Novos módulos anteriores preservados: Documentos, Fornecedores, Ativos, Contratos, Assembleias e convite QR de visitante.
+
+VALIDAÇÕES EXECUTADAS NESTE PACOTE
+- Backend: 66 testes executados / 66 aprovados / 0 falhas.
+- Frontend: ESLint concluído sem erros.
+- git diff --check: sem erros de whitespace (apenas avisos normais de conversão LF/CRLF no Windows).
+
+OBSERVAÇÃO SOBRE BUILD LOCAL DESTE AMBIENTE
+O build Vite não foi repetido neste ambiente Linux porque o node_modules trazido do projeto contém o binding Windows do Rolldown. Isso não é erro do código. Por esse motivo, node_modules e artefatos gerados foram removidos deste ZIP; instale/reconstrua as dependências no Windows/Docker para evitar dependências binárias de outra plataforma.
+
+PASSO RECOMENDADO NO WINDOWS / DOCKER
+1. Extrair o ZIP.
+2. Abrir PowerShell na pasta projetocondominio.
+3. docker compose up -d --build
+4. docker compose exec backend npx prisma migrate deploy
+5. docker compose exec backend npm test
+6. docker compose run --rm frontend npm run lint
+7. docker compose run --rm frontend npm run build
+8. docker compose ps
+
+IMPORTANTE
+- Não usar docker compose down -v.
+- Não usar npm audit fix automaticamente.
+- Validar primeiro na homolog antes de qualquer merge para main.
+
+CORREÇÃO ADICIONAL — ERROS OPERACIONAIS + TEMA POR CONDOMÍNIO
+==============================================================
+
+Durante a validação manual no Windows foram observados HTTP 500 simultâneos em vários módulos operacionais (apartamentos, moradores, porteiros, documentos, ativos, fornecedores, contratos etc.). Todos esses módulos compartilham o mesmo subscriptionAccessMiddleware. O middleware foi simplificado para consultar apenas os campos estáveis necessários para autorização (id/status do condomínio e da assinatura), evitando que colunas auxiliares de cobrança ou eventual drift histórico do banco derrubem toda a área operacional. Em caso de drift real de tabela/coluna, agora é devolvido diagnóstico DATABASE_SCHEMA_OUT_OF_SYNC em vez de erro 500 genérico.
+
+Tema visual por condomínio:
+- A cor escolhida em Configurações passa a ser o tema efetivo do condomínio.
+- O sistema gera automaticamente tons claros/escuros/bordas a partir da cor principal.
+- Síndico/gestor, morador e porteiro recebem a mesma identidade visual do condomínio.
+- A paleta roxa fixa das telas operacionais foi convertida para variáveis de tema.
+- A Central Star e páginas fora do contexto do condomínio continuam com a paleta padrão da marca.
+- Alterar o seletor de cor aplica uma prévia imediatamente; salvar persiste no JSON settings do condomínio.
+
+Validação local desta correção:
+- backend npm test: 68/68 aprovados.
+- ESLint frontend: aprovado.
+- git diff --check: sem erros de whitespace (apenas avisos normais LF/CRLF quando aberto no Windows).
+- build Vite não pôde ser repetido neste sandbox Linux porque o node_modules recebido contém binding nativo Rolldown para Windows; valide o build normalmente pelo Docker/Windows antes de commit/push.
+
+AJUSTE FINAL — TEMA OPT-IN (2026-09-12)
+- O roxo padrão do InfinityCondo permanece ativo por padrão.
+- A escolha de cor NÃO ativa mais o tema automaticamente.
+- Em Configurações existe a opção explícita “Personalizar cores do condomínio”.
+- Com a opção desligada, o seletor de cor fica desabilitado e todos os portais operacionais usam o roxo padrão.
+- Com a opção ligada, o síndico escolhe a cor e ela só é aplicada ao salvar os dados do condomínio.
+- A preferência é persistida em settings.theme.aplicarTemaPersonalizado.
+- Síndico/gestor, porteiro e morador respeitam a preferência do mesmo condomínio.
+- Desativar a opção e salvar restaura o roxo padrão.
+- Central Star continua fora do tema do condomínio.
+- Correção defensiva dos erros 500 da guarda operacional permanece incluída.
+
+VALIDAÇÃO DESTE AJUSTE
+- backend: 68 testes / 68 aprovados / 0 falhas
+- frontend ESLint: aprovado
+- teste direto da função de tema: padrão quando desativado; customizado somente quando ativado
+- git diff --check: sem erros de whitespace (avisos LF/CRLF no Windows são esperados)
+
+CORREÇÃO DE VALIDAÇÃO — EXPRESS 5 / req.query (2026-09-12)
+==========================================================
+A validação manual no Windows revelou a causa real dos HTTP 500 restantes: alguns validadores tentavam executar `req.query = result.data`. No Express 5, `req.query` é exposto por getter e não pode ser sobrescrito por atribuição simples, gerando `TypeError: Cannot set property query of #<IncomingMessage> which has only a getter`.
+
+Correção aplicada:
+- todos os validadores operacionais que normalizam filtros de query foram ajustados para definir a query validada de forma compatível com Express 5;
+- corrigidos Documentos, Auditoria, Apartamentos, Visitantes, Prestadores, Moradores, Acessos de Prestadores, Avisos, Encomendas, Reservas, Ocorrências, Porteiros, Áreas Comuns e Notificações;
+- nenhuma regra de negócio, tenant, QR ou autenticação foi removida;
+- tema OPT-IN por condomínio permanece preservado.
+
+Regressão adicionada:
+- middleware de query validado contra objeto com getter somente leitura, reproduzindo o comportamento do Express 5;
+- varredura garante que nenhum dos validadores operacionais volte a usar atribuição direta em `req.query`.
+
+VALIDAÇÃO DESTA CORREÇÃO
+- backend: 70 testes / 70 aprovados / 0 falhas
+- sintaxe de todos os validators: OK
+- git diff --check: OK
+- frontend não foi alterado nesta correção específica; a validação ESLint anterior do pacote OPT-IN permanece aplicável
+- validação E2E no Windows/Docker ainda deve confirmar que os endpoints antes afetados não retornam mais HTTP 500 antes de qualquer push para main.

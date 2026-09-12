@@ -180,17 +180,17 @@ function Apartamentos() {
     switch (status) {
       case "Ocupado":
         return {
-          background: "#ede9fe",
-          color: "#6d28d9",
-          border: "#ddd6fe",
+          background: "var(--ic-primary-soft-2)",
+          color: "var(--ic-primary-strong)",
+          border: "var(--ic-primary-border-soft)",
           icon: "👥"
         };
 
       case "Disponível":
         return {
-          background: "#f3e8ff",
-          color: "#7c3aed",
-          border: "#ddd6fe",
+          background: "var(--ic-primary-soft)",
+          color: "var(--ic-primary)",
+          border: "var(--ic-primary-border-soft)",
           icon: "✅"
         };
 
@@ -204,9 +204,9 @@ function Apartamentos() {
 
       default:
         return {
-          background: "#f5f3ff",
+          background: "var(--ic-primary-soft-4)",
           color: "#374151",
-          border: "#ddd6fe",
+          border: "var(--ic-primary-border-soft)",
           icon: "🏢"
         };
     }
@@ -770,7 +770,7 @@ const styles = {
 
   hero: {
     background:
-      "radial-gradient(circle at top right,rgba(255,255,255,0.16),transparent 30%), radial-gradient(circle at bottom left,rgba(168,85,247,0.24),transparent 34%), linear-gradient(135deg,#2e1065,#4c1d95,#7c3aed)",
+      "radial-gradient(circle at top right,rgba(255,255,255,0.16),transparent 30%), radial-gradient(circle at bottom left,rgb(var(--ic-primary-bright-rgb) / 0.24),transparent 34%), linear-gradient(135deg,var(--ic-primary-deepest),var(--ic-primary-deep),var(--ic-primary))",
     borderRadius: "42px",
     padding: "40px",
     color: "white",
@@ -779,7 +779,7 @@ const styles = {
     alignItems: "center",
     gap: "34px",
     marginBottom: "26px",
-    boxShadow: "0 30px 80px rgba(88,28,135,0.26), 0 0 46px rgba(168,85,247,0.16)",
+    boxShadow: "0 30px 80px rgba(88,28,135,0.26), 0 0 46px rgb(var(--ic-primary-bright-rgb) / 0.16)",
     overflow: "hidden",
     position: "relative",
     border: "1px solid rgba(255,255,255,0.18)"
@@ -824,7 +824,7 @@ const styles = {
   heroChip: {
     background: "rgba(255,255,255,0.13)",
     border: "1px solid rgba(255,255,255,0.14)",
-    color: "#f3e8ff",
+    color: "var(--ic-primary-soft)",
     padding: "9px 12px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -868,8 +868,8 @@ const styles = {
   },
 
   heroStatus: {
-    background: "#f3e8ff",
-    color: "#7c3aed",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary)",
     padding: "8px 12px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -878,8 +878,8 @@ const styles = {
 
   commandBar: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
-    border: "1px solid #ddd6fe",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), white",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "30px",
     padding: "20px",
     display: "flex",
@@ -899,7 +899,7 @@ const styles = {
     flex: 1,
     padding: "15px 16px",
     borderRadius: "17px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     background: "#fbfaff",
     fontSize: "14px"
@@ -909,7 +909,7 @@ const styles = {
     width: "180px",
     padding: "15px 16px",
     borderRadius: "17px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     background: "#fbfaff",
     fontSize: "14px"
@@ -917,14 +917,14 @@ const styles = {
 
   button: {
     background:
-      "linear-gradient(135deg,#5b21b6,#8b5cf6)",
+      "linear-gradient(135deg,var(--ic-primary-dark),var(--ic-primary-light))",
     color: "white",
     border: "none",
     padding: "15px 20px",
     borderRadius: "17px",
     cursor: "pointer",
     fontWeight: "900",
-    boxShadow: "0 18px 34px rgba(124,58,237,0.28), 0 0 28px rgba(168,85,247,0.18)",
+    boxShadow: "0 18px 34px rgb(var(--ic-primary-rgb) / 0.28), 0 0 28px rgb(var(--ic-primary-bright-rgb) / 0.18)",
     display: "flex",
     alignItems: "center",
     gap: "9px"
@@ -943,14 +943,14 @@ const styles = {
 
   cardPrimary: {
     background:
-      "linear-gradient(135deg,#5b21b6,#8b5cf6)",
+      "linear-gradient(135deg,var(--ic-primary-dark),var(--ic-primary-light))",
     borderRadius: "28px",
     padding: "24px",
     color: "white",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    boxShadow: "0 18px 38px rgba(124,58,237,0.22)"
+    boxShadow: "0 18px 38px rgb(var(--ic-primary-rgb) / 0.22)"
   },
 
   cardLabelLight: {
@@ -983,21 +983,21 @@ const styles = {
 
   resumeCard: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), white",
     borderRadius: "30px",
     padding: "24px",
     display: "flex",
     alignItems: "center",
     gap: "18px",
     boxShadow: "0 16px 40px rgba(88,28,135,0.08)",
-    border: "1px solid #ede9fe"
+    border: "1px solid var(--ic-primary-soft-2)"
   },
 
   cardIconGreen: {
     width: "58px",
     height: "58px",
     borderRadius: "20px",
-    background: "#f3e8ff",
+    background: "var(--ic-primary-soft)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1008,7 +1008,7 @@ const styles = {
     width: "58px",
     height: "58px",
     borderRadius: "20px",
-    background: "#ede9fe",
+    background: "var(--ic-primary-soft-2)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1034,13 +1034,13 @@ const styles = {
 
   resumeNumberGreen: {
     margin: "8px 0 0",
-    color: "#7c3aed",
+    color: "var(--ic-primary)",
     fontSize: "36px"
   },
 
   resumeNumberBlue: {
     margin: "8px 0 0",
-    color: "#6d28d9",
+    color: "var(--ic-primary-strong)",
     fontSize: "36px"
   },
 
@@ -1059,11 +1059,11 @@ const styles = {
 
   apartmentsPanel: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), linear-gradient(180deg,#ffffff,#fbfaff)",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), linear-gradient(180deg,#ffffff,#fbfaff)",
     borderRadius: "36px",
     padding: "28px",
     boxShadow: "0 20px 60px rgba(88,28,135,0.10)",
-    border: "1px solid #ede9fe"
+    border: "1px solid var(--ic-primary-soft-2)"
   },
 
   tableHeader: {
@@ -1076,8 +1076,8 @@ const styles = {
 
   sectionMini: {
     display: "inline-block",
-    background: "#f3e8ff",
-    color: "#7c3aed",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary)",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "11px",
@@ -1087,7 +1087,7 @@ const styles = {
 
   sectionTitle: {
     margin: 0,
-    color: "#4c1d95",
+    color: "var(--ic-primary-deep)",
     fontSize: "26px"
   },
 
@@ -1099,8 +1099,8 @@ const styles = {
   },
 
   sectionBadge: {
-    background: "#f3e8ff",
-    color: "#7c3aed",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary)",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1118,7 +1118,7 @@ const styles = {
     position: "relative",
     overflow: "hidden",
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.12),transparent 34%), linear-gradient(180deg,#ffffff,#fbfaff)",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.12),transparent 34%), linear-gradient(180deg,#ffffff,#fbfaff)",
     borderRadius: "30px",
     padding: "22px",
     boxShadow: "0 16px 40px rgba(88,28,135,0.08)"
@@ -1130,7 +1130,7 @@ const styles = {
     left: 0,
     width: "100%",
     height: "6px",
-    background: "linear-gradient(135deg,#8b5cf6,#a855f7)"
+    background: "linear-gradient(135deg,var(--ic-primary-light),var(--ic-primary-bright))"
   },
 
   apCardTop: {
@@ -1145,12 +1145,12 @@ const styles = {
     height: "56px",
     borderRadius: "20px",
     background:
-      "linear-gradient(135deg,#f3e8ff,#faf5ff)",
+      "linear-gradient(135deg,var(--ic-primary-soft),var(--ic-primary-soft-3))",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "28px",
-    border: "1px solid #ddd6fe"
+    border: "1px solid var(--ic-primary-border-soft)"
   },
 
   apIdentity: {
@@ -1179,7 +1179,7 @@ const styles = {
 
   infoItem: {
     background: "white",
-    border: "1px solid #ede9fe",
+    border: "1px solid var(--ic-primary-soft-2)",
     borderRadius: "17px",
     padding: "14px"
   },
@@ -1200,11 +1200,11 @@ const styles = {
 
   integrationBox: {
     marginTop: "14px",
-    background: "#faf5ff",
-    border: "1px solid #ddd6fe",
+    background: "var(--ic-primary-soft-3)",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "17px",
     padding: "13px",
-    color: "#7c3aed",
+    color: "var(--ic-primary)",
     fontSize: "13px"
   },
 
@@ -1216,8 +1216,8 @@ const styles = {
 
   editButton: {
     flex: 1,
-    background: "#ede9fe",
-    color: "#6d28d9",
+    background: "var(--ic-primary-soft-2)",
+    color: "var(--ic-primary-strong)",
     border: "none",
     padding: "12px",
     borderRadius: "15px",
@@ -1246,7 +1246,7 @@ const styles = {
 
   sideCardDark: {
     background:
-      "radial-gradient(circle at top right,rgba(255,255,255,0.18),transparent 34%), radial-gradient(circle at bottom left,rgba(168,85,247,0.24),transparent 34%), linear-gradient(135deg,#2e1065,#4c1d95,#7c3aed)",
+      "radial-gradient(circle at top right,rgba(255,255,255,0.18),transparent 34%), radial-gradient(circle at bottom left,rgb(var(--ic-primary-bright-rgb) / 0.24),transparent 34%), linear-gradient(135deg,var(--ic-primary-deepest),var(--ic-primary-deep),var(--ic-primary))",
     color: "white",
     borderRadius: "34px",
     padding: "26px",
@@ -1271,7 +1271,7 @@ const styles = {
     height: "164px",
     borderRadius: "50%",
     background:
-      "conic-gradient(#c084fc 0deg, #a855f7 220deg, rgba(255,255,255,0.16) 220deg)",
+      "conic-gradient(#c084fc 0deg, var(--ic-primary-bright) 220deg, rgba(255,255,255,0.16) 220deg)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1289,7 +1289,7 @@ const styles = {
 
   sideCard: {
     background: "white",
-    border: "1px solid #ede9fe",
+    border: "1px solid var(--ic-primary-soft-2)",
     borderRadius: "28px",
     padding: "24px",
     boxShadow: "0 14px 35px rgba(15,23,42,0.07)"
@@ -1297,7 +1297,7 @@ const styles = {
 
   sideCardTitle: {
     margin: "0 0 14px",
-    color: "#4c1d95"
+    color: "var(--ic-primary-deep)"
   },
 
   sideEmpty: {
@@ -1316,7 +1316,7 @@ const styles = {
     alignItems: "center",
     gap: "12px",
     background: "#fbfaff",
-    border: "1px solid #ede9fe",
+    border: "1px solid var(--ic-primary-soft-2)",
     borderRadius: "17px",
     padding: "13px"
   },
@@ -1325,7 +1325,7 @@ const styles = {
     width: "42px",
     height: "42px",
     borderRadius: "15px",
-    background: "#f3e8ff",
+    background: "var(--ic-primary-soft)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center"
@@ -1339,7 +1339,7 @@ const styles = {
 
   empty: {
     background: "#fbfaff",
-    border: "1px dashed #c4b5fd",
+    border: "1px dashed var(--ic-primary-border)",
     borderRadius: "24px",
     padding: "45px",
     textAlign: "center"
@@ -1362,7 +1362,7 @@ const styles = {
 
   emptyButton: {
     background:
-      "linear-gradient(135deg,#5b21b6,#8b5cf6)",
+      "linear-gradient(135deg,var(--ic-primary-dark),var(--ic-primary-light))",
     color: "white",
     border: "none",
     padding: "13px 18px",
@@ -1387,7 +1387,7 @@ const styles = {
   modal: {
     width: "620px",
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), #fbfaff",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), #fbfaff",
     padding: "26px",
     borderRadius: "36px",
     boxShadow: "0 34px 90px rgba(88,28,135,0.30)",
@@ -1396,7 +1396,7 @@ const styles = {
 
   modalHero: {
     background:
-      "radial-gradient(circle at top right,rgba(255,255,255,0.16),transparent 34%), linear-gradient(135deg,#4c1d95,#7c3aed)",
+      "radial-gradient(circle at top right,rgba(255,255,255,0.16),transparent 34%), linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary))",
     color: "white",
     borderRadius: "28px",
     padding: "26px",
@@ -1438,7 +1438,7 @@ const styles = {
 
   formPanel: {
     background: "white",
-    border: "1px solid #ede9fe",
+    border: "1px solid var(--ic-primary-soft-2)",
     borderRadius: "26px",
     padding: "20px",
     display: "grid",
@@ -1461,7 +1461,7 @@ const styles = {
   input: {
     padding: "15px",
     borderRadius: "16px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     fontSize: "14px",
     background: "#fbfaff"
@@ -1475,9 +1475,9 @@ const styles = {
   },
 
   linkedResident: {
-    background: "#f3e8ff",
-    color: "#7c3aed",
-    border: "1px solid #ddd6fe",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary)",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "999px",
     padding: "7px 10px",
     fontSize: "12px",
@@ -1489,7 +1489,7 @@ const styles = {
 
   removeResidentButton: {
     border: "none",
-    background: "#7c3aed",
+    background: "var(--ic-primary)",
     color: "white",
     borderRadius: "50%",
     width: "18px",
@@ -1508,7 +1508,7 @@ const styles = {
   saveButton: {
     flex: 1,
     background:
-      "linear-gradient(135deg,#5b21b6,#8b5cf6)",
+      "linear-gradient(135deg,var(--ic-primary-dark),var(--ic-primary-light))",
     color: "white",
     border: "none",
     padding: "14px",
@@ -1519,7 +1519,7 @@ const styles = {
 
   cancelButton: {
     flex: 1,
-    background: "#f5f3ff",
+    background: "var(--ic-primary-soft-4)",
     color: "#374151",
     border: "none",
     padding: "14px",
