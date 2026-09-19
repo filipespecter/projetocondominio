@@ -664,8 +664,8 @@ function Login() {
     if (trocandoSenha) return;
     setErro("");
 
-    if (novaSenha.length < 8) {
-      setErro("A nova senha deve possuir pelo menos 8 caracteres.");
+    if (novaSenha.length < 12) {
+      setErro("A nova senha deve possuir pelo menos 12 caracteres.");
       return;
     }
     if (novaSenha !== confirmacaoNovaSenha) {

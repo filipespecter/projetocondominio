@@ -107,8 +107,8 @@ function Moradores() {
       alert("Preencha nome, usuário e apartamento.");
       return false;
     }
-    if (!editId && String(novoMorador.senha || "").length < 8) {
-      alert("A senha inicial deve possuir pelo menos 8 caracteres.");
+    if (!editId && String(novoMorador.senha || "").length < 12) {
+      alert("A senha inicial deve possuir pelo menos 12 caracteres.");
       return false;
     }
     return true;

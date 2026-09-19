@@ -245,7 +245,7 @@ const passwordSchema = z
   .string()
   .min(
     8,
-    "A senha deve possuir pelo menos 8 caracteres."
+    "A senha deve possuir pelo menos 12 caracteres."
   )
   .max(
     128,

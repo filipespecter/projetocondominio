@@ -112,7 +112,7 @@ function Configuracoes() {
   async function salvarUsuarioAdministrativo() {
     if (!isMestre) return alert("Apenas o Síndico Mestre pode gerenciar usuários.");
     if (!novoUsuario.nome || !novoUsuario.usuario || (!editId && !novoUsuario.senha)) return alert("Preencha nome, usuário e senha.");
-    if (novoUsuario.senha && novoUsuario.senha.length < 8) return alert("A senha deve possuir pelo menos 8 caracteres.");
+    if (novoUsuario.senha && novoUsuario.senha.length < 12) return alert("A senha deve possuir pelo menos 12 caracteres.");
 
     await executar(async () => {
       if (editId) await configurationApi.updateUser(editId, novoUsuario);
@@ -143,7 +143,7 @@ function Configuracoes() {
   async function alterarCredenciaisMestre() {
     if (!isMestre) return alert("Apenas o Síndico Mestre pode alterar estas credenciais.");
     if (!credenciaisMestre.usuario) return alert("Informe o novo usuário.");
-    if (credenciaisMestre.senha && credenciaisMestre.senha.length < 8) return alert("A senha deve possuir pelo menos 8 caracteres.");
+    if (credenciaisMestre.senha && credenciaisMestre.senha.length < 12) return alert("A senha deve possuir pelo menos 12 caracteres.");
     if (credenciaisMestre.senha && credenciaisMestre.senha !== credenciaisMestre.confirmarSenha) return alert("As senhas não conferem.");
 
     await executar(async () => {

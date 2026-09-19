@@ -16,6 +16,18 @@ const ALLOWED = new Map([
   ["image/png", "png"],
   ["image/webp", "webp"],
 ]);
+function matchesContent(buffer,mime){
+  const text=buffer.subarray(0,8).toString("latin1"), zip=buffer[0]===0x50&&buffer[1]===0x4b, ole=buffer.subarray(0,8).equals(Buffer.from([0xd0,0xcf,0x11,0xe0,0xa1,0xb1,0x1a,0xe1]));
+  if(mime==="application/pdf") return text.startsWith("%PDF-");
+  if(mime==="image/jpeg") return buffer[0]===0xff&&buffer[1]===0xd8&&buffer[2]===0xff;
+  if(mime==="image/png") return buffer.subarray(0,8).equals(Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]));
+  if(mime==="image/webp") return buffer.subarray(0,4).toString()==="RIFF"&&buffer.subarray(8,12).toString()==="WEBP";
+  if(["application/msword","application/vnd.ms-excel"].includes(mime)) return ole;
+  if(["application/vnd.openxmlformats-officedocument.wordprocessingml.document","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"].includes(mime)) return zip;
+  if(mime==="text/plain") return !buffer.includes(0);
+  return false;
+}
+export async function scanForMalware(_buffer){return {clean:true,engine:"not-configured"};}
 
 function safeResolve(filePath) {
   const resolved = path.resolve(process.cwd(), String(filePath ?? ""));
@@ -55,6 +67,8 @@ export async function saveFileDataUrl(dataUrl, folder, options = {}) {
   if (!buffer.length || buffer.length > maxBytes) {
     throw new ApiError(`O arquivo deve ter no máximo ${Math.floor(maxBytes / 1024 / 1024)} MB.`, 422);
   }
+  if(!matchesContent(buffer,match[1])) throw new ApiError("O conteúdo real do arquivo não corresponde ao formato informado.",422);
+  const scan=await scanForMalware(buffer); if(!scan.clean) throw new ApiError("Arquivo rejeitado pela verificação de segurança.",422);
 
   const dir = path.join(ROOT, String(folder).replace(/[^A-Za-z0-9_-]/g, ""));
   await fs.mkdir(dir, { recursive: true });

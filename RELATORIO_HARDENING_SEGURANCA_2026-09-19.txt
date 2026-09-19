@@ -1,0 +1,54 @@
+INFINITYCONDO — HARDENING DE SEGURANÇA
+Data: 2026-09-19
+Base oficial: commit 7545be5b3df6695b96926f21bd292a12b1978da3
+Branch de validação prevista: homolog
+
+ESCOPO IMPLEMENTADO
+- Sessões de autenticação persistentes com hash do refresh token, família de tokens,
+  rotação, detecção de reutilização e revogação.
+- Refresh token movido para cookie HttpOnly, SameSite=Strict e Secure em produção.
+- Access token mantido apenas em memória no frontend.
+- Validação de usuário, status, securityVersion e sessão a cada acesso autenticado.
+- Revogação das sessões em troca/redefinição de senha e mudança de status do usuário.
+- Política de senha com mínimo de 12 caracteres e bloqueio de padrões comuns.
+- Rate limiting geral e específico para login, recuperação, onboarding e webhooks.
+- Controle de origem nas operações autenticadas por cookie.
+- Redução e higienização de logs, erros e dados sensíveis.
+- Validação do conteúdo real de imagens e documentos enviados.
+- Proteção contra leitura/remoção de arquivos fora do diretório autorizado.
+- Migração da exportação Excel de xlsx para ExcelJS.
+- Atualização e overrides de dependências vulneráveis.
+- Dockerfiles de produção multi-stage, usuário sem privilégios, Nginx dedicado e
+  compose de produção com read-only, cap_drop e no-new-privileges.
+- Variáveis obrigatórias e exemplos de configuração segura para produção.
+
+BANCO DE DADOS
+- Nova migration:
+  backend/prisma/migrations/20260919010000_security_hardening_sessions/migration.sql
+- Novo modelo AuthSession.
+- Novo campo User.securityVersion.
+
+VALIDAÇÕES EXECUTADAS
+- Prisma generate: aprovado.
+- Prisma validate: aprovado.
+- Testes backend: 79 aprovados, 0 falhas.
+- ESLint frontend: aprovado.
+- Build Vite/PWA: aprovado.
+- Importação do backend com NODE_ENV=production: aprovada.
+- Sintaxe de compose.yaml e compose.production.yaml: aprovada.
+- npm audit frontend: 0 vulnerabilidades.
+- npm audit backend: 0 vulnerabilidades.
+
+OBSERVAÇÕES
+- O build emitiu apenas aviso de tamanho de bundle; não é falha funcional.
+- Imagens Docker não foram construídas neste ambiente porque o executável Docker
+  não estava disponível. A construção e o teste integrado devem ser feitos no
+  ambiente homolog antes de promover para main.
+- A migration deve ser aplicada pelo fluxo Prisma/Docker durante a atualização.
+- Este pacote não contém node_modules, dist, arquivos .env, banco ou uploads.
+
+FLUXO DE PROMOÇÃO
+1. Aplicar exclusivamente na branch homolog e no ambiente Docker já existente.
+2. Reinstalar dependências, reconstruir os containers e aplicar migrations.
+3. Validar health check, login, renovação, logout e fluxos operacionais.
+4. Somente após aceite, fazer merge fast-forward/PR de homolog para main.

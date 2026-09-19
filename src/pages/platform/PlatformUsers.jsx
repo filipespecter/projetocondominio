@@ -257,7 +257,7 @@ function PlatformUsers() {
     if (phone && (phone.length < 10 || phone.length > 13)) return "Telefone inválido.";
     const doc = digits(form.document, 14);
     if (doc && ![11, 14].includes(doc.length)) return "Informe CPF com 11 ou CNPJ com 14 dígitos.";
-    if (!editing && form.password.length < 8) return "A senha temporária precisa ter no mínimo 8 caracteres.";
+    if (!editing && form.password.length < 12) return "A senha temporária precisa ter no mínimo 12 caracteres.";
     if (!form.platformJobTitle.trim()) return "Informe o cargo do colaborador.";
     if (!form.platformDepartment.trim()) return "Informe o departamento.";
     if (!form.platformStartDate) return "Informe a data de entrada na empresa.";
@@ -364,8 +364,8 @@ function PlatformUsers() {
 
   async function submitPassword(event) {
     event.preventDefault();
-    if (passwordValue.length < 8) {
-      setError("A senha precisa ter pelo menos 8 caracteres.");
+    if (passwordValue.length < 12) {
+      setError("A senha precisa ter pelo menos 12 caracteres.");
       return;
     }
     setSaving(true);
@@ -554,7 +554,7 @@ function PlatformUsers() {
                 </Field>
                 {!editing && (
                   <Field label="Senha temporária *">
-                    <input style={styles.input} type="password" value={form.password} onChange={(e) => change("password", e.target.value)} minLength={8} maxLength={128} required />
+                    <input style={styles.input} type="password" value={form.password} onChange={(e) => change("password", e.target.value)} minLength={12} maxLength={128} required />
                   </Field>
                 )}
               </FormSection>
@@ -710,7 +710,7 @@ function PlatformUsers() {
                   autoFocus
                   style={styles.input}
                   type="password"
-                  minLength={8}
+                  minLength={12}
                   maxLength={128}
                   value={passwordValue}
                   onChange={(e) => setPasswordValue(e.target.value)}

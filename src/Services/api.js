@@ -47,11 +47,7 @@ export const API_BASE_URL =
  * O PostgreSQL, acessado pelo backend, é a fonte
  * oficial de verdade.
  */
-const ACCESS_TOKEN_KEY =
-  "infinityCondoAccessToken";
-
-const REFRESH_TOKEN_KEY =
-  "infinityCondoRefreshToken";
+let accessTokenInMemory = null;
 
 /**
  * =====================================================
@@ -63,24 +59,14 @@ const REFRESH_TOKEN_KEY =
  * Retorna o accessToken atual.
  */
 export function getAccessToken() {
-  return (
-    sessionStorage.getItem(
-      ACCESS_TOKEN_KEY
-    ) ||
-    null
-  );
+  return accessTokenInMemory;
 }
 
 /**
  * Retorna o refreshToken atual.
  */
 export function getRefreshToken() {
-  return (
-    sessionStorage.getItem(
-      REFRESH_TOKEN_KEY
-    ) ||
-    null
-  );
+  return null;
 }
 
 /**
@@ -97,21 +83,8 @@ export function getRefreshToken() {
  */
 export function saveTokens({
   accessToken,
-  refreshToken,
 }) {
-  if (accessToken) {
-    sessionStorage.setItem(
-      ACCESS_TOKEN_KEY,
-      accessToken
-    );
-  }
-
-  if (refreshToken) {
-    sessionStorage.setItem(
-      REFRESH_TOKEN_KEY,
-      refreshToken
-    );
-  }
+  if (accessToken) accessTokenInMemory=accessToken;
 }
 
 /**
@@ -121,13 +94,7 @@ export function saveTokens({
  * pela lógica de logout/login do frontend.
  */
 export function clearTokens() {
-  sessionStorage.removeItem(
-    ACCESS_TOKEN_KEY
-  );
-
-  sessionStorage.removeItem(
-    REFRESH_TOKEN_KEY
-  );
+  accessTokenInMemory=null;
 }
 
 /**
@@ -205,13 +172,6 @@ async function parseResponse(
  * refreshToken salvo, tentamos renovar o par de tokens.
  */
 async function tryRefreshToken() {
-  const refreshToken =
-    getRefreshToken();
-
-  if (!refreshToken) {
-    return null;
-  }
-
   try {
     const response =
       await fetch(
@@ -224,9 +184,8 @@ async function tryRefreshToken() {
               "application/json",
           },
 
-          body: JSON.stringify({
-            refreshToken,
-          }),
+          credentials:"include",
+          body: JSON.stringify({}),
         }
       );
 
@@ -249,9 +208,6 @@ async function tryRefreshToken() {
       accessToken:
         payload.data.accessToken,
 
-      refreshToken:
-        payload.data.refreshToken ||
-        refreshToken,
     });
 
     return payload.data.accessToken;
@@ -337,6 +293,7 @@ export async function apiRequest(
 
         headers:
           requestHeaders,
+        credentials:"include",
 
         body:
           body === undefined ||
@@ -404,6 +361,7 @@ export async function apiRequest(
 
             headers:
               requestHeaders,
+            credentials:"include",
 
             body:
               body === undefined ||

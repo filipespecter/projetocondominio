@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis } from "recharts";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import * as XLSX from "xlsx";
+import { exportSheets, objectRows } from "../../utils/excelExport.js";
 import expenseApi from "../../Services/expenseApi.js";
 import { imageFileToDataUrl } from "../../utils/imageCompression.js";
 
@@ -42,7 +42,7 @@ export default function Financeiro(){
     if(!data.items.length){doc.setTextColor(80);doc.text("Nenhuma despesa no período.",14,50);}
     doc.save(`despesas-${month}.pdf`);
   }
-  function exportXlsx(){const rows=data.items.map(i=>({Data:new Date(i.expenseDate).toLocaleDateString("pt-BR"),Categoria:i.category?.name||"",Descrição:i.description,Fornecedor:i.supplier||"","Forma de pagamento":i.paymentMethod||"",Valor:i.amountInCents/100,Observação:i.notes||""}));const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),"Lançamentos");const summary=data.summary.byCategory.map(r=>({Categoria:r.categoryName,Quantidade:r.count,Total:r.totalInCents/100}));XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(summary),"Resumo por categoria");XLSX.writeFile(wb,`despesas-${month}.xlsx`)}
+  async function exportXlsx(){const rows=data.items.map(i=>({Data:new Date(i.expenseDate).toLocaleDateString("pt-BR"),Categoria:i.category?.name||"",Descrição:i.description,Fornecedor:i.supplier||"","Forma de pagamento":i.paymentMethod||"",Valor:i.amountInCents/100,Observação:i.notes||""}));const summary=data.summary.byCategory.map(r=>({Categoria:r.categoryName,Quantidade:r.count,Total:r.totalInCents/100}));await exportSheets(`despesas-${month}.xlsx`,[{name:"Lançamentos",rows:objectRows(rows)},{name:"Resumo por categoria",rows:objectRows(summary)}])}
   const chart=data.summary.byCategory.map((r,i)=>({...r,fill:["var(--ic-primary-strong)","var(--ic-primary-light)","#a78bfa","var(--ic-primary-border)","var(--ic-primary-deep)"][i%5]}));
   if(locked) return <div style={s.page}><section style={{...s.hero,minHeight:310,alignItems:"center"}}><div style={s.orb}/><div style={{position:"relative",zIndex:2,maxWidth:680}}><div style={s.eyebrow}>RECURSO PREMIUM</div><h1 style={s.h1}>Financeiro disponível no Plano Completo</h1><p style={s.lead}>Controle de despesas, categorias personalizadas, comprovantes e exportações PDF/Excel fazem parte do InfinityCondo Completo.</p><div style={{...s.heroActions,marginTop:26}}><span style={{...s.whiteBtn,display:"inline-block"}}>🔒 Fale com a Star Infinity Code para upgrade</span></div></div><div style={s.heroMetric}><span>Seu acesso atual</span><strong>Plano Básico</strong><small>Operação essencial permanece liberada.</small></div></section></div>;
   return <div style={s.page}><style>{`@keyframes finGlow{0%,100%{transform:translate3d(0,0,0);opacity:.45}50%{transform:translate3d(30px,-18px,0);opacity:.72}} @keyframes finIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}`}</style>

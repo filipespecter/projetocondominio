@@ -13,6 +13,7 @@ import {
 import {
   authMiddleware,
 } from "../middlewares/authMiddleware.js";
+import { loginLimiter, resetLimiter, requireTrustedOrigin } from "../middlewares/securityMiddleware.js";
 
 const authRoutes = Router();
 
@@ -30,6 +31,7 @@ const authRoutes = Router();
  */
 authRoutes.post(
   "/login",
+  loginLimiter,
   validateLogin,
   (req, res, next) =>
     AuthController.login(
@@ -46,6 +48,7 @@ authRoutes.post(
  */
 authRoutes.post(
   "/refresh",
+  requireTrustedOrigin,
   validateRefresh,
   (req, res, next) =>
     AuthController.refresh(
@@ -59,12 +62,14 @@ authRoutes.post(
 
 authRoutes.post(
   "/password-reset/request",
+  resetLimiter,
   validateRequestPasswordReset,
   (req, res, next) => AuthController.requestPasswordReset(req, res, next)
 );
 
 authRoutes.post(
   "/password-reset/confirm",
+  resetLimiter,
   validateConfirmPasswordReset,
   (req, res, next) => AuthController.confirmPasswordReset(req, res, next)
 );
@@ -98,6 +103,7 @@ authRoutes.get(
  */
 authRoutes.post(
   "/logout",
+  requireTrustedOrigin,
   authMiddleware,
   (req, res, next) =>
     AuthController.logout(

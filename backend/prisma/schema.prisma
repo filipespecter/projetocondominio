@@ -539,6 +539,7 @@ model User {
   lastLoginAt         DateTime?
   lastLogoutAt        DateTime?
   passwordChangedAt   DateTime?
+  securityVersion     Int       @default(1)
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
   deletedAt           DateTime?
@@ -571,6 +572,7 @@ model User {
   operationalRecordsCreated OperationalRecord[] @relation("OperationalRecordCreatedBy")
   originatedSystemEvents SystemEvent[] @relation("SystemEventUser")
   resolvedSystemEvents   SystemEvent[] @relation("SystemEventResolvedBy")
+  authSessions          AuthSession[]
   uploadedDocuments      CondominiumDocument[] @relation("DocumentUploadedBy")
   responsibleAssets      Asset[] @relation("AssetResponsibleUser")
   responsibleContracts   Contract[] @relation("ContractResponsibleUser")
@@ -585,6 +587,24 @@ model User {
   @@index([role, status])
   @@index([platformEmployeeCode])
   @@index([deletedAt])
+}
+
+model AuthSession {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @db.Uuid
+  tokenFamilyId    String   @db.Uuid
+  refreshTokenHash String   @unique
+  createdAt        DateTime @default(now())
+  lastUsedAt       DateTime @default(now())
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  revokeReason     String?
+  ipAddress        String?
+  userAgent        String?
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, revokedAt])
+  @@index([tokenFamilyId])
+  @@index([expiresAt])
 }
 
 model Apartment {

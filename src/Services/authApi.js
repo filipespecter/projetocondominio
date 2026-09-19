@@ -14,7 +14,6 @@ import {
   api,
   clearTokens,
   getAccessToken,
-  getRefreshToken,
   saveTokens,
 } from "./api.js";
 
@@ -201,7 +200,6 @@ export async function login({
 
   if (
     !data?.accessToken ||
-    !data?.refreshToken ||
     !data?.user
   ) {
     throw new Error(
@@ -217,8 +215,6 @@ export async function login({
     accessToken:
       data.accessToken,
 
-    refreshToken:
-      data.refreshToken,
   });
 
   return data;
@@ -253,21 +249,10 @@ export async function me() {
  * precise disparar a renovação explicitamente.
  */
 export async function refresh() {
-  const refreshToken =
-    getRefreshToken();
-
-  if (!refreshToken) {
-    throw new Error(
-      "Não existe refresh token disponível."
-    );
-  }
-
   const response =
     await api.post(
       "/v1/auth/refresh",
-      {
-        refreshToken,
-      },
+      {},
       {
         authenticated: false,
       }
@@ -288,9 +273,6 @@ export async function refresh() {
     accessToken:
       data.accessToken,
 
-    refreshToken:
-      data.refreshToken ||
-      refreshToken,
   });
 
   return data;

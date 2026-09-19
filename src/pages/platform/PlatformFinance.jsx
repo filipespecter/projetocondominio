@@ -7,7 +7,7 @@ import {
 import authApi from "../../Services/authApi.js";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import * as XLSX from "xlsx";
+import { exportSheets, objectRows } from "../../utils/excelExport.js";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import platformApi from "../../Services/platformApi.js";
 
@@ -661,20 +661,17 @@ function PlatformFinance() {
     doc.save(`financeiro-star-${new Date().toISOString().slice(0,10)}.pdf`);
   }
 
-  function exportExecutiveExcel() {
-    const wb = XLSX.utils.book_new();
-    const summary = XLSX.utils.json_to_sheet([
+  async function exportExecutiveExcel() {
+    const summary = [
       { Indicador: "Receita recebida no mês", Valor: executive.revenueMonth / 100 },
       { Indicador: "Receita recebida acumulada", Valor: executive.totalPaid / 100 },
       { Indicador: "Pendente", Valor: executive.totalPending / 100 },
       { Indicador: "Inadimplência", Valor: executive.totalOverdue / 100 },
       { Indicador: "Clientes ativos", Valor: executive.activeClients },
       { Indicador: "Ticket médio estimado", Valor: executive.ticket / 100 },
-    ]);
+    ];
     const rows = allCharges.map((item) => ({ Cliente: item.condominium?.name ?? "", Plano: item.subscription?.plan?.name ?? "", Status: STATUS_LABELS[item.status] ?? item.status, Vencimento: dateLabel(item.dueDate), Valor: Number(item.amountInCents ?? 0) / 100, PagoEm: dateLabel(item.paidAt), Provedor: item.provider ?? "" }));
-    XLSX.utils.book_append_sheet(wb, summary, "Resumo");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "Cobranças");
-    XLSX.writeFile(wb, `financeiro-star-${new Date().toISOString().slice(0,10)}.xlsx`);
+    await exportSheets(`financeiro-star-${new Date().toISOString().slice(0,10)}.xlsx`,[{name:"Resumo",rows:objectRows(summary)},{name:"Cobranças",rows:objectRows(rows)}]);
   }
 
   if (loading) {

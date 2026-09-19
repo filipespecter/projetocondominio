@@ -1,0 +1,22 @@
+name: infinitycondo-production
+services:
+  backend:
+    build: { context: ./backend, dockerfile: Dockerfile.production }
+    restart: unless-stopped
+    env_file: ./backend/.env.production
+    read_only: true
+    tmpfs: [/tmp]
+    volumes: [uploads_private:/app/uploads]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    expose: ["3333"]
+  frontend:
+    build: { context: ., dockerfile: Dockerfile.production }
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/var/cache/nginx, /var/run]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    ports: ["127.0.0.1:8080:8080"]
+    depends_on: [backend]
+volumes: { uploads_private: {} }

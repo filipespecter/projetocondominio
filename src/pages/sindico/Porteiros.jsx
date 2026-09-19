@@ -94,8 +94,8 @@ function Porteiros() {
       alert("Preencha nome, usuário e turno.");
       return false;
     }
-    if (!editId && String(novoPorteiro.senha || "").length < 8) {
-      alert("A senha inicial deve possuir pelo menos 8 caracteres.");
+    if (!editId && String(novoPorteiro.senha || "").length < 12) {
+      alert("A senha inicial deve possuir pelo menos 12 caracteres.");
       return false;
     }
     return true;

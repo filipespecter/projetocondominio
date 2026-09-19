@@ -49,6 +49,7 @@ import {
 
 import subscriptionAccessMiddleware from "../middlewares/subscriptionAccessMiddleware.js";
 import { requireFeature } from "../middlewares/featureAccessMiddleware.js";
+import { onboardingLimiter,webhookLimiter } from "../middlewares/securityMiddleware.js";
 
 export const router = Router();
 
@@ -61,57 +62,12 @@ export const router = Router();
 /**
  * Rota principal da API.
  */
-router.get("/", (req, res) => {
-  return res.status(200).json({
-    success: true,
-
-    message:
-      "InfinityCondo API está funcionando.",
-
-    data: {
-      application:
-        "InfinityCondo",
-
-      company:
-        "Star Infinity Code",
-
-      version:
-        "1.0.0",
-
-      environment:
-        process.env.NODE_ENV ||
-        "development",
-
-      timestamp:
-        new Date().toISOString(),
-    },
-  });
-});
+router.get("/",(_req,res)=>res.status(200).json({status:"ok"}));
 
 /**
  * Health check da aplicação.
  */
-router.get("/health", (req, res) => {
-  return res.status(200).json({
-    success: true,
-
-    message:
-      "Servidor saudável.",
-
-    data: {
-      status:
-        "online",
-
-      uptimeSeconds:
-        Math.floor(
-          process.uptime()
-        ),
-
-      timestamp:
-        new Date().toISOString(),
-    },
-  });
-});
+router.get("/health",(_req,res)=>res.status(200).json({status:"ok"}));
 
 /**
  * =====================================================
@@ -146,6 +102,7 @@ router.use(
  */
 router.use(
   "/v1/onboarding",
+  onboardingLimiter,
   onboardingRoutes
 );
 
@@ -158,6 +115,7 @@ router.use(
  */
 router.use(
   "/v1/webhooks/payments",
+  webhookLimiter,
   paymentWebhookRoutes
 );
 
@@ -177,6 +135,7 @@ router.use(
  */
 router.use(
   "/v1/webhooks/whatsapp",
+  webhookLimiter,
   whatsappWebhookRoutes
 );
 

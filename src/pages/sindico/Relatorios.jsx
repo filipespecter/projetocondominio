@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import reportApi from "../../Services/reportApi.js";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import * as XLSX from "xlsx";
+import { exportSheets } from "../../utils/excelExport.js";
 
 function Relatorios() {
   const [dados, setDados] = useState({});
@@ -798,8 +798,7 @@ function Relatorios() {
     doc.save(criarNomeArquivo("pdf"));
   }
 
-  function exportarExcel() {
-    const workbook = XLSX.utils.book_new();
+  async function exportarExcel() {
     const perfilCondominio = obterPerfilCondominio();
     const nomesUsados = new Set();
 
@@ -823,25 +822,6 @@ function Relatorios() {
       return nomeFinal;
     }
 
-    function ajustarLarguras(worksheet, linhas) {
-      const maiorQuantidadeColunas = linhas.reduce(
-        (maior, linha) => Math.max(maior, linha.length),
-        0
-      );
-
-      worksheet["!cols"] = Array.from(
-        { length: maiorQuantidadeColunas },
-        (_, indiceColuna) => {
-          const maiorTexto = linhas.reduce((maior, linha) => {
-            const tamanho = String(linha[indiceColuna] ?? "").length;
-            return Math.max(maior, tamanho);
-          }, 10);
-
-          return { wch: Math.min(Math.max(maiorTexto + 2, 12), 45) };
-        }
-      );
-    }
-
     const linhasResumo = [
       ["Relatório", preview.titulo],
       ["Período", nomePeriodo()],
@@ -854,9 +834,7 @@ function Relatorios() {
       ...preview.resumo.map((item) => [item])
     ];
 
-    const resumoSheet = XLSX.utils.aoa_to_sheet(linhasResumo);
-    ajustarLarguras(resumoSheet, linhasResumo);
-    XLSX.utils.book_append_sheet(workbook, resumoSheet, "Resumo");
+    const sheets=[{name:"Resumo",rows:linhasResumo}];
     nomesUsados.add("resumo");
 
     preview.tabelas.forEach((tabela, indice) => {
@@ -875,24 +853,10 @@ function Relatorios() {
             )])
       ];
 
-      const worksheet = XLSX.utils.aoa_to_sheet(linhasTabela);
-      ajustarLarguras(worksheet, linhasTabela);
-      worksheet["!autofilter"] = {
-        ref: `A3:${XLSX.utils.encode_col(
-          Math.max(tabela.colunas.length - 1, 0)
-        )}3`
-      };
-
-      XLSX.utils.book_append_sheet(
-        workbook,
-        worksheet,
-        limparNomeAba(tabela.titulo, indice)
-      );
+      sheets.push({name:limparNomeAba(tabela.titulo,indice),rows:linhasTabela,autoFilter:3});
     });
 
-    XLSX.writeFile(workbook, criarNomeArquivo("xlsx"), {
-      compression: true
-    });
+    await exportSheets(criarNomeArquivo("xlsx"),sheets);
 
     salvarHistorico("Excel");
     registrarAuditoriaRelatorio(

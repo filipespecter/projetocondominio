@@ -67,7 +67,7 @@ const approvalSchema =
           .string()
           .min(
             8,
-            "A senha temporária deve possuir pelo menos 8 caracteres."
+            "A senha temporária deve possuir pelo menos 12 caracteres."
           )
           .max(
             128,

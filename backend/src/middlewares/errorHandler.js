@@ -1,5 +1,6 @@
 import { ApiError } from "../utils/ApiError.js";
 import prisma from "../config/prisma.js";
+function sanitizedDetails(value){const blocked=/password|senha|token|authorization|cookie|secret|api.?key|database_url/i;if(Array.isArray(value))return value.map(sanitizedDetails);if(value&&typeof value==="object")return Object.fromEntries(Object.entries(value).map(([key,item])=>[key,blocked.test(key)?"[REDACTED]":sanitizedDetails(item)]));return value;}
 
 export function notFoundHandler(req, res, next) {
   next(new ApiError(`Rota não encontrada: ${req.method} ${req.originalUrl}`, 404));
@@ -26,8 +27,8 @@ async function registerSystemEvent(error, req, statusCode) {
         httpMethod: req.method ?? null,
         route: req.originalUrl ?? req.url ?? null,
         statusCode,
-        stack: error?.stack ?? null,
-        details: error?.details ?? null,
+        stack: process.env.NODE_ENV==="production"?null:error?.stack??null,
+        details: sanitizedDetails(error?.details??null),
       },
     });
   } catch (loggingError) {

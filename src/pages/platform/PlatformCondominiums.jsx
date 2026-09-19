@@ -147,8 +147,8 @@ function PlatformCondominiums() {
     event.preventDefault();
     if (!approvalTarget?.id || !approvalForm) return;
 
-    if (approvalForm.password.length < 8) {
-      setError("A senha temporária deve possuir pelo menos 8 caracteres.");
+    if (approvalForm.password.length < 12) {
+      setError("A senha temporária deve possuir pelo menos 12 caracteres.");
       return;
     }
     if (approvalForm.password !== approvalForm.passwordConfirmation) {
@@ -394,8 +394,8 @@ function PlatformCondominiums() {
                   </label>
                   <label style={styles.field}><span style={styles.label}>Usuário *</span><input style={styles.input} value={approvalForm.username} onChange={(e)=>updateApproval("username",e.target.value)} required minLength={3}/></label>
                   <label style={styles.field}><span style={styles.label}>Tolerância após vencimento (dias)</span><input style={styles.input} type="number" min="0" max="30" value={approvalForm.gracePeriodDays} onChange={(e)=>updateApproval("gracePeriodDays",e.target.value)}/></label>
-                  <label style={styles.field}><span style={styles.label}>Senha temporária *</span><input style={styles.input} type="password" value={approvalForm.password} onChange={(e)=>updateApproval("password",e.target.value)} required minLength={8}/></label>
-                  <label style={styles.field}><span style={styles.label}>Confirmar senha *</span><input style={styles.input} type="password" value={approvalForm.passwordConfirmation} onChange={(e)=>updateApproval("passwordConfirmation",e.target.value)} required minLength={8}/></label>
+                  <label style={styles.field}><span style={styles.label}>Senha temporária *</span><input style={styles.input} type="password" value={approvalForm.password} onChange={(e)=>updateApproval("password",e.target.value)} required minLength={12}/></label>
+                  <label style={styles.field}><span style={styles.label}>Confirmar senha *</span><input style={styles.input} type="password" value={approvalForm.passwordConfirmation} onChange={(e)=>updateApproval("passwordConfirmation",e.target.value)} required minLength={12}/></label>
                   <label style={styles.field}><span style={styles.label}>Administrador *</span><input style={styles.input} value={approvalForm.adminName} onChange={(e)=>updateApproval("adminName",e.target.value)} required/></label>
                   <label style={styles.field}><span style={styles.label}>E-mail *</span><input style={styles.input} type="email" value={approvalForm.adminEmail} onChange={(e)=>{updateApproval("adminEmail",e.target.value); updateApproval("billingEmail",e.target.value)}} required/></label>
                   <label style={styles.field}><span style={styles.label}>WhatsApp *</span><input style={styles.input} value={approvalForm.adminPhone} onChange={(e)=>{updateApproval("adminPhone",e.target.value); updateApproval("billingPhone",e.target.value)}} required/></label>

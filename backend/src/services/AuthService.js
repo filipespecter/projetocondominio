@@ -3,13 +3,15 @@ import AuditLogService from "./AuditLogService.js";
 
 import userRepository from "../repositories/UserRepository.js";
 
-import Jwt from "../utils/Jwt.js";
 import Password from "../utils/Password.js";
 import env from "../config/env.js";
 import { ApiError } from "../utils/ApiError.js";
 import prisma from "../config/prisma.js";
 import CommunicationProviderService from "./CommunicationProviderService.js";
 import UserSessionService from "./UserSessionService.js";
+import AuthSessionService from "./AuthSessionService.js";
+import { validatePasswordPolicy } from "../utils/PasswordPolicy.js";
+const DUMMY_PASSWORD_HASH = "$2b$12$KIXxRnJ7mS2n6rWvYj8C6u1VvY.FY0CZ9SmDWUpAZoLEa7H0F8d6G";
 
 class AuthService {
   /**
@@ -249,14 +251,8 @@ class AuthService {
   /**
    * Gera o par de tokens da autenticação.
    */
-  generateTokens(user) {
-    return {
-      accessToken:
-        Jwt.generateAccessToken(user),
-
-      refreshToken:
-        Jwt.generateRefreshToken(user),
-    };
+  generateTokens(user, requestContext = null) {
+    return AuthSessionService.create(user, requestContext ?? {});
   }
 
   /**
@@ -280,25 +276,21 @@ class AuthService {
         username,
       });
 
-    this.validateUserAccess(user);
-
-    if (user.condominiumId) {
-      this.validateCondominiumAccess(
-        user.condominium
-      );
-    }
-
     const passwordMatches =
       await Password.compare(
         password,
-        user.passwordHash
+        user?.passwordHash ?? DUMMY_PASSWORD_HASH
       );
 
-    if (!passwordMatches) {
+    if (!user || !passwordMatches) {
+      if (!user) throw new ApiError("Usuário ou senha inválidos.", 401);
       await this.registerInvalidPassword(
         user
       );
     }
+
+    this.validateUserAccess(user);
+    if (user.condominiumId) this.validateCondominiumAccess(user.condominium);
 
     await userRepository
       .registerSuccessfulLogin(user.id);
@@ -310,8 +302,9 @@ class AuthService {
       );
 
     const tokens =
-      this.generateTokens(
-        authenticatedUser
+      await this.generateTokens(
+        authenticatedUser,
+        requestContext
       );
 
     await AuditLogService.logLogin({
@@ -347,7 +340,7 @@ class AuthService {
    * implementado. Nesta etapa, o refresh é validado
    * pela assinatura e pelo estado atual do usuário.
    */
-  async refresh(refreshToken) {
+  async refresh(refreshToken, requestContext = null) {
     if (!refreshToken) {
       throw new ApiError(
         "O refresh token é obrigatório.",
@@ -355,31 +348,8 @@ class AuthService {
       );
     }
 
-    let payload;
-
-    try {
-      payload =
-        Jwt.verifyRefreshToken(
-          refreshToken
-        );
-    } catch {
-      throw new ApiError(
-        "Refresh token inválido ou expirado.",
-        401
-      );
-    }
-
-    if (!payload?.sub) {
-      throw new ApiError(
-        "Refresh token inválido.",
-        401
-      );
-    }
-
-    const user =
-      await userRepository.findById(
-        payload.sub
-      );
+    const rotated = await AuthSessionService.rotate(refreshToken, requestContext ?? {});
+    const user = rotated.user;
 
     this.validateUserAccess(user);
 
@@ -389,7 +359,7 @@ class AuthService {
       );
     }
 
-    return this.generateTokens(user);
+    return { accessToken: rotated.accessToken, refreshToken: rotated.refreshToken };
   }
 
   /**
@@ -428,7 +398,8 @@ class AuthService {
    */
   async logout(
     userId,
-    requestContext = null
+    requestContext = null,
+    sessionId = null
   ) {
     const user =
       await userRepository.findById(
@@ -447,6 +418,7 @@ class AuthService {
     );
 
     await UserSessionService.endLatest(user.id, "LOGOUT");
+    await AuthSessionService.revokeSession(sessionId, "LOGOUT");
 
     await AuditLogService.logLogout({
       user,
@@ -491,14 +463,7 @@ class AuthService {
       );
     }
 
-    if (
-      String(newPassword).length < 8
-    ) {
-      throw new ApiError(
-        "A nova senha deve possuir pelo menos 8 caracteres.",
-        400
-      );
-    }
+    validatePasswordPolicy(newPassword, "nova senha");
 
     if (
       newPassword !==
@@ -558,6 +523,7 @@ class AuthService {
       passwordHash,
       false
     );
+    await AuthSessionService.revokeAllForUser(user.id, "PASSWORD_CHANGED");
 
     await AuditLogService.createLog({
       condominiumId:
@@ -616,15 +582,7 @@ class AuthService {
       );
     }
 
-    if (
-      !newPassword ||
-      String(newPassword).length < 8
-    ) {
-      throw new ApiError(
-        "A nova senha deve possuir pelo menos 8 caracteres.",
-        400
-      );
-    }
+    validatePasswordPolicy(newPassword, "nova senha");
 
     const user =
       await userRepository.findById(
@@ -649,6 +607,7 @@ class AuthService {
         passwordHash,
         mustChangePassword
       );
+    await AuthSessionService.revokeAllForUser(user.id, "ADMIN_PASSWORD_RESET");
 
     return this.sanitizeUser(
       updatedUser
@@ -703,9 +662,11 @@ class AuthService {
       await prisma.passwordResetCode.update({ where:{id:record.id}, data:{attempts:{increment:1}} });
       throw new ApiError("Código inválido ou expirado.", 400);
     }
-    if (!data.newPassword || String(data.newPassword).length < 8 || data.newPassword !== data.newPasswordConfirmation) throw new ApiError("Nova senha inválida.", 400);
+    validatePasswordPolicy(data.newPassword, "nova senha");
+    if (data.newPassword !== data.newPasswordConfirmation) throw new ApiError("Nova senha inválida.", 400);
     const passwordHash = await Password.hash(String(data.newPassword));
     await userRepository.updatePassword(user.id, passwordHash, false);
+    await AuthSessionService.revokeAllForUser(user.id, "PASSWORD_RESET");
     await prisma.passwordResetCode.update({ where:{id:record.id}, data:{usedAt:new Date()} });
     await prisma.passwordResetCode.updateMany({ where:{userId:user.id,usedAt:null}, data:{usedAt:new Date()} });
     await AuditLogService.createLog({ condominiumId:user.condominiumId, userId:user.id, userName:user.name, userRole:user.role, action:"PASSWORD_RESET_CONFIRMED", module:"AUTH", details:"Senha redefinida por código enviado ao e-mail cadastrado.", referenceId:user.id, ipAddress:requestContext?.ipAddress ?? null, userAgent:requestContext?.userAgent ?? null });
