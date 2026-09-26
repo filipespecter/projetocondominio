@@ -12,7 +12,6 @@ import {
   validateNoticeListQuery,
   validateCreateNotice,
   validateUpdateNotice,
-  validateNoticeAttachmentParams,
 } from "../validators/noticeValidator.js";
 
 const noticeRoutes = Router();
@@ -65,16 +64,6 @@ noticeRoutes.get(
   validateNoticeListQuery,
   (req,res,next)=>
     NoticeController.index(req,res,next)
-);
-
-/**
- * Download de anexo de aviso/assembleia aplicando a mesma visibilidade do registro.
- */
-noticeRoutes.get(
-  "/:id/attachments/:index",
-  viewerRoles,
-  validateNoticeAttachmentParams,
-  (req, res, next) => NoticeController.downloadAttachment(req, res, next)
 );
 
 /**

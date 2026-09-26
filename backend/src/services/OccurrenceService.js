@@ -427,7 +427,7 @@ class OccurrenceService extends BaseService {
         occurrence.id,
 
       priority:
-        occurrence.priority,
+        occurrence.priority === "MEDIUM" ? "NORMAL" : occurrence.priority,
     };
 
     const [

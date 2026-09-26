@@ -11,17 +11,12 @@ import {
   FaBox,
   FaCalendarAlt,
   FaSignOutAlt,
-  FaCommentDots,
-  FaUserFriends,
-  FaFileAlt,
-  FaLandmark,
-  FaTools
+  FaCommentDots
 } from "react-icons/fa";
 
 import { useEffect, useState } from "react";
 import logoStar from "../assets/images/logo-star-infinity.png";
 import authApi from "../Services/authApi.js";
-import { buildCondominiumThemeVariables } from "../utils/condominiumTheme.js";
 import NotificationCenter from "../components/NotificationCenter.jsx";
 
 function DashboardMoradorLayout() {
@@ -37,8 +32,6 @@ function DashboardMoradorLayout() {
      CARREGAR SESSÃO
   ========================= */
 
-  const [themeVariables, setThemeVariables] = useState(() => buildCondominiumThemeVariables());
-
   useEffect(() => {
     let mounted = true;
 
@@ -46,8 +39,6 @@ function DashboardMoradorLayout() {
       try {
         const user =
           await authApi.me();
-
-        setThemeVariables(buildCondominiumThemeVariables(user));
 
         if (!mounted) {
           return;
@@ -125,13 +116,13 @@ function DashboardMoradorLayout() {
 
   return (
 
-    <div className="app-dashboard-shell" style={{ ...styles.container, ...themeVariables }}>
+    <div style={styles.container}>
 
       
       <NotificationCenter />
 {/* SIDEBAR */}
 
-      <aside className="app-dashboard-sidebar" style={styles.sidebar}>
+      <aside style={styles.sidebar}>
 
         <div style={styles.sidebarGlow}></div>
         <div style={styles.sidebarGrid}></div>
@@ -234,71 +225,6 @@ function DashboardMoradorLayout() {
             </Link>
 
             <Link
-              to="/dashboard/morador/visitantes"
-              style={{
-                ...styles.item,
-                ...(active("/dashboard/morador/visitantes")
-                  ? styles.active
-                  : {})
-              }}
-            >
-              <span style={styles.menuIcon}>
-                <FaUserFriends />
-              </span>
-
-              <span>
-                Convites de visitantes
-              </span>
-            </Link>
-
-            <Link
-              to="/dashboard/morador/documentos"
-              style={{
-                ...styles.item,
-                ...(active("/dashboard/morador/documentos")
-                  ? styles.active
-                  : {})
-              }}
-            >
-              <span style={styles.menuIcon}>
-                <FaFileAlt />
-              </span>
-
-              <span>
-                Documentos
-              </span>
-            </Link>
-
-            <Link
-              to="/dashboard/morador/assembleias"
-              style={{
-                ...styles.item,
-                ...(active("/dashboard/morador/assembleias")
-                  ? styles.active
-                  : {})
-              }}
-            >
-              <span style={styles.menuIcon}>
-                <FaLandmark />
-              </span>
-
-              <span>
-                Assembleias
-              </span>
-            </Link>
-
-            <Link
-              to="/dashboard/morador/servicos-apartamento"
-              style={{
-                ...styles.item,
-                ...(active("/dashboard/morador/servicos-apartamento") ? styles.active : {})
-              }}
-            >
-              <span style={styles.menuIcon}><FaTools /></span>
-              <span>Serviço no apartamento</span>
-            </Link>
-
-            <Link
               to="/dashboard/morador/encomendas"
               style={{
                 ...styles.item,
@@ -389,7 +315,7 @@ function DashboardMoradorLayout() {
 
       {/* CONTEÚDO */}
 
-      <main className="app-dashboard-content" style={styles.content}>
+      <main style={styles.content}>
 
         <Outlet />
 
@@ -407,7 +333,7 @@ const styles = {
     display: "flex",
     minHeight: "100vh",
     background:
-      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.12),transparent 30%), linear-gradient(180deg,#ffffff,#f8f5ff)",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.12),transparent 30%), linear-gradient(180deg,#ffffff,#f8f5ff)",
     fontFamily: "Arial"
   },
 
@@ -416,7 +342,7 @@ const styles = {
     minWidth: "306px",
     minHeight: "100vh",
     background:
-      "radial-gradient(circle at top left,rgb(var(--ic-primary-bright-rgb) / 0.26),transparent 30%), radial-gradient(circle at bottom right,rgba(59,130,246,0.14),transparent 32%), linear-gradient(180deg,#1e1b4b,var(--ic-primary-deepest),var(--ic-primary-deep),var(--ic-primary-strong))",
+      "radial-gradient(circle at top left,rgba(168,85,247,0.26),transparent 30%), radial-gradient(circle at bottom right,rgba(59,130,246,0.14),transparent 32%), linear-gradient(180deg,#1e1b4b,#2e1065,#4c1d95,#6d28d9)",
     color: "white",
     padding: "26px 20px",
     display: "flex",
@@ -434,7 +360,7 @@ const styles = {
     width: "220px",
     height: "220px",
     borderRadius: "50%",
-    background: "rgb(var(--ic-primary-bright-rgb) / 0.20)",
+    background: "rgba(168,85,247,0.20)",
     filter: "blur(55px)",
     top: "-80px",
     right: "-90px",
@@ -476,7 +402,7 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     boxShadow:
-      "0 14px 28px rgba(0,0,0,0.18), 0 0 28px rgb(var(--ic-primary-bright-rgb) / 0.18)",
+      "0 14px 28px rgba(0,0,0,0.18), 0 0 28px rgba(168,85,247,0.18)",
     overflow: "hidden",
     flexShrink: 0
   },
@@ -522,14 +448,14 @@ const styles = {
     width: "9px",
     height: "9px",
     borderRadius: "50%",
-    background: "var(--ic-primary-bright)",
-    boxShadow: "0 0 0 5px rgb(var(--ic-primary-bright-rgb) / 0.18)"
+    background: "#a855f7",
+    boxShadow: "0 0 0 5px rgba(168,85,247,0.18)"
   },
 
   statusText: {
     fontSize: "12px",
     fontWeight: "900",
-    color: "var(--ic-primary-soft-4)"
+    color: "#f5f3ff"
   },
 
   userBox: {
@@ -551,13 +477,13 @@ const styles = {
     width: "52px",
     height: "52px",
     borderRadius: "18px",
-    background: "linear-gradient(135deg,var(--ic-primary),var(--ic-primary-bright))",
+    background: "linear-gradient(135deg,#7c3aed,#a855f7)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "25px",
     flexShrink: 0,
-    boxShadow: "0 12px 24px rgb(var(--ic-primary-bright-rgb) / 0.24)"
+    boxShadow: "0 12px 24px rgba(168,85,247,0.24)"
   },
 
   userName: {
@@ -574,7 +500,7 @@ const styles = {
 
   userShift: {
     marginTop: "5px",
-    color: "var(--ic-primary-border-soft)",
+    color: "#ddd6fe",
     fontSize: "12px",
     fontWeight: "800"
   },
@@ -640,10 +566,10 @@ const styles = {
   },
 
   active: {
-    background: "linear-gradient(135deg,var(--ic-primary-strong),var(--ic-primary-bright))",
+    background: "linear-gradient(135deg,#6d28d9,#a855f7)",
     color: "white",
     border: "1px solid rgba(255,255,255,0.24)",
-    boxShadow: "0 14px 28px rgb(var(--ic-primary-bright-rgb) / 0.28)"
+    boxShadow: "0 14px 28px rgba(168,85,247,0.28)"
   },
 
   sidebarFooter: {
@@ -709,7 +635,7 @@ const styles = {
     padding: "30px",
     overflowY: "auto",
     background:
-      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.14),transparent 28%), radial-gradient(circle at bottom left,rgba(59,130,246,0.08),transparent 30%), linear-gradient(180deg,#ffffff,#f8f5ff)"
+      "radial-gradient(circle at top right,rgba(168,85,247,0.14),transparent 28%), radial-gradient(circle at bottom left,rgba(59,130,246,0.08),transparent 30%), linear-gradient(180deg,#ffffff,#f8f5ff)"
   }
 
 };

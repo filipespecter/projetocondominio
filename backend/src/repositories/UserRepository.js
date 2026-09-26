@@ -1039,7 +1039,6 @@ class UserRepository extends BaseRepository {
         {
           status:
             "INACTIVE",
-          securityVersion: { increment: 1 },
         }
       );
 
@@ -1070,7 +1069,6 @@ class UserRepository extends BaseRepository {
         {
           status:
             "BLOCKED",
-          securityVersion: { increment: 1 },
         }
       );
 
@@ -1105,7 +1103,6 @@ class UserRepository extends BaseRepository {
         },
         {
           status,
-          securityVersion: { increment: 1 },
         }
       );
 
@@ -1144,7 +1141,6 @@ class UserRepository extends BaseRepository {
 
           deletedAt:
             new Date(),
-          securityVersion: { increment: 1 },
         }
       );
 

@@ -45,7 +45,7 @@ function QrCameraScanner({
           "undefined"
         ) {
           throw new Error(
-            "Este navegador não oferece leitura de QR pela câmera. Digite a credencial manualmente."
+            "Este navegador não oferece leitura de QR pela câmera. Use a opção Código do Cliente."
           );
         }
 
@@ -59,7 +59,7 @@ function QrCameraScanner({
           )
         ) {
           throw new Error(
-            "A leitura de QR não está disponível neste navegador. Digite a credencial manualmente."
+            "A leitura de QR não está disponível neste navegador. Use a opção Código do Cliente."
           );
         }
 

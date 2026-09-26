@@ -1,4 +1,4 @@
-import { confirmDialog, promptDialog } from "../../components/GlobalDialogs.jsx";
+import { confirmDialog } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useState } from "react";
 import serviceProviderApi from "../../Services/serviceProviderApi.js";
 import providerAccessApi from "../../Services/providerAccessApi.js";
@@ -6,7 +6,6 @@ import operationalRecordApi from "../../Services/operationalRecordApi.js";
 import residentApi from "../../Services/residentApi.js";
 import apartmentApi from "../../Services/apartmentApi.js";
 import commonAreaApi from "../../Services/commonAreaApi.js";
-import privateServiceRequestApi from "../../Services/privateServiceRequestApi.js";
 
 function Prestadores() {
   const estadoInicialPrestador={nome:"",empresa:"",telefone:"",cpf:"",servico:"",tipoServico:"Condomínio",areaRelacionada:"",apartamento:"",responsavel:"",dataEntrada:"",horaEntrada:"",dataSaida:"",horaSaida:"",observacao:"",status:"Pendente",moradorId:null,apartamentoId:null,tipoMoradorResponsavel:"",moradorPrincipalResponsavel:false,serviceProviderId:null};
@@ -23,14 +22,12 @@ function Prestadores() {
   const [editId,setEditId]=useState(null);
   const [novoPrestador,setNovoPrestador]=useState(estadoInicialPrestador);
   const [novoOperacional,setNovoOperacional]=useState(estadoInicialOperacional);
-  const [solicitacoes,setSolicitacoes]=useState([]);
-  const [processandoSolicitacao,setProcessandoSolicitacao]=useState(null);
 
   const statusFront={SCHEDULED:"Pendente",INSIDE:"Em execução",EXITED:"Finalizado",CANCELED:"Cancelado"};
   function mapResident(r){return {...r,nome:r.user?.name??r.name??"",apartamento:r.apartment?.number??"",apto:r.apartment?.number??"",apartamentoId:r.apartmentId??r.apartment?.id??null,tipoMorador:r.residentType??"Morador",moradorPrincipal:Boolean(r.isPrimary)};}
   function mapAccess(a){const p=a.serviceProvider??{}; return {id:a.id,serviceProviderId:p.id??a.serviceProviderId,nome:p.name??"",empresa:p.companyName??"",telefone:p.phone??"",cpf:p.document??"",servico:a.serviceDescription??p.serviceType??"",tipoServico:a.apartmentId?"Apartamento":"Condomínio",areaRelacionada:"",apartamento:a.apartment?.number??"",apartamentoId:a.apartmentId??a.apartment?.id??null,responsavel:"",dataEntrada:String(a.scheduledDate??"").slice(0,10),horaEntrada:a.scheduledStartTime??"",dataSaida:a.exitedAt?new Date(a.exitedAt).toISOString().slice(0,10):"",horaSaida:a.exitedAt?new Date(a.exitedAt).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}):"",observacao:a.notes??"",status:statusFront[a.status]??a.status};}
   function mapOperational(o){return {id:o.id,data:String(o.recordDate??"").slice(0,10),horario:o.recordTime??"",porteiro:o.responsibleName??"",leituraAnterior:o.previousReading??"",leituraAtual:o.currentReading??"",consumo:o.consumption??"",poco:o.wellStatus??"Desligado",observacao:o.notes??""};}
-  async function carregar(){try{const [accesses,ops,residents,aps,areas,requests]=await Promise.all([providerAccessApi.list(),operationalRecordApi.list(),residentApi.list(),apartmentApi.list(),commonAreaApi.list(),privateServiceRequestApi.list()]); const mapped=(accesses??[]).map(mapAccess); setPrestadores(mapped.filter(i=>!i.apartamentoId)); setParticulares(mapped.filter(i=>i.apartamentoId)); setOperacional((ops??[]).map(mapOperational)); setMoradores((residents??[]).map(mapResident)); setApartamentos((aps??[]).map(a=>({...a,numero:a.number??a.numero??""}))); setAreasComuns((areas??[]).map(a=>({...a,nome:a.name??a.nome??""}))); setSolicitacoes(requests??[]);}catch(e){alert(e?.message??"Não foi possível carregar prestadores e operações.");}}
+  async function carregar(){try{const [accesses,ops,residents,aps,areas]=await Promise.all([providerAccessApi.list(),operationalRecordApi.list(),residentApi.list(),apartmentApi.list(),commonAreaApi.list()]); const mapped=(accesses??[]).map(mapAccess); setPrestadores(mapped.filter(i=>!i.apartamentoId)); setParticulares(mapped.filter(i=>i.apartamentoId)); setOperacional((ops??[]).map(mapOperational)); setMoradores((residents??[]).map(mapResident)); setApartamentos((aps??[]).map(a=>({...a,numero:a.number??a.numero??""}))); setAreasComuns((areas??[]).map(a=>({...a,nome:a.name??a.nome??""})));}catch(e){alert(e?.message??"Não foi possível carregar prestadores e operações.");}}
   useEffect(()=>{carregar();},[]);
 
   const listaAtual=abaAtiva==="condominio"?prestadores:particulares;
@@ -55,25 +52,7 @@ function Prestadores() {
   function atualizarOperacional(campo,valor){setNovoOperacional(prev=>{const next={...prev,[campo]:valor}; const c=calcularConsumoManual(campo==="leituraAnterior"?valor:next.leituraAnterior,campo==="leituraAtual"?valor:next.leituraAtual); next.consumo=c; return next;});}
   async function salvarOperacional(){if(!novoOperacional.data||!novoOperacional.horario||!novoOperacional.porteiro){alert("Preencha data, horário e porteiro responsável.");return;} try{await operationalRecordApi.create({recordDate:novoOperacional.data,recordTime:novoOperacional.horario,responsibleName:novoOperacional.porteiro,previousReading:novoOperacional.leituraAnterior===""?null:Number(novoOperacional.leituraAnterior),currentReading:novoOperacional.leituraAtual===""?null:Number(novoOperacional.leituraAtual),consumption:novoOperacional.consumo===""?null:Number(novoOperacional.consumo),wellStatus:novoOperacional.poco,notes:novoOperacional.observacao||null});setNovoOperacional(estadoInicialOperacional);await carregar();}catch(e){alert(e?.message??"Não foi possível salvar o registro operacional.");}}
   async function excluirOperacional(id){if(!await confirmDialog("Deseja excluir este registro operacional?"))return; try{await operationalRecordApi.remove(id);await carregar();}catch(e){alert(e?.message??"Não foi possível excluir o registro.");}}
-  async function aprovarSolicitacao(item){
-    setProcessandoSolicitacao(item.id);
-    try{
-      await privateServiceRequestApi.approve(item.id,{});
-      await carregar();
-      setAbaAtiva("particular");
-    }catch(e){alert(e?.message??"Não foi possível aprovar a solicitação.");}
-    finally{setProcessandoSolicitacao(null);}
-  }
-  async function rejeitarSolicitacao(item){
-    const motivo=await promptDialog("Informe o motivo da não aprovação:","");
-    if(!motivo||String(motivo).trim().length<3)return;
-    setProcessandoSolicitacao(item.id);
-    try{await privateServiceRequestApi.reject(item.id,{reviewNotes:String(motivo).trim()});await carregar();}
-    catch(e){alert(e?.message??"Não foi possível rejeitar a solicitação.");}
-    finally{setProcessandoSolicitacao(null);}
-  }
-  function statusSolicitacao(status){return {PENDING:"Em análise",APPROVED:"Aprovada",REJECTED:"Não aprovada",CANCELED:"Cancelada"}[status]??status;}
-  function corStatus(status){switch(status){case"Pendente":return{background:"#fef3c7",color:"#92400e",border:"#fde68a",label:"Pendente"};case"Em execução":return{background:"var(--ic-primary-soft-2)",color:"var(--ic-primary-strong)",border:"var(--ic-primary-border-soft)",label:"Em execução"};case"Finalizado":return{background:"var(--ic-primary-soft)",color:"var(--ic-primary)",border:"var(--ic-primary-border-soft)",label:"Finalizado"};case"Cancelado":return{background:"#fee2e2",color:"#b91c1c",border:"#fecaca",label:"Cancelado"};default:return{background:"var(--ic-primary-soft-4)",color:"#374151",border:"var(--ic-primary-border-soft)",label:status||"Sem status"};}}
+  function corStatus(status){switch(status){case"Pendente":return{background:"#fef3c7",color:"#92400e",border:"#fde68a",label:"Pendente"};case"Em execução":return{background:"#ede9fe",color:"#6d28d9",border:"#ddd6fe",label:"Em execução"};case"Finalizado":return{background:"#f3e8ff",color:"#7c3aed",border:"#ddd6fe",label:"Finalizado"};case"Cancelado":return{background:"#fee2e2",color:"#b91c1c",border:"#fecaca",label:"Cancelado"};default:return{background:"#f5f3ff",color:"#374151",border:"#ddd6fe",label:status||"Sem status"};}}
   function iconeServico(servico){const t=servico?.toLowerCase()||""; if(t.includes("elétr")||t.includes("eletr"))return"⚡";if(t.includes("hidrá")||t.includes("agua")||t.includes("água"))return"💧";if(t.includes("limpeza"))return"🧹";if(t.includes("pintura"))return"🎨";if(t.includes("jardin"))return"🌿";if(t.includes("internet")||t.includes("rede"))return"🌐";return"🧰";}
   function formatarData(data){if(!data)return"-";const p=data.split("-");return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:data;}
   const ultimoRegistroOperacional=operacional[0];
@@ -148,19 +127,6 @@ function Prestadores() {
         <button
           style={{
             ...styles.tab,
-            ...(abaAtiva === "solicitacoes" ? styles.activeTab : {})
-          }}
-          onClick={() => {
-            setAbaAtiva("solicitacoes");
-            setBusca("");
-          }}
-        >
-          📥 Solicitações de moradores {solicitacoes.filter((item)=>item.status==="PENDING").length>0?`(${solicitacoes.filter((item)=>item.status==="PENDING").length})`:""}
-        </button>
-
-        <button
-          style={{
-            ...styles.tab,
             ...(abaAtiva === "operacional" ? styles.activeTab : {})
           }}
           onClick={() => {
@@ -172,7 +138,7 @@ function Prestadores() {
         </button>
       </section>
 
-      {["condominio","particular"].includes(abaAtiva) && (
+      {abaAtiva !== "operacional" && (
         <section style={styles.controlStrip}>
           <div style={styles.searchWrap}>
             <span style={styles.searchIcon}>⌕</span>
@@ -208,36 +174,7 @@ function Prestadores() {
         </section>
       )}
 
-      {abaAtiva === "solicitacoes" ? (
-        <section style={styles.servicePanel}>
-          <div style={styles.panelHeader}>
-            <div><span style={styles.panelLabel}>Solicitações dos moradores</span><h2 style={styles.panelTitle}>Serviços aguardando análise</h2></div>
-            <span style={styles.resultBadge}>{solicitacoes.filter((item)=>item.status==="PENDING").length} pendente(s)</span>
-          </div>
-          {solicitacoes.length===0 ? (
-            <div style={styles.empty}><div style={styles.emptyIcon}>📥</div><h3 style={styles.emptyTitle}>Nenhuma solicitação recebida</h3><p style={styles.emptyText}>Quando um morador informar um profissional para trabalhar no apartamento, a solicitação aparecerá aqui antes de chegar à portaria.</p></div>
-          ) : (
-            <div style={styles.serviceGrid}>
-              {solicitacoes.map((item)=><article key={item.id} style={styles.serviceCard}>
-                <div style={styles.cardTop}><div style={styles.serviceIdentity}><div style={styles.serviceIcon}>🏠</div><div><h3 style={styles.serviceName}>{item.providerName}</h3><p style={styles.company}>Apto {item.apartment?.number||"-"} · solicitado por {item.requester?.name||item.resident?.user?.name||"morador"}</p></div></div><span style={styles.statusBadge}>{statusSolicitacao(item.status)}</span></div>
-                <div style={styles.serviceType}><span>🧰</span><strong>{item.serviceType}</strong></div>
-                <p style={styles.observation}>{item.description}</p>
-                <div style={styles.infoGrid}>
-                  <div style={styles.infoItem}><span>Data</span><strong>{formatarData(String(item.scheduledDate||"").slice(0,10))}</strong></div>
-                  <div style={styles.infoItem}><span>Horário</span><strong>{item.scheduledStartTime}{item.scheduledEndTime?`–${item.scheduledEndTime}`:""}</strong></div>
-                  <div style={styles.infoItem}><span>Telefone</span><strong>{item.providerPhone||"-"}</strong></div>
-                  <div style={styles.infoItem}><span>Documento</span><strong>{item.providerDocument||"-"}</strong></div>
-                  <div style={styles.infoItem}><span>Empresa</span><strong>{item.providerCompany||"Freelancer / pessoa física"}</strong></div>
-                </div>
-                {item.notes&&<div style={styles.noteBox}>{item.notes}</div>}
-                {item.reviewNotes&&<div style={styles.noteBox}><strong>Retorno:</strong> {item.reviewNotes}</div>}
-                {item.status==="PENDING"&&<div style={styles.actionRow}><button style={styles.doneButton} disabled={processandoSolicitacao===item.id} onClick={()=>aprovarSolicitacao(item)}>Aprovar e agendar na portaria</button><button style={styles.deleteButton} disabled={processandoSolicitacao===item.id} onClick={()=>rejeitarSolicitacao(item)}>Não aprovar</button></div>}
-                {item.status==="APPROVED"&&item.providerAccess&&<div style={styles.noteBox}>Acesso criado e vinculado aos Serviços Particulares. Status da portaria: {statusFront[item.providerAccess.status]??item.providerAccess.status}.</div>}
-              </article>)}
-            </div>
-          )}
-        </section>
-      ) : abaAtiva === "operacional" ? (
+      {abaAtiva === "operacional" ? (
         <section style={styles.operationalPanel}>
           <div style={styles.operationalHeader}>
             <div>
@@ -1080,7 +1017,7 @@ const styles = {
 
   hero: {
     background:
-      "linear-gradient(135deg,#02140b,var(--ic-primary-dark) 55%,var(--ic-primary))",
+      "linear-gradient(135deg,#02140b,#5b21b6 55%,#7c3aed)",
     borderRadius: "36px",
     padding: "34px",
     color: "white",
@@ -1100,7 +1037,7 @@ const styles = {
     display: "inline-block",
     background: "rgba(255,255,255,0.13)",
     border: "1px solid rgba(255,255,255,0.14)",
-    color: "var(--ic-primary-soft)",
+    color: "#f3e8ff",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1149,8 +1086,8 @@ const styles = {
 
   tabs: {
     background:
-      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), white",
-    border: "1px solid var(--ic-primary-border-soft)",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    border: "1px solid #ddd6fe",
     borderRadius: "28px",
     padding: "12px",
     marginBottom: "24px",
@@ -1164,8 +1101,8 @@ const styles = {
     flex: 1,
     minWidth: "210px",
     background: "#fbfaff",
-    color: "var(--ic-primary)",
-    border: "1px solid var(--ic-primary-border)",
+    color: "#7c3aed",
+    border: "1px solid #c4b5fd",
     padding: "14px",
     borderRadius: "18px",
     cursor: "pointer",
@@ -1173,16 +1110,16 @@ const styles = {
   },
 
   activeTab: {
-    background: "linear-gradient(135deg,var(--ic-primary-dark),var(--ic-primary-light))",
+    background: "linear-gradient(135deg,#5b21b6,#8b5cf6)",
     color: "white",
-    border: "1px solid var(--ic-primary-light)",
-    boxShadow: "0 12px 26px rgb(var(--ic-primary-rgb) / 0.18)"
+    border: "1px solid #8b5cf6",
+    boxShadow: "0 12px 26px rgba(124,58,237,0.18)"
   },
 
   controlStrip: {
     background:
-      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), white",
-    border: "1px solid var(--ic-primary-border-soft)",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    border: "1px solid #ddd6fe",
     borderRadius: "28px",
     padding: "18px",
     marginBottom: "24px",
@@ -1196,7 +1133,7 @@ const styles = {
   searchWrap: {
     flex: 1,
     background: "#fbfaff",
-    border: "1px solid var(--ic-primary-border)",
+    border: "1px solid #c4b5fd",
     borderRadius: "18px",
     display: "flex",
     alignItems: "center",
@@ -1204,7 +1141,7 @@ const styles = {
   },
 
   searchIcon: {
-    color: "var(--ic-primary)",
+    color: "#7c3aed",
     fontSize: "20px",
     marginRight: "8px"
   },
@@ -1227,8 +1164,8 @@ const styles = {
   },
 
   heroButton: {
-    background: "var(--ic-primary-soft)",
-    color: "var(--ic-primary)",
+    background: "#f3e8ff",
+    color: "#7c3aed",
     border: "none",
     padding: "15px 20px",
     borderRadius: "17px",
@@ -1239,8 +1176,8 @@ const styles = {
 
   servicePanel: {
     background:
-      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), white",
-    border: "1px solid var(--ic-primary-border-soft)",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    border: "1px solid #ddd6fe",
     borderRadius: "34px",
     padding: "28px",
     boxShadow: "0 18px 55px rgba(88,28,135,0.09)"
@@ -1254,8 +1191,8 @@ const styles = {
   },
 
   panelLabel: {
-    background: "var(--ic-primary-soft)",
-    color: "var(--ic-primary)",
+    background: "#f3e8ff",
+    color: "#7c3aed",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "11px",
@@ -1264,14 +1201,14 @@ const styles = {
 
   panelTitle: {
     margin: "12px 0 0",
-    color: "var(--ic-primary-deep)",
+    color: "#4c1d95",
     fontSize: "28px"
   },
 
   resultBadge: {
-    background: "var(--ic-primary-soft-3)",
-    color: "var(--ic-primary)",
-    border: "1px solid var(--ic-primary-border-soft)",
+    background: "#faf5ff",
+    color: "#7c3aed",
+    border: "1px solid #ddd6fe",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1299,7 +1236,7 @@ const styles = {
     borderRadius: "30px",
     padding: "22px",
     boxShadow: "0 15px 38px rgba(88,28,135,0.07)",
-    border: "1px solid var(--ic-primary-border-soft)"
+    border: "1px solid #ddd6fe"
   },
 
   cardTop: {
@@ -1321,13 +1258,13 @@ const styles = {
     height: "64px",
     borderRadius: "24px",
     background:
-      "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary-light))",
+      "linear-gradient(135deg,#4c1d95,#8b5cf6)",
     color: "white",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "28px",
-    boxShadow: "0 14px 26px rgb(var(--ic-primary-rgb) / 0.18)"
+    boxShadow: "0 14px 26px rgba(124,58,237,0.18)"
   },
 
   serviceName: {
@@ -1351,14 +1288,14 @@ const styles = {
   },
 
   serviceType: {
-    background: "var(--ic-primary-soft-3)",
-    border: "1px solid var(--ic-primary-border-soft)",
+    background: "#faf5ff",
+    border: "1px solid #ddd6fe",
     borderRadius: "18px",
     padding: "13px",
     display: "flex",
     alignItems: "center",
     gap: "10px",
-    color: "var(--ic-primary)",
+    color: "#7c3aed",
     marginBottom: "14px"
   },
 
@@ -1370,8 +1307,8 @@ const styles = {
 
   infoItem: {
     background:
-      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), white",
-    border: "1px solid var(--ic-primary-border-soft)",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    border: "1px solid #ddd6fe",
     borderRadius: "17px",
     padding: "13px"
   },
@@ -1379,7 +1316,7 @@ const styles = {
   timeBox: {
     marginTop: "12px",
     background: "#fbfaff",
-    border: "1px solid var(--ic-primary-border-soft)",
+    border: "1px solid #ddd6fe",
     borderRadius: "17px",
     padding: "13px",
     display: "grid",
@@ -1405,8 +1342,8 @@ const styles = {
   },
 
   runningButton: {
-    background: "var(--ic-primary-soft-2)",
-    color: "var(--ic-primary-strong)",
+    background: "#ede9fe",
+    color: "#6d28d9",
     border: "none",
     padding: "11px",
     borderRadius: "13px",
@@ -1415,8 +1352,8 @@ const styles = {
   },
 
   doneButton: {
-    background: "var(--ic-primary-soft)",
-    color: "var(--ic-primary)",
+    background: "#f3e8ff",
+    color: "#7c3aed",
     border: "none",
     padding: "11px",
     borderRadius: "13px",
@@ -1446,8 +1383,8 @@ const styles = {
 
   operationalPanel: {
     background:
-      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), white",
-    border: "1px solid var(--ic-primary-border-soft)",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    border: "1px solid #ddd6fe",
     borderRadius: "34px",
     padding: "28px",
     boxShadow: "0 18px 55px rgba(88,28,135,0.09)"
@@ -1474,7 +1411,7 @@ const styles = {
 
   operationalTitle: {
     margin: "12px 0 0",
-    color: "var(--ic-primary-deep)",
+    color: "#4c1d95",
     fontSize: "30px"
   },
 
@@ -1495,7 +1432,7 @@ const styles = {
 
   operationalFormCard: {
     background: "#fbfaff",
-    border: "1px solid var(--ic-primary-border-soft)",
+    border: "1px solid #ddd6fe",
     borderRadius: "28px",
     padding: "24px",
     marginBottom: "24px"
@@ -1505,7 +1442,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "10px",
-    color: "var(--ic-primary-deep)",
+    color: "#4c1d95",
     fontWeight: "900",
     marginBottom: "16px",
     marginTop: "8px"
@@ -1548,7 +1485,7 @@ const styles = {
     outline: "none",
     fontSize: "14px",
     background:
-      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), white",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
     boxSizing: "border-box"
   },
 
@@ -1565,7 +1502,7 @@ const styles = {
 
   operationalHistory: {
     background: "#ffffff",
-    border: "1px solid var(--ic-primary-border-soft)",
+    border: "1px solid #ddd6fe",
     borderRadius: "28px",
     padding: "24px"
   },
@@ -1637,8 +1574,8 @@ const styles = {
 
   meterItem: {
     background:
-      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), white",
-    border: "1px solid var(--ic-primary-border-soft)",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    border: "1px solid #ddd6fe",
     borderRadius: "14px",
     padding: "10px"
   },
@@ -1673,7 +1610,7 @@ const styles = {
 
   empty: {
     background: "#fbfaff",
-    border: "1px dashed var(--ic-primary-border)",
+    border: "1px dashed #c4b5fd",
     borderRadius: "26px",
     padding: "48px",
     textAlign: "center"
@@ -1704,7 +1641,7 @@ const styles = {
 
   emptyButton: {
     background:
-      "linear-gradient(135deg,var(--ic-primary-dark),var(--ic-primary-light))",
+      "linear-gradient(135deg,#5b21b6,#8b5cf6)",
     color: "white",
     border: "none",
     padding: "13px 18px",
@@ -1741,7 +1678,7 @@ const styles = {
   input: {
     padding: "15px",
     borderRadius: "16px",
-    border: "1px solid var(--ic-primary-border)",
+    border: "1px solid #c4b5fd",
     outline: "none",
     fontSize: "14px",
     background: "white"
@@ -1752,11 +1689,11 @@ const styles = {
     resize: "vertical",
     padding: "15px",
     borderRadius: "16px",
-    border: "1px solid var(--ic-primary-border)",
+    border: "1px solid #c4b5fd",
     outline: "none",
     fontSize: "14px",
     background:
-      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), white",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
     fontFamily: "Arial"
   },
 
@@ -1799,7 +1736,7 @@ const styles = {
 
   modalTop: {
     background:
-      "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary))",
+      "linear-gradient(135deg,#4c1d95,#7c3aed)",
     color: "white",
     borderRadius: "28px",
     padding: "26px",
@@ -1834,8 +1771,8 @@ const styles = {
 
   modalSection: {
     background:
-      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), white",
-    border: "1px solid var(--ic-primary-border-soft)",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    border: "1px solid #ddd6fe",
     borderRadius: "26px",
     padding: "20px",
     marginBottom: "15px"
@@ -1843,7 +1780,7 @@ const styles = {
 
   modalSectionTitle: {
     margin: "0 0 16px",
-    color: "var(--ic-primary-deep)"
+    color: "#4c1d95"
   },
 
   modalButtons: {
@@ -1855,7 +1792,7 @@ const styles = {
   saveBtn: {
     flex: 1,
     background:
-      "linear-gradient(135deg,var(--ic-primary-dark),var(--ic-primary-light))",
+      "linear-gradient(135deg,#5b21b6,#8b5cf6)",
     color: "white",
     border: "none",
     padding: "14px",
@@ -1866,7 +1803,7 @@ const styles = {
 
   cancelBtn: {
     flex: 1,
-    background: "var(--ic-primary-soft-4)",
+    background: "#f5f3ff",
     color: "#374151",
     border: "none",
     padding: "14px",

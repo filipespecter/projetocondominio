@@ -60,9 +60,9 @@ export default defineConfig({
         skipWaiting: true,
 
         // O bundle principal da Central Star passou de 2 MiB.
-        // Elevamos o limite do precache para 5 MiB.
+        // Elevamos o limite do precache para 3 MiB.
         maximumFileSizeToCacheInBytes:
-          5 * 1024 * 1024,
+          3 * 1024 * 1024,
 
         navigateFallback:
           "/index.html",

@@ -1,7 +1,6 @@
 import { confirmDialog } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useState } from "react";
 import doormanApi from "../../Services/doormanApi";
-import "../../styles/infinityModules.css";
 
 function limparTelefone(valor) {
   return String(valor ?? "")
@@ -23,9 +22,6 @@ function Porteiros() {
   const [filtroTurno, setFiltroTurno] = useState("Todos");
   const [novoPorteiro, setNovoPorteiro] = useState(estadoInicialPorteiro);
   const [editId, setEditId] = useState(null);
-  const [supervisao, setSupervisao] = useState(null);
-  const [porteiroSupervisionado, setPorteiroSupervisionado] = useState(null);
-  const [carregandoSupervisao, setCarregandoSupervisao] = useState(false);
 
   const shiftFront = { MORNING:"Manhã", AFTERNOON:"Tarde", NIGHT:"Noite", TWELVE_BY_THIRTY_SIX:"12x36", OTHER:"Outro" };
   const shiftBack = { "Manhã":"MORNING", "Tarde":"AFTERNOON", "Noite":"NIGHT", "12x36":"TWELVE_BY_THIRTY_SIX", "Outro":"OTHER" };
@@ -94,8 +90,8 @@ function Porteiros() {
       alert("Preencha nome, usuário e turno.");
       return false;
     }
-    if (!editId && String(novoPorteiro.senha || "").length < 12) {
-      alert("A senha inicial deve possuir pelo menos 12 caracteres.");
+    if ((!editId || novoPorteiro.senha) && String(novoPorteiro.senha || "").length < 8) {
+      alert("A senha inicial deve possuir pelo menos 8 caracteres.");
       return false;
     }
     return true;
@@ -120,7 +116,10 @@ function Porteiros() {
       status: statusBack[novoPorteiro.status] ?? "ACTIVE"
     };
     try {
-      if (editId) await doormanApi.update(editId, payload);
+      if (editId) {
+        await doormanApi.update(editId, payload);
+        if (novoPorteiro.senha) await doormanApi.resetPassword(editId, novoPorteiro.senha);
+      }
       else await doormanApi.create({ ...payload, password: novoPorteiro.senha, mustChangePassword: true });
       await carregar();
       fecharModal();
@@ -149,9 +148,9 @@ function Porteiros() {
   function obterStatus(status) {
     if (status === "Ativo") {
       return {
-        background: "var(--ic-primary-soft)",
-        color: "var(--ic-primary)",
-        border: "var(--ic-primary-border-soft)",
+        background: "#f3e8ff",
+        color: "#7c3aed",
+        border: "#ddd6fe",
         label: "Operando"
       };
     }
@@ -169,7 +168,7 @@ function Porteiros() {
       return {
         icon: "🌤️",
         background: "#ecfdf5",
-        color: "var(--ic-primary)",
+        color: "#7c3aed",
         border: "#a7f3d0"
       };
     }
@@ -186,7 +185,7 @@ function Porteiros() {
     if (turno === "Noite") {
       return {
         icon: "🌙",
-        background: "var(--ic-primary-soft-2)",
+        background: "#ede9fe",
         color: "#3730a3",
         border: "#c7d2fe"
       };
@@ -194,9 +193,9 @@ function Porteiros() {
 
     return {
       icon: "🕒",
-      background: "var(--ic-primary-soft-4)",
+      background: "#f5f3ff",
       color: "#374151",
-      border: "var(--ic-primary-border-soft)"
+      border: "#ddd6fe"
     };
   }
 
@@ -210,37 +209,6 @@ function Porteiros() {
     }
 
     return `${partes[0].charAt(0)}${partes[partes.length - 1].charAt(0)}`.toUpperCase();
-  }
-
-  async function abrirSupervisao(porteiro) {
-    setPorteiroSupervisionado(porteiro);
-    setSupervisao(null);
-    setCarregandoSupervisao(true);
-    try {
-      setSupervisao(await doormanApi.supervision(porteiro.id, 30));
-    } catch (error) {
-      alert(error?.message ?? "Não foi possível carregar a supervisão deste porteiro.");
-      setPorteiroSupervisionado(null);
-    } finally {
-      setCarregandoSupervisao(false);
-    }
-  }
-
-  function fecharSupervisao() {
-    setPorteiroSupervisionado(null);
-    setSupervisao(null);
-  }
-
-  function duracao(segundos = 0) {
-    const total = Math.max(0, Number(segundos) || 0);
-    const h = Math.floor(total / 3600);
-    const m = Math.floor((total % 3600) / 60);
-    return `${h}h ${String(m).padStart(2, "0")}min`;
-  }
-
-  function dataHora(valor) {
-    if (!valor) return "—";
-    return new Date(valor).toLocaleString("pt-BR");
   }
 
   return (
@@ -459,13 +427,6 @@ function Porteiros() {
                   <div style={styles.operatorFooter}>
                     <button
                       style={styles.editButton}
-                      onClick={() => abrirSupervisao(p)}
-                    >
-                      Supervisão
-                    </button>
-
-                    <button
-                      style={styles.editButton}
                       onClick={() => editarPorteiro(p)}
                     >
                       Editar
@@ -484,47 +445,6 @@ function Porteiros() {
           </div>
         )}
       </section>
-
-      {porteiroSupervisionado && (
-        <div className="icm-modal-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) fecharSupervisao(); }}>
-          <section className="icm-modal" aria-label="Supervisão da portaria">
-            <div className="icm-modal-head">
-              <div>
-                <span className="icm-kicker" style={{background:"var(--ic-primary-soft)",color:"var(--ic-primary-strong)"}}>🛡️ Supervisão operacional · últimos 30 dias</span>
-                <h2>{porteiroSupervisionado.nome}</h2>
-                <div className="icm-muted">@{porteiroSupervisionado.usuario} · {porteiroSupervisionado.codigoPorteiro || "Sem código"} · turno {porteiroSupervisionado.turno || "não informado"}</div>
-              </div>
-              <button className="icm-btn icm-btn-neutral" onClick={fecharSupervisao}>Fechar</button>
-            </div>
-
-            {carregandoSupervisao ? <div className="icm-empty">Carregando atividade...</div> : supervisao && <>
-              <div className="icm-metrics">
-                <div className="icm-metric"><span>Tempo conectado</span><strong style={{fontSize:20}}>{duracao(supervisao.metrics?.totalOnlineSeconds)}</strong></div>
-                <div className="icm-metric"><span>Sessões</span><strong>{supervisao.metrics?.sessions ?? 0}</strong></div>
-                <div className="icm-metric"><span>Ocorrências registradas</span><strong>{supervisao.metrics?.occurrences ?? 0}</strong></div>
-                <div className="icm-metric"><span>Alertas pendentes</span><strong>{supervisao.metrics?.pendingAlerts ?? 0}</strong></div>
-              </div>
-              <div className="icm-metrics">
-                <div className="icm-metric"><span>Encomendas recebidas</span><strong>{supervisao.metrics?.packagesReceived ?? 0}</strong></div>
-                <div className="icm-metric"><span>Encomendas entregues</span><strong>{supervisao.metrics?.packagesDelivered ?? 0}</strong></div>
-                <div className="icm-metric"><span>Visitantes registrados</span><strong>{supervisao.metrics?.visitorsRegistered ?? 0}</strong></div>
-                <div className="icm-metric"><span>Entradas de prestadores</span><strong>{supervisao.metrics?.providerEntries ?? 0}</strong></div>
-              </div>
-
-              <h3 className="icm-section-title">Alertas e inconsistências</h3>
-              <div className="icm-stack">{(supervisao.alerts ?? []).length === 0 ? <div className="icm-alert icm-alert-ok">Nenhuma inconsistência operacional objetiva encontrada no período.</div> : supervisao.alerts.map((alert,index)=><div key={`${alert.type}-${index}`} className="icm-alert">{alert.message}</div>)}</div>
-
-              <div className="icm-divider"/>
-              <h3 className="icm-section-title">Sessões de acesso</h3>
-              {(supervisao.sessions ?? []).length === 0 ? <div className="icm-muted">Sem sessões registradas neste período.</div> : <div className="icm-table-wrap"><table className="icm-table"><thead><tr><th>Entrada</th><th>Saída</th><th>Duração</th><th>Encerramento</th></tr></thead><tbody>{supervisao.sessions.map(session=><tr key={session.id}><td>{dataHora(session.startedAt)}</td><td>{session.endedAt?dataHora(session.endedAt):"Em andamento"}</td><td>{duracao(session.durationSeconds)}</td><td>{session.endReason || (session.endedAt?"Encerrada":"Ativa")}</td></tr>)}</tbody></table></div>}
-
-              <div className="icm-divider"/>
-              <h3 className="icm-section-title">Linha do tempo auditável</h3>
-              {(supervisao.timeline ?? []).length === 0 ? <div className="icm-muted">Nenhuma ação auditada no período.</div> : <div className="icm-timeline">{supervisao.timeline.slice(0,80).map(log=><div className="icm-timeline-item" key={log.id}><strong>{dataHora(log.createdAt)}</strong><span>{log.module} · {log.action}</span><span>{log.details || "Ação registrada no sistema."}</span></div>)}</div>}
-            </>}
-          </section>
-        </div>
-      )}
 
       {mostrarModal && (
         <div style={styles.modalBg}>
@@ -721,7 +641,7 @@ const styles = {
 
   hero: {
     background:
-      "linear-gradient(135deg,#02140b,var(--ic-primary-dark) 55%,#15803d)",
+      "linear-gradient(135deg,#02140b,#5b21b6 55%,#15803d)",
     borderRadius: "36px",
     padding: "34px",
     color: "white",
@@ -741,7 +661,7 @@ const styles = {
     display: "inline-block",
     background: "rgba(255,255,255,0.13)",
     border: "1px solid rgba(255,255,255,0.14)",
-    color: "var(--ic-primary-soft)",
+    color: "#f3e8ff",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -789,8 +709,8 @@ const styles = {
   },
 
   heroButton: {
-    background: "var(--ic-primary-soft)",
-    color: "var(--ic-primary)",
+    background: "#f3e8ff",
+    color: "#7c3aed",
     border: "none",
     padding: "15px 20px",
     borderRadius: "17px",
@@ -801,8 +721,8 @@ const styles = {
 
   controlStrip: {
     background:
-      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), white",
-    border: "1px solid var(--ic-primary-border-soft)",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    border: "1px solid #ddd6fe",
     borderRadius: "28px",
     padding: "18px",
     marginBottom: "24px",
@@ -815,7 +735,7 @@ const styles = {
   searchWrap: {
     flex: 1,
     background: "#fbfaff",
-    border: "1px solid var(--ic-primary-border)",
+    border: "1px solid #c4b5fd",
     borderRadius: "18px",
     display: "flex",
     alignItems: "center",
@@ -823,7 +743,7 @@ const styles = {
   },
 
   searchIcon: {
-    color: "var(--ic-primary)",
+    color: "#7c3aed",
     fontSize: "20px",
     marginRight: "8px"
   },
@@ -841,7 +761,7 @@ const styles = {
     width: "150px",
     padding: "15px",
     borderRadius: "18px",
-    border: "1px solid var(--ic-primary-border)",
+    border: "1px solid #c4b5fd",
     outline: "none",
     background: "#fbfaff"
   },
@@ -856,8 +776,8 @@ const styles = {
 
   operatorPanel: {
     background:
-      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), white",
-    border: "1px solid var(--ic-primary-border-soft)",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    border: "1px solid #ddd6fe",
     borderRadius: "34px",
     padding: "28px",
     boxShadow: "0 18px 55px rgba(88,28,135,0.09)"
@@ -871,8 +791,8 @@ const styles = {
   },
 
   panelLabel: {
-    background: "var(--ic-primary-soft)",
-    color: "var(--ic-primary)",
+    background: "#f3e8ff",
+    color: "#7c3aed",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "11px",
@@ -881,14 +801,14 @@ const styles = {
 
   panelTitle: {
     margin: "12px 0 0",
-    color: "var(--ic-primary-deep)",
+    color: "#4c1d95",
     fontSize: "28px"
   },
 
   resultBadge: {
-    background: "var(--ic-primary-soft-3)",
-    color: "var(--ic-primary)",
-    border: "1px solid var(--ic-primary-border-soft)",
+    background: "#faf5ff",
+    color: "#7c3aed",
+    border: "1px solid #ddd6fe",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -906,7 +826,7 @@ const styles = {
     borderRadius: "30px",
     padding: "22px",
     boxShadow: "0 15px 38px rgba(88,28,135,0.07)",
-    border: "1px solid var(--ic-primary-border-soft)"
+    border: "1px solid #ddd6fe"
   },
 
   operatorHeader: {
@@ -921,14 +841,14 @@ const styles = {
     height: "64px",
     borderRadius: "24px",
     background:
-      "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary-light))",
+      "linear-gradient(135deg,#4c1d95,#8b5cf6)",
     color: "white",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "24px",
     fontWeight: "900",
-    boxShadow: "0 14px 26px rgb(var(--ic-primary-rgb) / 0.18)"
+    boxShadow: "0 14px 26px rgba(124,58,237,0.18)"
   },
 
   operatorIdentity: {
@@ -972,8 +892,8 @@ const styles = {
 
   dataItem: {
     background:
-      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), white",
-    border: "1px solid var(--ic-primary-border-soft)",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    border: "1px solid #ddd6fe",
     borderRadius: "17px",
     padding: "13px"
   },
@@ -986,8 +906,8 @@ const styles = {
 
   editButton: {
     flex: 1,
-    background: "var(--ic-primary-soft)",
-    color: "var(--ic-primary)",
+    background: "#f3e8ff",
+    color: "#7c3aed",
     border: "none",
     padding: "12px",
     borderRadius: "15px",
@@ -1008,7 +928,7 @@ const styles = {
 
   empty: {
     background: "#fbfaff",
-    border: "1px dashed var(--ic-primary-border)",
+    border: "1px dashed #c4b5fd",
     borderRadius: "26px",
     padding: "48px",
     textAlign: "center"
@@ -1031,7 +951,7 @@ const styles = {
 
   emptyButton: {
     background:
-      "linear-gradient(135deg,var(--ic-primary-dark),var(--ic-primary-light))",
+      "linear-gradient(135deg,#5b21b6,#8b5cf6)",
     color: "white",
     border: "none",
     padding: "13px 18px",
@@ -1062,7 +982,7 @@ const styles = {
 
   modalTop: {
     background:
-      "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary))",
+      "linear-gradient(135deg,#4c1d95,#7c3aed)",
     color: "white",
     borderRadius: "28px",
     padding: "26px",
@@ -1097,8 +1017,8 @@ const styles = {
 
   modalSection: {
     background:
-      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), white",
-    border: "1px solid var(--ic-primary-border-soft)",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), white",
+    border: "1px solid #ddd6fe",
     borderRadius: "26px",
     padding: "20px",
     marginBottom: "15px"
@@ -1106,7 +1026,7 @@ const styles = {
 
   modalSectionTitle: {
     margin: "0 0 16px",
-    color: "var(--ic-primary-deep)"
+    color: "#4c1d95"
   },
 
   formGrid: {
@@ -1130,7 +1050,7 @@ const styles = {
   input: {
     padding: "15px",
     borderRadius: "16px",
-    border: "1px solid var(--ic-primary-border)",
+    border: "1px solid #c4b5fd",
     outline: "none",
     fontSize: "14px",
     background: "#fbfaff"
@@ -1145,7 +1065,7 @@ const styles = {
   saveBtn: {
     flex: 1,
     background:
-      "linear-gradient(135deg,var(--ic-primary-dark),var(--ic-primary-light))",
+      "linear-gradient(135deg,#5b21b6,#8b5cf6)",
     color: "white",
     border: "none",
     padding: "14px",
@@ -1156,7 +1076,7 @@ const styles = {
 
   cancelBtn: {
     flex: 1,
-    background: "var(--ic-primary-soft-4)",
+    background: "#f5f3ff",
     color: "#374151",
     border: "none",
     padding: "14px",

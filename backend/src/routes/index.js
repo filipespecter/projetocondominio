@@ -21,11 +21,6 @@ import analyticsRoutes from "./analytics.routes.js";
 import configurationRoutes from "./configuration.routes.js";
 import expenseRoutes from "./expense.routes.js";
 import supportTicketRoutes from "./support-ticket.routes.js";
-import documentRoutes from "./document.routes.js";
-import assetRoutes from "./asset.routes.js";
-import supplierRoutes from "./supplier.routes.js";
-import contractRoutes from "./contract.routes.js";
-import privateServiceRequestRoutes from "./private-service-request.routes.js";
 
 import platformDashboardRoutes from "./platform-dashboard.routes.js";
 import platformCondominiumRoutes from "./platform-condominium.routes.js";
@@ -49,7 +44,6 @@ import {
 
 import subscriptionAccessMiddleware from "../middlewares/subscriptionAccessMiddleware.js";
 import { requireFeature } from "../middlewares/featureAccessMiddleware.js";
-import { onboardingLimiter,webhookLimiter } from "../middlewares/securityMiddleware.js";
 
 export const router = Router();
 
@@ -62,12 +56,57 @@ export const router = Router();
 /**
  * Rota principal da API.
  */
-router.get("/",(_req,res)=>res.status(200).json({status:"ok"}));
+router.get("/", (req, res) => {
+  return res.status(200).json({
+    success: true,
+
+    message:
+      "InfinityCondo API está funcionando.",
+
+    data: {
+      application:
+        "InfinityCondo",
+
+      company:
+        "Star Infinity Code",
+
+      version:
+        "1.0.0",
+
+      environment:
+        process.env.NODE_ENV ||
+        "development",
+
+      timestamp:
+        new Date().toISOString(),
+    },
+  });
+});
 
 /**
  * Health check da aplicação.
  */
-router.get("/health",(_req,res)=>res.status(200).json({status:"ok"}));
+router.get("/health", (req, res) => {
+  return res.status(200).json({
+    success: true,
+
+    message:
+      "Servidor saudável.",
+
+    data: {
+      status:
+        "online",
+
+      uptimeSeconds:
+        Math.floor(
+          process.uptime()
+        ),
+
+      timestamp:
+        new Date().toISOString(),
+    },
+  });
+});
 
 /**
  * =====================================================
@@ -102,7 +141,6 @@ router.use(
  */
 router.use(
   "/v1/onboarding",
-  onboardingLimiter,
   onboardingRoutes
 );
 
@@ -115,7 +153,6 @@ router.use(
  */
 router.use(
   "/v1/webhooks/payments",
-  webhookLimiter,
   paymentWebhookRoutes
 );
 
@@ -135,7 +172,6 @@ router.use(
  */
 router.use(
   "/v1/webhooks/whatsapp",
-  webhookLimiter,
   whatsappWebhookRoutes
 );
 
@@ -546,31 +582,6 @@ router.use(
   noticeRoutes
 );
 
-/** Documentos, ativos, fornecedores e contratos do condomínio. */
-router.use(
-  "/v1/documents",
-  ...operationalGuards,
-  documentRoutes
-);
-
-router.use(
-  "/v1/assets",
-  ...operationalGuards,
-  assetRoutes
-);
-
-router.use(
-  "/v1/suppliers",
-  ...operationalGuards,
-  supplierRoutes
-);
-
-router.use(
-  "/v1/contracts",
-  ...operationalGuards,
-  contractRoutes
-);
-
 /**
  * =====================================================
  * NOTIFICAÇÕES
@@ -616,10 +627,4 @@ router.use(
   analyticsRoutes
 );
 
-
-router.use(
-  "/v1/private-service-requests",
-  ...operationalGuards,
-  privateServiceRequestRoutes
-);
 export default router;

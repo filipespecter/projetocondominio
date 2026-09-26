@@ -63,9 +63,9 @@ class UserService extends BaseService {
       );
     }
 
-    if (String(password).length < 12) {
+    if (String(password).length < 8) {
       throw new ApiError(
-        "A senha deve possuir pelo menos 12 caracteres.",
+        "A senha deve possuir pelo menos 8 caracteres.",
         400
       );
     }

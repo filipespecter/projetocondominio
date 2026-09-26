@@ -534,7 +534,7 @@ const styles = {
     minWidth: 0,
     flexWrap: "wrap",
     background:
-      "linear-gradient(135deg,var(--ic-primary-deepest),var(--ic-primary-deep),var(--ic-primary))",
+      "linear-gradient(135deg,#2e1065,#4c1d95,#7c3aed)",
     borderRadius: "30px",
     padding: "32px",
     color: "white",
@@ -544,7 +544,7 @@ const styles = {
     gap: "28px",
     marginBottom: "26px",
     boxShadow:
-      "0 22px 55px rgb(var(--ic-primary-rgb) / 0.24), 0 0 38px rgb(var(--ic-primary-bright-rgb) / 0.12)",
+      "0 22px 55px rgba(124,58,237,0.24), 0 0 38px rgba(168,85,247,0.12)",
     border: "1px solid rgba(255,255,255,0.18)"
   },
 
@@ -594,8 +594,8 @@ const styles = {
   },
 
   heroStatus: {
-    background: "var(--ic-primary-soft-2)",
-    color: "var(--ic-primary-strong)",
+    background: "#ede9fe",
+    color: "#6d28d9",
     padding: "8px 12px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -613,7 +613,7 @@ const styles = {
 
   cardPrimary: {
     background:
-      "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary))",
+      "linear-gradient(135deg,#4c1d95,#7c3aed)",
     borderRadius: "24px",
     padding: "24px",
     color: "white",
@@ -621,7 +621,7 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "center",
     boxShadow:
-      "0 16px 36px rgb(var(--ic-primary-rgb) / 0.24), 0 0 28px rgb(var(--ic-primary-bright-rgb) / 0.12)"
+      "0 16px 36px rgba(124,58,237,0.24), 0 0 28px rgba(168,85,247,0.12)"
   },
 
   cardLabelLight: {
@@ -654,7 +654,7 @@ const styles = {
 
   resumeCard: {
     background:
-      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.08),transparent 34%), white",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
     borderRadius: "24px",
     padding: "24px",
     display: "flex",
@@ -662,7 +662,7 @@ const styles = {
     gap: "18px",
     boxShadow:
       "0 16px 40px rgba(88,28,135,0.08)",
-    border: "1px solid var(--ic-primary-soft-2)"
+    border: "1px solid #ede9fe"
   },
 
   cardIconYellow: {
@@ -691,7 +691,7 @@ const styles = {
     width: "54px",
     height: "54px",
     borderRadius: "18px",
-    background: "var(--ic-primary-soft)",
+    background: "#f3e8ff",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -718,7 +718,7 @@ const styles = {
 
   resumeNumberGreen: {
     margin: "8px 0 0",
-    color: "var(--ic-primary)",
+    color: "#7c3aed",
     fontSize: "34px"
   },
 
@@ -726,12 +726,12 @@ const styles = {
     minWidth: 0,
     overflow: "hidden",
     background:
-      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.08),transparent 34%), white",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
     borderRadius: "28px",
     padding: "26px",
     boxShadow:
       "0 18px 45px rgba(88,28,135,0.09)",
-    border: "1px solid var(--ic-primary-soft-2)"
+    border: "1px solid #ede9fe"
   },
 
   listHeader: {
@@ -745,7 +745,7 @@ const styles = {
 
   sectionTitle: {
     margin: 0,
-    color: "var(--ic-primary-deep)",
+    color: "#4c1d95",
     fontSize: "24px"
   },
 
@@ -768,7 +768,7 @@ const styles = {
     flex: "1 1 230px",
     padding: "13px 14px",
     borderRadius: "15px",
-    border: "1px solid var(--ic-primary-border)",
+    border: "1px solid #c4b5fd",
     outline: "none",
     background: "#fbfaff",
     boxSizing: "border-box"
@@ -777,14 +777,14 @@ const styles = {
   filter: {
     padding: "13px 14px",
     borderRadius: "15px",
-    border: "1px solid var(--ic-primary-border)",
+    border: "1px solid #c4b5fd",
     outline: "none",
     background: "#fbfaff"
   },
 
   empty: {
     background: "#fbfaff",
-    border: "1px dashed var(--ic-primary-border)",
+    border: "1px dashed #c4b5fd",
     borderRadius: "22px",
     padding: "45px",
     textAlign: "center"
@@ -813,7 +813,7 @@ const styles = {
 
   card: {
     background: "#fbfaff",
-    border: "1px solid var(--ic-primary-border-soft)",
+    border: "1px solid #ddd6fe",
     borderRadius: "24px",
     padding: "22px",
     boxShadow:
@@ -832,7 +832,7 @@ const styles = {
     height: "56px",
     borderRadius: "20px",
     background: "white",
-    border: "1px solid var(--ic-primary-soft-2)",
+    border: "1px solid #ede9fe",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -860,8 +860,8 @@ const styles = {
   },
 
   dateBadge: {
-    background: "var(--ic-primary-soft-3)",
-    color: "var(--ic-primary-strong)",
+    background: "#faf5ff",
+    color: "#6d28d9",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -870,7 +870,7 @@ const styles = {
 
   originBadge: {
     background: "#ecfdf5",
-    color: "var(--ic-primary)",
+    color: "#7c3aed",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -909,16 +909,16 @@ const styles = {
 
   responseBox: {
     marginTop: "14px",
-    background: "var(--ic-primary-soft-3)",
-    border: "1px solid var(--ic-primary-border-soft)",
+    background: "#faf5ff",
+    border: "1px solid #ddd6fe",
     borderRadius: "18px",
     padding: "14px",
-    color: "var(--ic-primary-deep)"
+    color: "#4c1d95"
   },
 
   readButton: {
     marginTop: "14px",
-    background: "var(--ic-primary)",
+    background: "#7c3aed",
     color: "white",
     border: "none",
     padding: "11px 14px",

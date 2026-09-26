@@ -11,12 +11,10 @@ import {
   errorHandler,
   notFoundHandler
 } from "./middlewares/errorHandler.js";
-import { apiLimiter } from "./middlewares/securityMiddleware.js";
 
 export const app = express();
 
 app.disable("x-powered-by");
-app.set("trust proxy",env.TRUST_PROXY);
 
 /**
  * Contexto único por requisição para correlação entre
@@ -24,7 +22,7 @@ app.set("trust proxy",env.TRUST_PROXY);
  */
 app.use(requestContextMiddleware);
 
-app.use(morgan(env.NODE_ENV==="production"?"combined":"dev"));
+app.use(morgan("dev"));
 
 app.use(helmet());
 
@@ -59,7 +57,7 @@ app.use(
  */
 app.use(
   express.json({
-    limit: "12mb",
+    limit: "2mb",
 
     verify: (
       req,
@@ -88,12 +86,20 @@ app.use(
 /**
  * Health Check
  */
-app.get("/api/health", (_req,res)=>res.status(200).json({status:"ok"}));
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    success: true,
+    status: "online",
+    service: "InfinityCondo API",
+    environment: env.NODE_ENV,
+    timestamp: new Date().toISOString()
+  });
+});
 
 /**
  * Rotas da API
  */
-app.use("/api",apiLimiter,router);
+app.use("/api", router);
 
 /**
  * Tratamento de erros

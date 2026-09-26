@@ -97,14 +97,6 @@ doormanRoutes.post(
  * Busca um porteiro específico.
  */
 doormanRoutes.get(
-  "/:id/supervision",
-  administrativeRoles,
-  validateDoormanId,
-  (req, res, next) =>
-    DoormanController.supervision(req, res, next)
-);
-
-doormanRoutes.get(
   "/:id",
   administrativeRoles,
   validateDoormanId,

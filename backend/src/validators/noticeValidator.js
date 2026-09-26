@@ -22,11 +22,6 @@ export const NOTICE_PRIORITIES = [
   "URGENT",
 ];
 
-export const NOTICE_TYPES = [
-  "NOTICE",
-  "ASSEMBLY",
-];
-
 function formatValidationErrors(zodError) {
   return zodError.issues.map((issue) => ({
     field:
@@ -102,12 +97,7 @@ function validateQuery(schema) {
       );
     }
 
-    Object.defineProperty(req, "query", {
-      value: result.data,
-      writable: true,
-      configurable: true,
-      enumerable: true,
-    });
+    req.query = result.data;
     return next();
   };
 }
@@ -162,60 +152,6 @@ const prioritySchema = z
         "Prioridade do aviso inválida.",
     }
   );
-
-const typeSchema = z
-  .string()
-  .trim()
-  .transform((value) => value.toUpperCase())
-  .refine((value) => NOTICE_TYPES.includes(value), {
-    message: "Tipo de aviso inválido.",
-  });
-
-const eventDateSchema = z
-  .union([
-    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "A data da assembleia é inválida."),
-    z.null(),
-    z.literal(""),
-  ])
-  .optional()
-  .transform((value) => value === "" ? null : value);
-
-const eventTimeSchema = z
-  .union([
-    z.string().trim().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "O horário da assembleia é inválido."),
-    z.null(),
-    z.literal(""),
-  ])
-  .optional()
-  .transform((value) => value === "" ? null : value);
-
-const attachmentFileSchema = z.object({
-  fileName: z.string().trim().min(1).max(180),
-  dataUrl: z.string().startsWith("data:", "Anexo inválido.").max(2200 * 1024, "Cada anexo deve possuir no máximo 1,5 MB."),
-}).strict();
-
-const attachmentFilesSchema = z
-  .array(attachmentFileSchema)
-  .max(5, "A assembleia pode possuir no máximo 5 anexos por atualização.")
-  .optional();
-
-function validateAssemblyFields(data, ctx, partial = false) {
-  const isAssembly = data.type === "ASSEMBLY";
-  if (!isAssembly && (partial || data.type !== "ASSEMBLY")) return;
-
-  const required = [
-    ["agenda", data.agenda, "A pauta é obrigatória para assembleias."],
-    ["eventDate", data.eventDate, "A data é obrigatória para assembleias."],
-    ["eventTime", data.eventTime, "O horário é obrigatório para assembleias."],
-    ["eventLocation", data.eventLocation, "O local é obrigatório para assembleias."],
-  ];
-
-  for (const [path, value, message] of required) {
-    if (!value) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: [path], message });
-    }
-  }
-}
 
 const requiredText = (
   min,
@@ -303,29 +239,6 @@ export const createNoticeSchema =
           "A categoria"
         ),
 
-      type:
-        typeSchema
-          .optional()
-          .default("NOTICE"),
-
-      agenda:
-        optionalText(5000, "A pauta"),
-
-      eventDate:
-        eventDateSchema,
-
-      eventTime:
-        eventTimeSchema,
-
-      eventLocation:
-        optionalText(300, "O local"),
-
-      eventModality:
-        optionalText(100, "A modalidade"),
-
-      attachmentFiles:
-        attachmentFilesSchema,
-
       priority:
         prioritySchema
           .optional()
@@ -347,8 +260,6 @@ export const createNoticeSchema =
     .strict()
     .superRefine(
       (data, ctx) => {
-        validateAssemblyFields(data, ctx);
-
         if (
           data.audience ===
             "APARTMENT" &&
@@ -433,27 +344,6 @@ export const updateNoticeSchema =
           150,
           "A categoria"
         ),
-
-      type:
-        typeSchema.optional(),
-
-      agenda:
-        optionalText(5000, "A pauta"),
-
-      eventDate:
-        eventDateSchema,
-
-      eventTime:
-        eventTimeSchema,
-
-      eventLocation:
-        optionalText(300, "O local"),
-
-      eventModality:
-        optionalText(100, "A modalidade"),
-
-      attachmentFiles:
-        attachmentFilesSchema,
 
       priority:
         prioritySchema.optional(),
@@ -541,13 +431,6 @@ export const noticeIdParamsSchema =
     })
     .strict();
 
-export const noticeAttachmentParamsSchema = z
-  .object({
-    id: uuidSchema,
-    index: z.string().regex(/^\d+$/, "Índice do anexo inválido."),
-  })
-  .strict();
-
 export const noticeListQuerySchema =
   z
     .object({
@@ -559,9 +442,6 @@ export const noticeListQuerySchema =
 
       priority:
         prioritySchema.optional(),
-
-      type:
-        typeSchema.optional(),
 
       category:
         z
@@ -612,22 +492,16 @@ export const validateNoticeListQuery =
     noticeListQuerySchema
   );
 
-export const validateNoticeAttachmentParams =
-  validateParams(noticeAttachmentParamsSchema);
-
 export default {
   NOTICE_STATUSES,
   NOTICE_AUDIENCES,
   NOTICE_PRIORITIES,
-  NOTICE_TYPES,
   createNoticeSchema,
   updateNoticeSchema,
   noticeIdParamsSchema,
   noticeListQuerySchema,
-  noticeAttachmentParamsSchema,
   validateCreateNotice,
   validateUpdateNotice,
   validateNoticeId,
   validateNoticeListQuery,
-  validateNoticeAttachmentParams,
 };

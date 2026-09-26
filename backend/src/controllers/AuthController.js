@@ -1,17 +1,23 @@
 import { BaseController } from "./BaseController.js";
 import AuthService from "../services/AuthService.js";
-import env from "../config/env.js";
-const REFRESH_COOKIE="infinityCondoRefresh";
-const cookieOptions=()=>({httpOnly:true,secure:env.NODE_ENV==="production",sameSite:"strict",path:"/api/v1/auth",maxAge:7*24*60*60*1000});
-function readCookie(req,name){const entry=String(req.headers.cookie??"").split(";").map(v=>v.trim()).find(v=>v.startsWith(`${name}=`));return entry?decodeURIComponent(entry.slice(name.length+1)):null;}
 
 class AuthController extends BaseController {
   /**
    * Monta o contexto utilizado pela auditoria.
    */
   getRequestContext(req) {
+    const forwardedFor =
+      req.headers["x-forwarded-for"];
+
+    const ipAddress =
+      typeof forwardedFor === "string"
+        ? forwardedFor
+            .split(",")[0]
+            .trim()
+        : req.ip ?? null;
+
     return {
-      ipAddress: req.ip ?? null,
+      ipAddress,
       userAgent:
         req.get("user-agent") ?? null,
     };
@@ -26,7 +32,6 @@ class AuthController extends BaseController {
         req.body,
         this.getRequestContext(req)
       );
-    res.cookie(REFRESH_COOKIE,result.refreshToken,cookieOptions()); delete result.refreshToken;
 
     return this.success(
       res,
@@ -41,10 +46,8 @@ class AuthController extends BaseController {
   async refresh(req, res) {
     const result =
       await AuthService.refresh(
-        readCookie(req,REFRESH_COOKIE),
-        this.getRequestContext(req)
+        req.body?.refreshToken
       );
-    res.cookie(REFRESH_COOKIE,result.refreshToken,cookieOptions()); delete result.refreshToken;
 
     return this.success(
       res,
@@ -78,10 +81,8 @@ class AuthController extends BaseController {
     const result =
       await AuthService.logout(
         req.user.id,
-        this.getRequestContext(req),
-        req.auth?.payload?.sid
+        this.getRequestContext(req)
       );
-    res.clearCookie(REFRESH_COOKIE,cookieOptions());
 
     return this.success(
       res,

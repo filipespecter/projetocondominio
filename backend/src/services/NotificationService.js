@@ -24,6 +24,8 @@ class NotificationService extends BaseService {
         .trim()
         .toUpperCase();
 
+    if (normalizedPriority === "MEDIUM") return "NORMAL";
+
     if (
       !allowedPriorities.includes(
         normalizedPriority

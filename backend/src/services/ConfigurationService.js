@@ -102,9 +102,6 @@ class ConfigurationService {
         ...currentSettings.theme,
         ...theme,
         corPrincipal: payload.corTema || theme.corPrincipal || currentSettings.theme?.corPrincipal || "#8b5cf6",
-        aplicarTemaPersonalizado: typeof theme.aplicarTemaPersonalizado === "boolean"
-          ? theme.aplicarTemaPersonalizado
-          : Boolean(currentSettings.theme?.aplicarTemaPersonalizado),
         logoUrl: payload.logoUrl || theme.logoUrl || current.logoUrl || "",
         atualizadoEm: new Date().toISOString(),
       },

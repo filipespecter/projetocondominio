@@ -117,7 +117,7 @@ const createPlatformUserSchema =
       password:
         z
           .string()
-          .min(12)
+          .min(8)
           .max(128),
 
       role:
@@ -219,7 +219,7 @@ const resetPasswordSchema =
           .string()
           .min(
             8,
-            "A nova senha deve possuir pelo menos 12 caracteres."
+            "A nova senha deve possuir pelo menos 8 caracteres."
           )
           .max(128),
     })

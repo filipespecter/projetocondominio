@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   Link,
@@ -22,24 +22,17 @@ import {
   FaSignOutAlt,
   FaHardHat,
   FaWallet,
-  FaHeadset,
-  FaFileAlt,
-  FaTools,
-  FaHandshake,
-  FaFileContract,
-  FaLandmark
+  FaHeadset
 } from "react-icons/fa";
 
 import { contarNaoLidas } from "../Services/notificacaoService";
 import authApi from "../Services/authApi.js";
-import { buildCondominiumThemeVariables } from "../utils/condominiumTheme.js";
 import NotificationCenter from "../components/NotificationCenter.jsx";
 import GlobalSearch from "../components/GlobalSearch.jsx";
 
 function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const sidebarRef = useRef(null);
 
   const [perfilCondominio, setPerfilCondominio] = useState({
     nomeCondominio: "InfinityCondo",
@@ -58,14 +51,6 @@ function DashboardLayout() {
     setUsuarioLogado,
   ] = useState(null);
 
-  const [themeVariables, setThemeVariables] = useState(() => buildCondominiumThemeVariables());
-
-  useEffect(() => {
-    if (location.pathname === "/dashboard/sindico") {
-      sidebarRef.current?.scrollTo({ top: 0, behavior: "auto" });
-    }
-  }, [location.pathname]);
-
   useEffect(() => {
     let mounted = true;
 
@@ -73,8 +58,6 @@ function DashboardLayout() {
       try {
         const user =
           await authApi.me();
-
-        setThemeVariables(buildCondominiumThemeVariables(user));
 
         if (!mounted) {
           return;
@@ -192,10 +175,10 @@ function DashboardLayout() {
   }
 
   return (
-    <div className="app-dashboard-shell" style={{ ...styles.container, ...themeVariables }}>
+    <div style={styles.container}>
       
       <NotificationCenter />
-<aside ref={sidebarRef} className="app-dashboard-sidebar" style={styles.sidebar}>
+<aside style={styles.sidebar}>
         <div style={styles.sidebarGlow}></div>
         <div style={styles.sidebarGrid}></div>
 
@@ -345,41 +328,6 @@ function DashboardLayout() {
             />
 
             <MenuItem
-              to="/dashboard/documentos"
-              active={itemAtivo("/dashboard/documentos")}
-              icon={<FaFileAlt />}
-              label="Documentos"
-            />
-
-            <MenuItem
-              to="/dashboard/assembleias"
-              active={itemAtivo("/dashboard/assembleias")}
-              icon={<FaLandmark />}
-              label="Assembleias"
-            />
-
-            <MenuItem
-              to="/dashboard/ativos"
-              active={itemAtivo("/dashboard/ativos")}
-              icon={<FaTools />}
-              label="Ativos / Equipamentos"
-            />
-
-            <MenuItem
-              to="/dashboard/fornecedores"
-              active={itemAtivo("/dashboard/fornecedores")}
-              icon={<FaHandshake />}
-              label="Fornecedores"
-            />
-
-            <MenuItem
-              to="/dashboard/contratos"
-              active={itemAtivo("/dashboard/contratos")}
-              icon={<FaFileContract />}
-              label="Contratos"
-            />
-
-            <MenuItem
               to="/dashboard/relatorios"
               active={itemAtivo("/dashboard/relatorios")}
               icon={<FaChartPie />}
@@ -441,7 +389,7 @@ function DashboardLayout() {
         </div>
       </aside>
 
-      <main className="app-dashboard-content" style={styles.content}>
+      <main style={styles.content}>
         <GlobalSearch />
         <Outlet />
       </main>
@@ -495,26 +443,17 @@ const styles = {
   sidebar: {
     width: "310px",
     minWidth: "310px",
-    height: "100vh",
     minHeight: "100vh",
-    maxHeight: "100vh",
-    position: "sticky",
-    top: 0,
     background:
-      "radial-gradient(circle at top left,rgb(var(--ic-primary-bright-rgb) / 0.22),transparent 32%), linear-gradient(180deg,var(--ic-primary-deepest),var(--ic-primary-deep),var(--ic-primary-strong))",
+      "radial-gradient(circle at top left,rgba(168,85,247,0.22),transparent 32%), linear-gradient(180deg,#2e1065,#4c1d95,#6d28d9)",
     padding: "26px 20px",
     display: "flex",
     flexDirection: "column",
-    justifyContent: "flex-start",
+    justifyContent: "space-between",
     boxShadow: "12px 0 45px rgba(88,28,135,0.24)",
     color: "white",
     overflowY: "auto",
     boxSizing: "border-box"
-  },
-
-  sidebarContent: {
-    width: "100%",
-    flex: "0 0 auto"
   },
 
   logoContainer: {
@@ -611,7 +550,7 @@ const styles = {
     height: "56px",
     borderRadius: "19px",
     background:
-      "linear-gradient(135deg,var(--ic-primary),var(--ic-primary-bright))",
+      "linear-gradient(135deg,#7c3aed,#a855f7)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -638,7 +577,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "7px",
-    color: "var(--ic-primary-border-soft)",
+    color: "#ddd6fe",
     fontSize: "12px",
     fontWeight: "800"
   },
@@ -647,7 +586,7 @@ const styles = {
     width: "8px",
     height: "8px",
     borderRadius: "50%",
-    background: "var(--ic-primary-bright)",
+    background: "#a855f7",
     boxShadow: "0 0 0 5px rgba(34,197,94,0.16)"
   },
 
@@ -697,7 +636,7 @@ const styles = {
 
   active: {
     background:
-      "linear-gradient(135deg,var(--ic-primary),var(--ic-primary-bright))",
+      "linear-gradient(135deg,#7c3aed,#a855f7)",
     color: "white",
     border: "1px solid rgba(255,255,255,0.24)",
     boxShadow:

@@ -294,10 +294,10 @@ class PlatformCondominiumApprovalService {
       !data.password ||
       String(
         data.password
-      ).length < 12
+      ).length < 8
     ) {
       throw new ApiError(
-        "A senha temporária deve possuir pelo menos 12 caracteres.",
+        "A senha temporária deve possuir pelo menos 8 caracteres.",
         400
       );
     }

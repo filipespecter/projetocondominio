@@ -29,8 +29,8 @@ function DynamicCharts({
     "#b9ff8a",
     "#22c55e",
     "#facc15",
-    "var(--ic-primary-strong)",
-    "var(--ic-primary-light)",
+    "#6d28d9",
+    "#8b5cf6",
     "#c084fc",
     "#eab308"
   ];
@@ -41,7 +41,7 @@ function DynamicCharts({
   const secondaryColor = "#facc15";
 
   const tooltipStyle = {
-    background: "var(--ic-primary-deepest)",
+    background: "#2e1065",
     border: "1px solid rgba(124,255,74,0.30)",
     borderRadius: "14px",
     color: "#ffffff",

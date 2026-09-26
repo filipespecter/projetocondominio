@@ -222,36 +222,31 @@ const requiredEmailSchema =
 
 const optionalEmailSchema =
   z
-    .preprocess(
-      (value) => {
-        if (
-          value === undefined ||
-          value === null ||
-          (typeof value === "string" && value.trim() === "")
-        ) {
-          return undefined;
-        }
-
-        return value;
-      },
-      z
-        .string()
-        .trim()
-        .email(
-          "Informe um e-mail válido."
-        )
-        .max(
-          254,
-          "O e-mail deve possuir no máximo 254 caracteres."
-        )
-        .transform((value) =>
-          value.toLowerCase()
-        )
-        .optional()
+    .string()
+    .trim()
+    .email(
+      "Informe um e-mail válido."
+    )
+    .max(
+      254,
+      "O e-mail deve possuir no máximo 254 caracteres."
     )
     .transform((value) =>
-      value ?? null
-    );
+      value.toLowerCase()
+    )
+    .optional()
+    .nullable()
+    .transform((value) => {
+      if (
+        value === undefined ||
+        value === null ||
+        value === ""
+      ) {
+        return null;
+      }
+
+      return value;
+    });
 
 const optionalPhoneSchema =
   z

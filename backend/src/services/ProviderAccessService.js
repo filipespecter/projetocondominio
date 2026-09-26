@@ -86,6 +86,19 @@ class ProviderAccessService extends BaseService {
     return date;
   }
 
+  validateFutureSchedule(date, startTime) {
+    if (!date || !startTime) return;
+    const parts = Object.fromEntries(new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit",
+      day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+    }).formatToParts(new Date()).map(({ type, value }) => [type, value]));
+    const today = `${parts.year}-${parts.month}-${parts.day}`;
+    const scheduled = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    if (scheduled < today || (scheduled === today && startTime <= `${parts.hour}:${parts.minute}`)) {
+      throw new ApiError("O serviço deve ser agendado após o momento atual.", 400);
+    }
+  }
+
   /**
    * Valida horário no formato HH:mm.
    */
@@ -416,6 +429,8 @@ class ProviderAccessService extends BaseService {
       data.scheduledEndTime
     );
 
+    this.validateFutureSchedule(scheduledDate, scheduledStartTime);
+
     const access =
       await providerAccessRepository
         .createForCondominium(
@@ -549,6 +564,10 @@ class ProviderAccessService extends BaseService {
         ? updateData.scheduledEndTime
         : before.scheduledEndTime
     );
+
+    if (updateData.scheduledDate !== undefined || updateData.scheduledStartTime !== undefined) {
+      this.validateFutureSchedule(scheduledDate, scheduledStartTime);
+    }
 
     delete updateData.id;
     delete updateData.condominiumId;

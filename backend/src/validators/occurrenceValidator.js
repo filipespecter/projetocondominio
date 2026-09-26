@@ -107,12 +107,7 @@ function validateQuery(schema) {
       );
     }
 
-    Object.defineProperty(req, "query", {
-      value: result.data,
-      writable: true,
-      configurable: true,
-      enumerable: true,
-    });
+    req.query = result.data;
     return next();
   };
 }

@@ -1,10 +1,6 @@
 import prisma from "../config/prisma.js";
 import { ApiError } from "../utils/ApiError.js";
 
-function isSchemaDriftError(error) {
-  return ["P2021", "P2022"].includes(error?.code);
-}
-
 export async function subscriptionAccessMiddleware(
   req,
   res,
@@ -21,17 +17,15 @@ export async function subscriptionAccessMiddleware(
     }
 
     if (
-      [
-        "PLATFORM_OWNER",
-        "PLATFORM_ADMIN",
-        "PLATFORM_SUPPORT",
-      ].includes(req.user.role)
+      req.user.role ===
+      "PLATFORM_ADMIN"
     ) {
       return next();
     }
 
     const condominiumId =
-      req.user.condominiumId ??
+      req.user
+        .condominiumId ??
       req.condominiumId ??
       null;
 
@@ -44,20 +38,48 @@ export async function subscriptionAccessMiddleware(
       );
     }
 
-    // Consulta deliberadamente mínima. Este middleware roda antes de todos os
-    // módulos operacionais; portanto ele não deve depender de colunas auxiliares
-    // de cobrança para liberar telas como apartamentos, moradores e documentos.
     const condominium =
-      await prisma.condominium.findFirst({
-        where: {
-          id: condominiumId,
-          deletedAt: null,
-        },
-        select: {
-          id: true,
-          status: true,
-        },
-      });
+      await prisma
+        .condominium
+        .findFirst({
+          where: {
+            id:
+              condominiumId,
+            deletedAt:
+              null,
+          },
+          select: {
+            id: true,
+            status: true,
+            subscriptions: {
+              where: {
+                status: {
+                  in: [
+                    "TRIAL",
+                    "ACTIVE",
+                    "OVERDUE",
+                    "SUSPENDED",
+                  ],
+                },
+              },
+              orderBy: {
+                createdAt:
+                  "desc",
+              },
+              take: 1,
+              select: {
+                id: true,
+                status: true,
+                gracePeriodDays:
+                  true,
+                nextDueDate:
+                  true,
+                suspendedAt:
+                  true,
+              },
+            },
+          },
+        });
 
     if (!condominium) {
       return next(
@@ -74,11 +96,14 @@ export async function subscriptionAccessMiddleware(
         "CANCELED",
         "REJECTED",
         "PENDING",
-      ].includes(condominium.status)
+      ].includes(
+        condominium.status
+      )
     ) {
       return next(
         new ApiError(
-          condominium.status === "SUSPENDED"
+          condominium.status ===
+          "SUSPENDED"
             ? "Acesso suspenso. Regularize a situação financeira para continuar utilizando o InfinityCondo."
             : "Este condomínio não possui acesso operacional liberado.",
           403
@@ -87,26 +112,9 @@ export async function subscriptionAccessMiddleware(
     }
 
     const subscription =
-      await prisma.subscription.findFirst({
-        where: {
-          condominiumId,
-          status: {
-            in: [
-              "TRIAL",
-              "ACTIVE",
-              "OVERDUE",
-              "SUSPENDED",
-            ],
-          },
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-        select: {
-          id: true,
-          status: true,
-        },
-      });
+      condominium
+        .subscriptions?.[0] ??
+      null;
 
     if (!subscription) {
       return next(
@@ -117,7 +125,10 @@ export async function subscriptionAccessMiddleware(
       );
     }
 
-    if (subscription.status === "SUSPENDED") {
+    if (
+      subscription.status ===
+      "SUSPENDED"
+    ) {
       return next(
         new ApiError(
           "Assinatura suspensa por inadimplência.",
@@ -127,25 +138,23 @@ export async function subscriptionAccessMiddleware(
     }
 
     req.subscriptionContext = {
-      id: subscription.id,
-      status: subscription.status,
+      id:
+        subscription.id,
+      status:
+        subscription.status,
+      gracePeriodDays:
+        subscription
+          .gracePeriodDays,
+      nextDueDate:
+        subscription
+          .nextDueDate,
+      suspendedAt:
+        subscription
+          .suspendedAt,
     };
 
     return next();
   } catch (error) {
-    if (isSchemaDriftError(error)) {
-      return next(
-        new ApiError(
-          "A estrutura do banco de dados precisa ser sincronizada antes de liberar os módulos operacionais.",
-          503,
-          {
-            code: "DATABASE_SCHEMA_OUT_OF_SYNC",
-            prismaCode: error.code,
-          }
-        )
-      );
-    }
-
     return next(error);
   }
 }

@@ -7,7 +7,7 @@ import {
 import authApi from "../../Services/authApi.js";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { exportSheets, objectRows } from "../../utils/excelExport.js";
+import * as XLSX from "xlsx";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import platformApi from "../../Services/platformApi.js";
 
@@ -661,17 +661,20 @@ function PlatformFinance() {
     doc.save(`financeiro-star-${new Date().toISOString().slice(0,10)}.pdf`);
   }
 
-  async function exportExecutiveExcel() {
-    const summary = [
+  function exportExecutiveExcel() {
+    const wb = XLSX.utils.book_new();
+    const summary = XLSX.utils.json_to_sheet([
       { Indicador: "Receita recebida no mês", Valor: executive.revenueMonth / 100 },
       { Indicador: "Receita recebida acumulada", Valor: executive.totalPaid / 100 },
       { Indicador: "Pendente", Valor: executive.totalPending / 100 },
       { Indicador: "Inadimplência", Valor: executive.totalOverdue / 100 },
       { Indicador: "Clientes ativos", Valor: executive.activeClients },
       { Indicador: "Ticket médio estimado", Valor: executive.ticket / 100 },
-    ];
+    ]);
     const rows = allCharges.map((item) => ({ Cliente: item.condominium?.name ?? "", Plano: item.subscription?.plan?.name ?? "", Status: STATUS_LABELS[item.status] ?? item.status, Vencimento: dateLabel(item.dueDate), Valor: Number(item.amountInCents ?? 0) / 100, PagoEm: dateLabel(item.paidAt), Provedor: item.provider ?? "" }));
-    await exportSheets(`financeiro-star-${new Date().toISOString().slice(0,10)}.xlsx`,[{name:"Resumo",rows:objectRows(summary)},{name:"Cobranças",rows:objectRows(rows)}]);
+    XLSX.utils.book_append_sheet(wb, summary, "Resumo");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "Cobranças");
+    XLSX.writeFile(wb, `financeiro-star-${new Date().toISOString().slice(0,10)}.xlsx`);
   }
 
   if (loading) {
@@ -708,7 +711,7 @@ function PlatformFinance() {
       <div style={styles.executiveGrid}>
         <PlatformCard><span style={styles.label}>Receita no mês</span><strong style={styles.executiveValue}>{money(executive.revenueMonth)}</strong><small style={styles.miniLabel}>recebido</small></PlatformCard>
         <PlatformCard><span style={styles.label}>Pendente</span><strong style={styles.executiveValue}>{money(executive.totalPending)}</strong><small style={styles.miniLabel}>a receber</small></PlatformCard>
-        <PlatformCard><span style={styles.label}>Inadimplência</span><strong style={{...styles.executiveValue,color:executive.totalOverdue>0?"#b91c1c":"var(--ic-primary-deep)"}}>{money(executive.totalOverdue)}</strong><small style={styles.miniLabel}>vencido</small></PlatformCard>
+        <PlatformCard><span style={styles.label}>Inadimplência</span><strong style={{...styles.executiveValue,color:executive.totalOverdue>0?"#b91c1c":"#4c1d95"}}>{money(executive.totalOverdue)}</strong><small style={styles.miniLabel}>vencido</small></PlatformCard>
         <PlatformCard><span style={styles.label}>Clientes ativos</span><strong style={styles.executiveValue}>{executive.activeClients}</strong><small style={styles.miniLabel}>carteira atual</small></PlatformCard>
         <PlatformCard><span style={styles.label}>Ticket médio</span><strong style={styles.executiveValue}>{money(executive.ticket)}</strong><small style={styles.miniLabel}>estimado</small></PlatformCard>
       </div>
@@ -716,7 +719,7 @@ function PlatformFinance() {
       <PlatformCard style={{ marginTop: 18 }}>
         <div style={styles.sectionHeader}><div><h3 style={styles.sectionTitle}>Evolução financeira</h3><p style={styles.help}>Recebimentos e valores em aberto nos últimos seis meses.</p></div></div>
         <div style={{ height: 280, marginTop: 12 }}>
-          <ResponsiveContainer width="100%" height="100%"><BarChart data={monthlyChart}><CartesianGrid strokeDasharray="3 3" vertical={false}/><XAxis dataKey="name"/><YAxis tickFormatter={(v)=>`R$${Math.round(v/100)}`}/><Tooltip formatter={(v)=>money(v)}/><Bar dataKey="recebido" name="Recebido" fill="var(--ic-primary-strong)" radius={[6,6,0,0]}/><Bar dataKey="pendente" name="Pendente" fill="var(--ic-primary-border)" radius={[6,6,0,0]}/></BarChart></ResponsiveContainer>
+          <ResponsiveContainer width="100%" height="100%"><BarChart data={monthlyChart}><CartesianGrid strokeDasharray="3 3" vertical={false}/><XAxis dataKey="name"/><YAxis tickFormatter={(v)=>`R$${Math.round(v/100)}`}/><Tooltip formatter={(v)=>money(v)}/><Bar dataKey="recebido" name="Recebido" fill="#6d28d9" radius={[6,6,0,0]}/><Bar dataKey="pendente" name="Pendente" fill="#c4b5fd" radius={[6,6,0,0]}/></BarChart></ResponsiveContainer>
         </div>
       </PlatformCard>
 
@@ -1228,7 +1231,7 @@ function PlatformFinance() {
 
 const styles = {
   executiveGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: "14px" },
-  executiveValue: { display: "block", marginTop: "9px", color: "var(--ic-primary-deep)", fontSize: "23px" },
+  executiveValue: { display: "block", marginTop: "9px", color: "#4c1d95", fontSize: "23px" },
   statsGrid: {
     display: "grid",
     gridTemplateColumns:
@@ -1246,7 +1249,7 @@ const styles = {
   value: {
     display: "block",
     marginTop: "9px",
-    color: "var(--ic-primary-deep)",
+    color: "#4c1d95",
     fontSize: "25px",
   },
 
@@ -1377,7 +1380,7 @@ const styles = {
   },
 
   link: {
-    color: "var(--ic-primary-strong)",
+    color: "#6d28d9",
     fontWeight: "800",
     fontSize: "12px",
     textDecoration: "none",

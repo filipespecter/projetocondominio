@@ -1,7 +1,6 @@
 import { confirmDialog } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useState } from "react";
 import configurationApi from "../../Services/configurationApi.js";
-import { applyCondominiumTheme } from "../../utils/condominiumTheme.js";
 
 function Configuracoes() {
   const [abaAtiva, setAbaAtiva] = useState("dados");
@@ -68,26 +67,7 @@ function Configuracoes() {
   }
 
   async function salvarDadosCondominio() {
-    await executar(async () => {
-      const aplicarTemaPersonalizado = Boolean(config.tema?.aplicarTemaPersonalizado);
-
-      await configurationApi.updateCondominium({
-        ...config,
-        tema: {
-          ...(config.tema || {}),
-          corPrincipal: config.corTema,
-          aplicarTemaPersonalizado,
-          atualizadoEm: new Date().toISOString(),
-        },
-      });
-
-      applyCondominiumTheme({
-        corPrincipal: config.corTema,
-        aplicarTemaPersonalizado,
-      });
-
-      await carregarTudo();
-    }, "Dados do condomínio salvos com sucesso.");
+    await executar(async () => { await configurationApi.updateCondominium(config); await carregarTudo(); }, "Dados do condomínio salvos com sucesso.");
   }
 
   async function salvarPreferencias() {
@@ -112,7 +92,7 @@ function Configuracoes() {
   async function salvarUsuarioAdministrativo() {
     if (!isMestre) return alert("Apenas o Síndico Mestre pode gerenciar usuários.");
     if (!novoUsuario.nome || !novoUsuario.usuario || (!editId && !novoUsuario.senha)) return alert("Preencha nome, usuário e senha.");
-    if (novoUsuario.senha && novoUsuario.senha.length < 12) return alert("A senha deve possuir pelo menos 12 caracteres.");
+    if (novoUsuario.senha && novoUsuario.senha.length < 8) return alert("A senha deve possuir pelo menos 8 caracteres.");
 
     await executar(async () => {
       if (editId) await configurationApi.updateUser(editId, novoUsuario);
@@ -143,7 +123,7 @@ function Configuracoes() {
   async function alterarCredenciaisMestre() {
     if (!isMestre) return alert("Apenas o Síndico Mestre pode alterar estas credenciais.");
     if (!credenciaisMestre.usuario) return alert("Informe o novo usuário.");
-    if (credenciaisMestre.senha && credenciaisMestre.senha.length < 12) return alert("A senha deve possuir pelo menos 12 caracteres.");
+    if (credenciaisMestre.senha && credenciaisMestre.senha.length < 8) return alert("A senha deve possuir pelo menos 8 caracteres.");
     if (credenciaisMestre.senha && credenciaisMestre.senha !== credenciaisMestre.confirmarSenha) return alert("As senhas não conferem.");
 
     await executar(async () => {
@@ -165,10 +145,6 @@ function Configuracoes() {
     event.target.value = "";
     alert("A restauração direta pelo navegador foi desativada. Os dados reais estão no PostgreSQL e a restauração de backup deve ser feita pelo processo seguro do servidor.");
   }
-
-  const temaPersonalizadoAtivo = Boolean(config.tema?.aplicarTemaPersonalizado);
-  const corPadraoInfinityCondo = "#7c3aed";
-  const corPreview = temaPersonalizadoAtivo ? config.corTema : corPadraoInfinityCondo;
 
   return (
     <div style={styles.container}>
@@ -284,82 +260,48 @@ function Configuracoes() {
               />
             </Campo>
 
-            <Campo label="Personalização visual">
-              <ToggleCard
-                title="Personalizar cores do condomínio"
-                description="Ative somente se quiser substituir o roxo padrão do InfinityCondo pela identidade visual deste condomínio."
-                checked={temaPersonalizadoAtivo}
-                onChange={(checked) =>
-                  setConfig((prev) => ({
-                    ...prev,
-                    tema: {
-                      ...(prev.tema || {}),
-                      aplicarTemaPersonalizado: checked,
-                    },
-                  }))
-                }
-              />
+            <Campo label="Cor principal">
+              <div style={styles.colorRow}>
+                <input
+                  type="color"
+                  value={config.corTema}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      corTema: e.target.value,
+                      tema: {
+                        ...(config.tema || {}),
+                        corPrincipal: e.target.value,
+                        atualizadoEm: new Date().toISOString()
+                      }
+                    })
+                  }
+                  style={styles.colorInput}
+                />
 
-              <div style={{ ...styles.colorSelectorBox, opacity: temaPersonalizadoAtivo ? 1 : 0.55 }}>
-                <div style={styles.colorSelectorHeader}>
-                  <div>
-                    <strong>Cor principal do condomínio</strong>
-                    <p style={styles.colorHelp}>
-                      {temaPersonalizadoAtivo
-                        ? "Escolha a cor e salve os dados do condomínio para aplicá-la aos portais do síndico, porteiro e morador."
-                        : "A personalização está desativada. O sistema continuará usando o roxo padrão do InfinityCondo."}
-                    </p>
-                  </div>
+                <strong>{config.corTema}</strong>
+              </div>
 
-                  <div style={styles.colorRow}>
-                    <input
-                      type="color"
-                      value={config.corTema}
-                      disabled={!temaPersonalizadoAtivo}
-                      onChange={(e) => {
-                        const cor = e.target.value;
-                        setConfig((prev) => ({
-                          ...prev,
-                          corTema: cor,
-                          tema: {
-                            ...(prev.tema || {}),
-                            corPrincipal: cor,
-                          },
-                        }));
-                      }}
-                      style={{
-                        ...styles.colorInput,
-                        cursor: temaPersonalizadoAtivo ? "pointer" : "not-allowed",
-                      }}
-                    />
-
-                    <strong>{temaPersonalizadoAtivo ? config.corTema : corPadraoInfinityCondo}</strong>
-                  </div>
-                </div>
-
+              <div
+                style={{
+                  ...styles.colorPreview,
+                  borderColor: config.corTema
+                }}
+              >
                 <div
                   style={{
-                    ...styles.colorPreview,
-                    borderColor: corPreview
+                    ...styles.colorPreviewHeader,
+                    background: config.corTema
                   }}
                 >
-                  <div
-                    style={{
-                      ...styles.colorPreviewHeader,
-                      background: corPreview
-                    }}
-                  >
-                    Preview do condomínio
-                  </div>
+                  Preview do condomínio
+                </div>
 
-                  <div style={styles.colorPreviewBody}>
-                    <strong>{config.nomeCondominio || "Nome do condomínio"}</strong>
-                    <span>
-                      {temaPersonalizadoAtivo
-                        ? "Esta cor será aplicada após salvar."
-                        : "Usando a identidade roxa padrão do InfinityCondo."}
-                    </span>
-                  </div>
+                <div style={styles.colorPreviewBody}>
+                  <strong>{config.nomeCondominio || "Nome do condomínio"}</strong>
+                  <span>
+                    Cor principal aplicada à identidade visual do condomínio.
+                  </span>
                 </div>
               </div>
             </Campo>
@@ -492,8 +434,8 @@ function Configuracoes() {
                   <span
                     style={{
                       ...styles.statusBadge,
-                      background: u.status === "Ativo" ? "var(--ic-primary-soft)" : "#fee2e2",
-                      color: u.status === "Ativo" ? "var(--ic-primary)" : "#dc2626"
+                      background: u.status === "Ativo" ? "#f3e8ff" : "#fee2e2",
+                      color: u.status === "Ativo" ? "#7c3aed" : "#dc2626"
                     }}
                   >
                     {u.status}
@@ -1154,8 +1096,8 @@ const styles = {
   },
 
   hero: {
-    background: "linear-gradient(135deg,#ffffff,var(--ic-primary-soft-3))",
-    border: "1px solid var(--ic-primary-soft)",
+    background: "linear-gradient(135deg,#ffffff,#faf5ff)",
+    border: "1px solid #f3e8ff",
     color: "#111827",
     borderRadius: "28px",
     padding: "34px",
@@ -1169,9 +1111,9 @@ const styles = {
 
   heroBadge: {
     display: "inline-block",
-    background: "var(--ic-primary-soft)",
-    border: "1px solid var(--ic-primary-border-soft)",
-    color: "var(--ic-primary)",
+    background: "#f3e8ff",
+    border: "1px solid #ddd6fe",
+    color: "#7c3aed",
     padding: "8px 12px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1201,7 +1143,7 @@ const styles = {
   heroCard: {
     minWidth: "150px",
     background: "#ffffff",
-    border: "1px solid var(--ic-primary-border-soft)",
+    border: "1px solid #ddd6fe",
     borderRadius: "18px",
     padding: "16px"
   },
@@ -1217,7 +1159,7 @@ const styles = {
 
   tabs: {
     background: "white",
-    border: "1px solid var(--ic-primary-border-soft)",
+    border: "1px solid #ddd6fe",
     borderRadius: "24px",
     padding: "12px",
     display: "flex",
@@ -1231,8 +1173,8 @@ const styles = {
     flex: 1,
     minWidth: "145px",
     background: "#fbfaff",
-    color: "var(--ic-primary)",
-    border: "1px solid var(--ic-primary-border)",
+    color: "#7c3aed",
+    border: "1px solid #c4b5fd",
     borderRadius: "15px",
     padding: "13px",
     cursor: "pointer",
@@ -1240,14 +1182,14 @@ const styles = {
   },
 
   activeTab: {
-    background: "var(--ic-primary-light)",
+    background: "#8b5cf6",
     color: "white",
-    border: "1px solid var(--ic-primary-light)"
+    border: "1px solid #8b5cf6"
   },
 
   success: {
-    background: "var(--ic-primary-soft)",
-    color: "var(--ic-primary)",
+    background: "#f3e8ff",
+    color: "#7c3aed",
     padding: "14px",
     borderRadius: "16px",
     fontWeight: "900",
@@ -1256,8 +1198,8 @@ const styles = {
 
   panel: {
     background:
-      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), linear-gradient(180deg,#ffffff,#fbfaff)",
-    border: "1px solid var(--ic-primary-soft-2)",
+      "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), linear-gradient(180deg,#ffffff,#fbfaff)",
+    border: "1px solid #ede9fe",
     borderRadius: "26px",
     padding: "28px",
     boxShadow: "0 18px 45px rgba(88,28,135,0.08)"
@@ -1273,8 +1215,8 @@ const styles = {
   },
 
   panelBadge: {
-    background: "var(--ic-primary-soft)",
-    color: "var(--ic-primary)",
+    background: "#f3e8ff",
+    color: "#7c3aed",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "11px",
@@ -1323,33 +1265,11 @@ const styles = {
 
   input: {
     padding: "14px",
-    border: "1px solid var(--ic-primary-border)",
+    border: "1px solid #c4b5fd",
     borderRadius: "14px",
     outline: "none",
     fontSize: "14px",
     background: "#ffffff"
-  },
-
-  colorSelectorBox: {
-    marginTop: "12px",
-    display: "grid",
-    gap: "14px",
-    transition: "opacity .2s ease"
-  },
-
-  colorSelectorHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: "16px",
-    alignItems: "center",
-    flexWrap: "wrap"
-  },
-
-  colorHelp: {
-    margin: "6px 0 0",
-    color: "#6b7280",
-    fontSize: "12px",
-    lineHeight: "1.45"
   },
 
   colorRow: {
@@ -1357,7 +1277,7 @@ const styles = {
     alignItems: "center",
     gap: "12px",
     background: "#fbfaff",
-    border: "1px solid var(--ic-primary-border-soft)",
+    border: "1px solid #ddd6fe",
     borderRadius: "14px",
     padding: "10px"
   },
@@ -1372,7 +1292,7 @@ const styles = {
 
   colorPreview: {
     marginTop: "10px",
-    border: "1px solid var(--ic-primary-light)",
+    border: "1px solid #8b5cf6",
     borderRadius: "16px",
     overflow: "hidden",
     background: "#ffffff"
@@ -1395,9 +1315,9 @@ const styles = {
 
   planInfo: {
     marginTop: "8px",
-    background: "var(--ic-primary-soft-3)",
-    border: "1px solid var(--ic-primary-border-soft)",
-    color: "var(--ic-primary)",
+    background: "#faf5ff",
+    border: "1px solid #ddd6fe",
+    color: "#7c3aed",
     borderRadius: "12px",
     padding: "10px",
     fontSize: "12px",
@@ -1406,7 +1326,7 @@ const styles = {
   },
 
   primaryButton: {
-    background: "var(--ic-primary-light)",
+    background: "#8b5cf6",
     color: "white",
     border: "none",
     padding: "13px 18px",
@@ -1426,9 +1346,9 @@ const styles = {
   },
 
   safeBox: {
-    background: "var(--ic-primary-soft)",
-    border: "1px solid var(--ic-primary-border-soft)",
-    color: "var(--ic-primary)",
+    background: "#f3e8ff",
+    border: "1px solid #ddd6fe",
+    color: "#7c3aed",
     padding: "15px",
     borderRadius: "16px",
     marginBottom: "18px",
@@ -1444,7 +1364,7 @@ const styles = {
 
   infoCard: {
     background: "#fbfaff",
-    border: "1px solid var(--ic-primary-border-soft)",
+    border: "1px solid #ddd6fe",
     borderRadius: "18px",
     padding: "18px",
     display: "grid",
@@ -1460,7 +1380,7 @@ const styles = {
 
   userCard: {
     background: "linear-gradient(180deg,#ffffff,#fbfaff)",
-    border: "1px solid var(--ic-primary-soft-2)",
+    border: "1px solid #ede9fe",
     borderRadius: "22px",
     padding: "20px",
     boxShadow: "0 12px 28px rgba(88,28,135,0.07)"
@@ -1476,7 +1396,7 @@ const styles = {
     width: "56px",
     height: "56px",
     borderRadius: "18px",
-    background: "var(--ic-primary-light)",
+    background: "#8b5cf6",
     color: "white",
     display: "flex",
     alignItems: "center",
@@ -1509,8 +1429,8 @@ const styles = {
   },
 
   editButton: {
-    background: "var(--ic-primary-soft-2)",
-    color: "var(--ic-primary-strong)",
+    background: "#ede9fe",
+    color: "#6d28d9",
     border: "none",
     padding: "10px 12px",
     borderRadius: "12px",
@@ -1540,7 +1460,7 @@ const styles = {
 
   subPanel: {
     background: "#fbfaff",
-    border: "1px solid var(--ic-primary-border-soft)",
+    border: "1px solid #ddd6fe",
     borderRadius: "22px",
     padding: "22px"
   },
@@ -1557,9 +1477,9 @@ const styles = {
   },
 
   backupCard: {
-    background: "var(--ic-primary-soft-3)",
-    border: "1px solid var(--ic-primary-border-soft)",
-    color: "var(--ic-primary)",
+    background: "#faf5ff",
+    border: "1px solid #ddd6fe",
+    color: "#7c3aed",
     borderRadius: "22px",
     padding: "22px"
   },
@@ -1593,7 +1513,7 @@ const styles = {
 
   toggleCard: {
     background: "#fbfaff",
-    border: "1px solid var(--ic-primary-border-soft)",
+    border: "1px solid #ddd6fe",
     borderRadius: "20px",
     padding: "18px",
     display: "flex",

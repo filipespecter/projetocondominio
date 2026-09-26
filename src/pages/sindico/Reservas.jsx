@@ -431,11 +431,13 @@ function Reservas() {
             "Informe o motivo da recusa:"
           );
 
-        if (
-          !motivo ||
-          motivo.trim().length <
-            2
-        ) {
+        if (motivo === null) return;
+        if (!motivo?.trim()) {
+          alert("O motivo da rejeição é obrigatório.");
+          return;
+        }
+        if (motivo.trim().length < 2) {
+          alert("O motivo da rejeição deve ter pelo menos 2 caracteres.");
           return;
         }
 
@@ -1145,7 +1147,7 @@ const styles = {
   hero: {
     minWidth: 0,
     background:
-      "linear-gradient(135deg,#02140b,var(--ic-primary-dark) 55%,var(--ic-primary))",
+      "linear-gradient(135deg,#02140b,#5b21b6 55%,#7c3aed)",
     borderRadius: "36px",
     padding: "34px",
     color: "white",
@@ -1165,7 +1167,7 @@ const styles = {
     display: "inline-block",
     background: "rgba(255,255,255,0.13)",
     border: "1px solid rgba(255,255,255,0.14)",
-    color: "var(--ic-primary-soft)",
+    color: "#f3e8ff",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1213,8 +1215,8 @@ const styles = {
   },
 
   heroButton: {
-    background: "var(--ic-primary-soft)",
-    color: "var(--ic-primary)",
+    background: "#f3e8ff",
+    color: "#7c3aed",
     border: "none",
     padding: "15px 20px",
     borderRadius: "17px",
@@ -1226,7 +1228,7 @@ const styles = {
   controlStrip: {
     minWidth: 0,
     background: "white",
-    border: "1px solid var(--ic-primary-border-soft)",
+    border: "1px solid #ddd6fe",
     borderRadius: "28px",
     padding: "18px",
     marginBottom: "24px",
@@ -1239,7 +1241,7 @@ const styles = {
   searchWrap: {
     flex: 1,
     background: "#fbfaff",
-    border: "1px solid var(--ic-primary-border)",
+    border: "1px solid #c4b5fd",
     borderRadius: "18px",
     display: "flex",
     alignItems: "center",
@@ -1247,7 +1249,7 @@ const styles = {
   },
 
   searchIcon: {
-    color: "var(--ic-primary)",
+    color: "#7c3aed",
     fontSize: "20px",
     marginRight: "8px"
   },
@@ -1265,7 +1267,7 @@ const styles = {
     width: "170px",
     padding: "15px",
     borderRadius: "18px",
-    border: "1px solid var(--ic-primary-border)",
+    border: "1px solid #c4b5fd",
     outline: "none",
     background: "#fbfaff"
   },
@@ -1280,7 +1282,7 @@ const styles = {
 
   reservationPanel: {
     background: "white",
-    border: "1px solid var(--ic-primary-soft-2)",
+    border: "1px solid #ede9fe",
     borderRadius: "34px",
     padding: "28px",
     boxShadow: "0 18px 55px rgba(88,28,135,0.09)"
@@ -1294,8 +1296,8 @@ const styles = {
   },
 
   panelLabel: {
-    background: "var(--ic-primary-soft)",
-    color: "var(--ic-primary)",
+    background: "#f3e8ff",
+    color: "#7c3aed",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "11px",
@@ -1304,14 +1306,14 @@ const styles = {
 
   panelTitle: {
     margin: "12px 0 0",
-    color: "var(--ic-primary-deep)",
+    color: "#4c1d95",
     fontSize: "28px"
   },
 
   resultBadge: {
-    background: "var(--ic-primary-soft-3)",
-    color: "var(--ic-primary)",
-    border: "1px solid var(--ic-primary-border-soft)",
+    background: "#faf5ff",
+    color: "#7c3aed",
+    border: "1px solid #ddd6fe",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1329,7 +1331,7 @@ const styles = {
     borderRadius: "30px",
     padding: "22px",
     boxShadow: "0 15px 38px rgba(88,28,135,0.07)",
-    border: "1px solid var(--ic-primary-soft-2)"
+    border: "1px solid #ede9fe"
   },
 
   cardTop: {
@@ -1351,14 +1353,14 @@ const styles = {
     height: "64px",
     borderRadius: "24px",
     background:
-      "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary-light))",
+      "linear-gradient(135deg,#4c1d95,#8b5cf6)",
     color: "white",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "28px",
     fontWeight: "900",
-    boxShadow: "0 14px 26px rgb(var(--ic-primary-rgb) / 0.18)"
+    boxShadow: "0 14px 26px rgba(124,58,237,0.18)"
   },
 
   areaName: {
@@ -1382,14 +1384,14 @@ const styles = {
   },
 
   scheduleBox: {
-    background: "var(--ic-primary-soft-3)",
-    border: "1px solid var(--ic-primary-border-soft)",
+    background: "#faf5ff",
+    border: "1px solid #ddd6fe",
     borderRadius: "18px",
     padding: "14px",
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
     gap: "10px",
-    color: "var(--ic-primary)",
+    color: "#7c3aed",
     marginBottom: "14px"
   },
 
@@ -1401,7 +1403,7 @@ const styles = {
 
   infoItem: {
     background: "white",
-    border: "1px solid var(--ic-primary-soft-2)",
+    border: "1px solid #ede9fe",
     borderRadius: "17px",
     padding: "13px"
   },
@@ -1424,8 +1426,8 @@ const styles = {
   },
 
   approveButton: {
-    background: "var(--ic-primary-soft)",
-    color: "var(--ic-primary)",
+    background: "#f3e8ff",
+    color: "#7c3aed",
     border: "none",
     padding: "11px",
     borderRadius: "13px",
@@ -1454,8 +1456,8 @@ const styles = {
   },
 
   editButton: {
-    background: "var(--ic-primary-soft-2)",
-    color: "var(--ic-primary-strong)",
+    background: "#ede9fe",
+    color: "#6d28d9",
     border: "none",
     padding: "11px",
     borderRadius: "13px",
@@ -1475,7 +1477,7 @@ const styles = {
 
   empty: {
     background: "#fbfaff",
-    border: "1px dashed var(--ic-primary-border)",
+    border: "1px dashed #c4b5fd",
     borderRadius: "26px",
     padding: "48px",
     textAlign: "center"
@@ -1498,7 +1500,7 @@ const styles = {
 
   emptyButton: {
     background:
-      "linear-gradient(135deg,var(--ic-primary-dark),var(--ic-primary-light))",
+      "linear-gradient(135deg,#5b21b6,#8b5cf6)",
     color: "white",
     border: "none",
     padding: "13px 18px",
@@ -1535,7 +1537,7 @@ const styles = {
 
   modalTop: {
     background:
-      "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary))",
+      "linear-gradient(135deg,#4c1d95,#7c3aed)",
     color: "white",
     borderRadius: "28px",
     padding: "26px",
@@ -1570,7 +1572,7 @@ const styles = {
 
   modalSection: {
     background: "white",
-    border: "1px solid var(--ic-primary-soft-2)",
+    border: "1px solid #ede9fe",
     borderRadius: "26px",
     padding: "20px",
     marginBottom: "15px"
@@ -1578,7 +1580,7 @@ const styles = {
 
   modalSectionTitle: {
     margin: "0 0 16px",
-    color: "var(--ic-primary-deep)"
+    color: "#4c1d95"
   },
 
   formGrid: {
@@ -1610,7 +1612,7 @@ const styles = {
   input: {
     padding: "15px",
     borderRadius: "16px",
-    border: "1px solid var(--ic-primary-border)",
+    border: "1px solid #c4b5fd",
     outline: "none",
     fontSize: "14px",
     background: "#fbfaff"
@@ -1621,7 +1623,7 @@ const styles = {
     resize: "vertical",
     padding: "15px",
     borderRadius: "16px",
-    border: "1px solid var(--ic-primary-border)",
+    border: "1px solid #c4b5fd",
     outline: "none",
     fontSize: "14px",
     background: "#fbfaff",
@@ -1637,7 +1639,7 @@ const styles = {
   saveButton: {
     flex: 1,
     background:
-      "linear-gradient(135deg,var(--ic-primary-dark),var(--ic-primary-light))",
+      "linear-gradient(135deg,#5b21b6,#8b5cf6)",
     color: "white",
     border: "none",
     padding: "14px",
@@ -1648,7 +1650,7 @@ const styles = {
 
   cancelButton: {
     flex: 1,
-    background: "var(--ic-primary-soft-4)",
+    background: "#f5f3ff",
     color: "#374151",
     border: "none",
     padding: "14px",
