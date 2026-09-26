@@ -431,11 +431,13 @@ function Reservas() {
             "Informe o motivo da recusa:"
           );
 
-        if (
-          !motivo ||
-          motivo.trim().length <
-            2
-        ) {
+        if (motivo === null) return;
+        if (!motivo?.trim()) {
+          alert("O motivo da rejeição é obrigatório.");
+          return;
+        }
+        if (motivo.trim().length < 2) {
+          alert("O motivo da rejeição deve ter pelo menos 2 caracteres.");
           return;
         }
 

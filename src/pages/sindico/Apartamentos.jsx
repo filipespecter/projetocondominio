@@ -620,7 +620,7 @@ function Apartamentos() {
                   onChange={(e) =>
                     setNovoAp({
                       ...novoAp,
-                      bloco: e.target.value.toUpperCase()
+                      bloco: e.target.value.replace(/[^\p{L}\p{N} .\-/]/gu, "").toUpperCase()
                     })
                   }
                   style={styles.input}

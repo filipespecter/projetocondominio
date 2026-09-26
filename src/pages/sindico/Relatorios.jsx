@@ -285,14 +285,12 @@ function Relatorios() {
     if (modulo === "moradores") {
       return {
         titulo: "Moradores",
-        colunas: ["Nome", "Apartamento", "Tipo", "Telefone", "E-mail", "Status"],
+        colunas: ["Nome", "Apartamento", "Telefone", "E-mail"],
         linhas: lista.map((item) => [
           normalizarLinha(item.nome),
           normalizarLinha(item.apartamento || item.apto),
-          normalizarLinha(item.tipoMorador || "Morador"),
           normalizarLinha(item.telefone),
-          normalizarLinha(item.email),
-          normalizarLinha(item.status || "Ativo")
+          normalizarLinha(item.email)
         ])
       };
     }
@@ -692,7 +690,7 @@ function Relatorios() {
     const dataGeracao = new Date().toLocaleString("pt-BR");
     const perfilCondominio = obterPerfilCondominio();
 
-    doc.setFillColor(22, 163, 74);
+    doc.setFillColor(109, 40, 217);
     doc.rect(0, 0, 210, 38, "F");
 
     doc.setTextColor(255, 255, 255);
@@ -702,7 +700,7 @@ function Relatorios() {
     doc.setFontSize(10);
     doc.text(perfilCondominio.nomeCondominio || "Central de Relatórios Condominiais", 14, 27);
 
-    doc.setTextColor(20, 83, 45);
+    doc.setTextColor(91, 33, 182);
     doc.setFontSize(15);
     doc.text(preview.titulo, 14, 50);
 
@@ -717,7 +715,7 @@ function Relatorios() {
       head: [["Resumo"]],
       body: preview.resumo.map((item) => [item]),
       headStyles: {
-        fillColor: [22, 163, 74]
+        fillColor: [109, 40, 217]
       },
       styles: {
         fontSize: 9,
@@ -733,7 +731,7 @@ function Relatorios() {
         posicao = 18;
       }
 
-      doc.setTextColor(20, 83, 45);
+      doc.setTextColor(91, 33, 182);
       doc.setFontSize(12);
       doc.text(tabela.titulo, 14, posicao);
 
@@ -745,7 +743,7 @@ function Relatorios() {
             ? tabela.linhas
             : [["Sem registros"]],
         headStyles: {
-          fillColor: [20, 83, 45]
+          fillColor: [91, 33, 182]
         },
         styles: {
           fontSize: 8,
@@ -763,7 +761,7 @@ function Relatorios() {
         posicao = 18;
       }
 
-      doc.setTextColor(20, 83, 45);
+      doc.setTextColor(91, 33, 182);
       doc.setFontSize(12);
       doc.text("Observações", 14, posicao);
 

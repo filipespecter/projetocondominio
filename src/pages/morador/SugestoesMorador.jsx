@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { me as getAuthenticatedUser } from "../../Services/authApi.js";
 import occurrenceApi from "../../Services/occurrenceApi.js";
 
@@ -7,6 +7,7 @@ function SugestoesMorador() {
   const [morador,setMorador]=useState(null);
   const [ocorrencias,setOcorrencias]=useState([]);
   const [form,setForm]=useState(estadoInicial);
+  const enviando=useRef(false);
   const [busca,setBusca]=useState("");
   const [filtroStatus,setFiltroStatus]=useState("Todos");
   const typeBack={"Reclamação":"COMPLAINT","Sugestão":"SUGGESTION"};
@@ -16,7 +17,7 @@ function SugestoesMorador() {
   async function carregar(){try{const [u,data]=await Promise.all([getAuthenticatedUser(),occurrenceApi.my()]);setMorador(u);setOcorrencias((data??[]).map(mapItem));}catch(e){alert(e?.message??"Não foi possível carregar suas solicitações.");}}
   useEffect(()=>{carregar();},[]);
   function limparFormulario(){setForm(estadoInicial);}
-  async function enviarSolicitacao(){if(!form.categoria||String(form.titulo).trim().length<3||String(form.descricao).trim().length<5){alert("Preencha categoria, título e descrição.");return;}try{await occurrenceApi.create({type:typeBack[form.tipo]??"COMPLAINT",category:form.categoria,priority:priorityBack[form.prioridade]??"MEDIUM",title:form.titulo.trim(),description:form.descricao.trim()});limparFormulario();await carregar();alert("Solicitação enviada ao síndico.");}catch(e){alert(e?.message??"Não foi possível enviar sua solicitação.");}}
+  async function enviarSolicitacao(){if(enviando.current)return;if(!form.categoria||String(form.titulo).trim().length<3||String(form.descricao).trim().length<5){alert("Preencha categoria, título e descrição.");return;}enviando.current=true;try{await occurrenceApi.create({type:typeBack[form.tipo]??"COMPLAINT",category:form.categoria,priority:priorityBack[form.prioridade]??"MEDIUM",title:form.titulo.trim(),description:form.descricao.trim()});limparFormulario();await carregar();alert("Solicitação enviada ao síndico.");}catch(e){alert(e?.message??"Não foi possível enviar sua solicitação.");}finally{enviando.current=false;}}
   function obterStatus(status){if(status==="Resolvido")return{texto:"Resolvido",fundo:"#dcfce7",cor:"#166534"};if(status==="Ciente")return{texto:"Ciente",fundo:"#dbeafe",cor:"#1d4ed8"};if(status==="Em Tratamento")return{texto:"Em Tratamento",fundo:"var(--ic-primary-soft-2)",cor:"var(--ic-primary-strong)"};if(status==="Cancelado")return{texto:"Cancelado",fundo:"#fee2e2",cor:"#b91c1c"};return{texto:"Novo",fundo:"#fef3c7",cor:"#92400e"};}
   const minhasSolicitacoes=ocorrencias.filter(i=>{const t=busca.toLowerCase();const ok=!t||i.titulo?.toLowerCase().includes(t)||i.descricao?.toLowerCase().includes(t)||i.categoria?.toLowerCase().includes(t);return ok&&(filtroStatus==="Todos"||obterStatus(i.status).texto===filtroStatus);});
   const pendentes=ocorrencias.filter(i=>!["Resolvido","Cancelado"].includes(i.status)).length;

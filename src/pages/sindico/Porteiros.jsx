@@ -94,7 +94,7 @@ function Porteiros() {
       alert("Preencha nome, usuário e turno.");
       return false;
     }
-    if (!editId && String(novoPorteiro.senha || "").length < 12) {
+    if ((!editId || novoPorteiro.senha) && String(novoPorteiro.senha || "").length < 12) {
       alert("A senha inicial deve possuir pelo menos 12 caracteres.");
       return false;
     }
@@ -120,7 +120,10 @@ function Porteiros() {
       status: statusBack[novoPorteiro.status] ?? "ACTIVE"
     };
     try {
-      if (editId) await doormanApi.update(editId, payload);
+      if (editId) {
+        await doormanApi.update(editId, payload);
+        if (novoPorteiro.senha) await doormanApi.resetPassword(editId, novoPorteiro.senha);
+      }
       else await doormanApi.create({ ...payload, password: novoPorteiro.senha, mustChangePassword: true });
       await carregar();
       fecharModal();

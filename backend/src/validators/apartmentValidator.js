@@ -173,7 +173,8 @@ export const createApartmentSchema = z
       .max(
         50,
         "O bloco deve possuir no máximo 50 caracteres."
-      ),
+      )
+      .regex(/^[\p{L}\p{N}][\p{L}\p{N} .\-/]*$/u, "O bloco aceita letras, números, espaços, ponto, hífen e barra."),
 
     number: z
       .string()
@@ -185,7 +186,8 @@ export const createApartmentSchema = z
       .max(
         30,
         "O número do apartamento deve possuir no máximo 30 caracteres."
-      ),
+      )
+      .regex(/^[\p{L}\p{N}][\p{L}\p{N}-]*$/u, "O número aceita letras, números e hífen."),
 
     floor: floorSchema,
 
@@ -224,6 +226,7 @@ export const updateApartmentSchema = z
         50,
         "O bloco deve possuir no máximo 50 caracteres."
       )
+      .regex(/^[\p{L}\p{N}][\p{L}\p{N} .\-/]*$/u, "O bloco aceita letras, números, espaços, ponto, hífen e barra.")
       .optional(),
 
     number: z
@@ -237,6 +240,7 @@ export const updateApartmentSchema = z
         30,
         "O número do apartamento deve possuir no máximo 30 caracteres."
       )
+      .regex(/^[\p{L}\p{N}][\p{L}\p{N}-]*$/u, "O número aceita letras, números e hífen.")
       .optional(),
 
     floor: floorSchema,
