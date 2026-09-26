@@ -8,6 +8,7 @@ import apartmentRepository from "../repositories/ApartmentRepository.js";
 import residentRepository from "../repositories/ResidentRepository.js";
 
 import { ApiError } from "../utils/ApiError.js";
+import PickupCredential from "../utils/PickupCredential.js";
 
 class VisitorService extends BaseService {
   constructor() {
@@ -866,6 +867,366 @@ class VisitorService extends BaseService {
       message:
         "Visitante removido com sucesso.",
     };
+  }
+
+  /**
+   * Resolve o perfil de morador a partir do usuário autenticado.
+   * Nenhum apartmentId recebido do frontend é utilizado como prova de autorização.
+   */
+  async getAuthenticatedResident(condominiumId, authenticatedUser) {
+    if (authenticatedUser?.role !== "RESIDENT") {
+      throw new ApiError("Apenas moradores podem criar ou cancelar convites de visitantes.", 403);
+    }
+
+    const resident = await residentRepository.findByUserId(
+      authenticatedUser.id,
+      condominiumId
+    );
+
+    if (!resident || resident.user?.status !== "ACTIVE") {
+      throw new ApiError("Perfil de morador não encontrado ou inativo.", 403);
+    }
+
+    return resident;
+  }
+
+  normalizeInvitationDate(value, label) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      throw new ApiError(`${label} inválida.`, 422);
+    }
+    return date;
+  }
+
+  invitationPublicView(visitor, includeCredential = null) {
+    const payload = {
+      id: visitor.id,
+      name: visitor.name,
+      document: visitor.document,
+      phone: visitor.phone,
+      visitType: visitor.visitType,
+      notes: visitor.notes,
+      status: visitor.invitationStatus,
+      validFrom: visitor.invitationValidFrom,
+      validUntil: visitor.invitationValidUntil,
+      usedAt: visitor.invitationUsedAt,
+      canceledAt: visitor.invitationCanceledAt,
+      apartment: visitor.apartment
+        ? {
+            id: visitor.apartment.id,
+            block: visitor.apartment.block,
+            number: visitor.apartment.number,
+          }
+        : null,
+      responsibleResident: visitor.invitedBy?.user
+        ? {
+            id: visitor.invitedBy.id,
+            name: visitor.invitedBy.user.name,
+          }
+        : null,
+      createdAt: visitor.createdAt,
+    };
+
+    if (includeCredential) {
+      payload.credential = includeCredential;
+    }
+
+    return payload;
+  }
+
+  async listMyInvitations(condominiumId, authenticatedUser) {
+    const resident = await this.getAuthenticatedResident(
+      condominiumId,
+      authenticatedUser
+    );
+
+    const invitations = await visitorRepository.findInvitationsForResident(
+      condominiumId,
+      resident.id
+    );
+
+    const now = new Date();
+    for (const invitation of invitations) {
+      if (
+        ["WAITING", "AUTHORIZED"].includes(invitation.invitationStatus) &&
+        invitation.invitationValidUntil &&
+        invitation.invitationValidUntil < now
+      ) {
+        await visitorRepository.markInvitationExpired(
+          invitation.id,
+          condominiumId
+        );
+        invitation.invitationStatus = "EXPIRED";
+      }
+    }
+
+    return invitations.map((item) => this.invitationPublicView(item));
+  }
+
+  /**
+   * Cria uma autorização antecipada e devolve o token bruto somente nesta resposta.
+   * No PostgreSQL fica apenas o SHA-256 do token.
+   */
+  async createInvitation(
+    condominiumId,
+    data,
+    authenticatedUser,
+    requestContext = null
+  ) {
+    const resident = await this.getAuthenticatedResident(
+      condominiumId,
+      authenticatedUser
+    );
+
+    const validFrom = this.normalizeInvitationDate(
+      data.validFrom,
+      "Data/hora inicial"
+    );
+    const validUntil = this.normalizeInvitationDate(
+      data.validUntil,
+      "Data/hora final"
+    );
+    const now = new Date();
+
+    if (validUntil <= validFrom) {
+      throw new ApiError("A validade final deve ser posterior ao início.", 422);
+    }
+    if (validUntil <= now) {
+      throw new ApiError("A validade do convite precisa terminar no futuro.", 422);
+    }
+    if (validUntil.getTime() - validFrom.getTime() > 30 * 24 * 60 * 60 * 1000) {
+      throw new ApiError("O convite pode ter validade máxima de 30 dias.", 422);
+    }
+
+    const token = PickupCredential.generateToken();
+    const tokenHash = PickupCredential.hash(token);
+
+    const visitor = await visitorRepository.createInvitation(
+      condominiumId,
+      {
+        apartmentId: resident.apartmentId,
+        name: data.name,
+        document: data.document,
+        phone: data.phone,
+        visitType: data.visitType,
+        notes: data.notes,
+        registeredByUserId: authenticatedUser.id,
+        invitedByResidentId: resident.id,
+        invitationTokenHash: tokenHash,
+        invitationValidFrom: validFrom,
+        invitationValidUntil: validUntil,
+      }
+    );
+
+    await Promise.allSettled([
+      NotificationService.createForActiveRoleUsers(
+        condominiumId,
+        "DOORMAN",
+        {
+          title: "Visitante com autorização antecipada",
+          message: `${visitor.name} possui autorização de entrada para o apartamento ${visitor.apartment?.block ?? ""} ${visitor.apartment?.number ?? ""}`.trim(),
+          type: "VISITOR_INVITATION",
+          origin: "RESIDENT",
+          module: "VISITOR",
+          referenceId: visitor.id,
+          priority: "NORMAL",
+        }
+      ),
+      AuditLogService.logCreate({
+        condominiumId,
+        user: authenticatedUser,
+        module: "VISITOR_INVITATION",
+        referenceId: visitor.id,
+        afterData: {
+          visitorName: visitor.name,
+          apartmentId: visitor.apartmentId,
+          validFrom,
+          validUntil,
+          status: visitor.invitationStatus,
+        },
+        details: "Morador criou convite antecipado de visitante por QR.",
+        requestContext,
+      }),
+    ]);
+
+    return this.invitationPublicView(visitor, {
+      qrToken: token,
+    });
+  }
+
+  async cancelMyInvitation(
+    id,
+    condominiumId,
+    authenticatedUser,
+    requestContext = null
+  ) {
+    const resident = await this.getAuthenticatedResident(
+      condominiumId,
+      authenticatedUser
+    );
+
+    const before = await visitorRepository.findInvitationByIdForResident(
+      id,
+      condominiumId,
+      resident.id
+    );
+
+    if (!before) {
+      throw new ApiError("Convite de visitante não encontrado.", 404);
+    }
+    if (before.invitationStatus === "USED") {
+      throw new ApiError("Um convite já utilizado não pode ser cancelado.", 409);
+    }
+    if (before.invitationStatus === "CANCELED") {
+      throw new ApiError("Este convite já foi cancelado.", 409);
+    }
+    if (before.invitationStatus === "EXPIRED") {
+      throw new ApiError("Este convite já expirou.", 409);
+    }
+
+    const visitor = await visitorRepository.cancelInvitation(
+      id,
+      condominiumId,
+      resident.id
+    );
+
+    if (!visitor) {
+      throw new ApiError("O convite não pôde ser cancelado.", 409);
+    }
+
+    await Promise.allSettled([
+      NotificationService.createForActiveRoleUsers(
+        condominiumId,
+        "DOORMAN",
+        {
+          title: "Autorização de visitante cancelada",
+          message: `${visitor.name} não possui mais autorização antecipada de entrada.`,
+          type: "VISITOR_INVITATION_CANCELED",
+          origin: "RESIDENT",
+          module: "VISITOR",
+          referenceId: visitor.id,
+          priority: "NORMAL",
+        }
+      ),
+      AuditLogService.logUpdate({
+        condominiumId,
+        user: authenticatedUser,
+        module: "VISITOR_INVITATION",
+        referenceId: id,
+        beforeData: { status: before.invitationStatus },
+        afterData: { status: visitor.invitationStatus },
+        details: "Morador cancelou convite antecipado de visitante.",
+        requestContext,
+      }),
+    ]);
+
+    return this.invitationPublicView(visitor);
+  }
+
+  /**
+   * Valida e consome um QR na portaria. O consumo é atômico para impedir reutilização.
+   */
+  async validateInvitation(
+    condominiumId,
+    token,
+    authenticatedUser,
+    requestContext = null
+  ) {
+    if (!condominiumId || !authenticatedUser?.id) {
+      throw new ApiError("Contexto de autenticação inválido.", 401);
+    }
+
+    if (![
+      "DOORMAN",
+      "CONDOMINIUM_ADMIN",
+      "MANAGER",
+    ].includes(authenticatedUser.role)) {
+      throw new ApiError("Você não possui permissão para validar convites.", 403);
+    }
+
+    const normalizedToken = String(token ?? "").trim();
+    if (!normalizedToken) {
+      throw new ApiError("Informe o QR do visitante.", 422);
+    }
+
+    const tokenHash = PickupCredential.hash(normalizedToken);
+    const invitation = await visitorRepository.findInvitationByTokenHash(
+      condominiumId,
+      tokenHash
+    );
+
+    // Não diferencia QR inexistente de QR pertencente a outro tenant.
+    if (!invitation) {
+      throw new ApiError("QR de visitante inválido ou não disponível para este condomínio.", 404);
+    }
+
+    if (invitation.invitationStatus === "USED" || invitation.invitationUsedAt) {
+      throw new ApiError("Este QR já foi utilizado.", 409);
+    }
+    if (invitation.invitationStatus === "CANCELED" || invitation.invitationCanceledAt) {
+      throw new ApiError("Este QR foi cancelado.", 409);
+    }
+    if (invitation.invitationStatus === "EXPIRED") {
+      throw new ApiError("Este QR está expirado.", 410);
+    }
+
+    const now = new Date();
+    if (!invitation.invitationValidFrom || !invitation.invitationValidUntil) {
+      throw new ApiError("Este QR não possui uma janela de validade utilizável.", 409);
+    }
+    if (now < invitation.invitationValidFrom) {
+      throw new ApiError("Este QR ainda não está dentro do período autorizado.", 409);
+    }
+    if (now > invitation.invitationValidUntil) {
+      await visitorRepository.markInvitationExpired(invitation.id, condominiumId);
+      throw new ApiError("Este QR está expirado.", 410);
+    }
+
+    const consumed = await visitorRepository.consumeInvitation(
+      invitation.id,
+      condominiumId,
+      tokenHash,
+      authenticatedUser.id,
+      now
+    );
+
+    if (!consumed) {
+      throw new ApiError("Este QR não pôde ser utilizado. Atualize a tela e tente novamente.", 409);
+    }
+
+    const tasks = [
+      AuditLogService.logUpdate({
+        condominiumId,
+        user: authenticatedUser,
+        module: "VISITOR_INVITATION",
+        referenceId: consumed.id,
+        beforeData: { status: invitation.invitationStatus },
+        afterData: { status: consumed.invitationStatus, enteredAt: consumed.enteredAt },
+        details: "QR de visitante validado e consumido na portaria.",
+        requestContext,
+      }),
+    ];
+
+    if (consumed.invitedBy?.userId) {
+      tasks.push(
+        NotificationService.createForUser(
+          condominiumId,
+          consumed.invitedBy.userId,
+          {
+            title: "Visitante entrou no condomínio",
+            message: `${consumed.name} utilizou a autorização antecipada.`,
+            type: "VISITOR_ENTRY",
+            origin: authenticatedUser.role,
+            module: "VISITOR",
+            referenceId: consumed.id,
+            priority: "NORMAL",
+          }
+        )
+      );
+    }
+
+    await Promise.allSettled(tasks);
+    return this.invitationPublicView(consumed);
   }
 
   /**

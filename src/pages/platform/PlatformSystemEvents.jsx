@@ -251,8 +251,8 @@ function PlatformSystemEvents() {
 
 const styles = {
   filters: { display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 },
-  filter: { border: "1px solid #ddd6fe", background: "#fff", color: "#5b21b6", borderRadius: 999, padding: "8px 13px", fontWeight: 800, cursor: "pointer" },
-  filterActive: { background: "#5b21b6", color: "#fff", borderColor: "#5b21b6" },
+  filter: { border: "1px solid var(--ic-primary-border-soft)", background: "#fff", color: "var(--ic-primary-dark)", borderRadius: 999, padding: "8px 13px", fontWeight: 800, cursor: "pointer" },
+  filterActive: { background: "var(--ic-primary-dark)", color: "#fff", borderColor: "var(--ic-primary-dark)" },
   small: { color: "#75667e", fontSize: 11, marginTop: 4, maxWidth: 420, lineHeight: 1.4 },
   pending: { color: "#92400e", fontWeight: 800, fontSize: 11 },
   resolutionBox: { display: "grid", gap: 3, minWidth: 210, color: "#4b3d54", fontSize: 11, lineHeight: 1.4 },
@@ -264,7 +264,7 @@ const styles = {
   subtitle: { margin: "6px 0 0", color: "#766b7d", fontSize: 13, lineHeight: 1.5 },
   close: { width: 38, height: 38, borderRadius: 12, border: "1px solid #e6dde9", background: "#ffffff", color: "#66536d", fontSize: 24, cursor: "pointer" },
   body: { padding: 22, display: "grid", gap: 16 },
-  eventBox: { display: "grid", gap: 5, padding: 13, borderRadius: 13, background: "#faf7ff", border: "1px solid #ede9fe", color: "#4b3d54" },
+  eventBox: { display: "grid", gap: 5, padding: 13, borderRadius: 13, background: "#faf7ff", border: "1px solid var(--ic-primary-soft-2)", color: "#4b3d54" },
   field: { display: "grid", gap: 7 },
   label: { fontSize: 12, fontWeight: 900, color: "#55475f" },
   textarea: { width: "100%", minHeight: 100, boxSizing: "border-box", border: "1px solid #ddd4e8", borderRadius: 12, padding: 11, resize: "vertical", font: "inherit" },

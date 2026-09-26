@@ -1,5 +1,7 @@
 import Jwt from "../utils/Jwt.js";
 import { ApiError } from "../utils/ApiError.js";
+import UserSessionService from "../services/UserSessionService.js";
+import prisma from "../config/prisma.js";
 
 /**
  * Extrai o token Bearer do cabeçalho Authorization.
@@ -35,7 +37,7 @@ function extractBearerToken(authorizationHeader) {
  * req.auth.token
  * req.auth.payload
  */
-export function authMiddleware(
+export async function authMiddleware(
   req,
   res,
   next
@@ -62,21 +64,30 @@ export function authMiddleware(
         401
       );
     }
+    const [user,session]=await Promise.all([
+      prisma.user.findFirst({where:{id:payload.sub,deletedAt:null},select:{id:true,condominiumId:true,role:true,status:true,securityVersion:true}}),
+      payload.sid?prisma.authSession.findUnique({where:{id:payload.sid},select:{userId:true,revokedAt:true,expiresAt:true}}):null,
+    ]);
+    if(!user||user.status!=="ACTIVE"||user.securityVersion!==payload.sv||!session||session.userId!==user.id||session.revokedAt||session.expiresAt<=new Date()) throw new ApiError("Sessão inválida ou revogada.",401);
 
     req.user = {
       id: payload.sub,
 
-      condominiumId:
-        payload.condominiumId ?? null,
+      condominiumId: user.condominiumId ?? null,
 
-      role:
-        payload.role ?? null,
+      role: user.role,
     };
 
     req.auth = {
       token,
       payload,
     };
+
+    // Mantém a última atividade operacional do porteiro atualizada sem
+    // atrasar a requisição principal. Falhas de telemetria não bloqueiam o uso.
+    if (req.user.role === "DOORMAN") {
+      void UserSessionService.touch(req.user.id).catch(() => null);
+    }
 
     return next();
   } catch (error) {

@@ -8,6 +8,7 @@ import apartmentRepository from "../repositories/ApartmentRepository.js";
 import residentRepository from "../repositories/ResidentRepository.js";
 
 import { ApiError } from "../utils/ApiError.js";
+import { removeStoredFile, saveFileDataUrl, sanitizeFileName, storedFileAsDataUrl } from "../utils/fileStorage.js";
 
 class NoticeService extends BaseService {
   constructor() {
@@ -143,6 +144,76 @@ class NoticeService extends BaseService {
     return String(value).trim();
   }
 
+  validateType(type) {
+    const normalized = String(type ?? "NOTICE").trim().toUpperCase();
+    if (!["NOTICE", "ASSEMBLY"].includes(normalized)) {
+      throw new ApiError("Tipo de aviso inválido.", 400);
+    }
+    return normalized;
+  }
+
+  normalizeEventDate(value) {
+    if (value === undefined || value === null || value === "") return null;
+    const date = value instanceof Date ? new Date(value) : new Date(`${value}T00:00:00.000Z`);
+    if (Number.isNaN(date.getTime())) {
+      throw new ApiError("Data da assembleia inválida.", 422);
+    }
+    return date;
+  }
+
+  validateAssemblyData(data) {
+    if (this.validateType(data?.type) !== "ASSEMBLY") return;
+
+    const required = [
+      [data.agenda, "A pauta é obrigatória para assembleias."],
+      [data.eventDate, "A data é obrigatória para assembleias."],
+      [data.eventTime, "O horário é obrigatório para assembleias."],
+      [data.eventLocation, "O local é obrigatório para assembleias."],
+    ];
+
+    for (const [value, message] of required) {
+      if (!value || String(value).trim() === "") {
+        throw new ApiError(message, 422);
+      }
+    }
+
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(String(data.eventTime))) {
+      throw new ApiError("O horário da assembleia é inválido.", 422);
+    }
+
+    this.normalizeEventDate(data.eventDate);
+  }
+
+  async saveAttachments(files = []) {
+    const saved = [];
+    try {
+      for (const file of files) {
+        const storage = await saveFileDataUrl(file.dataUrl, "notice-attachments", {
+          maxBytes: 1536 * 1024,
+        });
+        saved.push({
+          fileName: sanitizeFileName(file.fileName),
+          filePath: storage.filePath,
+          mimeType: storage.mimeType,
+          fileSize: storage.fileSize,
+        });
+      }
+      return saved;
+    } catch (error) {
+      await Promise.allSettled(saved.map((item) => removeStoredFile(item.filePath)));
+      throw error;
+    }
+  }
+
+  async removeAttachments(attachments) {
+    if (!Array.isArray(attachments)) return;
+    await Promise.allSettled(
+      attachments
+        .filter((item) => item?.filePath)
+        .map((item) => removeStoredFile(item.filePath))
+    );
+  }
+
   /**
    * Valida os dados obrigatórios.
    */
@@ -235,7 +306,7 @@ class NoticeService extends BaseService {
   /**
    * Lista todos os avisos do condomínio.
    */
-  async findAll(condominiumId) {
+  async findAll(condominiumId, filters = {}) {
     if (!condominiumId) {
       throw new ApiError(
         "Condomínio não identificado.",
@@ -245,14 +316,15 @@ class NoticeService extends BaseService {
 
     return noticeRepository
       .findByCondominium(
-        condominiumId
+        condominiumId,
+        filters
       );
   }
 
   /**
    * Lista avisos publicados.
    */
-  async findPublished(condominiumId) {
+  async findPublished(condominiumId, filters = {}) {
     if (!condominiumId) {
       throw new ApiError(
         "Condomínio não identificado.",
@@ -261,7 +333,8 @@ class NoticeService extends BaseService {
     }
 
     return noticeRepository.findPublished(
-      condominiumId
+      condominiumId,
+      filters
     );
   }
 
@@ -323,7 +396,7 @@ class NoticeService extends BaseService {
     const notificationData = {
       title: notice.title,
       message: notice.message,
-      type: "NOTICE",
+      type: notice.type === "ASSEMBLY" ? "ASSEMBLY" : "NOTICE",
       origin: "MANAGER",
       module: "NOTICE",
       referenceId: notice.id,
@@ -476,6 +549,9 @@ class NoticeService extends BaseService {
 
     this.validateNoticeData(data);
 
+    const type = this.validateType(data.type ?? "NOTICE");
+    this.validateAssemblyData({ ...data, type });
+
     const status =
       data.status
         ? this.validateStatus(
@@ -530,39 +606,37 @@ class NoticeService extends BaseService {
       );
     }
 
-    const notice =
-      await noticeRepository
-        .createForCondominium(
-          condominiumId,
-          authenticatedUser.id,
-          {
-            apartmentId,
+    const attachmentFiles = data.attachmentFiles ?? [];
+    const attachments = await this.saveAttachments(attachmentFiles);
 
-            title:
-              String(data.title).trim(),
-
-            message:
-              String(data.message).trim(),
-
-            category:
-              this.normalizeOptionalText(
-                data.category
-              ),
-
-            priority,
-
-            audience,
-
-            status,
-
-            publishedAt:
-              status === "PUBLISHED"
-                ? new Date()
-                : null,
-
-            expiresAt,
-          }
-        );
+    let notice;
+    try {
+      notice = await noticeRepository.createForCondominium(
+        condominiumId,
+        authenticatedUser.id,
+        {
+          apartmentId,
+          title: String(data.title).trim(),
+          message: String(data.message).trim(),
+          category: this.normalizeOptionalText(data.category),
+          type,
+          agenda: this.normalizeOptionalText(data.agenda),
+          eventDate: this.normalizeEventDate(data.eventDate),
+          eventTime: this.normalizeOptionalText(data.eventTime),
+          eventLocation: this.normalizeOptionalText(data.eventLocation),
+          eventModality: this.normalizeOptionalText(data.eventModality),
+          attachments: attachments.length ? attachments : null,
+          priority,
+          audience,
+          status,
+          publishedAt: status === "PUBLISHED" ? new Date() : null,
+          expiresAt,
+        }
+      );
+    } catch (error) {
+      await this.removeAttachments(attachments);
+      throw error;
+    }
 
     if (notice.status === "PUBLISHED") {
       await this.notifyAudience(notice);
@@ -571,13 +645,13 @@ class NoticeService extends BaseService {
     await AuditLogService.logCreate({
       condominiumId,
       user: authenticatedUser,
-      module: "NOTICE",
+      module: notice.type === "ASSEMBLY" ? "ASSEMBLY" : "NOTICE",
       referenceId: notice.id,
       afterData: notice,
       details:
-        notice.status === "PUBLISHED"
-          ? "Aviso criado e publicado."
-          : "Rascunho de aviso criado.",
+        notice.type === "ASSEMBLY"
+          ? (notice.status === "PUBLISHED" ? "Assembleia criada e publicada." : "Rascunho de assembleia criado.")
+          : (notice.status === "PUBLISHED" ? "Aviso criado e publicado." : "Rascunho de aviso criado."),
       requestContext,
     });
 
@@ -617,9 +691,26 @@ class NoticeService extends BaseService {
       );
     }
 
+    const targetType = this.validateType(data.type ?? before.type ?? "NOTICE");
+    const mergedForValidation = { ...before, ...data, type: targetType };
+    this.validateAssemblyData(mergedForValidation);
+
+    let replacementAttachments = null;
+
     const updateData = {
       ...data,
+      type: targetType,
     };
+
+    delete updateData.attachmentFiles;
+
+    if (data.eventDate !== undefined) {
+      updateData.eventDate = this.normalizeEventDate(data.eventDate);
+    }
+
+    for (const key of ["agenda", "eventTime", "eventLocation", "eventModality"]) {
+      if (data[key] !== undefined) updateData[key] = this.normalizeOptionalText(data[key]);
+    }
 
     if (data.title !== undefined) {
       if (!data.title) {
@@ -707,6 +798,11 @@ class NoticeService extends BaseService {
       }
     }
 
+    if (data.attachmentFiles !== undefined) {
+      replacementAttachments = await this.saveAttachments(data.attachmentFiles ?? []);
+      updateData.attachments = replacementAttachments.length ? replacementAttachments : null;
+    }
+
     delete updateData.status;
     delete updateData.publishedAt;
     delete updateData.authorUserId;
@@ -717,29 +813,36 @@ class NoticeService extends BaseService {
     delete updateData.author;
     delete updateData.apartment;
 
-    const updated =
-      await noticeRepository.updateById(
+    let updated;
+    try {
+      updated = await noticeRepository.updateById(
         id,
         condominiumId,
         updateData
       );
 
-    if (!updated) {
-      throw new ApiError(
-        "Aviso não encontrado.",
-        404
-      );
+      if (!updated) {
+        throw new ApiError("Aviso não encontrado.", 404);
+      }
+    } catch (error) {
+      if (replacementAttachments !== null) {
+        await this.removeAttachments(replacementAttachments);
+      }
+      throw error;
+    }
+
+    if (replacementAttachments !== null) {
+      await this.removeAttachments(before.attachments);
     }
 
     await AuditLogService.logUpdate({
       condominiumId,
       user: authenticatedUser,
-      module: "NOTICE",
+      module: updated.type === "ASSEMBLY" ? "ASSEMBLY" : "NOTICE",
       referenceId: id,
       beforeData: before,
       afterData: updated,
-      details:
-        "Aviso atualizado.",
+      details: updated.type === "ASSEMBLY" ? "Assembleia atualizada." : "Aviso atualizado.",
       requestContext,
     });
 
@@ -797,6 +900,8 @@ class NoticeService extends BaseService {
       );
     }
 
+    this.validateAssemblyData(before);
+
     const notice =
       await noticeRepository.publish(
         id,
@@ -816,14 +921,14 @@ class NoticeService extends BaseService {
       .logStatusChange({
         condominiumId,
         user: authenticatedUser,
-        module: "NOTICE",
+        module: notice.type === "ASSEMBLY" ? "ASSEMBLY" : "NOTICE",
         referenceId: id,
         previousStatus:
           before.status,
         newStatus:
           notice.status,
         details:
-          "Aviso publicado.",
+          notice.type === "ASSEMBLY" ? "Assembleia publicada." : "Aviso publicado.",
         requestContext,
       });
 
@@ -988,6 +1093,8 @@ class NoticeService extends BaseService {
       );
     }
 
+    await this.removeAttachments(before.attachments);
+
     await AuditLogService.logDelete({
       condominiumId,
       user: authenticatedUser,
@@ -1055,7 +1162,8 @@ class NoticeService extends BaseService {
    */
   async findVisibleForUser(
     condominiumId,
-    authenticatedUser
+    authenticatedUser,
+    filters = {}
   ) {
     if (!condominiumId) {
       throw new ApiError(
@@ -1114,6 +1222,7 @@ class NoticeService extends BaseService {
         role:
           authenticatedUser.role,
         apartmentId,
+        type: filters.type ?? null,
       });
   }
 
@@ -1178,6 +1287,28 @@ class NoticeService extends BaseService {
     }
 
     return notice;
+  }
+
+  async downloadAttachment(id, index, condominiumId, authenticatedUser) {
+    const notice = await this.findVisibleById(id, condominiumId, authenticatedUser);
+    const attachments = Array.isArray(notice.attachments) ? notice.attachments : [];
+    const attachment = attachments[Number(index)];
+
+    if (!attachment?.filePath) {
+      throw new ApiError("Anexo não encontrado.", 404);
+    }
+
+    const dataUrl = await storedFileAsDataUrl(attachment.filePath, attachment.mimeType);
+    if (!dataUrl) {
+      throw new ApiError("Arquivo do anexo não foi encontrado no armazenamento.", 404);
+    }
+
+    return {
+      fileName: attachment.fileName,
+      mimeType: attachment.mimeType,
+      fileSize: attachment.fileSize,
+      dataUrl,
+    };
   }
 
 }

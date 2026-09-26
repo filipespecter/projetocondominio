@@ -144,11 +144,11 @@ const styles = {
     overflowY: "auto",
     background:
       "linear-gradient(180deg,#ffffff,#fbfaff)",
-    border: "1px solid #ddd6fe",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "30px",
     padding: "26px",
     boxShadow:
-      "0 30px 90px rgba(46,16,101,0.30)",
+      "0 30px 90px rgb(var(--ic-primary-deepest-rgb) / 0.30)",
     fontFamily: "Arial",
   },
 
@@ -161,9 +161,9 @@ const styles = {
 
   badge: {
     display: "inline-block",
-    background: "#f3e8ff",
-    color: "#7c3aed",
-    border: "1px solid #ddd6fe",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary)",
+    border: "1px solid var(--ic-primary-border-soft)",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "11px",
@@ -172,7 +172,7 @@ const styles = {
 
   title: {
     margin: "12px 0 0",
-    color: "#4c1d95",
+    color: "var(--ic-primary-deep)",
     fontSize: "26px",
   },
 
@@ -184,8 +184,8 @@ const styles = {
 
   close: {
     border: "none",
-    background: "#f3e8ff",
-    color: "#6d28d9",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary-strong)",
     width: "40px",
     height: "40px",
     borderRadius: "14px",
@@ -200,7 +200,7 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     background: "white",
-    border: "1px solid #ede9fe",
+    border: "1px solid var(--ic-primary-soft-2)",
     borderRadius: "24px",
   },
 
@@ -211,14 +211,14 @@ const styles = {
   },
 
   loading: {
-    color: "#7c3aed",
+    color: "var(--ic-primary)",
     fontWeight: "800",
   },
 
   codeBox: {
     textAlign: "center",
     background:
-      "linear-gradient(135deg,#4c1d95,#7c3aed)",
+      "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary))",
     color: "white",
     borderRadius: "22px",
     padding: "18px",
@@ -254,7 +254,7 @@ const styles = {
     borderRadius: "16px",
     padding: "14px",
     background:
-      "linear-gradient(135deg,#6d28d9,#8b5cf6)",
+      "linear-gradient(135deg,var(--ic-primary-strong),var(--ic-primary-light))",
     color: "white",
     fontWeight: "900",
     cursor: "pointer",

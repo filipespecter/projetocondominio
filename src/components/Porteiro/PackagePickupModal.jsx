@@ -595,11 +595,11 @@ const styles = {
     overflowY: "auto",
     background:
       "linear-gradient(180deg,#ffffff,#fbfaff)",
-    border: "1px solid #ddd6fe",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "30px",
     padding: "26px",
     boxShadow:
-      "0 30px 90px rgba(46,16,101,0.32)",
+      "0 30px 90px rgb(var(--ic-primary-deepest-rgb) / 0.32)",
     fontFamily: "Arial",
   },
 
@@ -613,9 +613,9 @@ const styles = {
 
   badge: {
     display: "inline-block",
-    background: "#f3e8ff",
-    color: "#7c3aed",
-    border: "1px solid #ddd6fe",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary)",
+    border: "1px solid var(--ic-primary-border-soft)",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "11px",
@@ -624,7 +624,7 @@ const styles = {
 
   title: {
     margin: "12px 0 0",
-    color: "#4c1d95",
+    color: "var(--ic-primary-deep)",
     fontSize: "27px",
   },
 
@@ -636,8 +636,8 @@ const styles = {
 
   close: {
     border: "none",
-    background: "#f3e8ff",
-    color: "#6d28d9",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary-strong)",
     width: "40px",
     height: "40px",
     borderRadius: "14px",
@@ -646,15 +646,15 @@ const styles = {
   },
 
   codePanel: {
-    background: "#faf5ff",
-    border: "1px solid #ddd6fe",
+    background: "var(--ic-primary-soft-3)",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "22px",
     padding: "20px",
   },
 
   label: {
     display: "block",
-    color: "#4c1d95",
+    color: "var(--ic-primary-deep)",
     fontWeight: "900",
     fontSize: "13px",
     margin: "0 0 8px",
@@ -665,7 +665,7 @@ const styles = {
     boxSizing: "border-box",
     padding: "14px",
     borderRadius: "15px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     background: "white",
     color: "#111827",
@@ -677,18 +677,18 @@ const styles = {
     borderRadius: "15px",
     padding: "14px 18px",
     background:
-      "linear-gradient(135deg,#6d28d9,#8b5cf6)",
+      "linear-gradient(135deg,var(--ic-primary-strong),var(--ic-primary-light))",
     color: "white",
     fontWeight: "900",
     cursor: "pointer",
   },
 
   secondary: {
-    border: "1px solid #ddd6fe",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "15px",
     padding: "14px 18px",
     background: "white",
-    color: "#6d28d9",
+    color: "var(--ic-primary-strong)",
     fontWeight: "900",
     cursor: "pointer",
   },
@@ -700,7 +700,7 @@ const styles = {
 
   packageCard: {
     background:
-      "linear-gradient(135deg,#4c1d95,#7c3aed)",
+      "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary))",
     color: "white",
     borderRadius: "22px",
     padding: "20px",
@@ -723,12 +723,12 @@ const styles = {
     display: "grid",
     gap: "8px",
     fontSize: "13px",
-    color: "#f5f3ff",
+    color: "var(--ic-primary-soft-4)",
   },
 
   question: {
-    background: "#faf5ff",
-    border: "1px solid #ede9fe",
+    background: "var(--ic-primary-soft-3)",
+    border: "1px solid var(--ic-primary-soft-2)",
     borderRadius: "18px",
     padding: "16px",
   },
@@ -742,16 +742,16 @@ const styles = {
   choice: {
     padding: "13px",
     borderRadius: "14px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     background: "white",
-    color: "#6d28d9",
+    color: "var(--ic-primary-strong)",
     fontWeight: "900",
     cursor: "pointer",
   },
 
   choiceActive: {
     background:
-      "linear-gradient(135deg,#6d28d9,#8b5cf6)",
+      "linear-gradient(135deg,var(--ic-primary-strong),var(--ic-primary-light))",
     color: "white",
   },
 
@@ -797,9 +797,9 @@ const styles = {
     gap: "10px",
     flexWrap: "wrap",
   },
-  proofBox: { marginTop: "18px", padding: "16px", borderRadius: "16px", border: "1px solid #ddd6fe", background: "linear-gradient(135deg,#faf5ff,#ffffff)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "14px", flexWrap: "wrap" },
+  proofBox: { marginTop: "18px", padding: "16px", borderRadius: "16px", border: "1px solid var(--ic-primary-border-soft)", background: "linear-gradient(135deg,var(--ic-primary-soft-3),#ffffff)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "14px", flexWrap: "wrap" },
   proofText: { margin: "5px 0 0", color: "#6b7280", fontSize: "12px", lineHeight: 1.45 },
-  fileLabel: { cursor: "pointer", background: "#6d28d9", color: "white", padding: "10px 13px", borderRadius: "11px", fontSize: "12px", fontWeight: "800", whiteSpace: "nowrap" },
+  fileLabel: { cursor: "pointer", background: "var(--ic-primary-strong)", color: "white", padding: "10px 13px", borderRadius: "11px", fontSize: "12px", fontWeight: "800", whiteSpace: "nowrap" },
 };
 
 export default PackagePickupModal;

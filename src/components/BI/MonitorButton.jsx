@@ -46,7 +46,7 @@ const styles = {
     borderRadius: "24px",
     border: "1px solid rgba(216,180,254,.22)",
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,.18),transparent 35%),linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.05))",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / .18),transparent 35%),linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.05))",
     backdropFilter: "blur(18px)",
     boxShadow: "0 22px 55px rgba(88,28,135,.18)",
     transition: ".30s"

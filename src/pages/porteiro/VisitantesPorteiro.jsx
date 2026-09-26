@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import authApi from "../../Services/authApi.js";
 import visitorApi from "../../Services/visitorApi.js";
+import QrCameraScanner from "../../components/Porteiro/QrCameraScanner.jsx";
 
 function VisitantesPorteiro() {
   const estadoInicial = {
@@ -18,6 +19,11 @@ function VisitantesPorteiro() {
   const [porteiro, setPorteiro] = useState(null);
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("Todos");
+  const [qrToken, setQrToken] = useState("");
+  const [qrCameraAtiva, setQrCameraAtiva] = useState(false);
+  const [qrValidando, setQrValidando] = useState(false);
+  const [qrMensagem, setQrMensagem] = useState(null);
+  const [qrResultado, setQrResultado] = useState(null);
 
   const statusFront = {
     WAITING: "Aguardando",
@@ -144,6 +150,44 @@ function VisitantesPorteiro() {
   useEffect(() => {
     carregarDados();
   }, []);
+
+  async function validarConviteQr(tokenRecebido = qrToken) {
+    const token = String(tokenRecebido ?? "").trim();
+
+    if (!token) {
+      setQrMensagem({
+        tipo: "erro",
+        texto: "Leia o QR pela câmera ou informe a credencial do convite.",
+      });
+      return;
+    }
+
+    setQrValidando(true);
+    setQrMensagem(null);
+    setQrResultado(null);
+
+    try {
+      const result = await visitorApi.validateInvitation(token);
+      setQrResultado(result);
+      setQrMensagem({
+        tipo: "sucesso",
+        texto: "QR válido. A entrada do visitante foi registrada e o convite não poderá ser reutilizado.",
+      });
+      setQrToken("");
+      setQrCameraAtiva(false);
+      await carregarDados();
+    } catch (error) {
+      setQrMensagem({
+        tipo: "erro",
+        texto:
+          error?.details?.[0]?.message ??
+          error?.message ??
+          "Não foi possível validar o QR do visitante.",
+      });
+    } finally {
+      setQrValidando(false);
+    }
+  }
 
   function limparFormulario() {
     setForm(estadoInicial);
@@ -294,7 +338,7 @@ function VisitantesPorteiro() {
 
     return {
       texto: status,
-      fundo: "#f5f3ff",
+      fundo: "var(--ic-primary-soft-4)",
       cor: "#111827"
     };
   }
@@ -459,6 +503,105 @@ function VisitantesPorteiro() {
         <div style={styles.sectionHeader}>
           <div>
             <h2 style={styles.sectionTitle}>
+              Validar convite por QR
+            </h2>
+
+            <p style={styles.sectionSubtitle}>
+              Leia o QR enviado pelo morador. A validação ocorre no backend e o convite é consumido uma única vez.
+            </p>
+          </div>
+
+          <span style={styles.sectionBadge}>
+            Acesso antecipado
+          </span>
+        </div>
+
+        <div style={styles.formGrid}>
+          <input
+            placeholder="Credencial do QR"
+            value={qrToken}
+            onChange={(e) => setQrToken(e.target.value)}
+            style={styles.input}
+            autoComplete="off"
+          />
+
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+            <button
+              type="button"
+              style={styles.button}
+              disabled={qrValidando}
+              onClick={() => validarConviteQr()}
+            >
+              {qrValidando ? "Validando..." : "Validar QR"}
+            </button>
+
+            <button
+              type="button"
+              style={styles.gray}
+              onClick={() => {
+                setQrMensagem(null);
+                setQrCameraAtiva((value) => !value);
+              }}
+            >
+              {qrCameraAtiva ? "Fechar câmera" : "Ler pela câmera"}
+            </button>
+          </div>
+        </div>
+
+        {qrCameraAtiva && (
+          <div style={{ marginTop: "16px" }}>
+            <QrCameraScanner
+              active={qrCameraAtiva}
+              onDetected={(value) => {
+                setQrToken(value);
+                validarConviteQr(value);
+              }}
+            />
+          </div>
+        )}
+
+        {qrMensagem && (
+          <div
+            style={{
+              marginTop: "14px",
+              padding: "12px 14px",
+              borderRadius: "12px",
+              background: qrMensagem.tipo === "sucesso" ? "#dcfce7" : "#fee2e2",
+              color: qrMensagem.tipo === "sucesso" ? "#166534" : "#991b1b",
+              fontWeight: 700,
+              fontSize: "13px",
+            }}
+          >
+            {qrMensagem.texto}
+          </div>
+        )}
+
+        {qrResultado && (
+          <div style={{ ...styles.infoGrid, marginTop: "14px" }}>
+            <div style={styles.infoItem}>
+              <span style={styles.infoLabel}>Visitante</span>
+              <strong>{qrResultado.name}</strong>
+            </div>
+            <div style={styles.infoItem}>
+              <span style={styles.infoLabel}>Apartamento</span>
+              <strong>{qrResultado.apartment?.number ?? "-"}</strong>
+            </div>
+            <div style={styles.infoItem}>
+              <span style={styles.infoLabel}>Morador responsável</span>
+              <strong>{qrResultado.responsibleResident?.name ?? "-"}</strong>
+            </div>
+            <div style={styles.infoItem}>
+              <span style={styles.infoLabel}>Status</span>
+              <strong>Entrada registrada</strong>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div style={styles.formCard}>
+        <div style={styles.sectionHeader}>
+          <div>
+            <h2 style={styles.sectionTitle}>
               Novo visitante
             </h2>
 
@@ -500,8 +643,8 @@ function VisitantesPorteiro() {
             </option>
 
             {apartamentos.map((ap) => (
-              <option key={ap} value={ap}>
-                Apartamento {ap}
+              <option key={ap.id} value={ap.numero}>
+                {ap.bloco ? `Bloco ${ap.bloco} · ` : ""}Apartamento {ap.numero}
               </option>
             ))}
           </select>
@@ -771,7 +914,7 @@ const styles = {
 
   hero: {
     background:
-      "linear-gradient(135deg,#4c1d95,#6d28d9,#7c3aed)",
+      "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary-strong),var(--ic-primary))",
     borderRadius: "30px",
     padding: "32px",
     color: "white",
@@ -781,7 +924,7 @@ const styles = {
     gap: "28px",
     marginBottom: "26px",
     boxShadow:
-      "0 22px 55px rgba(124,58,237,0.24), 0 0 38px rgba(168,85,247,0.12)",
+      "0 22px 55px rgb(var(--ic-primary-rgb) / 0.24), 0 0 38px rgb(var(--ic-primary-bright-rgb) / 0.12)",
     border: "1px solid rgba(255,255,255,0.18)"
   },
 
@@ -813,7 +956,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "10px",
-    color: "#f3e8ff",
+    color: "var(--ic-primary-soft)",
     fontSize: "14px",
     fontWeight: "600"
   },
@@ -822,9 +965,9 @@ const styles = {
     width: "9px",
     height: "9px",
     borderRadius: "50%",
-    background: "#a855f7",
+    background: "var(--ic-primary-bright)",
     boxShadow:
-      "0 0 0 5px rgba(168,85,247,0.18)"
+      "0 0 0 5px rgb(var(--ic-primary-bright-rgb) / 0.18)"
   },
 
   heroPanel: {
@@ -850,8 +993,8 @@ const styles = {
   },
 
   heroStatus: {
-    background: "#f3e8ff",
-    color: "#7c3aed",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary)",
     padding: "8px 12px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -868,7 +1011,7 @@ const styles = {
 
   cardPrimary: {
     background:
-      "linear-gradient(135deg,#6d28d9,#8b5cf6)",
+      "linear-gradient(135deg,var(--ic-primary-strong),var(--ic-primary-light))",
     borderRadius: "24px",
     padding: "24px",
     color: "white",
@@ -876,12 +1019,12 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "center",
     boxShadow:
-      "0 14px 35px rgba(124,58,237,0.18)"
+      "0 14px 35px rgb(var(--ic-primary-rgb) / 0.18)"
   },
 
   card: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.08),transparent 34%), white",
     borderRadius: "24px",
     padding: "24px",
     display: "flex",
@@ -889,7 +1032,7 @@ const styles = {
     gap: "18px",
     boxShadow:
       "0 16px 40px rgba(88,28,135,0.08)",
-    border: "1px solid #ede9fe"
+    border: "1px solid var(--ic-primary-soft-2)"
   },
 
   cardLabelLight: {
@@ -924,7 +1067,7 @@ const styles = {
     width: "54px",
     height: "54px",
     borderRadius: "18px",
-    background: "#ede9fe",
+    background: "var(--ic-primary-soft-2)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -935,7 +1078,7 @@ const styles = {
     width: "54px",
     height: "54px",
     borderRadius: "18px",
-    background: "#f3e8ff",
+    background: "var(--ic-primary-soft)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -946,7 +1089,7 @@ const styles = {
     width: "54px",
     height: "54px",
     borderRadius: "18px",
-    background: "#f5f3ff",
+    background: "var(--ic-primary-soft-4)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -961,13 +1104,13 @@ const styles = {
 
   cardNumberBlue: {
     margin: "8px 0 0",
-    color: "#7c3aed",
+    color: "var(--ic-primary)",
     fontSize: "34px"
   },
 
   cardNumberGreen: {
     margin: "8px 0 0",
-    color: "#7c3aed",
+    color: "var(--ic-primary)",
     fontSize: "34px"
   },
 
@@ -979,13 +1122,13 @@ const styles = {
 
   formCard: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.08),transparent 34%), white",
     borderRadius: "28px",
     padding: "26px",
     marginBottom: "26px",
     boxShadow:
       "0 18px 45px rgba(88,28,135,0.09)",
-    border: "1px solid #ede9fe"
+    border: "1px solid var(--ic-primary-soft-2)"
   },
 
   sectionHeader: {
@@ -998,7 +1141,7 @@ const styles = {
 
   sectionTitle: {
     margin: 0,
-    color: "#6d28d9",
+    color: "var(--ic-primary-strong)",
     fontSize: "24px"
   },
 
@@ -1010,8 +1153,8 @@ const styles = {
   },
 
   sectionBadge: {
-    background: "#faf5ff",
-    color: "#7c3aed",
+    background: "var(--ic-primary-soft-3)",
+    color: "var(--ic-primary)",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1030,7 +1173,7 @@ const styles = {
     width: "100%",
     padding: "14px 15px",
     borderRadius: "15px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     fontSize: "14px",
     background: "#fbfaff",
@@ -1042,7 +1185,7 @@ const styles = {
     minHeight: "95px",
     padding: "14px 15px",
     borderRadius: "15px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     fontSize: "14px",
     background: "#fbfaff",
@@ -1056,7 +1199,7 @@ const styles = {
     marginTop: "14px",
     width: "100%",
     background:
-      "linear-gradient(135deg,#6d28d9,#8b5cf6)",
+      "linear-gradient(135deg,var(--ic-primary-strong),var(--ic-primary-light))",
     color: "white",
     border: "none",
     padding: "15px",
@@ -1064,17 +1207,17 @@ const styles = {
     cursor: "pointer",
     fontWeight: "800",
     boxShadow:
-      "0 12px 25px rgba(124,58,237,0.18)"
+      "0 12px 25px rgb(var(--ic-primary-rgb) / 0.18)"
   },
 
   listCard: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.08),transparent 34%), white",
     borderRadius: "28px",
     padding: "26px",
     boxShadow:
       "0 18px 45px rgba(88,28,135,0.09)",
-    border: "1px solid #ede9fe"
+    border: "1px solid var(--ic-primary-soft-2)"
   },
 
   listHeader: {
@@ -1093,7 +1236,7 @@ const styles = {
   search: {
     padding: "13px 14px",
     borderRadius: "15px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     background: "#fbfaff",
     minWidth: "230px"
@@ -1102,14 +1245,14 @@ const styles = {
   filter: {
     padding: "13px 14px",
     borderRadius: "15px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     background: "#fbfaff"
   },
 
   empty: {
     background: "#fbfaff",
-    border: "1px dashed #c4b5fd",
+    border: "1px dashed var(--ic-primary-border)",
     borderRadius: "22px",
     padding: "45px",
     textAlign: "center"
@@ -1139,7 +1282,7 @@ const styles = {
 
   visitorCard: {
     background: "#fbfaff",
-    border: "1px solid #ddd6fe",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "24px",
     padding: "22px",
     boxShadow:
@@ -1173,7 +1316,7 @@ const styles = {
     width: "48px",
     height: "48px",
     borderRadius: "17px",
-    background: "#f3e8ff",
+    background: "var(--ic-primary-soft)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1189,8 +1332,8 @@ const styles = {
 
   infoItem: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
-    border: "1px solid #ede9fe",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.08),transparent 34%), white",
+    border: "1px solid var(--ic-primary-soft-2)",
     borderRadius: "16px",
     padding: "12px"
   },
@@ -1203,9 +1346,9 @@ const styles = {
   },
 
   documento: {
-    background: "#faf5ff",
-    border: "1px solid #ddd6fe",
-    color: "#6d28d9",
+    background: "var(--ic-primary-soft-3)",
+    border: "1px solid var(--ic-primary-border-soft)",
+    color: "var(--ic-primary-strong)",
     padding: "12px",
     borderRadius: "14px",
     fontSize: "13px",
@@ -1214,8 +1357,8 @@ const styles = {
 
   obs: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
-    border: "1px solid #ede9fe",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.08),transparent 34%), white",
+    border: "1px solid var(--ic-primary-soft-2)",
     borderRadius: "14px",
     padding: "12px",
     color: "#374151",
@@ -1237,7 +1380,7 @@ const styles = {
   },
 
   blue: {
-    background: "#7c3aed",
+    background: "var(--ic-primary)",
     color: "white",
     border: "none",
     padding: "11px",
@@ -1247,7 +1390,7 @@ const styles = {
   },
 
   green: {
-    background: "#8b5cf6",
+    background: "var(--ic-primary-light)",
     color: "white",
     border: "none",
     padding: "11px",

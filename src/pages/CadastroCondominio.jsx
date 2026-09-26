@@ -192,6 +192,13 @@ function CadastroCondominio() {
       return "Informe o nome do responsável pelo cadastro.";
     }
 
+    if (!contact.email.trim()) {
+      return "Informe o e-mail do responsável pelo cadastro.";
+    }
+
+    if (!contact.phone.trim()) {
+      return "Informe o telefone do responsável pelo cadastro.";
+    }
 
     return null;
   }
@@ -288,18 +295,18 @@ function CadastroCondominio() {
           </span>
 
           <h1>
-            Seu condomínio foi criado
+            Solicitação enviada
           </h1>
 
           <p className="success-intro">
-            Guarde o código abaixo. Ele será
-            utilizado junto com seu usuário e senha
-            para acessar o InfinityCondo.
+            Sua solicitação foi registrada e será analisada
+            pela Star Infinity Code. Guarde o código abaixo
+            apenas como referência do cadastro.
           </p>
 
           <div className="condominium-code-box">
             <span>
-              Código do condomínio
+              Código da solicitação
             </span>
 
             <strong>
@@ -325,7 +332,7 @@ function CadastroCondominio() {
             <div>
               <span>Status</span>
               <strong>
-                {sucesso?.condominium?.status}
+                {sucesso?.condominium?.status === "PENDING" ? "Aguardando análise" : sucesso?.condominium?.status}
               </strong>
             </div>
           </div>
@@ -408,8 +415,8 @@ function CadastroCondominio() {
           </h1>
 
           <p className="page-subtitle">
-            Crie seu ambiente no InfinityCondo e
-            configure o administrador principal.
+            Envie os dados do condomínio para análise da
+            Star Infinity Code e liberação posterior do acesso.
           </p>
 
           <div className="section-heading">
@@ -485,7 +492,7 @@ function CadastroCondominio() {
             />
 
             <Field
-              label="Telefone *"
+              label="Telefone"
               value={condominium.phone}
               onChange={(value) =>
                 updateCondominium(
@@ -697,8 +704,8 @@ function CadastroCondominio() {
             disabled={carregando}
           >
             {carregando
-              ? "Criando condomínio..."
-              : "Criar meu condomínio →"}
+              ? "Enviando solicitação..."
+              : "Enviar solicitação →"}
           </button>
 
           <p className="footer-text">
@@ -721,16 +728,16 @@ function CadastroCondominio() {
             </h2>
 
             <p>
-              O cadastro cria um ambiente exclusivo,
-              isolado e pronto para iniciar a
-              configuração da gestão condominial.
+              O cadastro envia uma solicitação segura para
+              análise da Star Infinity Code antes da
+              liberação das credenciais de acesso.
             </p>
           </div>
 
           <div className="feature-list">
             <Feature text="Ambiente exclusivo por condomínio" />
             <Feature text="Responsável pelo cadastro protegido" />
-            <Feature text="Código único para acesso" />
+            <Feature text="Solicitação acompanhada pela Central Star" />
             <Feature text="Período inicial de teste" />
             <Feature text="Dados registrados no PostgreSQL" />
           </div>
@@ -861,8 +868,8 @@ const styles = `
     padding: 32px;
     font-family: Arial, sans-serif;
     background:
-      radial-gradient(circle at top left, rgba(124,58,237,0.24), transparent 30%),
-      radial-gradient(circle at bottom right, rgba(168,85,247,0.18), transparent 28%),
+      radial-gradient(circle at top left, rgb(var(--ic-primary-rgb) / 0.24), transparent 30%),
+      radial-gradient(circle at bottom right, rgb(var(--ic-primary-bright-rgb) / 0.18), transparent 28%),
       linear-gradient(135deg, #ffffff, #f8f5ff 50%, #ffffff);
     color: #111827;
   }
@@ -879,7 +886,7 @@ const styles = `
     height: 430px;
     top: -120px;
     left: -100px;
-    background: rgba(124,58,237,0.15);
+    background: rgb(var(--ic-primary-rgb) / 0.15);
   }
 
   .cadastro-glow-two {
@@ -887,7 +894,7 @@ const styles = `
     height: 380px;
     right: -90px;
     bottom: -110px;
-    background: rgba(168,85,247,0.12);
+    background: rgb(var(--ic-primary-bright-rgb) / 0.12);
   }
 
   .cadastro-grid {
@@ -896,8 +903,8 @@ const styles = `
     pointer-events: none;
     opacity: .55;
     background-image:
-      linear-gradient(rgba(124,58,237,.07) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(124,58,237,.07) 1px, transparent 1px);
+      linear-gradient(rgb(var(--ic-primary-rgb) / .07) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--ic-primary-rgb) / .07) 1px, transparent 1px);
     background-size: 44px 44px;
   }
 
@@ -909,10 +916,10 @@ const styles = `
     display: grid;
     grid-template-columns: minmax(0, 1.35fr) minmax(340px, .65fr);
     overflow: hidden;
-    border: 1px solid rgba(124,58,237,.16);
+    border: 1px solid rgb(var(--ic-primary-rgb) / .16);
     border-radius: 40px;
     background:
-      radial-gradient(circle at top right, rgba(168,85,247,.13), transparent 35%),
+      radial-gradient(circle at top right, rgb(var(--ic-primary-bright-rgb) / .13), transparent 35%),
       linear-gradient(180deg, rgba(255,255,255,.96), rgba(251,250,255,.91));
     box-shadow:
       0 35px 90px rgba(88,28,135,.15),
@@ -924,7 +931,7 @@ const styles = `
     position: relative;
     padding: 54px;
     background:
-      radial-gradient(circle at top left, rgba(124,58,237,.07), transparent 30%),
+      radial-gradient(circle at top left, rgb(var(--ic-primary-rgb) / .07), transparent 30%),
       rgba(255,255,255,.95);
   }
 
@@ -934,10 +941,10 @@ const styles = `
     gap: 8px;
     margin-bottom: 30px;
     padding: 10px 14px;
-    border: 1px solid #ddd6fe;
+    border: 1px solid var(--ic-primary-border-soft);
     border-radius: 14px;
     background: white;
-    color: #6d28d9;
+    color: var(--ic-primary-strong);
     font-weight: 800;
     cursor: pointer;
   }
@@ -947,7 +954,7 @@ const styles = `
     width: 235px;
     max-width: 72%;
     margin-bottom: 18px;
-    filter: drop-shadow(0 0 24px rgba(124,58,237,.28));
+    filter: drop-shadow(0 0 24px rgb(var(--ic-primary-rgb) / .28));
   }
 
   .profile-badge,
@@ -962,9 +969,9 @@ const styles = `
 
   .profile-badge {
     margin-bottom: 14px;
-    border: 1px solid #ddd6fe;
-    background: #f3e8ff;
-    color: #6d28d9;
+    border: 1px solid var(--ic-primary-border-soft);
+    background: var(--ic-primary-soft);
+    color: var(--ic-primary-strong);
   }
 
   .cadastro-form-side h1,
@@ -1014,7 +1021,7 @@ const styles = `
     display: grid;
     place-items: center;
     border-radius: 14px;
-    background: linear-gradient(135deg, #6d28d9, #a855f7);
+    background: linear-gradient(135deg, var(--ic-primary-strong), var(--ic-primary-bright));
     color: white;
   }
 
@@ -1042,19 +1049,19 @@ const styles = `
     min-width: 0;
     height: 52px;
     padding: 0 15px;
-    border: 1px solid #ddd6fe;
+    border: 1px solid var(--ic-primary-border-soft);
     border-radius: 16px;
     outline: none;
     background: #fff;
     color: #111827;
     font-size: 15px;
-    box-shadow: 0 10px 24px rgba(124,58,237,.05);
+    box-shadow: 0 10px 24px rgb(var(--ic-primary-rgb) / .05);
   }
 
   .field input:focus,
   .field select:focus {
-    border-color: #8b5cf6;
-    box-shadow: 0 0 0 3px rgba(124,58,237,.10);
+    border-color: var(--ic-primary-light);
+    box-shadow: 0 0 0 3px rgb(var(--ic-primary-rgb) / .10);
   }
 
   .password-wrap {
@@ -1063,7 +1070,7 @@ const styles = `
     height: 52px;
     display: flex;
     overflow: hidden;
-    border: 1px solid #ddd6fe;
+    border: 1px solid var(--ic-primary-border-soft);
     border-radius: 16px;
     background: white;
   }
@@ -1082,7 +1089,7 @@ const styles = `
     flex: 0 0 52px;
     border: 0;
     background: transparent;
-    color: #6d28d9;
+    color: var(--ic-primary-strong);
     cursor: pointer;
     font-size: 17px;
   }
@@ -1117,9 +1124,9 @@ const styles = `
   .primary-button {
     margin-top: 8px;
     border: 0;
-    background: linear-gradient(135deg, #6d28d9, #a855f7);
+    background: linear-gradient(135deg, var(--ic-primary-strong), var(--ic-primary-bright));
     color: white;
-    box-shadow: 0 18px 38px rgba(124,58,237,.27);
+    box-shadow: 0 18px 38px rgb(var(--ic-primary-rgb) / .27);
   }
 
   .primary-button:disabled {
@@ -1129,14 +1136,14 @@ const styles = `
 
   .secondary-button {
     margin-top: 10px;
-    border: 1px solid #c4b5fd;
+    border: 1px solid var(--ic-primary-border);
     background: white;
-    color: #6d28d9;
+    color: var(--ic-primary-strong);
   }
 
   .footer-text {
     margin: 22px 0 0;
-    color: #7c3aed;
+    color: var(--ic-primary);
     font-size: 12px;
     font-weight: 800;
   }
@@ -1149,8 +1156,8 @@ const styles = `
     color: white;
     background:
       radial-gradient(circle at top right, rgba(255,255,255,.20), transparent 34%),
-      radial-gradient(circle at bottom left, rgba(168,85,247,.24), transparent 38%),
-      linear-gradient(145deg, #2e1065, #4c1d95, #7c3aed);
+      radial-gradient(circle at bottom left, rgb(var(--ic-primary-bright-rgb) / .24), transparent 38%),
+      linear-gradient(145deg, var(--ic-primary-deepest), var(--ic-primary-deep), var(--ic-primary));
   }
 
   .info-logo-mark {
@@ -1169,7 +1176,7 @@ const styles = `
     margin-bottom: 18px;
     border: 1px solid rgba(255,255,255,.18);
     background: rgba(255,255,255,.12);
-    color: #f5f3ff;
+    color: var(--ic-primary-soft-4);
   }
 
   .cadastro-info-side h2 {
@@ -1233,7 +1240,7 @@ const styles = `
     width: min(620px, 100%);
     margin: 60px auto;
     padding: 48px;
-    border: 1px solid rgba(124,58,237,.16);
+    border: 1px solid rgb(var(--ic-primary-rgb) / .16);
     border-radius: 36px;
     background: rgba(255,255,255,.96);
     box-shadow: 0 34px 90px rgba(88,28,135,.16);
@@ -1252,7 +1259,7 @@ const styles = `
     place-items: center;
     margin: 10px auto 18px;
     border-radius: 24px;
-    background: linear-gradient(135deg, #6d28d9, #a855f7);
+    background: linear-gradient(135deg, var(--ic-primary-strong), var(--ic-primary-bright));
     color: white;
     font-size: 35px;
   }
@@ -1260,7 +1267,7 @@ const styles = `
   .condominium-code-box {
     margin: 26px 0;
     padding: 22px;
-    border: 1px solid #ddd6fe;
+    border: 1px solid var(--ic-primary-border-soft);
     border-radius: 20px;
     background: #faf7ff;
   }
@@ -1275,7 +1282,7 @@ const styles = `
 
   .condominium-code-box strong {
     display: block;
-    color: #6d28d9;
+    color: var(--ic-primary-strong);
     font-size: clamp(26px, 6vw, 38px);
     letter-spacing: 2px;
   }
@@ -1289,7 +1296,7 @@ const styles = `
 
   .success-details div {
     padding: 14px;
-    border: 1px solid #ede9fe;
+    border: 1px solid var(--ic-primary-soft-2);
     border-radius: 15px;
     background: #fff;
   }
@@ -1311,9 +1318,9 @@ const styles = `
 
   .secure-note {
     margin-bottom: 14px;
-    border: 1px solid #ddd6fe;
-    background: #f5f3ff;
-    color: #4c1d95;
+    border: 1px solid var(--ic-primary-border-soft);
+    background: var(--ic-primary-soft-4);
+    color: var(--ic-primary-deep);
     text-align: left;
   }
 

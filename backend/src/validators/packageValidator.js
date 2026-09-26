@@ -83,7 +83,12 @@ function validateQuery(schema) {
       );
     }
 
-    req.query = result.data;
+    Object.defineProperty(req, "query", {
+      value: result.data,
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    });
     return next();
   };
 }

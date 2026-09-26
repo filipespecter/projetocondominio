@@ -59,7 +59,7 @@ const styles = {
     overflow: "hidden",
 
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,.18),transparent 34%),linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.05))",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / .18),transparent 34%),linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.05))",
 
     border: "1px solid rgba(216,180,254,.22)",
 

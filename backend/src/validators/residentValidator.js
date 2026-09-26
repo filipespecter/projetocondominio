@@ -107,7 +107,12 @@ function validateQuery(schema) {
       );
     }
 
-    req.query = result.data;
+    Object.defineProperty(req, "query", {
+      value: result.data,
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    });
 
     return next();
   };
@@ -240,7 +245,7 @@ const passwordSchema = z
   .string()
   .min(
     8,
-    "A senha deve possuir pelo menos 8 caracteres."
+    "A senha deve possuir pelo menos 12 caracteres."
   )
   .max(
     128,

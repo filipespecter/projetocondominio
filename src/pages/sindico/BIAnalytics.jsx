@@ -747,7 +747,7 @@ const styles = {
     fontFamily: "Arial",
     color: "#111827",
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.14),transparent 28%), radial-gradient(circle at bottom left,rgba(124,58,237,0.08),transparent 28%), linear-gradient(180deg,#ffffff,#f8f5ff)",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.14),transparent 28%), radial-gradient(circle at bottom left,rgb(var(--ic-primary-rgb) / 0.08),transparent 28%), linear-gradient(180deg,#ffffff,#f8f5ff)",
     padding: "6px",
     boxSizing: "border-box",
     position: "relative"
@@ -757,7 +757,7 @@ const styles = {
     position: "relative",
     overflow: "hidden",
     background:
-      "radial-gradient(circle at top right,rgba(255,255,255,0.20),transparent 30%), radial-gradient(circle at bottom left,rgba(168,85,247,0.24),transparent 36%), linear-gradient(135deg,#2e1065,#4c1d95,#7c3aed)",
+      "radial-gradient(circle at top right,rgba(255,255,255,0.20),transparent 30%), radial-gradient(circle at bottom left,rgb(var(--ic-primary-bright-rgb) / 0.24),transparent 36%), linear-gradient(135deg,var(--ic-primary-deepest),var(--ic-primary-deep),var(--ic-primary))",
     borderRadius: "42px",
     padding: "38px",
     display: "flex",
@@ -765,7 +765,7 @@ const styles = {
     alignItems: "center",
     gap: "28px",
     border: "1px solid rgba(255,255,255,0.20)",
-    boxShadow: "0 30px 80px rgba(88,28,135,0.24), 0 0 55px rgba(168,85,247,0.16)",
+    boxShadow: "0 30px 80px rgba(88,28,135,0.24), 0 0 55px rgb(var(--ic-primary-bright-rgb) / 0.16)",
     marginBottom: "24px",
     color: "white"
   },
@@ -820,7 +820,7 @@ const styles = {
     display: "inline-block",
     background: "rgba(255,255,255,0.14)",
     border: "1px solid rgba(255,255,255,0.22)",
-    color: "#f5f3ff",
+    color: "var(--ic-primary-soft-4)",
     padding: "10px 14px",
     borderRadius: "999px",
     fontWeight: "900",
@@ -885,8 +885,8 @@ const styles = {
 
   tabButton: {
     background: "#ffffff",
-    border: "1px solid #ddd6fe",
-    color: "#4c1d95",
+    border: "1px solid var(--ic-primary-border-soft)",
+    color: "var(--ic-primary-deep)",
     padding: "14px 18px",
     borderRadius: "16px",
     cursor: "pointer",
@@ -895,15 +895,15 @@ const styles = {
   },
 
   tabButtonActive: {
-    background: "linear-gradient(135deg,#6d28d9,#8b5cf6,#a855f7)",
+    background: "linear-gradient(135deg,var(--ic-primary-strong),var(--ic-primary-light),var(--ic-primary-bright))",
     color: "white",
-    border: "1px solid rgba(124,58,237,0.40)",
-    boxShadow: "0 18px 34px rgba(124,58,237,0.24)"
+    border: "1px solid rgb(var(--ic-primary-rgb) / 0.40)",
+    boxShadow: "0 18px 34px rgb(var(--ic-primary-rgb) / 0.24)"
   },
 
   commandBar: {
-    background: "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 34%), #ffffff",
-    border: "1px solid #ddd6fe",
+    background: "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), #ffffff",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "30px",
     padding: "18px",
     marginBottom: "22px",
@@ -917,7 +917,7 @@ const styles = {
 
   controlLabel: {
     margin: "0 0 8px",
-    color: "#6d28d9",
+    color: "var(--ic-primary-strong)",
     fontSize: "12px",
     fontWeight: "900",
     textTransform: "uppercase",
@@ -929,7 +929,7 @@ const styles = {
   filterButton: {
     background: "#fbfaff",
     color: "#4b5563",
-    border: "1px solid #ddd6fe",
+    border: "1px solid var(--ic-primary-border-soft)",
     padding: "12px 15px",
     borderRadius: "15px",
     cursor: "pointer",
@@ -937,21 +937,21 @@ const styles = {
   },
 
   filterActive: {
-    background: "linear-gradient(135deg,#6d28d9,#a855f7)",
+    background: "linear-gradient(135deg,var(--ic-primary-strong),var(--ic-primary-bright))",
     color: "white",
-    border: "1px solid rgba(124,58,237,0.50)",
-    boxShadow: "0 0 28px rgba(168,85,247,0.22)"
+    border: "1px solid rgb(var(--ic-primary-rgb) / 0.50)",
+    boxShadow: "0 0 28px rgb(var(--ic-primary-bright-rgb) / 0.22)"
   },
 
   refreshButton: {
-    background: "linear-gradient(135deg,#6d28d9,#a855f7)",
+    background: "linear-gradient(135deg,var(--ic-primary-strong),var(--ic-primary-bright))",
     color: "white",
     border: "none",
     padding: "13px 18px",
     borderRadius: "15px",
     cursor: "pointer",
     fontWeight: "900",
-    boxShadow: "0 18px 34px rgba(124,58,237,0.24)"
+    boxShadow: "0 18px 34px rgb(var(--ic-primary-rgb) / 0.24)"
   },
 
   compareGrid: {
@@ -976,21 +976,21 @@ const styles = {
   },
 
   rankingBox: {
-    background: "radial-gradient(circle at top right,rgba(168,85,247,0.09),transparent 34%), #ffffff",
-    border: "1px solid #ddd6fe",
+    background: "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.09),transparent 34%), #ffffff",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "24px",
     padding: "18px",
     boxShadow: "0 16px 38px rgba(88,28,135,0.08)"
   },
 
-  rankingTitle: { margin: "0 0 12px", color: "#4c1d95", fontWeight: "900" },
+  rankingTitle: { margin: "0 0 12px", color: "var(--ic-primary-deep)", fontWeight: "900" },
 
   rankingItem: {
     display: "flex",
     justifyContent: "space-between",
     gap: "12px",
     padding: "10px 0",
-    borderBottom: "1px solid #ede9fe",
+    borderBottom: "1px solid var(--ic-primary-soft-2)",
     color: "#374151"
   },
 
@@ -1011,7 +1011,7 @@ const styles = {
   },
 
   mainChartPanel: {
-    background: "radial-gradient(circle at top right,rgba(255,255,255,0.14),transparent 34%), linear-gradient(135deg,#2e1065,#4c1d95,#6d28d9)",
+    background: "radial-gradient(circle at top right,rgba(255,255,255,0.14),transparent 34%), linear-gradient(135deg,var(--ic-primary-deepest),var(--ic-primary-deep),var(--ic-primary-strong))",
     border: "1px solid rgba(255,255,255,0.18)",
     borderRadius: "34px",
     padding: "26px",
@@ -1050,8 +1050,8 @@ const styles = {
   },
 
   healthPanel: {
-    background: "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 35%), #ffffff",
-    border: "1px solid #ddd6fe",
+    background: "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 35%), #ffffff",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "34px",
     padding: "26px",
     color: "#111827",
@@ -1080,7 +1080,7 @@ const styles = {
 
   miniMetric: {
     background: "#fbfaff",
-    border: "1px solid #ede9fe",
+    border: "1px solid var(--ic-primary-soft-2)",
     borderRadius: "16px",
     padding: "13px",
     display: "flex",
@@ -1096,8 +1096,8 @@ const styles = {
   },
 
   executivePanel: {
-    background: "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 35%), #ffffff",
-    border: "1px solid #ddd6fe",
+    background: "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 35%), #ffffff",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "34px",
     padding: "26px",
     color: "#111827",
@@ -1105,8 +1105,8 @@ const styles = {
   },
 
   insightsPanel: {
-    background: "radial-gradient(circle at top right,rgba(168,85,247,0.10),transparent 35%), #ffffff",
-    border: "1px solid #ddd6fe",
+    background: "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 35%), #ffffff",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "34px",
     padding: "26px",
     color: "#111827",
@@ -1119,7 +1119,7 @@ const styles = {
 
   insightItem: {
     background: "#fbfaff",
-    border: "1px solid #ede9fe",
+    border: "1px solid var(--ic-primary-soft-2)",
     borderRadius: "18px",
     padding: "15px",
     color: "#111827"

@@ -12,9 +12,9 @@ function AccessCard({ icon, title, description, color, buttonColor }) {
             overflow: hidden;
             cursor: pointer;
             background:
-              radial-gradient(circle at top right, rgba(168,85,247,0.18), transparent 34%),
+              radial-gradient(circle at top right, rgb(var(--ic-primary-bright-rgb) / 0.18), transparent 34%),
               linear-gradient(180deg,#ffffff,#fbfaff);
-            border: 1px solid rgba(124,58,237,0.18);
+            border: 1px solid rgb(var(--ic-primary-rgb) / 0.18);
             box-shadow:
               0 24px 60px rgba(88,28,135,0.10),
               inset 0 0 0 1px rgba(255,255,255,0.75);
@@ -33,7 +33,7 @@ function AccessCard({ icon, title, description, color, buttonColor }) {
             left: -120%;
             width: 70%;
             height: 100%;
-            background: linear-gradient(120deg,transparent,rgba(124,58,237,0.18),transparent);
+            background: linear-gradient(120deg,transparent,rgb(var(--ic-primary-rgb) / 0.18),transparent);
             transform: skewX(-22deg);
             transition: 0.7s ease;
           }
@@ -44,10 +44,10 @@ function AccessCard({ icon, title, description, color, buttonColor }) {
 
           .access-card:hover {
             transform: translateY(-12px) scale(1.02);
-            border-color: rgba(124,58,237,0.48);
+            border-color: rgb(var(--ic-primary-rgb) / 0.48);
             box-shadow:
               0 30px 80px rgba(88,28,135,0.18),
-              0 0 34px rgba(124,58,237,0.16);
+              0 0 34px rgb(var(--ic-primary-rgb) / 0.16);
           }
 
           .access-card::after {
@@ -55,7 +55,7 @@ function AccessCard({ icon, title, description, color, buttonColor }) {
             position: absolute;
             inset: 14px;
             border-radius: 22px;
-            border: 1px solid rgba(124,58,237,0.08);
+            border: 1px solid rgb(var(--ic-primary-rgb) / 0.08);
             pointer-events: none;
           }
 
@@ -66,12 +66,12 @@ function AccessCard({ icon, title, description, color, buttonColor }) {
             font-size: 52px;
             margin-bottom: 22px;
             color: white;
-            background: linear-gradient(135deg,var(--card-color),#a855f7);
+            background: linear-gradient(135deg,var(--card-color),var(--ic-primary-bright));
             display: flex;
             align-items: center;
             justify-content: center;
             transition: 0.35s ease;
-            box-shadow: 0 18px 38px rgba(124,58,237,0.24);
+            box-shadow: 0 18px 38px rgb(var(--ic-primary-rgb) / 0.24);
           }
 
           .access-card:hover .access-icon {
@@ -96,11 +96,11 @@ function AccessCard({ icon, title, description, color, buttonColor }) {
             border: none;
             border-radius: 999px;
             padding: 12px 28px;
-            background: linear-gradient(135deg, var(--button-color), #a855f7);
+            background: linear-gradient(135deg, var(--button-color), var(--ic-primary-bright));
             color: white;
             font-weight: 900;
             cursor: pointer;
-            box-shadow: 0 12px 28px rgba(124,58,237,0.22);
+            box-shadow: 0 12px 28px rgb(var(--ic-primary-rgb) / 0.22);
           }
         `}
       </style>

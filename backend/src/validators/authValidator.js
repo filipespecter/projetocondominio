@@ -95,18 +95,7 @@ export const loginSchema = z
  * Validação da renovação de tokens.
  */
 export const refreshSchema = z
-  .object({
-    refreshToken: z
-      .string({
-        error:
-          "O refresh token é obrigatório.",
-      })
-      .trim()
-      .min(
-        1,
-        "O refresh token é obrigatório."
-      ),
-  })
+  .object({})
   .strict();
 
 /**
@@ -135,8 +124,8 @@ export const changePasswordSchema = z
           "A nova senha é obrigatória.",
       })
       .min(
-        8,
-        "A nova senha deve possuir pelo menos 8 caracteres."
+        12,
+        "A nova senha deve possuir pelo menos 12 caracteres."
       )
       .max(
         128,
@@ -199,7 +188,7 @@ export const confirmPasswordResetSchema = z.object({
   portalType: portalTypeSchema,
   email: z.string().trim().email("Informe um e-mail válido.").max(200).transform(v => v.toLowerCase()),
   code: z.string().trim().regex(/^\d{6}$/, "Informe o código de 6 dígitos."),
-  newPassword: z.string().min(8, "A nova senha deve possuir pelo menos 8 caracteres.").max(128),
+  newPassword: z.string().min(12, "A nova senha deve possuir pelo menos 12 caracteres.").max(128),
   newPasswordConfirmation: z.string().min(1),
 }).strict().superRefine((data, ctx) => {
   if (data.newPassword !== data.newPasswordConfirmation) ctx.addIssue({ code: z.ZodIssueCode.custom, path:["newPasswordConfirmation"], message:"A confirmação da nova senha não corresponde." });

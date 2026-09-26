@@ -5,6 +5,7 @@ import { Logger } from "../utils/logger.js";
 import runDelinquencyJob from "./DelinquencyJob.js";
 import runCommunicationRetryJob from "./CommunicationRetryJob.js";
 import runDatabaseBackupJob from "./DatabaseBackupJob.js";
+import runContractExpirationJob from "./ContractExpirationJob.js";
 
 /**
  * =====================================================
@@ -131,6 +132,26 @@ export function registerJobs() {
 
     runOnStart:
       false,
+  });
+
+
+  /**
+   * =====================================================
+   * ALERTAS DE VENCIMENTO DE CONTRATOS
+   * =====================================================
+   */
+  JobRegistryService.register({
+    name: "CONTRACT_EXPIRATION_DAILY",
+    description: "Notifica síndicos e gestores sobre contratos que vencem nos próximos 30 dias.",
+    handler: runContractExpirationJob,
+    intervalMs: normalizePositiveNumber(
+      process.env.CONTRACT_EXPIRATION_JOB_INTERVAL_MS,
+      24 * 60 * 60 * 1000
+    ),
+    enabled: String(process.env.CONTRACT_EXPIRATION_JOB_ENABLED ?? "true")
+      .trim()
+      .toLowerCase() !== "false",
+    runOnStart: false,
   });
 
 

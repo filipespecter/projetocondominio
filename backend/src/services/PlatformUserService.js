@@ -385,10 +385,10 @@ class PlatformUserService {
       !data.password ||
       String(
         data.password
-      ).length < 8
+      ).length < 12
     ) {
       throw new ApiError(
-        "A senha temporária deve possuir pelo menos 8 caracteres.",
+        "A senha temporária deve possuir pelo menos 12 caracteres.",
         400
       );
     }
@@ -961,10 +961,10 @@ class PlatformUserService {
       !newPassword ||
       String(
         newPassword
-      ).length < 8
+      ).length < 12
     ) {
       throw new ApiError(
-        "A nova senha deve possuir pelo menos 8 caracteres.",
+        "A nova senha deve possuir pelo menos 12 caracteres.",
         400
       );
     }

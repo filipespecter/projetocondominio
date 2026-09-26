@@ -365,7 +365,7 @@ function PlatformAudit() {
 
 const styles = {
   metrics: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: 14, marginBottom: 18 },
-  metric: { padding: 20, borderRadius: 20, background: "linear-gradient(145deg,#170d2d,#4c1d95)", color: "white", boxShadow: "0 18px 42px rgba(76,29,149,.18)", display: "flex", flexDirection: "column", gap: 8 },
+  metric: { padding: 20, borderRadius: 20, background: "linear-gradient(145deg,#170d2d,var(--ic-primary-deep))", color: "white", boxShadow: "0 18px 42px rgb(var(--ic-primary-deep-rgb) / .18)", display: "flex", flexDirection: "column", gap: 8 },
   cardTitle: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 15, marginBottom: 16 },
   helper: { color: "#6b7280", lineHeight: 1.6, margin: "7px 0 0" },
   success: { marginBottom: 16, padding: "12px 14px", borderRadius: 14, background: "#ecfdf5", border: "1px solid #bbf7d0", color: "#166534", fontWeight: 700 },
@@ -376,13 +376,13 @@ const styles = {
   modalHead: { display: "flex", justifyContent: "space-between", alignItems: "flex-start" },
   modalTitle: { margin: "6px 0 0", color: "#24113c" },
   close: { border: 0, background: "#f3f4f6", borderRadius: 12, width: 38, height: 38, fontSize: 24, cursor: "pointer" },
-  badge: { fontSize: 11, fontWeight: 800, letterSpacing: 1.4, color: "#7c3aed" },
+  badge: { fontSize: 11, fontWeight: 800, letterSpacing: 1.4, color: "var(--ic-primary)" },
   detailGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12, margin: "18px 0" },
-  detail: { padding: 14, border: "1px solid #ede9fe", borderRadius: 16, display: "flex", flexDirection: "column", gap: 6 },
+  detail: { padding: 14, border: "1px solid var(--ic-primary-soft-2)", borderRadius: 16, display: "flex", flexDirection: "column", gap: 6 },
   long: { padding: 16, borderRadius: 16, background: "#faf7ff" },
-  code: { marginTop: 14, padding: 16, borderRadius: 16, background: "#171026", color: "#ede9fe", overflow: "auto" },
+  code: { marginTop: 14, padding: 16, borderRadius: 16, background: "#171026", color: "var(--ic-primary-soft-2)", overflow: "auto" },
   field: { display: "grid", gap: 8, marginTop: 18, color: "#4c3d57", fontSize: 12, fontWeight: 800 },
-  textarea: { width: "100%", minHeight: 110, resize: "vertical", border: "1px solid #ddd6fe", borderRadius: 14, padding: 12, font: "inherit", boxSizing: "border-box" },
+  textarea: { width: "100%", minHeight: 110, resize: "vertical", border: "1px solid var(--ic-primary-border-soft)", borderRadius: 14, padding: 12, font: "inherit", boxSizing: "border-box" },
 };
 
 export default PlatformAudit;

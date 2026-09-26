@@ -1,4 +1,5 @@
 import DoormanService from "../services/DoormanService.js";
+import DoormanSupervisionService from "../services/DoormanSupervisionService.js";
 
 class DoormanController {
   async index(req,res,next){
@@ -98,6 +99,17 @@ class DoormanController {
         {ipAddress:req.ip,userAgent:req.get("user-agent")}
       );
       return res.json({success:true,...data});
+    }catch(error){next(error);}
+  }
+
+  async supervision(req,res,next){
+    try{
+      const data=await DoormanSupervisionService.get(
+        req.params.id,
+        req.user.condominiumId,
+        req.query.days ?? 30
+      );
+      return res.json({success:true,data});
     }catch(error){next(error);}
   }
 

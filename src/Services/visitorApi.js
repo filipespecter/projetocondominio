@@ -68,6 +68,23 @@ const visitorApi = {
       await api.get("/v1/residents/directory")
     ) ?? [];
   },
+
+  async myInvitations() {
+    return unwrap(await api.get("/v1/visitors/invitations/my")) ?? [];
+  },
+
+  async createInvitation(payload) {
+    return unwrap(await api.post("/v1/visitors/invitations", payload));
+  },
+
+  async validateInvitation(token) {
+    return unwrap(await api.post("/v1/visitors/invitations/validate", { token }));
+  },
+
+  async cancelInvitation(id) {
+    return unwrap(await api.patch(`/v1/visitors/invitations/${id}/cancel`, {}));
+  },
+
 };
 
 export default visitorApi;

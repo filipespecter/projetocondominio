@@ -580,7 +580,7 @@ const styles = {
     width: "100%",
     overflowX: "hidden",
     overflowY: "auto",
-    background: "radial-gradient(circle at top right,rgba(168,85,247,0.14),transparent 26%), radial-gradient(circle at bottom left,rgba(124,58,237,0.08),transparent 24%), linear-gradient(180deg,#ffffff,#f8f5ff)",
+    background: "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.14),transparent 26%), radial-gradient(circle at bottom left,rgb(var(--ic-primary-rgb) / 0.08),transparent 24%), linear-gradient(180deg,#ffffff,#f8f5ff)",
     color: "#111827",
     padding: "24px",
     boxSizing: "border-box",
@@ -594,16 +594,16 @@ const styles = {
     left: 0,
     width: "100%",
     height: "3px",
-    background: "linear-gradient(90deg,transparent,#a855f7,transparent)",
-    boxShadow: "0 0 28px rgba(168,85,247,0.70)"
+    background: "linear-gradient(90deg,transparent,var(--ic-primary-bright),transparent)",
+    boxShadow: "0 0 28px rgb(var(--ic-primary-bright-rgb) / 0.70)"
   },
 
   header: {
-    background: "radial-gradient(circle at top right,rgba(255,255,255,0.18),transparent 30%), radial-gradient(circle at bottom left,rgba(168,85,247,0.24),transparent 34%), linear-gradient(135deg,#2e1065,#4c1d95,#7c3aed)",
+    background: "radial-gradient(circle at top right,rgba(255,255,255,0.18),transparent 30%), radial-gradient(circle at bottom left,rgb(var(--ic-primary-bright-rgb) / 0.24),transparent 34%), linear-gradient(135deg,var(--ic-primary-deepest),var(--ic-primary-deep),var(--ic-primary))",
     border: "1px solid rgba(255,255,255,0.18)",
     borderRadius: "40px",
     padding: "30px",
-    boxShadow: "0 30px 80px rgba(88,28,135,0.24), 0 0 55px rgba(168,85,247,0.16)",
+    boxShadow: "0 30px 80px rgba(88,28,135,0.24), 0 0 55px rgb(var(--ic-primary-bright-rgb) / 0.16)",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "flex-start",
@@ -631,7 +631,7 @@ const styles = {
   badge: {
     display: "inline-block",
     background: "rgba(255,255,255,0.14)",
-    color: "#f5f3ff",
+    color: "var(--ic-primary-soft-4)",
     border: "1px solid rgba(255,255,255,0.22)",
     padding: "8px 14px",
     borderRadius: "999px",
@@ -704,8 +704,8 @@ const styles = {
 
   monitorTab: {
     background: "#ffffff",
-    color: "#4c1d95",
-    border: "1px solid #ddd6fe",
+    color: "var(--ic-primary-deep)",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "16px",
     padding: "12px 16px",
     cursor: "pointer",
@@ -714,10 +714,10 @@ const styles = {
   },
 
   monitorTabActive: {
-    background: "linear-gradient(135deg,#6d28d9,#8b5cf6,#a855f7)",
+    background: "linear-gradient(135deg,var(--ic-primary-strong),var(--ic-primary-light),var(--ic-primary-bright))",
     color: "white",
-    border: "1px solid rgba(124,58,237,0.40)",
-    boxShadow: "0 18px 34px rgba(124,58,237,0.24)"
+    border: "1px solid rgb(var(--ic-primary-rgb) / 0.40)",
+    boxShadow: "0 18px 34px rgb(var(--ic-primary-rgb) / 0.24)"
   },
 
   kpis: {
@@ -728,8 +728,8 @@ const styles = {
   },
 
   kpiCard: {
-    background: "radial-gradient(circle at top right,rgba(168,85,247,0.09),transparent 34%), #ffffff",
-    border: "1px solid #ddd6fe",
+    background: "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.09),transparent 34%), #ffffff",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "26px",
     padding: "18px",
     boxShadow: "0 18px 45px rgba(88,28,135,0.10)",
@@ -774,7 +774,7 @@ const styles = {
   },
 
   mainPanel: {
-    background: "radial-gradient(circle at top right,rgba(255,255,255,0.14),transparent 34%), linear-gradient(135deg,#2e1065,#4c1d95,#6d28d9)",
+    background: "radial-gradient(circle at top right,rgba(255,255,255,0.14),transparent 34%), linear-gradient(135deg,var(--ic-primary-deepest),var(--ic-primary-deep),var(--ic-primary-strong))",
     border: "1px solid rgba(255,255,255,0.18)",
     borderRadius: "30px",
     padding: "22px",
@@ -842,8 +842,8 @@ const styles = {
   sidePanel: { display: "grid", gridTemplateRows: "auto auto", gap: "20px", minWidth: 0 },
 
   healthBox: {
-    background: "radial-gradient(circle at top right,rgba(168,85,247,0.09),transparent 36%), #ffffff",
-    border: "1px solid #ddd6fe",
+    background: "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.09),transparent 36%), #ffffff",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "30px",
     padding: "20px",
     boxShadow: "0 20px 50px rgba(88,28,135,0.10)"
@@ -868,8 +868,8 @@ const styles = {
   healthText: { textAlign: "center", color: "#4b5563", fontSize: "13px", lineHeight: "1.45" },
 
   alertBox: {
-    background: "radial-gradient(circle at top right,rgba(168,85,247,0.09),transparent 36%), #ffffff",
-    border: "1px solid #ddd6fe",
+    background: "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.09),transparent 36%), #ffffff",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "30px",
     padding: "20px",
     boxShadow: "0 20px 50px rgba(88,28,135,0.10)"
@@ -879,7 +879,7 @@ const styles = {
 
   alertItem: {
     background: "#fbfaff",
-    border: "1px solid #ede9fe",
+    border: "1px solid var(--ic-primary-soft-2)",
     borderRadius: "15px",
     padding: "11px",
     color: "#111827"
@@ -893,8 +893,8 @@ const styles = {
   },
 
   rankingMonitor: {
-    background: "radial-gradient(circle at top right,rgba(168,85,247,0.09),transparent 34%), #ffffff",
-    border: "1px solid #ddd6fe",
+    background: "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.09),transparent 34%), #ffffff",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "24px",
     padding: "18px",
     boxShadow: "0 18px 42px rgba(88,28,135,0.09)"
@@ -905,7 +905,7 @@ const styles = {
     justifyContent: "space-between",
     gap: "12px",
     padding: "10px 0",
-    borderBottom: "1px solid #ede9fe",
+    borderBottom: "1px solid var(--ic-primary-soft-2)",
     color: "#374151"
   },
 
@@ -919,8 +919,8 @@ const styles = {
   },
 
   summaryPanel: {
-    background: "radial-gradient(circle at top right,rgba(168,85,247,0.09),transparent 34%), #ffffff",
-    border: "1px solid #ddd6fe",
+    background: "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.09),transparent 34%), #ffffff",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "30px",
     padding: "20px",
     boxShadow: "0 20px 50px rgba(88,28,135,0.10)"
@@ -930,7 +930,7 @@ const styles = {
 
   summaryItem: {
     background: "#fbfaff",
-    border: "1px solid #ede9fe",
+    border: "1px solid var(--ic-primary-soft-2)",
     borderRadius: "14px",
     padding: "11px",
     color: "#111827",

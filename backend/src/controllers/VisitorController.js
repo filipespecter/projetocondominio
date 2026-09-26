@@ -229,6 +229,76 @@ class VisitorController {
     }
   }
 
+  async myInvitations(req, res, next) {
+    try {
+      const data = await VisitorService.listMyInvitations(
+        req.user.condominiumId,
+        req.user
+      );
+
+      return res.json({ success: true, data });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async createInvitation(req, res, next) {
+    try {
+      const data = await VisitorService.createInvitation(
+        req.user.condominiumId,
+        req.body,
+        req.user,
+        requestContext(req)
+      );
+
+      return res.status(201).json({
+        success: true,
+        message: "Convite de visitante criado com sucesso.",
+        data,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async cancelInvitation(req, res, next) {
+    try {
+      const data = await VisitorService.cancelMyInvitation(
+        req.params.id,
+        req.user.condominiumId,
+        req.user,
+        requestContext(req)
+      );
+
+      return res.json({
+        success: true,
+        message: "Convite cancelado com sucesso.",
+        data,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async validateInvitation(req, res, next) {
+    try {
+      const data = await VisitorService.validateInvitation(
+        req.user.condominiumId,
+        req.body.token,
+        req.user,
+        requestContext(req)
+      );
+
+      return res.json({
+        success: true,
+        message: "QR validado. Entrada do visitante registrada.",
+        data,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
   async statistics(
     req,
     res,

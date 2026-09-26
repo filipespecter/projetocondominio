@@ -120,7 +120,7 @@ const styles = {
 
   header: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.18),transparent 35%), linear-gradient(135deg,#2e1065,#4c1d95,#7c3aed)",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.18),transparent 35%), linear-gradient(135deg,var(--ic-primary-deepest),var(--ic-primary-deep),var(--ic-primary))",
     border: "1px solid rgba(216,180,254,0.22)",
     borderRadius: "30px",
     padding: "28px",
@@ -161,7 +161,7 @@ const styles = {
     position: "relative",
     overflow: "hidden",
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.18),transparent 35%), linear-gradient(180deg,rgba(255,255,255,0.10),rgba(255,255,255,0.05))",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.18),transparent 35%), linear-gradient(180deg,rgba(255,255,255,0.10),rgba(255,255,255,0.05))",
     border: "1px solid rgba(216,180,254,0.22)",
     borderRadius: "26px",
     padding: "22px",
@@ -209,7 +209,7 @@ const styles = {
 
   rankingPanel: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.18),transparent 35%), linear-gradient(180deg,rgba(255,255,255,0.10),rgba(255,255,255,0.05))",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.18),transparent 35%), linear-gradient(180deg,rgba(255,255,255,0.10),rgba(255,255,255,0.05))",
     border: "1px solid rgba(216,180,254,0.22)",
     borderRadius: "30px",
     padding: "26px",
@@ -220,7 +220,7 @@ const styles = {
 
   activityPanel: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.16),transparent 35%), linear-gradient(180deg,rgba(255,255,255,0.09),rgba(255,255,255,0.045))",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.16),transparent 35%), linear-gradient(180deg,rgba(255,255,255,0.09),rgba(255,255,255,0.045))",
     border: "1px solid rgba(216,180,254,0.22)",
     borderRadius: "30px",
     padding: "26px",

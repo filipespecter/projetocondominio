@@ -438,7 +438,7 @@ const styles = {
   hero: {
     minWidth: 0,
     background:
-      "linear-gradient(135deg,#4c1d95,#6d28d9,#7c3aed)",
+      "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary-strong),var(--ic-primary))",
     borderRadius: "30px",
     padding: "32px",
     color: "white",
@@ -448,7 +448,7 @@ const styles = {
     gap: "28px",
     marginBottom: "26px",
     boxShadow:
-      "0 22px 55px rgba(124,58,237,0.24), 0 0 38px rgba(168,85,247,0.12)",
+      "0 22px 55px rgb(var(--ic-primary-rgb) / 0.24), 0 0 38px rgb(var(--ic-primary-bright-rgb) / 0.12)",
     border: "1px solid rgba(255,255,255,0.18)"
   },
 
@@ -480,7 +480,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "10px",
-    color: "#f3e8ff",
+    color: "var(--ic-primary-soft)",
     fontSize: "14px",
     fontWeight: "600"
   },
@@ -489,9 +489,9 @@ const styles = {
     width: "9px",
     height: "9px",
     borderRadius: "50%",
-    background: "#a855f7",
+    background: "var(--ic-primary-bright)",
     boxShadow:
-      "0 0 0 5px rgba(168,85,247,0.18)"
+      "0 0 0 5px rgb(var(--ic-primary-bright-rgb) / 0.18)"
   },
 
   heroPanel: {
@@ -517,8 +517,8 @@ const styles = {
   },
 
   heroStatus: {
-    background: "#f3e8ff",
-    color: "#7c3aed",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary)",
     padding: "8px 12px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -535,7 +535,7 @@ const styles = {
 
   cardPrimary: {
     background:
-      "linear-gradient(135deg,#6d28d9,#8b5cf6)",
+      "linear-gradient(135deg,var(--ic-primary-strong),var(--ic-primary-light))",
     borderRadius: "24px",
     padding: "24px",
     color: "white",
@@ -543,12 +543,12 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "center",
     boxShadow:
-      "0 14px 35px rgba(124,58,237,0.18)"
+      "0 14px 35px rgb(var(--ic-primary-rgb) / 0.18)"
   },
 
   card: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.08),transparent 34%), white",
     borderRadius: "24px",
     padding: "24px",
     display: "flex",
@@ -556,7 +556,7 @@ const styles = {
     gap: "18px",
     boxShadow:
       "0 16px 40px rgba(88,28,135,0.08)",
-    border: "1px solid #ede9fe"
+    border: "1px solid var(--ic-primary-soft-2)"
   },
 
   cardLabelLight: {
@@ -591,7 +591,7 @@ const styles = {
     width: "54px",
     height: "54px",
     borderRadius: "18px",
-    background: "#ede9fe",
+    background: "var(--ic-primary-soft-2)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -602,7 +602,7 @@ const styles = {
     width: "54px",
     height: "54px",
     borderRadius: "18px",
-    background: "#f3e8ff",
+    background: "var(--ic-primary-soft)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -628,13 +628,13 @@ const styles = {
 
   cardNumberBlue: {
     margin: "8px 0 0",
-    color: "#7c3aed",
+    color: "var(--ic-primary)",
     fontSize: "34px"
   },
 
   cardNumberGreen: {
     margin: "8px 0 0",
-    color: "#7c3aed",
+    color: "var(--ic-primary)",
     fontSize: "34px"
   },
 
@@ -646,23 +646,23 @@ const styles = {
 
   expectedSection: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.08),transparent 34%), white",
     borderRadius: "28px",
     padding: "26px",
     marginBottom: "26px",
     boxShadow:
       "0 18px 45px rgba(88,28,135,0.09)",
-    border: "1px solid #ede9fe"
+    border: "1px solid var(--ic-primary-soft-2)"
   },
 
   apartmentSection: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.08),transparent 34%), white",
     borderRadius: "28px",
     padding: "26px",
     boxShadow:
       "0 18px 45px rgba(88,28,135,0.09)",
-    border: "1px solid #ede9fe"
+    border: "1px solid var(--ic-primary-soft-2)"
   },
 
   sectionHeader: {
@@ -675,7 +675,7 @@ const styles = {
 
   sectionTitle: {
     margin: 0,
-    color: "#6d28d9",
+    color: "var(--ic-primary-strong)",
     fontSize: "24px"
   },
 
@@ -687,8 +687,8 @@ const styles = {
   },
 
   sectionBadge: {
-    background: "#faf5ff",
-    color: "#6d28d9",
+    background: "var(--ic-primary-soft-3)",
+    color: "var(--ic-primary-strong)",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -697,8 +697,8 @@ const styles = {
   },
 
   sectionBadgeGreen: {
-    background: "#faf5ff",
-    color: "#7c3aed",
+    background: "var(--ic-primary-soft-3)",
+    color: "var(--ic-primary)",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -718,7 +718,7 @@ const styles = {
     background: "#fbfaff",
     borderRadius: "22px",
     padding: "22px",
-    border: "1px solid #ddd6fe"
+    border: "1px solid var(--ic-primary-border-soft)"
   },
 
   expectedTop: {
@@ -749,7 +749,7 @@ const styles = {
     width: "46px",
     height: "46px",
     borderRadius: "16px",
-    background: "#ede9fe",
+    background: "var(--ic-primary-soft-2)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -774,7 +774,7 @@ const styles = {
   confirmButton: {
     width: "100%",
     background:
-      "linear-gradient(135deg,#6d28d9,#8b5cf6)",
+      "linear-gradient(135deg,var(--ic-primary-strong),var(--ic-primary-light))",
     color: "white",
     border: "none",
     padding: "14px",
@@ -782,7 +782,7 @@ const styles = {
     cursor: "pointer",
     fontWeight: "800",
     boxShadow:
-      "0 12px 25px rgba(124,58,237,0.18)"
+      "0 12px 25px rgb(var(--ic-primary-rgb) / 0.18)"
   }
 };
 

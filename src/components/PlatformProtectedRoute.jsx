@@ -39,18 +39,6 @@ function PlatformProtectedRoute({
     let mounted = true;
 
     async function validateSession() {
-      if (
-        !authApi.hasAccessToken()
-      ) {
-        if (mounted) {
-          setStatus(
-            "UNAUTHENTICATED"
-          );
-        }
-
-        return;
-      }
-
       try {
         const user =
           await authApi.me();
@@ -155,7 +143,7 @@ const styles = {
     justifyContent: "center",
     gap: "14px",
     background:
-      "linear-gradient(135deg,#0f0a1f,#1b1038,#2e1065)",
+      "linear-gradient(135deg,#0f0a1f,#1b1038,var(--ic-primary-deepest))",
     color: "#ffffff",
     fontFamily: "Arial",
   },

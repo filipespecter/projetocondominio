@@ -528,7 +528,7 @@ const styles = {
 
   hero: {
     background:
-      "linear-gradient(135deg,#4c1d95,#5b21b6,#6d28d9)",
+      "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary-dark),var(--ic-primary-strong))",
     borderRadius: "30px",
     padding: "32px",
     color: "white",
@@ -537,7 +537,7 @@ const styles = {
     alignItems: "center",
     gap: "28px",
     marginBottom: "26px",
-    boxShadow: "0 20px 45px rgba(124,58,237,0.18)"
+    boxShadow: "0 20px 45px rgb(var(--ic-primary-rgb) / 0.18)"
   },
 
   heroBadge: {
@@ -568,7 +568,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "10px",
-    color: "#f3e8ff",
+    color: "var(--ic-primary-soft)",
     fontSize: "14px",
     fontWeight: "600"
   },
@@ -577,7 +577,7 @@ const styles = {
     width: "9px",
     height: "9px",
     borderRadius: "50%",
-    background: "#a855f7",
+    background: "var(--ic-primary-bright)",
     boxShadow: "0 0 0 5px rgba(34,197,94,0.16)"
   },
 
@@ -614,8 +614,8 @@ const styles = {
   },
 
   dateStatus: {
-    background: "#f3e8ff",
-    color: "#6d28d9",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary-strong)",
     padding: "8px 12px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -632,14 +632,14 @@ const styles = {
 
   cardPrimary: {
     background:
-      "linear-gradient(135deg,#5b21b6,#7c3aed)",
+      "linear-gradient(135deg,var(--ic-primary-dark),var(--ic-primary))",
     borderRadius: "24px",
     padding: "24px",
     color: "white",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    boxShadow: "0 14px 35px rgba(124,58,237,0.18)"
+    boxShadow: "0 14px 35px rgb(var(--ic-primary-rgb) / 0.18)"
   },
 
   card: {
@@ -689,7 +689,7 @@ const styles = {
     width: "50px",
     height: "50px",
     borderRadius: "17px",
-    background: "#f3e8ff",
+    background: "var(--ic-primary-soft)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -700,7 +700,7 @@ const styles = {
     width: "50px",
     height: "50px",
     borderRadius: "17px",
-    background: "#ede9fe",
+    background: "var(--ic-primary-soft-2)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -719,8 +719,8 @@ const styles = {
   },
 
   badgeBlue: {
-    background: "#ede9fe",
-    color: "#6d28d9",
+    background: "var(--ic-primary-soft-2)",
+    color: "var(--ic-primary-strong)",
     padding: "7px 12px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -728,8 +728,8 @@ const styles = {
   },
 
   badgeGreen: {
-    background: "#f3e8ff",
-    color: "#6d28d9",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary-strong)",
     padding: "7px 12px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -778,8 +778,8 @@ const styles = {
 
   operationBadge: {
     display: "inline-block",
-    background: "#faf5ff",
-    color: "#6d28d9",
+    background: "var(--ic-primary-soft-3)",
+    color: "var(--ic-primary-strong)",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -789,7 +789,7 @@ const styles = {
 
   operationTitle: {
     margin: 0,
-    color: "#5b21b6",
+    color: "var(--ic-primary-dark)",
     fontSize: "24px"
   },
 
@@ -824,7 +824,7 @@ const styles = {
 
   operationNumberGreen: {
     margin: "8px 0 0",
-    color: "#6d28d9",
+    color: "var(--ic-primary-strong)",
     fontSize: "34px"
   },
 
@@ -845,7 +845,7 @@ const styles = {
 
   quickTitle: {
     margin: "0 0 18px",
-    color: "#5b21b6",
+    color: "var(--ic-primary-dark)",
     fontSize: "22px"
   },
 
@@ -865,11 +865,11 @@ const styles = {
   },
 
   statusIconGreen: {
-    color: "#7c3aed"
+    color: "var(--ic-primary)"
   },
 
   statusIconBlue: {
-    color: "#7c3aed"
+    color: "var(--ic-primary)"
   },
 
   statusIconYellow: {
@@ -900,7 +900,7 @@ const styles = {
 
   historyTitle: {
     margin: 0,
-    color: "#5b21b6",
+    color: "var(--ic-primary-dark)",
     fontSize: "23px"
   },
 
@@ -911,8 +911,8 @@ const styles = {
   },
 
   live: {
-    background: "#f3e8ff",
-    color: "#6d28d9",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary-strong)",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -959,7 +959,7 @@ const styles = {
     height: "44px",
     minWidth: "44px",
     borderRadius: "15px",
-    background: "#f3e8ff",
+    background: "var(--ic-primary-soft)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -990,7 +990,7 @@ const styles = {
 
   alertTitle: {
     margin: 0,
-    color: "#5b21b6",
+    color: "var(--ic-primary-dark)",
     fontSize: "23px"
   },
 
@@ -1001,8 +1001,8 @@ const styles = {
   },
 
   alertCardDark: {
-    background: "#faf5ff",
-    border: "1px solid #ddd6fe",
+    background: "var(--ic-primary-soft-3)",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "18px",
     padding: "18px",
     marginBottom: "14px"
@@ -1017,7 +1017,7 @@ const styles = {
   },
 
   alertCardBlue: {
-    background: "#f5f3ff",
+    background: "var(--ic-primary-soft-4)",
     border: "1px solid #bfdbfe",
     borderRadius: "18px",
     padding: "18px",
@@ -1025,8 +1025,8 @@ const styles = {
   },
 
   alertCardGreen: {
-    background: "#faf5ff",
-    border: "1px solid #ddd6fe",
+    background: "var(--ic-primary-soft-3)",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "18px",
     padding: "18px",
     marginBottom: "14px"

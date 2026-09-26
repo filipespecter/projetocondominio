@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import reportApi from "../../Services/reportApi.js";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import * as XLSX from "xlsx";
+import { exportSheets } from "../../utils/excelExport.js";
 
 function Relatorios() {
   const [dados, setDados] = useState({});
@@ -285,12 +285,14 @@ function Relatorios() {
     if (modulo === "moradores") {
       return {
         titulo: "Moradores",
-        colunas: ["Nome", "Apartamento", "Telefone", "E-mail"],
+        colunas: ["Nome", "Apartamento", "Tipo", "Telefone", "E-mail", "Status"],
         linhas: lista.map((item) => [
           normalizarLinha(item.nome),
           normalizarLinha(item.apartamento || item.apto),
+          normalizarLinha(item.tipoMorador || "Morador"),
           normalizarLinha(item.telefone),
-          normalizarLinha(item.email)
+          normalizarLinha(item.email),
+          normalizarLinha(item.status || "Ativo")
         ])
       };
     }
@@ -690,7 +692,7 @@ function Relatorios() {
     const dataGeracao = new Date().toLocaleString("pt-BR");
     const perfilCondominio = obterPerfilCondominio();
 
-    doc.setFillColor(109, 40, 217);
+    doc.setFillColor(22, 163, 74);
     doc.rect(0, 0, 210, 38, "F");
 
     doc.setTextColor(255, 255, 255);
@@ -700,7 +702,7 @@ function Relatorios() {
     doc.setFontSize(10);
     doc.text(perfilCondominio.nomeCondominio || "Central de Relatórios Condominiais", 14, 27);
 
-    doc.setTextColor(91, 33, 182);
+    doc.setTextColor(20, 83, 45);
     doc.setFontSize(15);
     doc.text(preview.titulo, 14, 50);
 
@@ -715,7 +717,7 @@ function Relatorios() {
       head: [["Resumo"]],
       body: preview.resumo.map((item) => [item]),
       headStyles: {
-        fillColor: [109, 40, 217]
+        fillColor: [22, 163, 74]
       },
       styles: {
         fontSize: 9,
@@ -731,7 +733,7 @@ function Relatorios() {
         posicao = 18;
       }
 
-      doc.setTextColor(91, 33, 182);
+      doc.setTextColor(20, 83, 45);
       doc.setFontSize(12);
       doc.text(tabela.titulo, 14, posicao);
 
@@ -743,7 +745,7 @@ function Relatorios() {
             ? tabela.linhas
             : [["Sem registros"]],
         headStyles: {
-          fillColor: [91, 33, 182]
+          fillColor: [20, 83, 45]
         },
         styles: {
           fontSize: 8,
@@ -761,7 +763,7 @@ function Relatorios() {
         posicao = 18;
       }
 
-      doc.setTextColor(91, 33, 182);
+      doc.setTextColor(20, 83, 45);
       doc.setFontSize(12);
       doc.text("Observações", 14, posicao);
 
@@ -796,8 +798,7 @@ function Relatorios() {
     doc.save(criarNomeArquivo("pdf"));
   }
 
-  function exportarExcel() {
-    const workbook = XLSX.utils.book_new();
+  async function exportarExcel() {
     const perfilCondominio = obterPerfilCondominio();
     const nomesUsados = new Set();
 
@@ -821,25 +822,6 @@ function Relatorios() {
       return nomeFinal;
     }
 
-    function ajustarLarguras(worksheet, linhas) {
-      const maiorQuantidadeColunas = linhas.reduce(
-        (maior, linha) => Math.max(maior, linha.length),
-        0
-      );
-
-      worksheet["!cols"] = Array.from(
-        { length: maiorQuantidadeColunas },
-        (_, indiceColuna) => {
-          const maiorTexto = linhas.reduce((maior, linha) => {
-            const tamanho = String(linha[indiceColuna] ?? "").length;
-            return Math.max(maior, tamanho);
-          }, 10);
-
-          return { wch: Math.min(Math.max(maiorTexto + 2, 12), 45) };
-        }
-      );
-    }
-
     const linhasResumo = [
       ["Relatório", preview.titulo],
       ["Período", nomePeriodo()],
@@ -852,9 +834,7 @@ function Relatorios() {
       ...preview.resumo.map((item) => [item])
     ];
 
-    const resumoSheet = XLSX.utils.aoa_to_sheet(linhasResumo);
-    ajustarLarguras(resumoSheet, linhasResumo);
-    XLSX.utils.book_append_sheet(workbook, resumoSheet, "Resumo");
+    const sheets=[{name:"Resumo",rows:linhasResumo}];
     nomesUsados.add("resumo");
 
     preview.tabelas.forEach((tabela, indice) => {
@@ -873,24 +853,10 @@ function Relatorios() {
             )])
       ];
 
-      const worksheet = XLSX.utils.aoa_to_sheet(linhasTabela);
-      ajustarLarguras(worksheet, linhasTabela);
-      worksheet["!autofilter"] = {
-        ref: `A3:${XLSX.utils.encode_col(
-          Math.max(tabela.colunas.length - 1, 0)
-        )}3`
-      };
-
-      XLSX.utils.book_append_sheet(
-        workbook,
-        worksheet,
-        limparNomeAba(tabela.titulo, indice)
-      );
+      sheets.push({name:limparNomeAba(tabela.titulo,indice),rows:linhasTabela,autoFilter:3});
     });
 
-    XLSX.writeFile(workbook, criarNomeArquivo("xlsx"), {
-      compression: true
-    });
+    await exportSheets(criarNomeArquivo("xlsx"),sheets);
 
     salvarHistorico("Excel");
     registrarAuditoriaRelatorio(
@@ -1267,7 +1233,7 @@ const styles = {
   },
 
   hero: {
-    background: "linear-gradient(135deg,#ffffff,#faf5ff)",
+    background: "linear-gradient(135deg,#ffffff,var(--ic-primary-soft-3))",
     borderRadius: "28px",
     padding: "34px",
     display: "flex",
@@ -1276,14 +1242,14 @@ const styles = {
     alignItems: "center",
     boxShadow: "0 18px 45px rgba(88,28,135,0.09)",
     marginBottom: "24px",
-    border: "1px solid #f3e8ff"
+    border: "1px solid var(--ic-primary-soft)"
   },
 
   heroBadge: {
     display: "inline-block",
-    background: "#f3e8ff",
-    border: "1px solid #ddd6fe",
-    color: "#7c3aed",
+    background: "var(--ic-primary-soft)",
+    border: "1px solid var(--ic-primary-border-soft)",
+    color: "var(--ic-primary)",
     padding: "9px 13px",
     borderRadius: "999px",
     fontWeight: "900",
@@ -1315,7 +1281,7 @@ const styles = {
     minWidth: "140px",
     maxWidth: "100%",
     background: "#ffffff",
-    border: "1px solid #ddd6fe",
+    border: "1px solid var(--ic-primary-border-soft)",
     padding: "16px",
     borderRadius: "18px"
   },
@@ -1324,8 +1290,8 @@ const styles = {
     minWidth: "160px",
     maxWidth: "100%",
     background: "#ecfdf5",
-    border: "1px solid #ddd6fe",
-    color: "#7c3aed",
+    border: "1px solid var(--ic-primary-border-soft)",
+    color: "var(--ic-primary)",
     padding: "16px",
     borderRadius: "18px"
   },
@@ -1340,7 +1306,7 @@ const styles = {
 
   configPanel: {
     background: "#ffffff",
-    border: "1px solid #ddd6fe",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "24px",
     padding: "24px",
     boxShadow: "0 16px 40px rgba(88,28,135,0.08)"
@@ -1352,7 +1318,7 @@ const styles = {
     borderRadius: "24px",
     padding: "28px",
     boxShadow: "0 16px 40px rgba(88,28,135,0.08)",
-    border: "1px solid #ddd6fe"
+    border: "1px solid var(--ic-primary-border-soft)"
   },
 
   panelHeader: {
@@ -1362,8 +1328,8 @@ const styles = {
   panelBadge: {
     display: "inline-block",
     background: "#ecfdf5",
-    color: "#7c3aed",
-    border: "1px solid #ddd6fe",
+    color: "var(--ic-primary)",
+    border: "1px solid var(--ic-primary-border-soft)",
     padding: "7px 11px",
     borderRadius: "999px",
     fontWeight: "900",
@@ -1393,7 +1359,7 @@ const styles = {
   reportButton: {
     background: "#ffffff",
     color: "#111827",
-    border: "1px solid #ddd6fe",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "16px",
     padding: "13px",
     display: "flex",
@@ -1404,8 +1370,8 @@ const styles = {
 
   reportButtonActive: {
     background: "#ecfdf5",
-    color: "#7c3aed",
-    border: "1px solid #a855f7",
+    color: "var(--ic-primary)",
+    border: "1px solid var(--ic-primary-bright)",
     boxShadow: "0 0 0 3px rgba(34,197,94,0.12)"
   },
 
@@ -1417,7 +1383,7 @@ const styles = {
     width: "100%",
     background: "#ffffff",
     color: "#111827",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     borderRadius: "14px",
     padding: "13px",
     outline: "none"
@@ -1427,7 +1393,7 @@ const styles = {
     width: "100%",
     background: "#ffffff",
     color: "#111827",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     borderRadius: "14px",
     padding: "13px",
     outline: "none",
@@ -1439,7 +1405,7 @@ const styles = {
     minHeight: "92px",
     background: "#ffffff",
     color: "#111827",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     borderRadius: "14px",
     padding: "13px",
     outline: "none",
@@ -1452,7 +1418,7 @@ const styles = {
     padding: "14px",
     borderRadius: "18px",
     background: "#fbfaff",
-    border: "1px solid #ddd6fe"
+    border: "1px solid var(--ic-primary-border-soft)"
   },
 
   checkOption: {
@@ -1472,7 +1438,7 @@ const styles = {
   },
 
   primaryButton: {
-    background: "#8b5cf6",
+    background: "var(--ic-primary-light)",
     color: "white",
     border: "none",
     padding: "13px 16px",
@@ -1482,9 +1448,9 @@ const styles = {
   },
 
   secondaryButton: {
-    background: "#f5f3ff",
+    background: "var(--ic-primary-soft-4)",
     color: "#111827",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     padding: "13px 16px",
     borderRadius: "14px",
     cursor: "pointer",
@@ -1522,7 +1488,7 @@ const styles = {
   },
 
   previewSeal: {
-    background: "#8b5cf6",
+    background: "var(--ic-primary-light)",
     whiteSpace: "nowrap",
     color: "white",
     padding: "14px 18px",
@@ -1538,9 +1504,9 @@ const styles = {
   },
 
   summaryBox: {
-    background: "#faf5ff",
-    border: "1px solid #ddd6fe",
-    color: "#5b21b6",
+    background: "var(--ic-primary-soft-3)",
+    border: "1px solid var(--ic-primary-border-soft)",
+    color: "var(--ic-primary-dark)",
     borderRadius: "18px",
     padding: "18px",
     marginBottom: "18px"
@@ -1552,7 +1518,7 @@ const styles = {
 
   tableWrapper: {
     overflowX: "auto",
-    border: "1px solid #ddd6fe",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "16px"
   },
 
@@ -1563,11 +1529,11 @@ const styles = {
   },
 
   th: {
-    background: "#f5f3ff",
+    background: "var(--ic-primary-soft-4)",
     color: "#374151",
     padding: "12px",
     textAlign: "left",
-    borderBottom: "1px solid #ddd6fe"
+    borderBottom: "1px solid var(--ic-primary-border-soft)"
   },
 
   td: {
@@ -1595,7 +1561,7 @@ const styles = {
 
   historyPanel: {
     background: "#ffffff",
-    border: "1px solid #ddd6fe",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "24px",
     padding: "24px",
     marginBottom: "20px",
@@ -1617,7 +1583,7 @@ const styles = {
 
   historyItem: {
     background: "#fbfaff",
-    border: "1px solid #ddd6fe",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "16px",
     padding: "14px",
     display: "grid",

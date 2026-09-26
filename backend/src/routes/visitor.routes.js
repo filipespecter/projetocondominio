@@ -12,6 +12,8 @@ import {
   validateVisitorListQuery,
   validateCreateVisitor,
   validateUpdateVisitor,
+  validateCreateVisitorInvitation,
+  validateVisitorInvitationToken,
 } from "../validators/visitorValidator.js";
 
 const visitorRoutes = Router();
@@ -43,6 +45,38 @@ const administrativeRoles =
     "CONDOMINIUM_ADMIN",
     "MANAGER"
   );
+
+
+/**
+ * Convites antecipados criados pelo próprio morador.
+ * Estas rotas ficam antes de /:id para não conflitar com o identificador dinâmico.
+ */
+visitorRoutes.get(
+  "/invitations/my",
+  authorizeRoles("RESIDENT"),
+  (req, res, next) => VisitorController.myInvitations(req, res, next)
+);
+
+visitorRoutes.post(
+  "/invitations",
+  authorizeRoles("RESIDENT"),
+  validateCreateVisitorInvitation,
+  (req, res, next) => VisitorController.createInvitation(req, res, next)
+);
+
+visitorRoutes.post(
+  "/invitations/validate",
+  operationalRoles,
+  validateVisitorInvitationToken,
+  (req, res, next) => VisitorController.validateInvitation(req, res, next)
+);
+
+visitorRoutes.patch(
+  "/invitations/:id/cancel",
+  authorizeRoles("RESIDENT"),
+  validateVisitorId,
+  (req, res, next) => VisitorController.cancelInvitation(req, res, next)
+);
 
 /**
  * GET /api/v1/visitors/statistics

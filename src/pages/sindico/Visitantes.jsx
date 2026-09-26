@@ -972,7 +972,7 @@ const styles = {
 
   hero: {
     background:
-      "linear-gradient(135deg,#02140b,#5b21b6 55%,#7c3aed)",
+      "linear-gradient(135deg,#02140b,var(--ic-primary-dark) 55%,var(--ic-primary))",
     borderRadius: "36px",
     padding: "34px",
     color: "white",
@@ -992,7 +992,7 @@ const styles = {
     display: "inline-block",
     background: "rgba(255,255,255,0.13)",
     border: "1px solid rgba(255,255,255,0.14)",
-    color: "#f3e8ff",
+    color: "var(--ic-primary-soft)",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1040,8 +1040,8 @@ const styles = {
   },
 
   heroButton: {
-    background: "#f3e8ff",
-    color: "#7c3aed",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary)",
     border: "none",
     padding: "15px 20px",
     borderRadius: "17px",
@@ -1052,7 +1052,7 @@ const styles = {
 
   controlStrip: {
     background: "white",
-    border: "1px solid #ddd6fe",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "28px",
     padding: "18px",
     marginBottom: "24px",
@@ -1065,7 +1065,7 @@ const styles = {
   searchWrap: {
     flex: 1,
     background: "#fbfaff",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     borderRadius: "18px",
     display: "flex",
     alignItems: "center",
@@ -1073,7 +1073,7 @@ const styles = {
   },
 
   searchIcon: {
-    color: "#7c3aed",
+    color: "var(--ic-primary)",
     fontSize: "20px",
     marginRight: "8px"
   },
@@ -1091,7 +1091,7 @@ const styles = {
     width: "170px",
     padding: "15px",
     borderRadius: "18px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     background: "#fbfaff"
   },
@@ -1106,7 +1106,7 @@ const styles = {
 
   accessPanel: {
     background: "white",
-    border: "1px solid #ede9fe",
+    border: "1px solid var(--ic-primary-soft-2)",
     borderRadius: "34px",
     padding: "28px",
     boxShadow: "0 18px 55px rgba(88,28,135,0.09)"
@@ -1120,8 +1120,8 @@ const styles = {
   },
 
   panelLabel: {
-    background: "#f3e8ff",
-    color: "#7c3aed",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary)",
     padding: "7px 11px",
     borderRadius: "999px",
     fontSize: "11px",
@@ -1130,14 +1130,14 @@ const styles = {
 
   panelTitle: {
     margin: "12px 0 0",
-    color: "#4c1d95",
+    color: "var(--ic-primary-deep)",
     fontSize: "28px"
   },
 
   resultBadge: {
-    background: "#faf5ff",
-    color: "#7c3aed",
-    border: "1px solid #ddd6fe",
+    background: "var(--ic-primary-soft-3)",
+    color: "var(--ic-primary)",
+    border: "1px solid var(--ic-primary-border-soft)",
     padding: "9px 13px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -1155,7 +1155,7 @@ const styles = {
     borderRadius: "30px",
     padding: "22px",
     boxShadow: "0 15px 38px rgba(88,28,135,0.07)",
-    border: "1px solid #ede9fe"
+    border: "1px solid var(--ic-primary-soft-2)"
   },
 
   cardHeader: {
@@ -1177,14 +1177,14 @@ const styles = {
     height: "64px",
     borderRadius: "24px",
     background:
-      "linear-gradient(135deg,#4c1d95,#8b5cf6)",
+      "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary-light))",
     color: "white",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "24px",
     fontWeight: "900",
-    boxShadow: "0 14px 26px rgba(124,58,237,0.18)"
+    boxShadow: "0 14px 26px rgb(var(--ic-primary-rgb) / 0.18)"
   },
 
   visitorName: {
@@ -1208,14 +1208,14 @@ const styles = {
   },
 
   typeLine: {
-    background: "#faf5ff",
-    border: "1px solid #ddd6fe",
+    background: "var(--ic-primary-soft-3)",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "18px",
     padding: "13px",
     display: "flex",
     alignItems: "center",
     gap: "10px",
-    color: "#7c3aed",
+    color: "var(--ic-primary)",
     marginBottom: "14px"
   },
 
@@ -1231,7 +1231,7 @@ const styles = {
 
   infoItem: {
     background: "white",
-    border: "1px solid #ede9fe",
+    border: "1px solid var(--ic-primary-soft-2)",
     borderRadius: "17px",
     padding: "13px"
   },
@@ -1254,8 +1254,8 @@ const styles = {
   },
 
   authorizeBtn: {
-    background: "#ede9fe",
-    color: "#6d28d9",
+    background: "var(--ic-primary-soft-2)",
+    color: "var(--ic-primary-strong)",
     border: "none",
     padding: "11px",
     borderRadius: "13px",
@@ -1264,8 +1264,8 @@ const styles = {
   },
 
   enterBtn: {
-    background: "#f3e8ff",
-    color: "#7c3aed",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary)",
     border: "none",
     padding: "11px",
     borderRadius: "13px",
@@ -1274,7 +1274,7 @@ const styles = {
   },
 
   exitBtn: {
-    background: "#f5f3ff",
+    background: "var(--ic-primary-soft-4)",
     color: "#374151",
     border: "none",
     padding: "11px",
@@ -1295,7 +1295,7 @@ const styles = {
 
   empty: {
     background: "#fbfaff",
-    border: "1px dashed #c4b5fd",
+    border: "1px dashed var(--ic-primary-border)",
     borderRadius: "26px",
     padding: "48px",
     textAlign: "center"
@@ -1318,7 +1318,7 @@ const styles = {
 
   emptyButton: {
     background:
-      "linear-gradient(135deg,#5b21b6,#8b5cf6)",
+      "linear-gradient(135deg,var(--ic-primary-dark),var(--ic-primary-light))",
     color: "white",
     border: "none",
     padding: "13px 18px",
@@ -1352,7 +1352,7 @@ const styles = {
 
   modalTop: {
     background:
-      "linear-gradient(135deg,#4c1d95,#7c3aed)",
+      "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary))",
     color: "white",
     borderRadius: "28px",
     padding: "26px",
@@ -1387,7 +1387,7 @@ const styles = {
 
   modalSection: {
     background: "white",
-    border: "1px solid #ede9fe",
+    border: "1px solid var(--ic-primary-soft-2)",
     borderRadius: "26px",
     padding: "20px",
     marginBottom: "15px"
@@ -1395,7 +1395,7 @@ const styles = {
 
   modalSectionTitle: {
     margin: "0 0 16px",
-    color: "#4c1d95"
+    color: "var(--ic-primary-deep)"
   },
 
   formGrid: {
@@ -1419,7 +1419,7 @@ const styles = {
   input: {
     padding: "15px",
     borderRadius: "16px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     fontSize: "14px",
     background: "#fbfaff"
@@ -1434,7 +1434,7 @@ const styles = {
 
   optionCard: {
     background: "#fbfaff",
-    border: "1px solid #ddd6fe",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "17px",
     padding: "14px",
     display: "flex",
@@ -1449,7 +1449,7 @@ const styles = {
     minHeight: "100px",
     padding: "15px",
     borderRadius: "16px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     fontSize: "14px",
     background: "#fbfaff",
@@ -1467,7 +1467,7 @@ const styles = {
   saveBtn: {
     flex: 1,
     background:
-      "linear-gradient(135deg,#5b21b6,#8b5cf6)",
+      "linear-gradient(135deg,var(--ic-primary-dark),var(--ic-primary-light))",
     color: "white",
     border: "none",
     padding: "14px",
@@ -1478,7 +1478,7 @@ const styles = {
 
   cancelBtn: {
     flex: 1,
-    background: "#f5f3ff",
+    background: "var(--ic-primary-soft-4)",
     color: "#374151",
     border: "none",
     padding: "14px",

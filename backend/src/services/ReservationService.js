@@ -104,22 +104,6 @@ class ReservationService extends BaseService {
     };
   }
 
-  validateFutureSlot(date, startTime) {
-    // A operação atende condomínios no Brasil, independente do fuso do servidor.
-    const now = new Date();
-    const parts = Object.fromEntries(
-      new Intl.DateTimeFormat("en-US", {
-        timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit",
-        day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
-      }).formatToParts(now).map(({ type, value }) => [type, value])
-    );
-    const today = `${parts.year}-${parts.month}-${parts.day}`;
-    const requested = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-    if (requested < today || (requested === today && startTime <= `${parts.hour}:${parts.minute}`)) {
-      throw new ApiError("A reserva deve começar após o momento atual.", 400);
-    }
-  }
-
   /**
    * Converte a data informada para o padrão
    * utilizado pelo campo Date do Prisma.
@@ -530,8 +514,6 @@ class ReservationService extends BaseService {
       data.endTime
     );
 
-    this.validateFutureSlot(reservationDate, startTime);
-
     const guestsCount =
       this.normalizeGuestsCount(
         data.guestsCount
@@ -669,8 +651,6 @@ class ReservationService extends BaseService {
       data.startTime,
       data.endTime
     );
-
-    this.validateFutureSlot(reservationDate, startTime);
 
     const guestsCount =
       this.normalizeGuestsCount(
@@ -840,10 +820,6 @@ class ReservationService extends BaseService {
       updateData.endTime ??
         before.endTime
     );
-
-    if (updateData.reservationDate !== undefined || updateData.startTime !== undefined) {
-      this.validateFutureSlot(reservationDate, startTime);
-    }
 
     const guestsCount =
       updateData.guestsCount !==
@@ -1418,11 +1394,10 @@ class ReservationService extends BaseService {
         "REJECTED",
         "CANCELED",
         "COMPLETED",
-      ].includes(before.status) &&
-      !(new Date(before.reservationDate).getTime() < Date.now())
+      ].includes(before.status)
     ) {
       throw new ApiError(
-        "Somente reservas rejeitadas, canceladas, concluídas ou com data passada podem ser removidas.",
+        "Somente reservas rejeitadas, canceladas ou concluídas podem ser removidas.",
         409
       );
     }

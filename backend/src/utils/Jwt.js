@@ -5,12 +5,14 @@ class Jwt {
   /**
    * Gera o Access Token.
    */
-  static generateAccessToken(user) {
+  static generateAccessToken(user, { sessionId } = {}) {
     return jwt.sign(
       {
         sub: user.id,
         condominiumId: user.condominiumId,
         role: user.role,
+        sid: sessionId,
+        sv: user.securityVersion ?? 1,
       },
       env.JWT_ACCESS_SECRET,
       {
@@ -22,10 +24,11 @@ class Jwt {
   /**
    * Gera o Refresh Token.
    */
-  static generateRefreshToken(user) {
+  static generateRefreshToken(user, { sessionId, tokenFamilyId, jti } = {}) {
     return jwt.sign(
       {
         sub: user.id,
+        sid: sessionId, family: tokenFamilyId, jti, sv: user.securityVersion ?? 1,
       },
       env.JWT_REFRESH_SECRET,
       {

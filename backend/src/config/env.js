@@ -77,6 +77,11 @@ const envSchema = z.object({
     .min(10)
     .max(14)
     .default(12),
+  TRUST_PROXY: z.union([z.literal("false"),z.literal("true"),z.coerce.number().int().min(0)]).default("false"),
+  WHATSAPP_ENABLED: z.enum(["true","false"]).default("false"),
+  WHATSAPP_APP_SECRET: z.string().min(32).optional(),
+  MERCADO_PAGO_ENABLED: z.enum(["true","false"]).default("false"),
+  MERCADO_PAGO_WEBHOOK_SECRET: z.string().min(32).optional(),
 
   /**
    * =====================================================
@@ -98,7 +103,13 @@ const envSchema = z.object({
     .default(60000),
 });
 
-const resultado = envSchema.safeParse(
+const resultado = envSchema.superRefine((value,context)=>{
+  if(value.NODE_ENV==="production"){
+    for(const key of ["DATABASE_URL","JWT_ACCESS_SECRET","JWT_REFRESH_SECRET"]) if(!value[key]) context.addIssue({code:"custom",path:[key],message:`${key} é obrigatória em produção.`});
+    if(value.WHATSAPP_ENABLED==="true"&&!value.WHATSAPP_APP_SECRET) context.addIssue({code:"custom",path:["WHATSAPP_APP_SECRET"],message:"Secret obrigatório quando WhatsApp está ativo."});
+    if(value.MERCADO_PAGO_ENABLED==="true"&&!value.MERCADO_PAGO_WEBHOOK_SECRET) context.addIssue({code:"custom",path:["MERCADO_PAGO_WEBHOOK_SECRET"],message:"Secret obrigatório quando Mercado Pago está ativo."});
+  }
+}).safeParse(
   process.env
 );
 
@@ -111,6 +122,6 @@ if (!resultado.success) {
   process.exit(1);
 }
 
-export const env = resultado.data;
+export const env = {...resultado.data,TRUST_PROXY:resultado.data.TRUST_PROXY==="true"?1:resultado.data.TRUST_PROXY==="false"?false:resultado.data.TRUST_PROXY};
 
 export default env;

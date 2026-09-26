@@ -27,6 +27,8 @@ function classify({ title = "", description = "", category = "" }) {
 }
 
 class SupportTicketService {
+  isSchemaUnavailable(error) { return ["P2021", "P2022"].includes(error?.code); }
+
   async create(payload, user) {
     if (!user?.id || !user?.condominiumId) throw new ApiError("Usuário de condomínio inválido.", 403);
     const title = String(payload?.title ?? "").trim();
@@ -62,27 +64,37 @@ class SupportTicketService {
     if (query.status) where.status = query.status;
     if (query.priority) where.priority = query.priority;
     if (query.condominiumId) where.condominiumId = query.condominiumId;
-    return prisma.supportTicket.findMany({
-      where,
-      orderBy: [{ priority: "desc" }, { openedAt: "asc" }],
-      include: {
-        condominium: { select: { id: true, name: true, code: true, email: true, phone: true } },
-        openedBy: { select: { id: true, name: true, email: true, role: true } },
-        assignedTo: { select: { id: true, name: true } },
-      },
-    });
+    try {
+      return await prisma.supportTicket.findMany({
+        where,
+        orderBy: [{ priority: "desc" }, { openedAt: "asc" }],
+        include: {
+          condominium: { select: { id: true, name: true, code: true, email: true, phone: true } },
+          openedBy: { select: { id: true, name: true, email: true, role: true } },
+          assignedTo: { select: { id: true, name: true } },
+        },
+      });
+    } catch (error) {
+      if (this.isSchemaUnavailable(error)) return [];
+      throw error;
+    }
   }
 
   async statistics() {
-    const [total, open, critical, high, waiting, resolved] = await Promise.all([
-      prisma.supportTicket.count(),
-      prisma.supportTicket.count({ where: { status: { in: OPEN_STATUSES } } }),
-      prisma.supportTicket.count({ where: { status: { in: OPEN_STATUSES }, priority: "CRITICAL" } }),
-      prisma.supportTicket.count({ where: { status: { in: OPEN_STATUSES }, priority: "HIGH" } }),
-      prisma.supportTicket.count({ where: { status: "WAITING_CUSTOMER" } }),
-      prisma.supportTicket.count({ where: { status: { in: ["RESOLVED", "CLOSED"] } } }),
-    ]);
-    return { total, open, critical, high, waiting, resolved };
+    try {
+      const [total, open, critical, high, waiting, resolved] = await Promise.all([
+        prisma.supportTicket.count(),
+        prisma.supportTicket.count({ where: { status: { in: OPEN_STATUSES } } }),
+        prisma.supportTicket.count({ where: { status: { in: OPEN_STATUSES }, priority: "CRITICAL" } }),
+        prisma.supportTicket.count({ where: { status: { in: OPEN_STATUSES }, priority: "HIGH" } }),
+        prisma.supportTicket.count({ where: { status: "WAITING_CUSTOMER" } }),
+        prisma.supportTicket.count({ where: { status: { in: ["RESOLVED", "CLOSED"] } } }),
+      ]);
+      return { total, open, critical, high, waiting, resolved };
+    } catch (error) {
+      if (this.isSchemaUnavailable(error)) return { total:0, open:0, critical:0, high:0, waiting:0, resolved:0, schemaPending:true };
+      throw error;
+    }
   }
 
   async update(id, payload, platformUser) {

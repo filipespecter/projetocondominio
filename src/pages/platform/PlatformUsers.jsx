@@ -4,7 +4,7 @@ import platformApi from "../../Services/platformApi.js";
 
 const GOLD = "#c8a85c";
 const GOLD_SOFT = "#f6eed9";
-const PURPLE = "#5b21b6";
+const PURPLE = "var(--ic-primary-dark)";
 const DEEP = "#1b102c";
 
 const emptyForm = {
@@ -257,7 +257,7 @@ function PlatformUsers() {
     if (phone && (phone.length < 10 || phone.length > 13)) return "Telefone inválido.";
     const doc = digits(form.document, 14);
     if (doc && ![11, 14].includes(doc.length)) return "Informe CPF com 11 ou CNPJ com 14 dígitos.";
-    if (!editing && form.password.length < 8) return "A senha temporária precisa ter no mínimo 8 caracteres.";
+    if (!editing && form.password.length < 12) return "A senha temporária precisa ter no mínimo 12 caracteres.";
     if (!form.platformJobTitle.trim()) return "Informe o cargo do colaborador.";
     if (!form.platformDepartment.trim()) return "Informe o departamento.";
     if (!form.platformStartDate) return "Informe a data de entrada na empresa.";
@@ -364,8 +364,8 @@ function PlatformUsers() {
 
   async function submitPassword(event) {
     event.preventDefault();
-    if (passwordValue.length < 8) {
-      setError("A senha precisa ter pelo menos 8 caracteres.");
+    if (passwordValue.length < 12) {
+      setError("A senha precisa ter pelo menos 12 caracteres.");
       return;
     }
     setSaving(true);
@@ -554,7 +554,7 @@ function PlatformUsers() {
                 </Field>
                 {!editing && (
                   <Field label="Senha temporária *">
-                    <input style={styles.input} type="password" value={form.password} onChange={(e) => change("password", e.target.value)} minLength={8} maxLength={128} required />
+                    <input style={styles.input} type="password" value={form.password} onChange={(e) => change("password", e.target.value)} minLength={12} maxLength={128} required />
                   </Field>
                 )}
               </FormSection>
@@ -710,7 +710,7 @@ function PlatformUsers() {
                   autoFocus
                   style={styles.input}
                   type="password"
-                  minLength={8}
+                  minLength={12}
                   maxLength={128}
                   value={passwordValue}
                   onChange={(e) => setPasswordValue(e.target.value)}
@@ -851,7 +851,7 @@ const styles = {
   page: { width: "100%", color: DEEP, fontFamily: "Inter, Arial, sans-serif" },
   center: { minHeight: 240, display: "grid", placeItems: "center", color: "#746b7f", fontWeight: 700 },
   hero: {
-    background: "linear-gradient(135deg,#24103f 0%,#5b21b6 68%,#7240d4 100%)",
+    background: "linear-gradient(135deg,#24103f 0%,var(--ic-primary-dark) 68%,#7240d4 100%)",
     borderRadius: 30, padding: "34px 36px", color: "white", display: "flex",
     justifyContent: "space-between", alignItems: "center", gap: 24,
     boxShadow: "0 24px 60px rgba(44,18,78,.18)", border: "1px solid rgba(200,168,92,.35)"

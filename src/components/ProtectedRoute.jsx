@@ -28,18 +28,6 @@ function ProtectedRoute({
     let mounted = true;
 
     async function validar() {
-      if (
-        !authApi.hasAccessToken()
-      ) {
-        if (mounted) {
-          setStatus(
-            "UNAUTHENTICATED"
-          );
-        }
-
-        return;
-      }
-
       try {
         const user =
           await authApi.me();

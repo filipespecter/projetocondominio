@@ -39,8 +39,8 @@ function MoradoresPorteiro() {
 
       return {
         texto: "Ativo",
-        fundo: "#f3e8ff",
-        cor: "#7c3aed",
+        fundo: "var(--ic-primary-soft)",
+        cor: "var(--ic-primary)",
         icone: "●"
       };
 
@@ -449,7 +449,7 @@ const styles = {
 
   hero: {
     background:
-      "linear-gradient(135deg,#4c1d95,#6d28d9,#7c3aed)",
+      "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary-strong),var(--ic-primary))",
     borderRadius: "30px",
     padding: "32px",
     color: "white",
@@ -459,7 +459,7 @@ const styles = {
     gap: "28px",
     marginBottom: "26px",
     boxShadow:
-      "0 22px 55px rgba(124,58,237,0.24), 0 0 38px rgba(168,85,247,0.12)",
+      "0 22px 55px rgb(var(--ic-primary-rgb) / 0.24), 0 0 38px rgb(var(--ic-primary-bright-rgb) / 0.12)",
     border: "1px solid rgba(255,255,255,0.18)"
   },
 
@@ -509,8 +509,8 @@ const styles = {
   },
 
   heroStatus: {
-    background: "#f3e8ff",
-    color: "#7c3aed",
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary)",
     padding: "8px 12px",
     borderRadius: "999px",
     fontSize: "12px",
@@ -527,7 +527,7 @@ const styles = {
 
   cardPrimary: {
     background:
-      "linear-gradient(135deg,#6d28d9,#8b5cf6)",
+      "linear-gradient(135deg,var(--ic-primary-strong),var(--ic-primary-light))",
     borderRadius: "24px",
     padding: "24px",
     color: "white",
@@ -535,12 +535,12 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "center",
     boxShadow:
-      "0 14px 35px rgba(124,58,237,0.18)"
+      "0 14px 35px rgb(var(--ic-primary-rgb) / 0.18)"
   },
 
   card: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.08),transparent 34%), white",
     borderRadius: "24px",
     padding: "24px",
     display: "flex",
@@ -548,7 +548,7 @@ const styles = {
     gap: "18px",
     boxShadow:
       "0 16px 40px rgba(88,28,135,0.08)",
-    border: "1px solid #ede9fe"
+    border: "1px solid var(--ic-primary-soft-2)"
   },
 
   cardLabelLight: {
@@ -583,7 +583,7 @@ const styles = {
     width: "54px",
     height: "54px",
     borderRadius: "18px",
-    background: "#ede9fe",
+    background: "var(--ic-primary-soft-2)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -609,7 +609,7 @@ const styles = {
 
   cardNumberBlue: {
     margin: "8px 0 0",
-    color: "#7c3aed",
+    color: "var(--ic-primary)",
     fontSize: "34px"
   },
 
@@ -621,12 +621,12 @@ const styles = {
 
   listCard: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.08),transparent 34%), white",
     borderRadius: "28px",
     padding: "26px",
     boxShadow:
       "0 18px 45px rgba(88,28,135,0.09)",
-    border: "1px solid #ede9fe"
+    border: "1px solid var(--ic-primary-soft-2)"
   },
 
   listHeader: {
@@ -639,7 +639,7 @@ const styles = {
 
   sectionTitle: {
     margin: 0,
-    color: "#6d28d9",
+    color: "var(--ic-primary-strong)",
     fontSize: "24px"
   },
 
@@ -658,7 +658,7 @@ const styles = {
   search: {
     padding: "13px 14px",
     borderRadius: "15px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     background: "#fbfaff",
     minWidth: "300px"
@@ -667,14 +667,14 @@ const styles = {
   filter: {
     padding: "13px 14px",
     borderRadius: "15px",
-    border: "1px solid #c4b5fd",
+    border: "1px solid var(--ic-primary-border)",
     outline: "none",
     background: "#fbfaff"
   },
 
   empty: {
     background: "#fbfaff",
-    border: "1px dashed #c4b5fd",
+    border: "1px dashed var(--ic-primary-border)",
     borderRadius: "22px",
     padding: "45px",
     textAlign: "center"
@@ -704,7 +704,7 @@ const styles = {
 
   cardMorador: {
     background: "#fbfaff",
-    border: "1px solid #ddd6fe",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "24px",
     padding: "22px",
     boxShadow:
@@ -723,7 +723,7 @@ const styles = {
     height: "56px",
     borderRadius: "20px",
     background:
-      "linear-gradient(135deg,#6d28d9,#8b5cf6)",
+      "linear-gradient(135deg,var(--ic-primary-strong),var(--ic-primary-light))",
     color: "white",
     display: "flex",
     alignItems: "center",
@@ -754,8 +754,8 @@ const styles = {
 
   infoItem: {
     background:
-      "radial-gradient(circle at top right,rgba(168,85,247,0.08),transparent 34%), white",
-    border: "1px solid #ede9fe",
+      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.08),transparent 34%), white",
+    border: "1px solid var(--ic-primary-soft-2)",
     borderRadius: "16px",
     padding: "12px"
   },
@@ -768,11 +768,11 @@ const styles = {
   },
 
   noticeBox: {
-    background: "#faf5ff",
-    border: "1px solid #ddd6fe",
+    background: "var(--ic-primary-soft-3)",
+    border: "1px solid var(--ic-primary-border-soft)",
     borderRadius: "16px",
     padding: "14px",
-    color: "#7c3aed",
+    color: "var(--ic-primary)",
     fontSize: "13px"
   },
 
