@@ -1,0 +1,87 @@
+# Sobreposição do compose.production.yaml: configure .env na VPS e backend/.env.production.
+services:
+  recovery-init:
+    image: postgres:16-alpine
+    user: root
+    restart: "no"
+    entrypoint: ["sh", "-c"]
+    command: ["mkdir -p /recovery/base /recovery/wal && chown postgres:postgres /recovery /recovery/base /recovery/wal && chmod 700 /recovery /recovery/base /recovery/wal"]
+    volumes: ["recovery_data:/recovery"]
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-infinitycondo}
+      POSTGRES_DB: ${POSTGRES_DB:-infinitycondo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    command: ["postgres", "-c", "wal_level=replica", "-c", "archive_mode=on", "-c", "archive_timeout=60s", "-c", "archive_command=sh /opt/infinity/archive-wal.sh %p %f"]
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - recovery_data:/recovery
+      - postgres_socket:/var/run/postgresql
+      - ./docker/recovery/archive-wal.sh:/opt/infinity/archive-wal.sh:ro
+    depends_on:
+      recovery-init:
+        condition: service_completed_successfully
+  recovery-base:
+    image: postgres:16-alpine
+    user: postgres
+    restart: unless-stopped
+    entrypoint: ["sh", "/opt/infinity/base-backup.sh"]
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /recovery/base/last-success && test $$(( $$(date +%s) - $$(cat /recovery/base/last-success) )) -lt 90000"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 10m
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-infinitycondo}
+      POSTGRES_DB: ${POSTGRES_DB:-infinitycondo}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD}
+      BASE_BACKUP_INTERVAL_SECONDS: "86400"
+    volumes:
+      - recovery_data:/recovery
+      - postgres_socket:/var/run/postgresql
+      - ./docker/recovery/base-backup.sh:/opt/infinity/base-backup.sh:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+  recovery-copy:
+    image: restic/restic:0.19.1
+    profiles: ["external-backup"]
+    restart: unless-stopped
+    entrypoint: ["sh", "/opt/infinity/encrypted-copy.sh"]
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/last-success && test $$(( $$(date +%s) - $$(cat /tmp/last-success) )) -lt 300"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 10m
+    env_file:
+      - path: ./recovery.env
+        required: false
+    volumes:
+      - recovery_data:/recovery:ro
+      - uploads_private:/uploads:ro
+      - ./docker/recovery/encrypted-copy.sh:/opt/infinity/encrypted-copy.sh:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+  backend:
+    volumes:
+      - backups_data:/app/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+volumes:
+  postgres_data: {}
+  backups_data: {}
+  recovery_data:
+    {}
+  postgres_socket:
+    {}

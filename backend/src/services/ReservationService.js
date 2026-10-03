@@ -116,6 +116,16 @@ class ReservationService extends BaseService {
     }
   }
 
+  hasReservationEnded(reservation) {
+    const date = new Date(reservation.reservationDate).toISOString().slice(0, 10);
+    const parts = Object.fromEntries(new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit",
+      day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+    }).formatToParts(new Date()).map(({ type, value }) => [type, value]));
+    const today = `${parts.year}-${parts.month}-${parts.day}`;
+    return date < today || (date === today && reservation.endTime <= `${parts.hour}:${parts.minute}`);
+  }
+
   /**
    * Converte a data informada para o padrão
    * utilizado pelo campo Date do Prisma.
@@ -1246,8 +1256,7 @@ class ReservationService extends BaseService {
       ![
         "PENDING",
         "APPROVED",
-      ].includes(before.status) &&
-      !(new Date(before.reservationDate).getTime() < Date.now())
+      ].includes(before.status)
     ) {
       throw new ApiError(
         "Esta reserva não pode mais ser cancelada.",
@@ -1415,7 +1424,8 @@ class ReservationService extends BaseService {
         "REJECTED",
         "CANCELED",
         "COMPLETED",
-      ].includes(before.status)
+      ].includes(before.status) &&
+      !this.hasReservationEnded(before)
     ) {
       throw new ApiError(
         "Somente reservas rejeitadas, canceladas, concluídas ou com data passada podem ser removidas.",

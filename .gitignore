@@ -14,6 +14,13 @@ dist-ssr
 
 # Docker/local environment
 backend/.env.docker
+.env
+.env.*
+!.env*.example
+recovery.env
+backups/
+*.dump
+*.partial
 
 # Editor directories and files
 .vscode/*

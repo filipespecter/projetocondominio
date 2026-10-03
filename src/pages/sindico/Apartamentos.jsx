@@ -620,7 +620,7 @@ function Apartamentos() {
                   onChange={(e) =>
                     setNovoAp({
                       ...novoAp,
-                      bloco: e.target.value.replace(/[^\p{L}\p{N} .\-/]/gu, "").toUpperCase()
+                      bloco: e.target.value.replace(/[^\p{L}\p{N} ]/gu, "").toUpperCase()
                     })
                   }
                   style={styles.input}
@@ -639,7 +639,7 @@ function Apartamentos() {
                   onChange={(e) =>
                     setNovoAp({
                       ...novoAp,
-                      numero: e.target.value.replace(/[^0-9A-Za-z-]/g, "")
+                      numero: e.target.value.replace(/[^\p{L}\p{N}]/gu, "")
                     })
                   }
                   style={styles.input}

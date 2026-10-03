@@ -1,5 +1,7 @@
 FROM node:22-alpine
 
+RUN apk add --no-cache postgresql16-client
+
 WORKDIR /app
 
 COPY package*.json ./

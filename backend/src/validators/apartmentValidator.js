@@ -137,15 +137,13 @@ const apartmentStatusSchema = z
  */
 const floorSchema = z
   .union([
-    z.number().int(
-      "O andar deve ser um número inteiro."
-    ),
+    z.number().int("O andar deve ser um número inteiro.").nonnegative("O andar não pode ser negativo."),
     z
       .string()
       .trim()
       .regex(
-        /^-?\d+$/,
-        "O andar deve ser um número inteiro."
+        /^\d+$/,
+        "O andar aceita apenas números inteiros não negativos."
       )
       .transform((value) =>
         Number(value)
@@ -174,7 +172,7 @@ export const createApartmentSchema = z
         50,
         "O bloco deve possuir no máximo 50 caracteres."
       )
-      .regex(/^[\p{L}\p{N}][\p{L}\p{N} .\-/]*$/u, "O bloco aceita letras, números, espaços, ponto, hífen e barra."),
+      .regex(/^[\p{L}\p{N}]+(?: [\p{L}\p{N}]+)*$/u, "O bloco aceita apenas letras, números e espaços entre palavras."),
 
     number: z
       .string()
@@ -187,7 +185,7 @@ export const createApartmentSchema = z
         30,
         "O número do apartamento deve possuir no máximo 30 caracteres."
       )
-      .regex(/^[\p{L}\p{N}][\p{L}\p{N}-]*$/u, "O número aceita letras, números e hífen."),
+      .regex(/^[\p{L}\p{N}]+$/u, "O número aceita apenas letras e números."),
 
     floor: floorSchema,
 
@@ -226,7 +224,7 @@ export const updateApartmentSchema = z
         50,
         "O bloco deve possuir no máximo 50 caracteres."
       )
-      .regex(/^[\p{L}\p{N}][\p{L}\p{N} .\-/]*$/u, "O bloco aceita letras, números, espaços, ponto, hífen e barra.")
+      .regex(/^[\p{L}\p{N}]+(?: [\p{L}\p{N}]+)*$/u, "O bloco aceita apenas letras, números e espaços entre palavras.")
       .optional(),
 
     number: z
@@ -240,7 +238,7 @@ export const updateApartmentSchema = z
         30,
         "O número do apartamento deve possuir no máximo 30 caracteres."
       )
-      .regex(/^[\p{L}\p{N}][\p{L}\p{N}-]*$/u, "O número aceita letras, números e hífen.")
+      .regex(/^[\p{L}\p{N}]+$/u, "O número aceita apenas letras e números.")
       .optional(),
 
     floor: floorSchema,

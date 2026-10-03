@@ -845,7 +845,7 @@ class NotificationService extends BaseService {
       APPROVED:
         "Sua solicitação de reserva foi aprovada.",
 
-      DENIED:
+      REJECTED:
         "Sua solicitação de reserva foi recusada.",
 
       CANCELED:
@@ -871,7 +871,7 @@ class NotificationService extends BaseService {
         module: "RESERVATION",
         referenceId: reservationId,
         priority:
-          status === "DENIED"
+          status === "REJECTED"
             ? "HIGH"
             : "NORMAL",
       }

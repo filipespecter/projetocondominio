@@ -1,5 +1,11 @@
 name: infinitycondo-production
 services:
+  migrate:
+    build: { context: ./backend, dockerfile: Dockerfile.production, target: deps }
+    profiles: ["tools"]
+    env_file: ./backend/.env.production
+    command: ["node", "node_modules/prisma/build/index.js", "migrate", "deploy"]
+    restart: "no"
   backend:
     build: { context: ./backend, dockerfile: Dockerfile.production }
     restart: unless-stopped
@@ -14,7 +20,7 @@ services:
     build: { context: ., dockerfile: Dockerfile.production }
     restart: unless-stopped
     read_only: true
-    tmpfs: [/var/cache/nginx, /var/run]
+    tmpfs: ["/var/cache/nginx:uid=101,gid=101,mode=0700", "/var/run:uid=101,gid=101,mode=0700"]
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
     ports: ["127.0.0.1:8080:8080"]

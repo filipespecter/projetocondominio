@@ -161,11 +161,6 @@ function Configuracoes() {
     const agora = new Date().toLocaleString("pt-BR"); setUltimoBackup(agora); feedback("Exportação das configurações gerada. O backup real do PostgreSQL é feito no servidor.");
   }
 
-  function restaurarBackup(event) {
-    event.target.value = "";
-    alert("A restauração direta pelo navegador foi desativada. Os dados reais estão no PostgreSQL e a restauração de backup deve ser feita pelo processo seguro do servidor.");
-  }
-
   const temaPersonalizadoAtivo = Boolean(config.tema?.aplicarTemaPersonalizado);
   const corPadraoInfinityCondo = "#7c3aed";
   const corPreview = temaPersonalizadoAtivo ? config.corTema : corPadraoInfinityCondo;
@@ -745,18 +740,17 @@ function Configuracoes() {
           </div>
 
           <div style={styles.infoGrid}>
-            <InfoCard title="Último backup" value={ultimoBackup} />
+            <InfoCard title="Última exportação" value={ultimoBackup} />
             <InfoCard title="Permissão" value={isMestre ? "Liberado" : "Restrito"} />
-            <InfoCard title="Tipo" value="Backup completo" />
+            <InfoCard title="Tipo" value="Apenas configurações" />
           </div>
 
           <div style={styles.backupGrid}>
             <div style={styles.backupCard}>
-              <h3>💾 Gerar Backup Completo</h3>
+              <h3>💾 Exportar configurações</h3>
               <p>
-                Baixe um arquivo JSON com configurações, usuários,
-                avisos, reservas, visitantes, encomendas, BI,
-                relatórios, notificações, auditoria e históricos.
+                Baixe um JSON com as configurações deste condomínio.
+                Ele não inclui moradores, reservas ou outros dados do PostgreSQL.
               </p>
 
               <button
@@ -764,27 +758,15 @@ function Configuracoes() {
                 onClick={gerarBackup}
                 disabled={!isMestre}
               >
-                Gerar backup
+                Exportar configurações
               </button>
             </div>
 
             <div style={styles.backupCardGold}>
-              <h3>♻️ Restaurar Backup</h3>
+              <h3>♻️ Backup do banco de dados</h3>
               <p>
-                Restaure dados a partir de um arquivo gerado anteriormente.
-                Esta ação sobrescreve os dados atuais.
+                O backup completo e a restauração do PostgreSQL são feitos pela equipe da plataforma no servidor. Solicite à Star Infinity Code quando precisar restaurar dados.
               </p>
-
-              <label style={styles.restoreButton}>
-                Selecionar arquivo
-                <input
-                  type="file"
-                  accept=".json"
-                  onChange={restaurarBackup}
-                  style={{ display: "none" }}
-                  disabled={!isMestre}
-                />
-              </label>
             </div>
           </div>
         </section>
