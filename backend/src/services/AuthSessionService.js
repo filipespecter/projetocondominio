@@ -18,7 +18,8 @@ class AuthSessionService {
     if(session.revokedAt||session.expiresAt<=new Date()){await this.revokeFamily(session.tokenFamilyId,"REFRESH_REUSE_DETECTED");throw new ApiError("Sessão revogada ou expirada.",401);}
     if(payload.sv!==session.user.securityVersion){await this.revokeFamily(session.tokenFamilyId,"SECURITY_VERSION_CHANGED");throw new ApiError("Sessão inválida. Entre novamente.",401);}
     const next=Jwt.generateRefreshToken(session.user,{sessionId:session.id,tokenFamilyId:session.tokenFamilyId,jti:crypto.randomUUID()}); const decoded=Jwt.decode(next);
-    await prisma.authSession.update({where:{id:session.id},data:{refreshTokenHash:hash(next),lastUsedAt:new Date(),expiresAt:new Date(decoded.exp*1000),ipAddress:context.ipAddress??session.ipAddress,userAgent:context.userAgent??session.userAgent}});
+    const rotated = await prisma.authSession.updateMany({where:{id:session.id,refreshTokenHash:hash(refreshToken),revokedAt:null,expiresAt:{gt:new Date()}},data:{refreshTokenHash:hash(next),lastUsedAt:new Date(),expiresAt:new Date(decoded.exp*1000),ipAddress:context.ipAddress??session.ipAddress,userAgent:context.userAgent??session.userAgent}});
+    if (rotated.count !== 1) throw new ApiError("Sessão renovada por outra solicitação. Tente novamente.",401);
     return {user:session.user,accessToken:Jwt.generateAccessToken(session.user,{sessionId:session.id}),refreshToken:next};
   }
   revokeSession(id,reason="LOGOUT"){return id?prisma.authSession.updateMany({where:{id,revokedAt:null},data:{revokedAt:new Date(),revokeReason:reason}}):Promise.resolve();}

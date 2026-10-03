@@ -5,3 +5,9 @@ dist
 backend
 *.log
 .env*
+
+recovery.env
+backups
+*.dump
+*.partial
+upload

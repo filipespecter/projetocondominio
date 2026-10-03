@@ -31,7 +31,7 @@
  */
 export const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
-  "http://localhost:3333/api";
+  (import.meta.env.PROD ? "/api" : "http://localhost:3333/api");
 
 /**
  * =====================================================
@@ -171,7 +171,17 @@ async function parseResponse(
  * Quando uma rota protegida responder 401 e houver
  * refreshToken salvo, tentamos renovar o par de tokens.
  */
-async function tryRefreshToken() {
+let refreshInFlight = null;
+function tryRefreshToken() {
+  if (!refreshInFlight) {
+    const renew = () => performRefreshToken();
+    refreshInFlight = (typeof navigator !== "undefined" && navigator.locks
+      ? navigator.locks.request("infinitycondo-refresh", renew)
+      : renew()).finally(() => { refreshInFlight = null; });
+  }
+  return refreshInFlight;
+}
+async function performRefreshToken() {
   try {
     const response =
       await fetch(

@@ -105,6 +105,7 @@ const envSchema = z.object({
 
 const resultado = envSchema.superRefine((value,context)=>{
   if(value.NODE_ENV==="production"){
+    if(value.FRONTEND_URL === "http://localhost:5173" || !value.FRONTEND_URL.startsWith("https://")) context.addIssue({code:"custom",path:["FRONTEND_URL"],message:"Informe o domínio HTTPS de produção."});
     for(const key of ["DATABASE_URL","JWT_ACCESS_SECRET","JWT_REFRESH_SECRET"]) if(!value[key]) context.addIssue({code:"custom",path:[key],message:`${key} é obrigatória em produção.`});
     if(value.WHATSAPP_ENABLED==="true"&&!value.WHATSAPP_APP_SECRET) context.addIssue({code:"custom",path:["WHATSAPP_APP_SECRET"],message:"Secret obrigatório quando WhatsApp está ativo."});
     if(value.MERCADO_PAGO_ENABLED==="true"&&!value.MERCADO_PAGO_WEBHOOK_SECRET) context.addIssue({code:"custom",path:["MERCADO_PAGO_WEBHOOK_SECRET"],message:"Secret obrigatório quando Mercado Pago está ativo."});

@@ -2,6 +2,7 @@ import Jwt from "../utils/Jwt.js";
 import { ApiError } from "../utils/ApiError.js";
 import UserSessionService from "../services/UserSessionService.js";
 import prisma from "../config/prisma.js";
+import { enforcePasswordChange } from "./passwordChangeGuard.js";
 
 /**
  * Extrai o token Bearer do cabeçalho Authorization.
@@ -65,10 +66,12 @@ export async function authMiddleware(
       );
     }
     const [user,session]=await Promise.all([
-      prisma.user.findFirst({where:{id:payload.sub,deletedAt:null},select:{id:true,condominiumId:true,role:true,status:true,securityVersion:true}}),
+      prisma.user.findFirst({where:{id:payload.sub,deletedAt:null},select:{id:true,condominiumId:true,role:true,status:true,securityVersion:true,mustChangePassword:true}}),
       payload.sid?prisma.authSession.findUnique({where:{id:payload.sid},select:{userId:true,revokedAt:true,expiresAt:true}}):null,
     ]);
     if(!user||user.status!=="ACTIVE"||user.securityVersion!==payload.sv||!session||session.userId!==user.id||session.revokedAt||session.expiresAt<=new Date()) throw new ApiError("Sessão inválida ou revogada.",401);
+
+    enforcePasswordChange(user, req);
 
     req.user = {
       id: payload.sub,
