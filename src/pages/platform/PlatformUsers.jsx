@@ -545,7 +545,7 @@ function PlatformUsers() {
                   <select
                     style={styles.select}
                     value={form.role}
-                    disabled={currentUser?.role !== "PLATFORM_OWNER"}
+                    disabled={editing ? currentUser?.role !== "PLATFORM_OWNER" : !["PLATFORM_OWNER", "PLATFORM_ADMIN"].includes(currentUser?.role)}
                     onChange={(e) => change("role", e.target.value)}
                   >
                     <option value="PLATFORM_SUPPORT">PLATFORM_SUPPORT — suporte</option>
@@ -811,7 +811,7 @@ function Timeline({ items, empty, render }) {
 
 function Modal({ children, onClose, wide = false }) {
   return (
-    <div style={styles.overlay} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="ic-modal-overlay" style={styles.overlay} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div style={{ ...styles.modal, ...(wide ? styles.modalWide : {}) }}>{children}</div>
     </div>
   );

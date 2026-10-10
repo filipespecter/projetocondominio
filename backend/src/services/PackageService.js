@@ -1,3 +1,5 @@
+import prisma from "../config/prisma.js";
+import PackageCredentialService from "./PackageCredentialService.js";
 import BaseService from "./BaseService.js";
 import AuditLogService from "./AuditLogService.js";
 import NotificationService from "./NotificationService.js";
@@ -291,7 +293,7 @@ class PackageService extends BaseService {
 
     if (
       !resident ||
-      resident.apartmentId !==
+      !resident.canViewPackages || resident.apartmentId !==
         packageRecord.apartmentId
     ) {
       throw new ApiError(
@@ -300,75 +302,8 @@ class PackageService extends BaseService {
       );
     }
 
-    let code;
-    let codeHash;
-
-    for (
-      let attempt = 0;
-      attempt < 20;
-      attempt += 1
-    ) {
-      code =
-        PickupCredential
-          .generateCode();
-
-      codeHash =
-        PickupCredential
-          .hash(code);
-
-      const collision =
-        await packageRepository
-          .findByPickupCodeHash(
-            condominiumId,
-            codeHash
-          );
-
-      if (!collision) {
-        break;
-      }
-
-      code = null;
-      codeHash = null;
-    }
-
-    if (!code || !codeHash) {
-      throw new ApiError(
-        "Não foi possível gerar o código de retirada. Tente novamente.",
-        500
-      );
-    }
-
-    const token =
-      PickupCredential
-        .generateToken();
-
-    const tokenHash =
-      PickupCredential
-        .hash(token);
-
-    const updated =
-      await packageRepository
-        .setPickupCredential(
-          id,
-          condominiumId,
-          tokenHash,
-          codeHash
-        );
-
-    if (!updated) {
-      throw new ApiError(
-        "Não foi possível gerar a credencial de retirada.",
-        409
-      );
-    }
-
-    return {
-      package: updated,
-      credential: {
-        qrToken: token,
-        code,
-      },
-    };
+    const credential=await PackageCredentialService.ensure(id,condominiumId);
+    return {package: await this.findById(id,condominiumId),credential};
   }
 
   async validatePickupCredential(
@@ -617,6 +552,8 @@ class PackageService extends BaseService {
             withdrawnDocument,
             withdrawnResidentBlock,
             withdrawnResidentApartment,
+            expectedTokenHash: validated.package.pickupTokenHash,
+            expectedCodeHash: validated.package.pickupCodeHash,
             pickupMethod:
               data.method,
             pickupPersonType,
@@ -635,6 +572,7 @@ class PackageService extends BaseService {
       );
     }
 
+    await prisma.packagePickupSecret.deleteMany({where:{packageId:id,condominiumId}});
     const recipients =
       await this
         .getApartmentRecipients(
@@ -798,11 +736,11 @@ class PackageService extends BaseService {
     packageRecord,
     requestId = null,
   }) {
-    const residents =
-      await this.getApartmentRecipients(
-        apartment.id,
-        condominiumId
-      );
+    const apartmentResidents = await this.getApartmentRecipients(apartment.id, condominiumId);
+    const residents = packageRecord.expectedByResidentId ? apartmentResidents.filter(resident => resident.id === packageRecord.expectedByResidentId) : apartmentResidents;
+
+    try { await PackageCredentialService.ensure(packageRecord.id,condominiumId); }
+    catch { /* Transport failures are shown in the notification result; receipt stays recorded. */ }
 
     if (residents.length === 0) {
       return {
@@ -1116,7 +1054,7 @@ class PackageService extends BaseService {
         }
       );
 
-    await this.notifyPackageArrival({
+    const notifications = await this.notifyPackageArrival({
       condominiumId,
       apartment,
       packageRecord,
@@ -1137,7 +1075,7 @@ class PackageService extends BaseService {
       requestContext,
     });
 
-    return packageRecord;
+    return {...packageRecord,notifications};
   }
 
   /**
@@ -1185,7 +1123,7 @@ class PackageService extends BaseService {
       );
     }
 
-    await this.notifyPackageArrival({
+    const notifications = await this.notifyPackageArrival({
       condominiumId,
       apartment:
         packageRecord.apartment,
@@ -1209,7 +1147,7 @@ class PackageService extends BaseService {
         requestContext,
       });
 
-    return packageRecord;
+    return {...packageRecord,notifications};
   }
 
   /**
@@ -1222,64 +1160,8 @@ class PackageService extends BaseService {
     authenticatedUser,
     requestContext = null
   ) {
-    if (!authenticatedUser?.id) {
-      throw new ApiError(
-        "Usuário responsável pela entrega não identificado.",
-        401
-      );
-    }
-
-    const before =
-      await this.findById(
-        id,
-        condominiumId
-      );
-
-    if (before.status !== "RECEIVED") {
-      throw new ApiError(
-        "Somente encomendas recebidas podem ser entregues.",
-        409
-      );
-    }
-
-    if (!withdrawnBy) {
-      throw new ApiError(
-        "Informe o nome da pessoa que retirou a encomenda.",
-        400
-      );
-    }
-
-    const packageRecord =
-      await packageRepository.deliver(
-        id,
-        condominiumId,
-        authenticatedUser.id,
-        String(withdrawnBy).trim()
-      );
-
-    if (!packageRecord) {
-      throw new ApiError(
-        "Encomenda não encontrada ou já entregue.",
-        404
-      );
-    }
-
-    await AuditLogService
-      .logStatusChange({
-        condominiumId,
-        user: authenticatedUser,
-        module: "PACKAGE",
-        referenceId: id,
-        previousStatus:
-          before.status,
-        newStatus:
-          packageRecord.status,
-        details:
-          `Encomenda retirada por ${String(withdrawnBy).trim()}.`,
-        requestContext,
-      });
-
-    return packageRecord;
+    void id; void condominiumId; void withdrawnBy; void authenticatedUser; void requestContext;
+    throw new ApiError("Retirada exige QR Code ou código. Use a validação de retirada da portaria.",422);
   }
 
   /**

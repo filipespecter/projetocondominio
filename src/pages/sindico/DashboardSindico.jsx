@@ -423,7 +423,7 @@ function DashboardSindico() {
         )}
       </div>
             {mostrarManual && (
-        <div style={styles.overlay}>
+        <div className="ic-modal-overlay" style={styles.overlay}>
           <div style={styles.modal}>
             <div style={styles.modalHero}>
               <div>

@@ -22,7 +22,7 @@ function Configuracoes() {
     notificarReserva: true, notificarEncomenda: true, notificarOcorrencia: true, notificarVisitante: true, notificarSugestao: true, notificarReclamacao: true
   });
 
-  const [whatsappConfig, setWhatsappConfig] = useState({ ativo: false, provider: "Evolution", token: "", numeroEmpresa: "", webhook: "" });
+  const [whatsappConfig, setWhatsappConfig] = useState({ ativo: false, channel: "EMAIL", provider: "Meta Cloud API", token: "", appSecret: "", verifyToken: "", phoneNumberId: "", templateName: "", languageCode: "pt_BR", apiVersion: "v23.0", numeroEmpresa: "", webhook: "" });
   const [biConfig, setBiConfig] = useState({ periodoPadrao: "30dias", exportacaoAutomatica: false, retencaoHistorico: "12 meses", dashboardExecutivo: true });
   const [segurancaConfig, setSegurancaConfig] = useState({ jwtAtivo: true, tempoSessao: 60, refreshToken: true, loginPorPerfil: true });
 
@@ -94,9 +94,14 @@ function Configuracoes() {
     await executar(async () => { await configurationApi.updateSettings("preferences", preferencias); }, "Preferências salvas com sucesso.");
   }
 
+  const [messagingHistory,setMessagingHistory]=useState([]);
   async function salvarWhatsapp() {
-    await executar(async () => { await configurationApi.updateSettings("whatsapp", whatsappConfig); }, "Configurações de WhatsApp salvas com sucesso.");
+    await executar(async () => { const saved=await configurationApi.updateSettings("whatsapp", whatsappConfig); setWhatsappConfig(saved); }, "Canal de avisos salvo. Faça o teste de conexão e envio antes de utilizar.");
   }
+  async function testarWhatsapp() { await executar(async()=>{const result=await configurationApi.testWhatsapp(); alert(result.message); await carregarTudo();}, "Conexão consultada."); }
+  async function carregarHistorico() { await executar(async()=>setMessagingHistory(await configurationApi.messagingHistory()), "Histórico atualizado."); }
+  async function reenviarAviso(id) {await executar(async()=>{await configurationApi.retryMessage(id); setMessagingHistory(await configurationApi.messagingHistory());}, "Nova tentativa registrada.");}
+
 
   async function salvarBI() {
     await executar(async () => { await configurationApi.updateSettings("bi", biConfig); }, "Configurações do BI salvas com sucesso.");
@@ -774,97 +779,24 @@ function Configuracoes() {
 
       {abaAtiva === "whatsapp" && (
         <section style={styles.panel}>
-          <div style={styles.panelHeader}>
-            <div>
-              <span style={styles.panelBadgeGold}>Integração WhatsApp</span>
-              <h2 style={styles.panelTitle}>WhatsApp Business</h2>
-            </div>
-
-            <button style={styles.primaryButton} onClick={salvarWhatsapp}>
-              Salvar WhatsApp
-            </button>
-          </div>
-
-          <div style={styles.warningBox}>
-            Configure as preferências de comunicação do condomínio pelo WhatsApp.
-          </div>
-
+          <div style={styles.panelHeader}><div><span style={styles.panelBadgeGold}>Avisos de encomendas</span><h2 style={styles.panelTitle}>WhatsApp ou e-mail</h2></div><button style={styles.primaryButton} onClick={salvarWhatsapp}>Salvar canal</button></div>
+          <p style={styles.warningBox}>Ao registrar uma encomenda, a portaria aciona o aviso automaticamente. Sem WhatsApp ativo, o aviso usa o e-mail cadastrado do morador. E-mail depende do serviço de envio configurado na plataforma.</p>
           <div style={styles.formGrid}>
-            <Campo label="Integração ativa">
-              <select
-                value={whatsappConfig.ativo ? "Sim" : "Não"}
-                onChange={(e) =>
-                  setWhatsappConfig({
-                    ...whatsappConfig,
-                    ativo: e.target.value === "Sim"
-                  })
-                }
-                style={styles.input}
-              >
-                <option>Não</option>
-                <option>Sim</option>
-              </select>
-            </Campo>
-
-            <Campo label="Provider">
-              <select
-                value={whatsappConfig.provider}
-                onChange={(e) =>
-                  setWhatsappConfig({
-                    ...whatsappConfig,
-                    provider: e.target.value
-                  })
-                }
-                style={styles.input}
-              >
-                <option>Evolution</option>
-                <option>Meta Cloud API</option>
-                <option>Z-API</option>
-                <option>Outro</option>
-              </select>
-            </Campo>
-
-            <Campo label="Número da empresa">
-              <input
-                value={whatsappConfig.numeroEmpresa}
-                onChange={(e) =>
-                  setWhatsappConfig({
-                    ...whatsappConfig,
-                    numeroEmpresa: e.target.value
-                  })
-                }
-                style={styles.input}
-              />
-            </Campo>
-
-            <Campo label="Token / API Key">
-              <input
-                value={whatsappConfig.token}
-                onChange={(e) =>
-                  setWhatsappConfig({
-                    ...whatsappConfig,
-                    token: e.target.value
-                  })
-                }
-                style={styles.input}
-              />
-            </Campo>
-
-            <div style={styles.groupFull}>
-              <label style={styles.label}>Webhook</label>
-
-              <input
-                value={whatsappConfig.webhook}
-                onChange={(e) =>
-                  setWhatsappConfig({
-                    ...whatsappConfig,
-                    webhook: e.target.value
-                  })
-                }
-                style={styles.input}
-              />
-            </div>
+            <Campo label="Canal de aviso"><select style={styles.input} value={whatsappConfig.channel} onChange={e=>setWhatsappConfig({...whatsappConfig,channel:e.target.value})}><option value="EMAIL">E-mail</option><option value="WHATSAPP">WhatsApp oficial do condomínio</option></select></Campo>
+            <Campo label="WhatsApp ativo"><select style={styles.input} value={whatsappConfig.ativo?"Sim":"Não"} onChange={e=>setWhatsappConfig({...whatsappConfig,ativo:e.target.value==="Sim"})}><option>Não</option><option>Sim</option></select></Campo>
+            {whatsappConfig.channel==="WHATSAPP" && <>
+              <Campo label="ID do número na Meta"><input style={styles.input} value={whatsappConfig.phoneNumberId} onChange={e=>setWhatsappConfig({...whatsappConfig,phoneNumberId:e.target.value})} /></Campo>
+              <Campo label="Número remetente"><input style={styles.input} value={whatsappConfig.numeroEmpresa} onChange={e=>setWhatsappConfig({...whatsappConfig,numeroEmpresa:e.target.value})} /></Campo>
+              <Campo label="Nome do modelo aprovado"><input style={styles.input} value={whatsappConfig.templateName} onChange={e=>setWhatsappConfig({...whatsappConfig,templateName:e.target.value})} placeholder="encomenda_recebida" /></Campo>
+              <Campo label="Idioma do modelo"><input style={styles.input} value={whatsappConfig.languageCode} onChange={e=>setWhatsappConfig({...whatsappConfig,languageCode:e.target.value})} /></Campo>
+              <Campo label="Versão da API"><input style={styles.input} value={whatsappConfig.apiVersion} onChange={e=>setWhatsappConfig({...whatsappConfig,apiVersion:e.target.value})} /></Campo>
+              {[['token','Token de acesso'],['appSecret','Segredo do aplicativo'],['verifyToken','Token de verificação do webhook']].map(([key,label])=><Campo key={key} label={label}><input type="password" autoComplete="new-password" style={styles.input} value={whatsappConfig[key]||""} placeholder={whatsappConfig.hasCredentials?"Deixe vazio para manter o valor salvo":""} onChange={e=>setWhatsappConfig({...whatsappConfig,[key]:e.target.value})}/></Campo>)}
+              <Campo label="URL do webhook"><input style={styles.input} value={whatsappConfig.webhook} readOnly /></Campo>
+            </>}
           </div>
+          {whatsappConfig.channel==="WHATSAPP" && <><p>Use um número conectado à API oficial da Meta. Cadastrar um telefone comum não conecta o WhatsApp. O modelo deve conter três parâmetros no corpo, nesta ordem: condomínio, bloco/apartamento e código de retirada. Autorize apenas os moradores que aceitaram receber avisos.</p><button style={styles.primaryButton} onClick={testarWhatsapp}>Testar conexão salva</button><p>{whatsappConfig.verifiedAt?"Credenciais verificadas; envio e webhook ainda devem ser testados.":"Conexão ainda não verificada."}</p></>}
+          <h3>Últimos avisos de encomendas</h3><button style={styles.secondaryButton} onClick={carregarHistorico}>Atualizar histórico</button>
+          <div style={{overflowX:"auto"}}><table><thead><tr><th>Data</th><th>Canal</th><th>Destinatário</th><th>Status</th><th>Ação</th></tr></thead><tbody>{messagingHistory.map(item=><tr key={item.id}><td>{new Date(item.createdAt).toLocaleString("pt-BR")}</td><td>{item.channel}</td><td>{item.recipient}</td><td>{item.status}</td><td>{["FAILED","PENDING"].includes(item.status)&&<button onClick={()=>reenviarAviso(item.id)}>Tentar novamente</button>}</td></tr>)}</tbody></table></div>
         </section>
       )}
 

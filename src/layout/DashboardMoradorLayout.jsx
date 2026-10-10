@@ -1,3 +1,4 @@
+import ResponsiveNavigation from "../components/ResponsiveNavigation.jsx";
 import {
   Outlet,
   Link,
@@ -131,7 +132,7 @@ function DashboardMoradorLayout() {
       <NotificationCenter />
 {/* SIDEBAR */}
 
-      <aside className="app-dashboard-sidebar" style={styles.sidebar}>
+      <ResponsiveNavigation><aside className="app-dashboard-sidebar" style={styles.sidebar}>
 
         <div style={styles.sidebarGlow}></div>
         <div style={styles.sidebarGrid}></div>
@@ -385,7 +386,7 @@ function DashboardMoradorLayout() {
 
         </div>
 
-      </aside>
+      </aside></ResponsiveNavigation>
 
       {/* CONTEÚDO */}
 

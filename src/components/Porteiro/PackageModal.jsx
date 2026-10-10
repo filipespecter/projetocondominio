@@ -1,3 +1,4 @@
+import {packageNotificationWarning} from "../../utils/packageNotificationStatus.js";
 import { useEffect, useState } from "react";
 import packageApi from "../../Services/packageApi.js";
 
@@ -188,7 +189,7 @@ function PackageModal({ apartamento, onClose }) {
     }
 
     try {
-      await packageApi.createReceived({
+      const received=await packageApi.createReceived({
         apartmentId,
         expectedByResidentId:
           morador?.id ??
@@ -208,6 +209,7 @@ function PackageModal({ apartamento, onClose }) {
         expectedAt: null,
       });
 
+      const warning=packageNotificationWarning(received); if(warning) alert(warning);
       limparFormulario();
       setAbaAtiva("pendentes");
       await carregarEncomendas();
@@ -256,7 +258,7 @@ function PackageModal({ apartamento, onClose }) {
 
 
   return (
-    <div style={styles.overlay}>
+    <div className="ic-modal-overlay" style={styles.overlay}>
       <div style={styles.modal}>
         <div style={styles.hero}>
           <div>

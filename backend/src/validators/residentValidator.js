@@ -308,6 +308,7 @@ export const createResidentSchema = z
       .optional()
       .default(true),
 
+    whatsappOptIn: z.boolean().optional().default(false),
     canViewPackages: z
       .boolean()
       .optional()
@@ -373,6 +374,7 @@ export const updateResidentSchema = z
     canOpenOccurrence:
       z.boolean().optional(),
 
+    whatsappOptIn: z.boolean().optional(),
     canViewPackages:
       z.boolean().optional(),
 

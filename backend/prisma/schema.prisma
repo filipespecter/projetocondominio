@@ -646,6 +646,7 @@ model Resident {
   isPrimary    Boolean      @default(false)
   canReserve   Boolean      @default(true)
   canOpenOccurrence Boolean @default(true)
+  whatsappOptIn Boolean @default(false)
   canViewPackages Boolean   @default(true)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
@@ -1650,3 +1651,24 @@ model SystemEvent {
   @@index([resolvedAt])
 }
 
+
+model TenantMessagingConfig {
+  condominiumId String @id @db.Uuid
+  channel String @default("EMAIL")
+  enabled Boolean @default(false)
+  phoneNumberId String?
+  displayPhone String?
+  templateName String?
+  languageCode String @default("pt_BR")
+  apiVersion String @default("v23.0")
+  secrets String?
+  verifiedAt DateTime?
+  updatedAt DateTime @updatedAt
+}
+model PackagePickupSecret {
+  packageId String @id @db.Uuid
+  condominiumId String @db.Uuid
+  encrypted String
+  createdAt DateTime @default(now())
+  @@index([condominiumId])
+}

@@ -351,7 +351,7 @@ function PlatformCondominiums() {
       </PlatformCard>
 
       {approvalTarget && approvalForm && (
-        <div style={styles.overlay}>
+        <div className="ic-modal-overlay" style={styles.overlay}>
           <form style={styles.modalWide} onSubmit={submitApproval}>
             <div style={styles.modalHeader}>
               <div>
@@ -413,8 +413,7 @@ function PlatformCondominiums() {
       )}
 
       {rejectTarget && (
-        <div
-          style={styles.overlay}
+        <div className="ic-modal-overlay" style={styles.overlay}
           onMouseDown={(event) =>
             event.target === event.currentTarget &&
             setRejectTarget(null)

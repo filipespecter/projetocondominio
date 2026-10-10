@@ -1,3 +1,4 @@
+import TenantMessagingService from "./TenantMessagingService.js";
 import WhatsAppProvider from "./providers/WhatsAppProvider.js";
 import EmailProvider from "./providers/EmailProvider.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -74,6 +75,7 @@ class CommunicationProviderService {
   }
 
   async send({
+    condominiumId,
     channel,
     provider = null,
     recipient,
@@ -82,11 +84,7 @@ class CommunicationProviderService {
     content,
     metadata = null,
   }) {
-    const selectedProvider =
-      this.getProvider(
-        channel,
-        provider
-      );
+    const selectedProvider = channel === "WHATSAPP" ? await TenantMessagingService.provider(condominiumId) : this.getProvider(channel, provider);
 
     return selectedProvider.send({
       recipient,

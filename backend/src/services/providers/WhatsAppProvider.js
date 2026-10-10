@@ -1,3 +1,4 @@
+import { normalizeWhatsAppPhone } from "../../utils/MessagingSecrets.js";
 import crypto from "node:crypto";
 
 import { ApiError } from "../../utils/ApiError.js";
@@ -12,38 +13,39 @@ import { ApiError } from "../../utils/ApiError.js";
  * Nenhuma credencial deve ser escrita diretamente
  * neste arquivo. Toda configuração vem do ambiente.
  */
-class WhatsAppProvider {
+export class WhatsAppProvider {
+  constructor(configuration = null) { this.configuration = configuration; }
   get providerName() {
     return "META_CLOUD_API";
   }
 
   get accessToken() {
     return String(
-      process.env.WHATSAPP_ACCESS_TOKEN ?? ""
+      (this.configuration ? this.configuration.accessToken : process.env.WHATSAPP_ACCESS_TOKEN) ?? ""
     ).trim();
   }
 
   get phoneNumberId() {
     return String(
-      process.env.WHATSAPP_PHONE_NUMBER_ID ?? ""
+      (this.configuration ? this.configuration.phoneNumberId : process.env.WHATSAPP_PHONE_NUMBER_ID) ?? ""
     ).trim();
   }
 
   get apiVersion() {
     return String(
-      process.env.WHATSAPP_API_VERSION ?? "v23.0"
+      (this.configuration ? this.configuration.apiVersion : process.env.WHATSAPP_API_VERSION) ?? "v23.0"
     ).trim();
   }
 
   get verifyToken() {
     return String(
-      process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN ?? ""
+      (this.configuration ? this.configuration.verifyToken : process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN) ?? ""
     ).trim();
   }
 
   get appSecret() {
     return String(
-      process.env.WHATSAPP_APP_SECRET ?? ""
+      (this.configuration ? this.configuration.appSecret : process.env.WHATSAPP_APP_SECRET) ?? ""
     ).trim();
   }
 
@@ -64,21 +66,7 @@ class WhatsAppProvider {
   }
 
   normalizePhone(phone) {
-    const normalized =
-      String(phone ?? "")
-        .replace(/\D/g, "");
-
-    if (
-      normalized.length < 10 ||
-      normalized.length > 15
-    ) {
-      throw new ApiError(
-        "Número de WhatsApp inválido.",
-        400
-      );
-    }
-
-    return normalized;
+    return normalizeWhatsAppPhone(phone);
   }
 
   buildTextPayload({
@@ -193,6 +181,7 @@ class WhatsAppProvider {
           `${this.baseUrl}/${this.phoneNumberId}/messages`,
           {
             method: "POST",
+            signal: AbortSignal.timeout(20000),
             headers: {
               Authorization:
                 `Bearer ${this.accessToken}`,

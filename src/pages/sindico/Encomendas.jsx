@@ -1,4 +1,5 @@
-import { confirmDialog, promptDialog } from "../../components/GlobalDialogs.jsx";
+import {packageNotificationWarning} from "../../utils/packageNotificationStatus.js";
+import { confirmDialog } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useState } from "react";
 import packageApi from "../../Services/packageApi.js";
 
@@ -336,9 +337,8 @@ function Encomendas() {
           payload
         );
       } else {
-        await packageApi.createReceived(
-          payload
-        );
+        const received = await packageApi.createReceived(payload);
+        const warning=packageNotificationWarning(received); if(warning) alert(warning);
       }
 
       await carregar();
@@ -357,21 +357,7 @@ function Encomendas() {
   ) {
     try {
       if (status === "Entregue") {
-        const retiradoPor =
-          await promptDialog(
-            "Nome de quem retirou a encomenda:"
-          );
-
-        if (!retiradoPor?.trim()) {
-          return;
-        }
-
-        await packageApi.deliver(
-          id,
-          retiradoPor.trim()
-        );
-
-        await carregar();
+        alert("A retirada deve ser confirmada pela portaria com QR Code ou código de retirada.");
         return;
       }
 

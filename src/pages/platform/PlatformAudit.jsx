@@ -291,7 +291,7 @@ function PlatformAudit() {
       </PlatformCard>
 
       {selected ? (
-        <div style={styles.overlay} onMouseDown={(event) => event.target === event.currentTarget && setSelected(null)}>
+        <div className="ic-modal-overlay" style={styles.overlay} onMouseDown={(event) => event.target === event.currentTarget && setSelected(null)}>
           <div style={styles.modal}>
             <div style={styles.modalHead}>
               <div>
@@ -328,7 +328,7 @@ function PlatformAudit() {
       ) : null}
 
       {archiveTarget || clearModal ? (
-        <div style={styles.overlay} onMouseDown={(event) => event.target === event.currentTarget && !busy && closeActionModal()}>
+        <div className="ic-modal-overlay" style={styles.overlay} onMouseDown={(event) => event.target === event.currentTarget && !busy && closeActionModal()}>
           <form style={{ ...styles.modal, maxWidth: 520 }} onSubmit={clearModal ? clearVisible : archiveOne}>
             <span style={styles.badge}>{clearModal ? "LIMPAR VISUALIZAÇÃO" : "OCULTAR REGISTRO"}</span>
             <h2 style={styles.modalTitle}>{clearModal ? "Limpar o histórico visível?" : "Ocultar este registro?"}</h2>

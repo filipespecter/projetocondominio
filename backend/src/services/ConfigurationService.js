@@ -1,3 +1,4 @@
+import TenantMessagingService from "./TenantMessagingService.js";
 import CondominiumService from "./CondominiumService.js";
 import UserService from "./UserService.js";
 import AuditLogService from "./AuditLogService.js";
@@ -8,7 +9,7 @@ class ConfigurationService {
     const value = settings && typeof settings === "object" && !Array.isArray(settings) ? settings : {};
     return {
       preferences: value.preferences || {},
-      whatsapp: value.whatsapp || {},
+      whatsapp: {},
       bi: value.bi || {},
       security: value.security || {},
       theme: value.theme || {},
@@ -73,7 +74,7 @@ class ConfigurationService {
         observacoesComerciais: settings.commercial?.observacoesComerciais || "",
       },
       preferences: settings.preferences,
-      whatsapp: settings.whatsapp,
+      whatsapp: await TenantMessagingService.get(condominiumId),
       bi: settings.bi,
       security: {
         jwtAtivo: true,
@@ -95,6 +96,7 @@ class ConfigurationService {
     const current = await CondominiumService.findById(condominiumId);
     const currentSettings = this.normalizeSettings(current.settings);
     const theme = payload.tema || {};
+    if (payload.settings || payload.whatsapp) throw new ApiError("Use a configuração específica de comunicação.",422);
 
     const settings = {
       ...currentSettings,
@@ -138,6 +140,7 @@ class ConfigurationService {
       throw new ApiError("Apenas o administrador do condomínio pode alterar segurança.", 403);
     }
 
+    if (group === "whatsapp") return TenantMessagingService.save(authenticatedUser, payload);
     const current = await CondominiumService.findById(authenticatedUser.condominiumId);
     const settings = this.normalizeSettings(current.settings);
 

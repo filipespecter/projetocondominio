@@ -1,3 +1,6 @@
+import PackageCredentialService from "./PackageCredentialService.js";
+import TenantMessagingService from "./TenantMessagingService.js";
+import prisma from "../config/prisma.js";
 import CommunicationService from "./CommunicationService.js";
 
 import userRepository from "../repositories/UserRepository.js";
@@ -105,44 +108,28 @@ class CommunicationTriggerService {
     residents,
     requestId = null,
   }) {
-    const apartmentLabel =
-      `${apartment.block} - ${apartment.number}`;
-
-    const content =
-      `InfinityCondo: uma encomenda foi recebida para o apartamento ${apartmentLabel}.`;
-
-    const results =
-      await Promise.all(
-        residents.map(
-          (resident) =>
-            this.sendToUser({
-              condominiumId,
-              userId:
-                resident.userId,
-              content,
-              module:
-                "PACKAGE",
-              referenceId:
-                packageRecord.id,
-              requestId,
-              metadata: {
-                event:
-                  "PACKAGE_RECEIVED",
-                apartmentId:
-                  apartment.id,
-              },
-            })
-        )
-      );
-
-    return {
-      count:
-        results.filter(
-          (result) =>
-            result?.queued
-        ).length,
-      results,
-    };
+    const config=await TenantMessagingService.get(condominiumId);
+    const condo=await prisma.condominium.findUnique({where:{id:condominiumId},select:{name:true}});
+    // Generate independently of transport availability; failures never undo receipt.
+    try { await PackageCredentialService.ensure(packageRecord.id,condominiumId); }
+    catch { /* Sending records a failed attempt without undoing the package receipt. */ }
+    const results=[];
+    for(const resident of residents) {
+      const channel=config.ativo ? config.channel : "EMAIL";
+      if(channel==="WHATSAPP" && !resident.whatsappOptIn) {
+        results.push({queued:false,reason:"Morador não autorizou avisos por WhatsApp.",userId:resident.userId}); continue;
+      }
+      try {
+        results.push(await CommunicationService.queueAndSend({condominiumId,recipientUserId:resident.userId,channel,
+          provider:channel==="WHATSAPP"?"META_CLOUD_API":null,
+          subject:`${condo?.name||"Condomínio"}: encomenda na portaria`,
+          content:`${condo?.name||"Condomínio"}: encomenda recebida para bloco ${apartment.block}, apartamento ${apartment.number}.`,
+          templateCode:channel==="WHATSAPP"?config.templateName:null,
+          module:"PACKAGE",referenceId:packageRecord.id,requestId,
+          metadata:{event:"PACKAGE_RECEIVED",apartmentId:apartment.id,condominiumName:condo?.name||"Condomínio",apartmentLabel:`${apartment.block} - ${apartment.number}`,languageCode:config.languageCode,pickupCredential:true},preventDuplicate:true}));
+      } catch { results.push({failed:true,userId:resident.userId,error:"Falha ao enviar aviso. Consulte o histórico de comunicação."}); }
+    }
+    return {count:results.filter(r=>r?.status==="SENT"||r?.queued).length,results};
   }
 
   async notifyReservationStatus({

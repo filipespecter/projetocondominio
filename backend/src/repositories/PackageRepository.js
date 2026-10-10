@@ -571,6 +571,8 @@ class PackageRepository extends BaseRepository {
           condominiumId,
           status: "RECEIVED",
           pickupUsedAt: null,
+          pickupTokenHash: data.expectedTokenHash,
+          pickupCodeHash: data.expectedCodeHash,
           deletedAt: null,
         },
         {

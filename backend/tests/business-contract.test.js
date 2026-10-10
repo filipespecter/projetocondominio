@@ -182,7 +182,7 @@ test("services cobrem filtros chamados pelos controllers", async () => {
   assert.match(notice, /async\s+findByApartment\s*\(/);
 });
 
-test("frontend possui entrega manual de encomenda e troca obrigatória de senha", async () => {
+test("frontend possui API de entrega legada e troca obrigatória de senha", async () => {
   const packages = await source("src/Services/packageApi.js");
   assert.match(packages, /async\s+deliver\s*\(/);
   assert.match(packages, /\/v1\/packages\/\$\{id\}\/deliver/);

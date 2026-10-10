@@ -1,3 +1,4 @@
+import ResponsiveNavigation from "../components/ResponsiveNavigation.jsx";
 import { useEffect, useRef, useState } from "react";
 
 import {
@@ -195,7 +196,7 @@ function DashboardLayout() {
     <div className="app-dashboard-shell" style={{ ...styles.container, ...themeVariables }}>
       
       <NotificationCenter />
-<aside ref={sidebarRef} className="app-dashboard-sidebar" style={styles.sidebar}>
+<ResponsiveNavigation><aside ref={sidebarRef} className="app-dashboard-sidebar" style={styles.sidebar}>
         <div style={styles.sidebarGlow}></div>
         <div style={styles.sidebarGrid}></div>
 
@@ -439,7 +440,7 @@ function DashboardLayout() {
             Encerrar sessão
           </button>
         </div>
-      </aside>
+      </aside></ResponsiveNavigation>
 
       <main className="app-dashboard-content" style={styles.content}>
         <GlobalSearch />

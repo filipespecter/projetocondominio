@@ -6,14 +6,14 @@ import residentApi from "../../Services/residentApi";
 function limparTelefone(valor) {
   return String(valor ?? "")
     .replace(/\D/g, "")
-    .slice(0, 11);
+    .slice(0, 15);
 }
 
 function Moradores() {
   const estadoInicialMorador = {
     id: null, nome: "", apto: "", apartamento: "", telefone: "", documento: "", email: "",
     usuario: "", senha: "", status: "Ativo", tipoMorador: "Proprietário",
-    moradorPrincipal: false, perfilMorador: "principal", apartamentoId: null,
+    whatsappOptIn: false, moradorPrincipal: false, perfilMorador: "principal", apartamentoId: null,
     permissoesMorador: { podeReservar: true, podeAbrirSugestao: true, podeVisualizarEncomendas: true }
   };
 
@@ -39,6 +39,7 @@ function Moradores() {
     const number = r.apartment?.number ?? r.apartmentNumber ?? "";
     return {
       ...r,
+      whatsappOptIn: r.whatsappOptIn === true,
       nome: user.name ?? r.name ?? "",
       usuario: user.username ?? r.username ?? "",
       email: user.email ?? r.email ?? "",
@@ -121,6 +122,7 @@ function Moradores() {
       name: novoMorador.nome.trim(),
       username: novoMorador.usuario.trim(),
       email: novoMorador.email?.trim() || null,
+      whatsappOptIn: novoMorador.whatsappOptIn === true,
       phone: novoMorador.telefone?.trim() || null,
       document: novoMorador.documento?.trim() || null,
       residentType: typeBack[novoMorador.tipoMorador] ?? "OWNER",
@@ -543,6 +545,7 @@ function Moradores() {
                 </select>
               </div>
 
+              <div style={styles.formRow}><label style={styles.label}><input type="checkbox" checked={Boolean(novoMorador.whatsappOptIn)} onChange={e=>setNovoMorador({...novoMorador,whatsappOptIn:e.target.checked})} /> Morador autorizou receber avisos de encomendas por WhatsApp neste número</label></div>
               <div style={styles.formRow}>
                 <label style={styles.label}>
                   Telefone
@@ -550,8 +553,8 @@ function Moradores() {
 
                 <input
                   inputMode="numeric"
-                  maxLength="11"
-                  placeholder="Ex: 81999999999"
+                  maxLength="15"
+                  placeholder="DDD + número, ou DDI + DDD + número"
                   value={novoMorador.telefone}
                   onChange={(e) =>
                     setNovoMorador({

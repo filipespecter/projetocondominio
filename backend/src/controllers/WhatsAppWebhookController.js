@@ -8,7 +8,7 @@ class WhatsAppWebhookController {
   ) {
     try {
       const challenge =
-        WhatsAppWebhookService
+        await WhatsAppWebhookService
           .verifyChallenge(
             req.query
           );
@@ -43,6 +43,7 @@ class WhatsAppWebhookController {
 
       await WhatsAppWebhookService
         .processStatusWebhook({
+          condominiumId: req.query.condominiumId,
           payload:
             req.body,
           rawBody,

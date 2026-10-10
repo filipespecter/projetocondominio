@@ -277,6 +277,7 @@ class ResidentRepository extends BaseRepository {
           data.apartmentId,
         userId:
           data.userId,
+        whatsappOptIn: data.whatsappOptIn === true,
         residentType:
           data.residentType ?? "OWNER",
         isPrimary:
@@ -305,6 +306,7 @@ class ResidentRepository extends BaseRepository {
     data
   ) {
     const updateData = {};
+    if(data.whatsappOptIn !== undefined) updateData.whatsappOptIn=data.whatsappOptIn;
 
     if (
       data.apartmentId !== undefined

@@ -1,9 +1,12 @@
+import TenantMessagingService from "./TenantMessagingService.js";
+import { ApiError } from "../utils/ApiError.js";
 import communicationLogRepository from "../repositories/CommunicationLogRepository.js";
 import WhatsAppProvider from "./providers/WhatsAppProvider.js";
 
 class WhatsAppWebhookService {
-  verifyChallenge(query) {
-    return WhatsAppProvider
+  async verifyChallenge(query) {
+    const provider = query.condominiumId ? await TenantMessagingService.provider(query.condominiumId,false) : WhatsAppProvider;
+    return provider
       .verifyWebhookChallenge({
         mode:
           query[
@@ -26,11 +29,14 @@ class WhatsAppWebhookService {
   }
 
   async processStatusWebhook({
+    condominiumId,
     payload,
     rawBody,
     signature,
   }) {
-    WhatsAppProvider
+    if(!condominiumId) throw new ApiError("Condomínio obrigatório no webhook.",422);
+    const provider=await TenantMessagingService.provider(condominiumId,false);
+    provider
       .verifyWebhookSignature({
         rawBody,
         signature,
@@ -54,7 +60,7 @@ class WhatsAppWebhookService {
             event.providerMessageId
           );
 
-      if (!communication) {
+      if (!communication || communication.condominiumId !== condominiumId) {
         results.push({
           providerMessageId:
             event.providerMessageId,
@@ -64,6 +70,7 @@ class WhatsAppWebhookService {
         continue;
       }
 
+      if (communication.status === "DELIVERED" || communication.status === "CANCELED") { results.push({providerMessageId:event.providerMessageId,found:true,status:communication.status}); continue; }
       let updated =
         communication;
 

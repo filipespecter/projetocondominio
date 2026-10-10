@@ -3,6 +3,9 @@ import api from "./api.js";
 const unwrap = (response) => response?.data?.data ?? response?.data ?? response ?? null;
 
 const configurationApi = {
+  async testWhatsapp() { return unwrap(await api.post("/v1/configuration/whatsapp/test", {})); },
+  async messagingHistory() { return unwrap(await api.get("/v1/configuration/messaging/history")); },
+  async retryMessage(id) { return unwrap(await api.post(`/v1/configuration/messaging/${id}/retry`, {})); },
   async getAll() { return unwrap(await api.get("/v1/configuration")); },
   async updateCondominium(data) { return unwrap(await api.patch("/v1/configuration/condominium", data)); },
   async updateSettings(group, data) { return unwrap(await api.patch(`/v1/configuration/settings/${group}`, data)); },

@@ -235,7 +235,7 @@ function PlatformClients() {
       </PlatformCard>
 
       {selected && (
-        <div style={styles.overlay} onMouseDown={(event) => event.target === event.currentTarget && setSelected(null)}>
+        <div className="ic-modal-overlay" style={styles.overlay} onMouseDown={(event) => event.target === event.currentTarget && setSelected(null)}>
           <div style={styles.modal}>
             <div style={styles.modalHeader}>
               <div>

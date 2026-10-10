@@ -1,3 +1,6 @@
+import { normalizeWhatsAppPhone } from "../utils/MessagingSecrets.js";
+import PackageCredentialService from "./PackageCredentialService.js";
+import prisma from "../config/prisma.js";
 import communicationLogRepository from "../repositories/CommunicationLogRepository.js";
 import userRepository from "../repositories/UserRepository.js";
 import AuditLogService from "./AuditLogService.js";
@@ -45,23 +48,7 @@ class CommunicationService {
       channel ===
       "WHATSAPP"
     ) {
-      const digits =
-        value.replace(
-          /\D/g,
-          ""
-        );
-
-      if (
-        digits.length < 10 ||
-        digits.length > 15
-      ) {
-        throw new ApiError(
-          "Número de WhatsApp inválido.",
-          400
-        );
-      }
-
-      return digits;
+      return normalizeWhatsAppPhone(value);
     }
 
     return value
@@ -356,9 +343,20 @@ class CommunicationService {
       .markAttempt(id);
 
     try {
+      let content=before.contentSnapshot;
+      let metadata=before.metadata;
+      if(metadata?.pickupCredential && before.module==="PACKAGE") {
+        const resident=await prisma.resident.findFirst({where:{condominiumId:before.condominiumId,userId:before.recipientUserId,deletedAt:null},include:{user:true}});
+        const pkg=await prisma.package.findFirst({where:{id:before.referenceId,condominiumId:before.condominiumId,status:"RECEIVED",deletedAt:null}});
+        if(!resident || !pkg || resident.apartmentId!==pkg.apartmentId || !resident.canViewPackages || resident.user.status!=="ACTIVE" || (before.channel==="WHATSAPP"&&!resident.whatsappOptIn) || this.normalizeRecipient(before.channel,before.channel==="WHATSAPP"?resident.user.phone:resident.user.email)!==before.recipient) throw new ApiError("Destinatário ou encomenda não está mais elegível para o aviso.",409);
+        const credential=await PackageCredentialService.ensure(before.referenceId,before.condominiumId);
+        content+=` Código de retirada: ${credential.code}. Apresente à portaria. O QR Code está disponível no portal do morador. Não compartilhe a credencial.`;
+        metadata={...metadata,components:[{type:"body",parameters:[metadata.condominiumName,metadata.apartmentLabel,credential.code].map(text=>({type:"text",text:String(text)}))}]};
+      }
       const result =
         await CommunicationProviderService
           .send({
+            condominiumId: before.condominiumId,
             channel:
               before.channel,
             provider:
@@ -370,9 +368,8 @@ class CommunicationService {
             templateCode:
               before.templateCode,
             content:
-              before.contentSnapshot,
-            metadata:
-              before.metadata,
+              content,
+            metadata,
           });
 
       const sent =

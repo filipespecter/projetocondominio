@@ -72,24 +72,24 @@ function Home() {
   const navigate = useNavigate();
 
   return (
-    <div style={styles.container}>
+    <div className="ic-home" style={styles.container}>
       <div style={styles.bgOrbOne}></div>
       <div style={styles.bgOrbTwo}></div>
 
-      <div style={styles.homeBox}>
+      <div className="ic-home-box" style={styles.homeBox}>
         <div style={styles.brandMark}>✦</div>
 
         <span style={styles.brandBadge}>
           Star Infinity Code
         </span>
 
-        <h1 style={styles.title}>InfinityCondo</h1>
+        <h1 className="ic-home-title" style={styles.title}>InfinityCondo</h1>
 
-        <p style={styles.subtitle}>
+        <p className="ic-home-subtitle" style={styles.subtitle}>
           Plataforma inteligente de gestão condominial.
         </p>
 
-        <div style={styles.cards}>
+        <div className="ic-home-cards" style={styles.cards}>
           <div onClick={() => navigate("/login/sindico")}>
             <AccessCard
               icon={<FaUserShield />}

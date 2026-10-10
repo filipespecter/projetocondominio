@@ -355,6 +355,7 @@ class ResidentService extends BaseService {
               userId:
                 createdUser.id,
 
+              whatsappOptIn: data.whatsappOptIn === true,
               residentType,
 
               isPrimary:
@@ -509,6 +510,7 @@ class ResidentService extends BaseService {
      * Atualiza os campos específicos do Resident.
      */
     const residentData = {};
+    if(data.whatsappOptIn !== undefined) residentData.whatsappOptIn=data.whatsappOptIn;
 
     if (
       data.apartmentId !== undefined

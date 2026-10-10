@@ -58,7 +58,7 @@ function PackagePickupQr({
     );
 
   return (
-    <div style={styles.overlay}>
+    <div className="ic-modal-overlay" style={styles.overlay}>
       <div style={styles.modal}>
         <div style={styles.header}>
           <div>

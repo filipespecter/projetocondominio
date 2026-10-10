@@ -740,7 +740,7 @@ function Login() {
 
   if (trocaObrigatoria) {
     return (
-      <div style={styles.container}>
+      <div className="ic-login" style={styles.container}>
         <div style={{ ...styles.formSide, width: "min(520px, 100%)", borderRadius: "32px", boxShadow: "0 30px 80px rgba(88,28,135,0.16)", zIndex: 2 }}>
           <div style={{ ...styles.iconCircle, background: perfil.gradient }}><FaKey size={38} color="white" /></div>
           <span style={styles.profileBadge}>Primeiro acesso</span>
@@ -775,7 +775,7 @@ function Login() {
    * O acesso é identificado pelo usuário ou e-mail e pelo perfil do portal.
    */
   return (
-    <div style={styles.container}>
+    <div className="ic-login" style={styles.container}>
       <div style={styles.glowGreen}></div>
       <div style={styles.glowGold}></div>
       <div style={styles.gridOverlay}></div>
@@ -786,8 +786,8 @@ function Login() {
         }
       </div>
 
-      <div style={styles.loginShell}>
-        <div style={styles.formSide}>
+      <div className="ic-login-shell" style={styles.loginShell}>
+        <div className="ic-login-form" style={styles.formSide}>
           <button
             style={styles.backButton}
             onClick={() =>
@@ -1010,7 +1010,7 @@ function Login() {
           </p>
         </div>
 
-        <div style={styles.infoSide}>
+        <div className="ic-login-info" style={styles.infoSide}>
           <div>
             <div
               style={
@@ -1094,7 +1094,7 @@ function Login() {
        * =================================================
        */}
       {recuperarSenha && (
-        <div style={styles.modalOverlay}>
+        <div className="ic-modal-overlay" style={styles.modalOverlay}>
           <div style={{ ...styles.warningModal, width: "min(480px, calc(100vw - 32px))" }}>
             <div style={styles.warningIcon}>🔐</div>
             <h2 style={styles.warningTitle}>Recuperar acesso</h2>

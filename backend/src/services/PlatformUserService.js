@@ -59,8 +59,7 @@ class PlatformUserService {
     if (
       actor.role ===
       "PLATFORM_ADMIN" &&
-      targetRole ===
-        "PLATFORM_SUPPORT"
+      ["PLATFORM_ADMIN", "PLATFORM_SUPPORT"].includes(targetRole)
     ) {
       return;
     }
