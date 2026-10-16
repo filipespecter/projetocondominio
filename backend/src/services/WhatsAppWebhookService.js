@@ -1,11 +1,12 @@
+import prisma from "../config/prisma.js";
+import { WhatsAppProvider as Provider } from "./providers/WhatsAppProvider.js";
 import TenantMessagingService from "./TenantMessagingService.js";
-import { ApiError } from "../utils/ApiError.js";
 import communicationLogRepository from "../repositories/CommunicationLogRepository.js";
 import WhatsAppProvider from "./providers/WhatsAppProvider.js";
 
 class WhatsAppWebhookService {
   async verifyChallenge(query) {
-    const provider = query.condominiumId ? await TenantMessagingService.provider(query.condominiumId,false) : WhatsAppProvider;
+    const provider = query.condominiumId ? await TenantMessagingService.provider(query.condominiumId,false) : new Provider({verifyToken:process.env.META_WEBHOOK_VERIFY_TOKEN||process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN,appSecret:process.env.META_APP_SECRET||process.env.WHATSAPP_APP_SECRET});
     return provider
       .verifyWebhookChallenge({
         mode:
@@ -34,7 +35,19 @@ class WhatsAppWebhookService {
     rawBody,
     signature,
   }) {
-    if(!condominiumId) throw new ApiError("Condomínio obrigatório no webhook.",422);
+    if(!condominiumId) {
+      // Endpoint único do aplicativo: autentica antes de usar qualquer ID recebido.
+      new Provider({appSecret:process.env.META_APP_SECRET}).verifyWebhookSignature({rawBody,signature});
+      const batches=[];
+      for (const entry of payload?.entry||[]) for (const change of entry.changes||[]) {
+        const phoneNumberId=change.value?.metadata?.phone_number_id;
+        if (!phoneNumberId) continue;
+        const config=await prisma.tenantMessagingConfig.findUnique({where:{phoneNumberId:String(phoneNumberId)}});
+        if (!config || config.wabaId!==String(entry.id)) continue;
+        batches.push(await this.processStatusWebhook({condominiumId:config.condominiumId,payload:{entry:[{...entry,changes:[change]}]},rawBody,signature}));
+      }
+      return {processed:batches};
+    }
     const provider=await TenantMessagingService.provider(condominiumId,false);
     provider
       .verifyWebhookSignature({

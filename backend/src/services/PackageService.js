@@ -742,7 +742,8 @@ class PackageService extends BaseService {
     try { await PackageCredentialService.ensure(packageRecord.id,condominiumId); }
     catch { /* Transport failures are shown in the notification result; receipt stays recorded. */ }
 
-    if (residents.length === 0) {
+    const contacts=await prisma.apartmentContact.findMany({where:{condominiumId,apartmentId:apartment.id,deletedAt:null,receiveNotices:true}});
+    if (residents.length === 0 && contacts.length === 0) {
       return {
         count: 0,
         whatsapp: {
@@ -782,6 +783,7 @@ class PackageService extends BaseService {
           apartment,
           packageRecord,
           residents,
+          contacts,
           requestId,
         });
 

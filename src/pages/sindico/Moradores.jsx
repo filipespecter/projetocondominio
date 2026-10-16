@@ -1,3 +1,4 @@
+import ApartmentContacts from "../../components/ApartmentContacts.jsx";
 import { confirmDialog } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useState } from "react";
 import apartmentApi from "../../Services/apartmentApi";
@@ -186,6 +187,7 @@ function Moradores() {
 
   return (
     <div style={styles.container}>
+      <ApartmentContacts apartments={apartamentos} residents={moradores} />
       <section style={styles.hero}>
         <div style={styles.heroLeft}>
           <span style={styles.heroBadge}>

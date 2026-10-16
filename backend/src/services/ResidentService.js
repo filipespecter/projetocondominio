@@ -1,3 +1,4 @@
+import ApartmentContactService from "./ApartmentContactService.js";
 import BaseService from "./BaseService.js";
 import UserService from "./UserService.js";
 import AuditLogService from "./AuditLogService.js";
@@ -292,6 +293,8 @@ class ResidentService extends BaseService {
         400
       );
     }
+
+    await ApartmentContactService.requireComplete(data.apartmentId, condominiumId);
 
     await this.validateApartment(
       data.apartmentId,

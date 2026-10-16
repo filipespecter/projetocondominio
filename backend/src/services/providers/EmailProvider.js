@@ -8,7 +8,7 @@ class EmailProvider {
     if (!email || !email.includes("@")) throw new ApiError("E-mail de destino inválido.", 400);
 
     if (this.providerName === "CONSOLE" && process.env.NODE_ENV !== "production") {
-      console.log(`[EMAIL DEV] Para: ${email} | ${subject ?? "InfinityCondo"} | ${content}`);
+      console.log("[EMAIL DEV] Envio simulado; conteúdo e destinatário omitidos.");
       return { provider: "CONSOLE", providerMessageId: `dev-${Date.now()}` };
     }
 
@@ -26,6 +26,7 @@ class EmailProvider {
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({ from, to: [email], subject: subject ?? "InfinityCondo", text: String(content ?? "") }),
+        signal: AbortSignal.timeout(20000),
       });
     } catch (error) {
       throw new ApiError(`Falha de conexão com o serviço de e-mail: ${error.message}`, 502);

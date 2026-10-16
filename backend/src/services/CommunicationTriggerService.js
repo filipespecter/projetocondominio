@@ -1,3 +1,4 @@
+import { normalizeWhatsAppPhone } from "../utils/MessagingSecrets.js";
 import PackageCredentialService from "./PackageCredentialService.js";
 import TenantMessagingService from "./TenantMessagingService.js";
 import prisma from "../config/prisma.js";
@@ -107,6 +108,7 @@ class CommunicationTriggerService {
     packageRecord,
     residents,
     requestId = null,
+    contacts = [],
   }) {
     const config=await TenantMessagingService.get(condominiumId);
     const condo=await prisma.condominium.findUnique({where:{id:condominiumId},select:{name:true}});
@@ -128,6 +130,27 @@ class CommunicationTriggerService {
           module:"PACKAGE",referenceId:packageRecord.id,requestId,
           metadata:{event:"PACKAGE_RECEIVED",apartmentId:apartment.id,condominiumName:condo?.name||"Condomínio",apartmentLabel:`${apartment.block} - ${apartment.number}`,languageCode:config.languageCode,pickupCredential:true},preventDuplicate:true}));
       } catch { results.push({failed:true,userId:resident.userId,error:"Falha ao enviar aviso. Consulte o histórico de comunicação."}); }
+    }
+    const seen=new Set(residents.flatMap(r=>{
+      if(config.ativo&&config.channel==="WHATSAPP") {
+        if(!r.whatsappOptIn||!r.user?.phone)return [];
+        try{return [normalizeWhatsAppPhone(r.user.phone)];}catch{return [];}
+      }
+      return r.user?.email?[r.user.email.trim().toLowerCase()]:[];
+    }));
+    for(const contact of contacts) {
+      const channel=config.ativo?config.channel:"EMAIL";
+      if(!contact.receiveNotices) continue;
+      if(channel==="WHATSAPP"&&!contact.whatsappOptIn) {results.push({queued:false,contactId:contact.id,reason:"Contato não autorizou avisos por WhatsApp."});continue;}
+      const recipient=channel==="WHATSAPP"?contact.phone:contact.email;
+      if(seen.has(recipient)) continue;
+      seen.add(recipient);
+      try {
+        results.push(await CommunicationService.queueAndSend({condominiumId,recipient,channel,provider:channel==="WHATSAPP"?"META_CLOUD_API":null,
+          subject:`${condo?.name||"Condomínio"}: encomenda na portaria`,content:`${condo?.name||"Condomínio"}: encomenda recebida para bloco ${apartment.block}, apartamento ${apartment.number}.`,
+          templateCode:channel==="WHATSAPP"?config.templateName:"PACKAGE_RECEIVED_CONTACT",module:"PACKAGE",referenceId:packageRecord.id,requestId,
+          metadata:{event:"PACKAGE_RECEIVED",contactId:contact.id,apartmentId:apartment.id,condominiumName:condo?.name||"Condomínio",apartmentLabel:`${apartment.block} - ${apartment.number}`,languageCode:config.languageCode,contactNotice:true,pickupCredential:contact.canPickup},preventDuplicate:true}));
+      } catch {results.push({failed:true,contactId:contact.id,error:"Falha ao enviar aviso ao contato autorizado."});}
     }
     return {count:results.filter(r=>r?.status==="SENT"||r?.queued).length,results};
   }

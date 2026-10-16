@@ -428,6 +428,7 @@ class CommunicationLogRepository extends BaseRepository {
       await this.model.updateMany({
         where: {
           id,
+          OR: [{lastAttemptAt:null},{lastAttemptAt:{lt:new Date(Date.now()-60000)}}],
           status: {
             in: [
               "PENDING",

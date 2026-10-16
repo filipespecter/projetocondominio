@@ -1,3 +1,4 @@
+import PortariaMessaging from "../../components/PortariaMessaging.jsx";
 import { useEffect, useState } from "react";
 import { me as getAuthenticatedUser } from "../../Services/authApi.js";
 import packageApi from "../../Services/packageApi.js";
@@ -191,6 +192,7 @@ function EncomendasPorteiro() {
 
   return (
     <div style={styles.container}>
+      <PortariaMessaging />
       <div style={styles.hero}>
         <div>
           <span style={styles.heroBadge}>

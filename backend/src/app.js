@@ -24,6 +24,8 @@ app.set("trust proxy",env.TRUST_PROXY);
  */
 app.use(requestContextMiddleware);
 
+// O desafio do webhook pode carregar token de verificação na query.
+morgan.token("url", req => String(req.originalUrl || req.url || "").split("?")[0]);
 app.use(morgan(env.NODE_ENV==="production"?"combined":"dev"));
 
 app.use(helmet());

@@ -1,3 +1,4 @@
+import WhatsAppConnection from "../../components/WhatsAppConnection.jsx";
 import { confirmDialog } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useState } from "react";
 import configurationApi from "../../Services/configurationApi.js";
@@ -780,11 +781,12 @@ function Configuracoes() {
       {abaAtiva === "whatsapp" && (
         <section style={styles.panel}>
           <div style={styles.panelHeader}><div><span style={styles.panelBadgeGold}>Avisos de encomendas</span><h2 style={styles.panelTitle}>WhatsApp ou e-mail</h2></div><button style={styles.primaryButton} onClick={salvarWhatsapp}>Salvar canal</button></div>
-          <p style={styles.warningBox}>Ao registrar uma encomenda, a portaria aciona o aviso automaticamente. Sem WhatsApp ativo, o aviso usa o e-mail cadastrado do morador. E-mail depende do serviço de envio configurado na plataforma.</p>
+          <p style={styles.warningBox}>Ao registrar uma encomenda, a portaria aciona o aviso automaticamente aos moradores e contatos autorizados. Com WhatsApp desativado, usa e-mail. A falha de uma mensagem WhatsApp não gera envio automático por e-mail. E-mail depende do serviço configurado na plataforma.</p>
+          <WhatsAppConnection config={whatsappConfig} onUpdated={carregarTudo} />
           <div style={styles.formGrid}>
             <Campo label="Canal de aviso"><select style={styles.input} value={whatsappConfig.channel} onChange={e=>setWhatsappConfig({...whatsappConfig,channel:e.target.value})}><option value="EMAIL">E-mail</option><option value="WHATSAPP">WhatsApp oficial do condomínio</option></select></Campo>
             <Campo label="WhatsApp ativo"><select style={styles.input} value={whatsappConfig.ativo?"Sim":"Não"} onChange={e=>setWhatsappConfig({...whatsappConfig,ativo:e.target.value==="Sim"})}><option>Não</option><option>Sim</option></select></Campo>
-            {whatsappConfig.channel==="WHATSAPP" && <>
+            {whatsappConfig.channel==="WHATSAPP" && (!whatsappConfig.onboardingStatus||whatsappConfig.onboardingStatus==="MANUAL") && <details style={{gridColumn:"1 / -1"}}><summary>Configuração técnica avançada (opcional)</summary><div style={styles.formGrid}>
               <Campo label="ID do número na Meta"><input style={styles.input} value={whatsappConfig.phoneNumberId} onChange={e=>setWhatsappConfig({...whatsappConfig,phoneNumberId:e.target.value})} /></Campo>
               <Campo label="Número remetente"><input style={styles.input} value={whatsappConfig.numeroEmpresa} onChange={e=>setWhatsappConfig({...whatsappConfig,numeroEmpresa:e.target.value})} /></Campo>
               <Campo label="Nome do modelo aprovado"><input style={styles.input} value={whatsappConfig.templateName} onChange={e=>setWhatsappConfig({...whatsappConfig,templateName:e.target.value})} placeholder="encomenda_recebida" /></Campo>
@@ -792,7 +794,7 @@ function Configuracoes() {
               <Campo label="Versão da API"><input style={styles.input} value={whatsappConfig.apiVersion} onChange={e=>setWhatsappConfig({...whatsappConfig,apiVersion:e.target.value})} /></Campo>
               {[['token','Token de acesso'],['appSecret','Segredo do aplicativo'],['verifyToken','Token de verificação do webhook']].map(([key,label])=><Campo key={key} label={label}><input type="password" autoComplete="new-password" style={styles.input} value={whatsappConfig[key]||""} placeholder={whatsappConfig.hasCredentials?"Deixe vazio para manter o valor salvo":""} onChange={e=>setWhatsappConfig({...whatsappConfig,[key]:e.target.value})}/></Campo>)}
               <Campo label="URL do webhook"><input style={styles.input} value={whatsappConfig.webhook} readOnly /></Campo>
-            </>}
+            </div></details>}
           </div>
           {whatsappConfig.channel==="WHATSAPP" && <><p>Use um número conectado à API oficial da Meta. Cadastrar um telefone comum não conecta o WhatsApp. O modelo deve conter três parâmetros no corpo, nesta ordem: condomínio, bloco/apartamento e código de retirada. Autorize apenas os moradores que aceitaram receber avisos.</p><button style={styles.primaryButton} onClick={testarWhatsapp}>Testar conexão salva</button><p>{whatsappConfig.verifiedAt?"Credenciais verificadas; envio e webhook ainda devem ser testados.":"Conexão ainda não verificada."}</p></>}
           <h3>Últimos avisos de encomendas</h3><button style={styles.secondaryButton} onClick={carregarHistorico}>Atualizar histórico</button>

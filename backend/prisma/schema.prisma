@@ -632,6 +632,7 @@ model Apartment {
 
   @@unique([condominiumId, block, number])
   @@index([condominiumId, status])
+  @@unique([id, condominiumId])
   @@index([condominiumId, number])
   @@index([deletedAt])
 }
@@ -1656,7 +1657,11 @@ model TenantMessagingConfig {
   condominiumId String @id @db.Uuid
   channel String @default("EMAIL")
   enabled Boolean @default(false)
-  phoneNumberId String?
+  phoneNumberId String? @unique
+  wabaId String?
+  onboardingStatus String @default("MANUAL")
+  templateStatus String?
+  webhookSubscribed Boolean @default(false)
   displayPhone String?
   templateName String?
   languageCode String @default("pt_BR")
@@ -1671,4 +1676,30 @@ model PackagePickupSecret {
   encrypted String
   createdAt DateTime @default(now())
   @@index([condominiumId])
+}
+
+model ApartmentContact {
+  id String @id @default(uuid()) @db.Uuid
+  condominiumId String @db.Uuid
+  apartmentId String @db.Uuid
+  name String
+  email String
+  phone String
+  relationship String
+  receiveNotices Boolean @default(true)
+  whatsappOptIn Boolean @default(false)
+  canPickup Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+  @@index([condominiumId, apartmentId, deletedAt])
+}
+model MessagingConnectionAttempt {
+  stateHash String @id
+  condominiumId String @db.Uuid
+  userId String @db.Uuid
+  expiresAt DateTime
+  consumedAt DateTime?
+  createdAt DateTime @default(now())
+  @@index([expiresAt])
 }

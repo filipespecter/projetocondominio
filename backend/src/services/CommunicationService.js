@@ -1,3 +1,4 @@
+import ApartmentContactService from "./ApartmentContactService.js";
 import { normalizeWhatsAppPhone } from "../utils/MessagingSecrets.js";
 import PackageCredentialService from "./PackageCredentialService.js";
 import prisma from "../config/prisma.js";
@@ -339,19 +340,28 @@ class CommunicationService {
       return before;
     }
 
-    await communicationLogRepository
-      .markAttempt(id);
+    const claimed = await communicationLogRepository.markAttempt(id);
+    if (!claimed) throw new ApiError("Aviso já está sendo enviado ou foi concluído. Atualize o histórico.",409);
 
     try {
       let content=before.contentSnapshot;
       let metadata=before.metadata;
-      if(metadata?.pickupCredential && before.module==="PACKAGE") {
-        const resident=await prisma.resident.findFirst({where:{condominiumId:before.condominiumId,userId:before.recipientUserId,deletedAt:null},include:{user:true}});
+      if((metadata?.pickupCredential || metadata?.contactNotice) && before.module==="PACKAGE") {
         const pkg=await prisma.package.findFirst({where:{id:before.referenceId,condominiumId:before.condominiumId,status:"RECEIVED",deletedAt:null}});
-        if(!resident || !pkg || resident.apartmentId!==pkg.apartmentId || !resident.canViewPackages || resident.user.status!=="ACTIVE" || (before.channel==="WHATSAPP"&&!resident.whatsappOptIn) || this.normalizeRecipient(before.channel,before.channel==="WHATSAPP"?resident.user.phone:resident.user.email)!==before.recipient) throw new ApiError("Destinatário ou encomenda não está mais elegível para o aviso.",409);
-        const credential=await PackageCredentialService.ensure(before.referenceId,before.condominiumId);
-        content+=` Código de retirada: ${credential.code}. Apresente à portaria. O QR Code está disponível no portal do morador. Não compartilhe a credencial.`;
-        metadata={...metadata,components:[{type:"body",parameters:[metadata.condominiumName,metadata.apartmentLabel,credential.code].map(text=>({type:"text",text:String(text)}))}]};
+        if(!pkg) throw new ApiError("Encomenda não está mais disponível.",409);
+        let canPickup=true;
+        if(metadata.contactId) {
+          const contact=await ApartmentContactService.eligibleForMessage(before,pkg);
+          canPickup=contact.canPickup;
+        } else {
+          const resident=await prisma.resident.findFirst({where:{condominiumId:before.condominiumId,userId:before.recipientUserId,deletedAt:null},include:{user:true}});
+          if(!resident || resident.apartmentId!==pkg.apartmentId || !resident.canViewPackages || resident.user.status!=="ACTIVE" || (before.channel==="WHATSAPP"&&!resident.whatsappOptIn) || this.normalizeRecipient(before.channel,before.channel==="WHATSAPP"?resident.user.phone:resident.user.email)!==before.recipient) throw new ApiError("Destinatário ou encomenda não está mais elegível para o aviso.",409);
+        }
+        const credential=canPickup?await PackageCredentialService.ensure(before.referenceId,before.condominiumId):null;
+        const instructions=canPickup?`Código de retirada: ${credential.code}. Apresente à portaria. Não compartilhe a credencial.`:"Avise o responsável autorizado pela retirada. Este aviso não autoriza retirar a encomenda.";
+        content+=` ${instructions}`;
+        const thirdParameter=credential?.code||"Consulte o responsável autorizado pela retirada.";
+        metadata={...metadata,components:[{type:"body",parameters:[metadata.condominiumName,metadata.apartmentLabel,thirdParameter].map(text=>({type:"text",text:String(text)}))}]};
       }
       const result =
         await CommunicationProviderService

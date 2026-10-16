@@ -1,3 +1,4 @@
+import ApartmentContactService from "../services/ApartmentContactService.js";
 import { Router } from "express";
 
 import ApartmentController from "../controllers/ApartmentController.js";
@@ -115,6 +116,13 @@ apartmentRoutes.get(
       next
     )
 );
+
+apartmentRoutes.get("/:id/contacts", administrativeRoles, async (req,res,next) => {
+  try { res.json({ success:true, data:await ApartmentContactService.list(req.params.id,req.user.condominiumId) }); } catch(e) { next(e); }
+});
+apartmentRoutes.put("/:id/contacts", authorizeRoles("CONDOMINIUM_ADMIN"), async (req,res,next) => {
+  try { res.json({ success:true, data:await ApartmentContactService.save(req.user,req.params.id,req.body.contacts) }); } catch(e) { next(e); }
+});
 
 /**
  * GET /api/v1/apartments/:id
