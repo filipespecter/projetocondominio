@@ -143,6 +143,8 @@ function Home() {
 
         <p style={styles.footer}>
           Powered by <strong>Star Infinity Code</strong> © 2026
+          <br />
+          <a href="/privacidade.html" style={{ color: "inherit" }}>Política de Privacidade</a>
         </p>
       </div>
     </div>
