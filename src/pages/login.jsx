@@ -12,6 +12,7 @@ import {
 } from "react-icons/fa";
 
 import { useState } from "react";
+import { completeFirstAccess } from "../utils/completeFirstAccess.js";
 
 
 import authApi, {
@@ -675,18 +676,30 @@ function Login() {
 
     setTrocandoSenha(true);
     try {
-      await authApi.changePassword({
+      const usuarioConfirmado = await completeFirstAccess(authApi, {
+        portalType: tipo,
+        username: usuario.trim(),
         currentPassword: senha,
         newPassword: novaSenha,
         newPasswordConfirmation: confirmacaoNovaSenha,
       });
-      const usuarioConfirmado = await authApi.me();
       const dadosSessao = montarDadosSessao(usuarioConfirmado);
       salvarSessao(dadosSessao);
       setTrocaObrigatoria(false);
       navigate(obterRotaDestino(), { replace: true });
     } catch (error) {
-      setErro(error?.message ?? "Não foi possível alterar a senha.");
+      if (error?.passwordChanged || error?.status === 401) {
+        authApi.clearAuthTokens();
+        setTrocaObrigatoria(false);
+        setSenha("");
+        setNovaSenha("");
+        setConfirmacaoNovaSenha("");
+        setErro(error?.passwordChanged
+          ? "Sua senha foi alterada. Entre novamente com a nova senha."
+          : "Sua sessão expirou. Entre novamente para continuar.");
+      } else {
+        setErro(error?.message ?? "Não foi possível alterar a senha. Tente novamente.");
+      }
     } finally {
       setTrocandoSenha(false);
     }

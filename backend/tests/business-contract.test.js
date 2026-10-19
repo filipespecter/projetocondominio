@@ -189,7 +189,10 @@ test("frontend possui API de entrega legada e troca obrigatória de senha", asyn
 
   const login = await source("src/pages/login.jsx");
   assert.match(login, /mustChangePassword\s*===\s*true/);
-  assert.match(login, /authApi\.changePassword\s*\(/);
+  assert.match(login, /completeFirstAccess\(authApi/);
+  const firstAccess = await source("src/utils/completeFirstAccess.js");
+  assert.match(firstAccess, /await auth\.changePassword/);
+  assert.match(firstAccess, /await auth\.login/);
 });
 
 test("Docker de primeira inicialização aplica migrations antes do seed", async () => {

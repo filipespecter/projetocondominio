@@ -495,8 +495,8 @@ class AuthService {
 
     if (!currentPasswordMatches) {
       throw new ApiError(
-        "A senha atual está incorreta.",
-        401
+        "Senha atual incorreta. Tente novamente.",
+        400
       );
     }
 
