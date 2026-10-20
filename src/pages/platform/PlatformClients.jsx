@@ -14,6 +14,7 @@ import {
 } from "react-icons/fa";
 
 import platformApi from "../../Services/platformApi.js";
+import ClientPasswordReset from "../../components/ClientPasswordReset.jsx";
 import {
   PlatformCard,
   PlatformEmpty,
@@ -277,6 +278,7 @@ function PlatformClients() {
               ]} />
             </div>
 
+            <ClientPasswordReset key={selected.id} client={selected} />
             <div style={styles.modalFooter}>
               <span><FaPhone /> Central mantém controle de plano, acesso e cobrança deste cliente.</span>
               <button type="button" style={styles.filterButton} onClick={() => setSelected(null)}>Fechar</button>

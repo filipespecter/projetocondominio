@@ -1,4 +1,6 @@
 import { Router } from "express";
+import resetClientPassword from "../services/ClientPasswordResetService.js";
+import { resetLimiter, requireTrustedOrigin } from "../middlewares/securityMiddleware.js";
 
 import PlatformCondominiumController from "../controllers/PlatformCondominiumController.js";
 
@@ -165,6 +167,20 @@ platformCondominiumRoutes.get(
       res,
       next
     )
+);
+
+platformCondominiumRoutes.post(
+  "/:id/users/:userId/temporary-password",
+  platformManagementMiddleware,
+  requireTrustedOrigin,
+  resetLimiter,
+  async (req, res, next) => {
+    res.set("Cache-Control", "no-store");
+    try {
+      const data = await resetClientPassword({ actor: req.user, condominiumId: req.params.id, userId: req.params.userId, data: req.body, context: { ipAddress: req.ip, userAgent: req.get("user-agent") } });
+      res.json({ success: true, message: "Senha temporária definida. Oriente o cliente a alterá-la no próximo acesso.", data });
+    } catch (error) { next(error); }
+  }
 );
 
 export default platformCondominiumRoutes;

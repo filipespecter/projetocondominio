@@ -11,7 +11,7 @@ import {
   FaKey,
 } from "react-icons/fa";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { completeFirstAccess } from "../utils/completeFirstAccess.js";
 
 
@@ -44,6 +44,19 @@ function Login() {
    * ESTADOS DA TELA
    * =====================================================
    */
+  const [blockedUntil, setBlockedUntil] = useState(null);
+  const [remainingSeconds, setRemainingSeconds] = useState(0);
+  useEffect(() => {
+    if (!blockedUntil) return;
+    const tick = () => {
+      const remaining = Math.max(0, Math.ceil((blockedUntil - Date.now()) / 1000));
+      setRemainingSeconds(remaining);
+      if (!remaining) { setBlockedUntil(null); setErro("O período de bloqueio terminou. Você pode tentar entrar novamente."); }
+    };
+    tick(); const timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
+  }, [blockedUntil]);
+
   const [usuario, setUsuario] =
     useState("");
 
@@ -470,7 +483,7 @@ function Login() {
    * =====================================================
    */
   async function fazerLogin() {
-    if (carregando) {
+    if (carregando || remainingSeconds > 0) {
       return;
     }
 
@@ -608,13 +621,22 @@ function Login() {
        * =================================================
        */
 
+      if (error?.status === 429) {
+        const until = Date.parse(error?.details?.lockedUntil);
+        if (Number.isFinite(until) && until > Date.now()) {
+          setBlockedUntil(until);
+          setRemainingSeconds(Math.ceil((until - Date.now()) / 1000));
+        }
+        setErro(error?.message || "Muitas tentativas. Aguarde antes de tentar novamente.");
+        return;
+      }
       if (
         error?.status === 401
       ) {
         setErro(
           tipo === "platform"
             ? "Usuário ou senha inválidos"
-            : "Usuário, senha ou código do condomínio inválidos"
+            : "Usuário ou senha incorretos. Confira os dados e tente novamente."
         );
 
         return;
@@ -948,6 +970,7 @@ function Login() {
             </div>
           )}
 
+          {remainingSeconds > 0 && <p role="status" aria-live="polite">Acesso temporariamente bloqueado. Tente novamente em {Math.floor(remainingSeconds / 60)}min {String(remainingSeconds % 60).padStart(2, "0")}s.</p>}
           <button
             style={{
               ...styles.button,
@@ -968,11 +991,11 @@ function Login() {
                   : "pointer",
             }}
             onClick={fazerLogin}
-            disabled={carregando}
+            disabled={carregando || remainingSeconds > 0}
           >
             {carregando
               ? "Entrando..."
-              : "Entrar no InfinityCondo →"}
+              : remainingSeconds > 0 ? "Aguarde para tentar novamente" : "Entrar no InfinityCondo →"}
           </button>
 
           {/**

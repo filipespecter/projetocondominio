@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { enforceLoginLock } from "../utils/loginLock.js";
 import AuditLogService from "./AuditLogService.js";
 
 import userRepository from "../repositories/UserRepository.js";
@@ -234,7 +235,7 @@ class AuthService {
       );
 
       throw new ApiError(
-        "Muitas tentativas inválidas. O acesso foi bloqueado temporariamente.",
+        "Muitas tentativas inválidas. Acesso bloqueado por 5 minutos. Aguarde para tentar novamente.",
         429,
         {
           lockedUntil,
@@ -275,6 +276,8 @@ class AuthService {
         portalType,
         username,
       });
+
+    await enforceLoginLock(user, prisma);
 
     const passwordMatches =
       await Password.compare(

@@ -69,7 +69,7 @@ const envSchema = z.object({
     .number()
     .int()
     .positive()
-    .default(15),
+    .default(5),
 
   BCRYPT_ROUNDS: z.coerce
     .number()
@@ -123,6 +123,7 @@ if (!resultado.success) {
   process.exit(1);
 }
 
-export const env = {...resultado.data,TRUST_PROXY:resultado.data.TRUST_PROXY==="true"?1:resultado.data.TRUST_PROXY==="false"?false:resultado.data.TRUST_PROXY};
+// Política do produto: bloqueio de conta de 5 minutos, inclusive com configuração legada de 15.
+export const env = {...resultado.data,LOGIN_LOCK_MINUTES:5,TRUST_PROXY:resultado.data.TRUST_PROXY==="true"?1:resultado.data.TRUST_PROXY==="false"?false:resultado.data.TRUST_PROXY};
 
 export default env;

@@ -1,3 +1,4 @@
+import { jsonSafe } from "../utils/jsonSafe.js";
 import PlatformDashboardService from "../services/PlatformDashboardService.js";
 
 /**
@@ -55,7 +56,7 @@ class PlatformDashboardController {
               req.user.condominiumId,
           },
 
-          dashboard,
+          dashboard: jsonSafe(dashboard),
         },
       });
     } catch (error) {
