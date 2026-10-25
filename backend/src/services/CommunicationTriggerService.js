@@ -109,12 +109,14 @@ class CommunicationTriggerService {
     residents,
     requestId = null,
     contacts = [],
+    authenticatedUser=null,
   }) {
     const config=await TenantMessagingService.get(condominiumId);
     const condo=await prisma.condominium.findUnique({where:{id:condominiumId},select:{name:true}});
     // Generate independently of transport availability; failures never undo receipt.
     try { await PackageCredentialService.ensure(packageRecord.id,condominiumId); }
     catch { /* Sending records a failed attempt without undoing the package receipt. */ }
+    const details=`${packageRecord.type}${packageRecord.description?" — "+packageRecord.description:""}${packageRecord.carrier?" — Remetente: "+packageRecord.carrier:""} — Recebida: ${new Date(packageRecord.receivedAt).toLocaleString("pt-BR",{timeZone:"America/Recife"})}`;
     const results=[];
     for(const resident of residents) {
       const channel=config.ativo ? config.channel : "EMAIL";
@@ -122,13 +124,13 @@ class CommunicationTriggerService {
         results.push({queued:false,reason:"Morador não autorizou avisos por WhatsApp.",userId:resident.userId}); continue;
       }
       try {
-        results.push(await CommunicationService.queueAndSend({condominiumId,recipientUserId:resident.userId,channel,
+        results.push(await CommunicationService.queueAndSend({authenticatedUser,condominiumId,recipientUserId:resident.userId,channel,
           provider:channel==="WHATSAPP"?"META_CLOUD_API":null,
           subject:`${condo?.name||"Condomínio"}: encomenda na portaria`,
           content:`${condo?.name||"Condomínio"}: encomenda recebida para bloco ${apartment.block}, apartamento ${apartment.number}.`,
           templateCode:channel==="WHATSAPP"?config.templateName:null,
           module:"PACKAGE",referenceId:packageRecord.id,requestId,
-          metadata:{event:"PACKAGE_RECEIVED",apartmentId:apartment.id,condominiumName:condo?.name||"Condomínio",apartmentLabel:`${apartment.block} - ${apartment.number}`,languageCode:config.languageCode,pickupCredential:true},preventDuplicate:true}));
+          metadata:{event:"PACKAGE_RECEIVED",packageDetails:details,recipientName:resident.user?.name||"Morador",apartmentId:apartment.id,condominiumName:condo?.name||"Condomínio",apartmentLabel:`${apartment.block} - ${apartment.number}`,languageCode:config.languageCode,pickupCredential:true},preventDuplicate:true}));
       } catch { results.push({failed:true,userId:resident.userId,error:"Falha ao enviar aviso. Consulte o histórico de comunicação."}); }
     }
     const seen=new Set(residents.flatMap(r=>{
@@ -146,10 +148,10 @@ class CommunicationTriggerService {
       if(seen.has(recipient)) continue;
       seen.add(recipient);
       try {
-        results.push(await CommunicationService.queueAndSend({condominiumId,recipient,channel,provider:channel==="WHATSAPP"?"META_CLOUD_API":null,
+        results.push(await CommunicationService.queueAndSend({authenticatedUser,condominiumId,recipient,channel,provider:channel==="WHATSAPP"?"META_CLOUD_API":null,
           subject:`${condo?.name||"Condomínio"}: encomenda na portaria`,content:`${condo?.name||"Condomínio"}: encomenda recebida para bloco ${apartment.block}, apartamento ${apartment.number}.`,
           templateCode:channel==="WHATSAPP"?config.templateName:"PACKAGE_RECEIVED_CONTACT",module:"PACKAGE",referenceId:packageRecord.id,requestId,
-          metadata:{event:"PACKAGE_RECEIVED",contactId:contact.id,apartmentId:apartment.id,condominiumName:condo?.name||"Condomínio",apartmentLabel:`${apartment.block} - ${apartment.number}`,languageCode:config.languageCode,contactNotice:true,pickupCredential:contact.canPickup},preventDuplicate:true}));
+          metadata:{event:"PACKAGE_RECEIVED",packageDetails:details,recipientName:contact.name,contactId:contact.id,apartmentId:apartment.id,condominiumName:condo?.name||"Condomínio",apartmentLabel:`${apartment.block} - ${apartment.number}`,languageCode:config.languageCode,contactNotice:true,pickupCredential:contact.canPickup},preventDuplicate:true}));
       } catch {results.push({failed:true,contactId:contact.id,error:"Falha ao enviar aviso ao contato autorizado."});}
     }
     return {count:results.filter(r=>r?.status==="SENT"||r?.queued).length,results};

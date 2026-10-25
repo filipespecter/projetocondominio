@@ -1,3 +1,4 @@
+import { currentReportIdentity } from "../../utils/reportIdentity.js";
 import { useEffect, useMemo, useState } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis } from "recharts";
 import { jsPDF } from "jspdf";
@@ -28,10 +29,12 @@ export default function Financeiro(){
   async function toggleCategory(c){try{await expenseApi.updateCategory(c.id,{active:!c.active});await load();}catch(e){setNotice({type:"error",text:e.message})}}
   async function viewReceipt(id){try{const r=await expenseApi.receipt(id); if(r?.dataUrl){const w=window.open(); if(w){w.document.write(`<img src="${r.dataUrl}" style="max-width:100%;height:auto;display:block;margin:auto" alt="Comprovante"/>`);}}}catch(e){setNotice({type:"error",text:e.message})}}
   async function removeExpense(){if(!deleteTarget)return;try{await expenseApi.remove(deleteTarget.id);setDeleteTarget(null);setNotice({type:"ok",text:"Despesa excluída."});await load();}catch(e){setNotice({type:"error",text:e.message})}}
-  function exportPdf(){
+  async function exportPdf(){
+    let identity;try{identity=await currentReportIdentity();}catch(e){setNotice({type:"error",text:e.message});return;}
     const doc=new jsPDF();
     doc.setFillColor(76,29,149);doc.rect(0,0,210,36,"F");doc.setTextColor(255);doc.setFontSize(20);doc.text("InfinityCondo • Controle de Despesas",14,18);doc.setFontSize(10);doc.text(`Competência: ${month.split("-").reverse().join("/")}  |  Total: ${money(data.summary.totalInCents)}`,14,27);
-    let y=46;
+    doc.setTextColor(76,29,149);doc.setFontSize(10);const nameLines=doc.splitTextToSize(identity.name,180);doc.text(nameLines,14,43);
+    let y=58+Math.max(0,nameLines.length-2)*4;
     for(const group of data.summary.byCategory){
       const rows=data.items.filter(i=>i.categoryId===group.categoryId).map(i=>[new Date(i.expenseDate).toLocaleDateString("pt-BR"),i.description,i.supplier||"-",i.paymentMethod||"-",money(i.amountInCents)]);
       doc.setTextColor(76,29,149);doc.setFontSize(12);doc.text(`${group.categoryName} • ${money(group.totalInCents)}`,14,y);

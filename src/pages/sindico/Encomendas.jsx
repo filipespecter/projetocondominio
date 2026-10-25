@@ -1,6 +1,9 @@
+import api from "../../Services/api.js";
+import OperationalHistoryTools from "../../components/OperationalHistoryTools.jsx";
+import PackageNoticeButton from "../../components/PackageNoticeButton.jsx";
 import {packageNotificationWarning} from "../../utils/packageNotificationStatus.js";
 import { confirmDialog } from "../../components/GlobalDialogs.jsx";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import packageApi from "../../Services/packageApi.js";
 
 function Encomendas() {
@@ -23,6 +26,12 @@ function Encomendas() {
   const [filtroStatus, setFiltroStatus] = useState("Todos");
   const [novaEncomenda, setNovaEncomenda] = useState(estadoInicialEncomenda);
   const [editId, setEditId] = useState(null);
+  const [historyMonth,setHistoryMonth]=useState("");
+  const [historyPage,setHistoryPage]=useState(1);
+  const [historyTotal,setHistoryTotal]=useState(0);
+  const [historyUpdated,setHistoryUpdated]=useState(null);
+  const [liveError,setLiveError]=useState("");
+
 
 
   function normalizarCodigo(valor) {
@@ -176,16 +185,20 @@ function Encomendas() {
     };
   }
 
+  const liveRequest=useRef(0);
   async function carregar() {
+    const request=++liveRequest.current;
     try {
       const [
         packageData,
         residentData,
       ] = await Promise.all([
-        packageApi.list(),
-        packageApi.residentsDirectory(),
+        api.get(`/v1/dashboard/operations/packages?`+new URLSearchParams({page:historyPage,...(historyMonth?{history:historyMonth}:{}),q:busca,...({"Aguardando": "EXPECTED", "Recebido": "RECEIVED", "Entregue": "DELIVERED", "Cancelado": "CANCELED"}[filtroStatus]?{status:{"Aguardando": "EXPECTED", "Recebido": "RECEIVED", "Entregue": "DELIVERED", "Cancelado": "CANCELED"}[filtroStatus]}:{})})),
+        moradores.length ? Promise.resolve(moradores) : packageApi.residentsDirectory(),
       ]);
 
+      if(request!==liveRequest.current)return;
+      setHistoryTotal(packageData.data.total);setHistoryUpdated(packageData.data.refreshedAt);setLiveError("");
       const mappedResidents =
         (residentData ?? []).map(
           mapResident
@@ -196,7 +209,7 @@ function Encomendas() {
       );
 
       setEncomendas(
-        (packageData ?? []).map(
+        (packageData?.data?.items ?? []).map(
           (item) =>
             mapPackage(
               item,
@@ -205,16 +218,18 @@ function Encomendas() {
         )
       );
     } catch (error) {
-      alert(
-        error?.message ??
-        "Não foi possível carregar encomendas."
-      );
+      if(request!==liveRequest.current)return;
+      setLiveError(error?.message || "Não foi possível atualizar o acompanhamento.");
     }
   }
 
   useEffect(() => {
-    carregar();
-  }, []);
+    let active=true,inFlight=false;
+    const refresh=async()=>{if(!active||inFlight||document.hidden)return;inFlight=true;try{await carregar();}finally{inFlight=false;}};
+    const debounce=setTimeout(refresh,300),timer=setInterval(refresh,10000);
+    document.addEventListener("visibilitychange",refresh);
+    return ()=>{active=false;liveRequest.current++;clearTimeout(debounce);clearInterval(timer);document.removeEventListener("visibilitychange",refresh);};
+  }, [historyPage,historyMonth,busca,filtroStatus]);
 
   const encomendasFiltradas =
     encomendas.filter((e) => {
@@ -469,6 +484,7 @@ function Encomendas() {
 
   return (
     <div style={styles.container}>
+      <OperationalHistoryTools kind="packages" month={historyMonth} onMonth={setHistoryMonth} page={historyPage} onPage={setHistoryPage} total={historyTotal} error={liveError} updatedAt={historyUpdated}/>
       <section style={styles.hero}>
         <div style={styles.heroLeft}>
           <span style={styles.heroBadge}>
@@ -525,14 +541,14 @@ function Encomendas() {
           <input
             placeholder="Buscar por morador, apartamento, código, transportadora ou status..."
             value={busca}
-            onChange={(e) => setBusca(e.target.value)}
+            onChange={(e) => {setBusca(e.target.value);setHistoryPage(1);}}
             style={styles.search}
           />
         </div>
 
         <select
           value={filtroStatus}
-          onChange={(e) => setFiltroStatus(e.target.value)}
+          onChange={(e) => {setFiltroStatus(e.target.value);setHistoryPage(1);}}
           style={styles.filter}
         >
           <option>Todos</option>
@@ -642,6 +658,7 @@ function Encomendas() {
                     </span>
                   </div>
 
+                  {e.status === "Recebido" && <PackageNoticeButton id={e.id} />}
                   <div style={styles.receiverBox}>
                     <span style={styles.receiverIcon}>
                       🏠

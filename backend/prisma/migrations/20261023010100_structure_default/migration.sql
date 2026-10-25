@@ -1,0 +1,2 @@
+ALTER TABLE "Apartment" ALTER COLUMN "status" SET DEFAULT 'UNKNOWN'::"ApartmentStatus";
+ALTER TABLE "User" ADD COLUMN "loginEnabled" BOOLEAN NOT NULL DEFAULT true;

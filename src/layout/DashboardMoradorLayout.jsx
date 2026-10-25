@@ -1,3 +1,4 @@
+import GlobalSearch from "../components/GlobalSearch.jsx";
 import ResponsiveNavigation from "../components/ResponsiveNavigation.jsx";
 import {
   Outlet,
@@ -392,7 +393,8 @@ function DashboardMoradorLayout() {
 
       <main className="app-dashboard-content" style={styles.content}>
 
-        <Outlet />
+        <GlobalSearch />
+          <Outlet />
 
       </main>
 

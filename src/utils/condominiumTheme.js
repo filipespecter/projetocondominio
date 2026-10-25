@@ -72,6 +72,9 @@ export function buildCondominiumThemeVariables(themeOrUser) {
   const primary = getCondominiumPrimaryColor(themeOrUser);
   const light = mix(primary, "#ffffff", 0.14);
   const bright = mix(primary, "#ffffff", 0.06);
+  const rgb=Object.values(hexToRgb(primary)).map(c=>c/255).map(c=>c<=0.04045?c/12.92:((c+0.055)/1.055)**2.4);
+  const luminance=rgb[0]*0.2126+rgb[1]*0.7152+rgb[2]*0.0722;
+  const foreground=luminance>0.179 ? "#151222" : "#ffffff";
   const strong = mix(primary, "#000000", 0.10);
   const dark = mix(primary, "#000000", 0.25);
   const deep = mix(primary, "#000000", 0.38);
@@ -84,6 +87,7 @@ export function buildCondominiumThemeVariables(themeOrUser) {
   const borderSoft = mix(primary, "#ffffff", 0.76);
 
   return {
+    "--ic-on-primary": foreground,
     "--ic-primary": primary,
     "--ic-primary-rgb": rgbTriplet(primary),
     "--ic-primary-light": light,

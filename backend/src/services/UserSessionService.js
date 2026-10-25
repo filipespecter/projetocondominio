@@ -9,13 +9,10 @@ class UserSessionService {
     if (!user?.id) return null;
     const now = new Date();
     try {
-      await prisma.userSession.updateMany({
-        where: { userId: user.id, endedAt: null },
-        data: { endedAt: now, endReason: "NEW_LOGIN", lastActivityAt: now },
-      });
-      return prisma.userSession.create({
+      return await prisma.userSession.create({
         data: {
           userId: user.id,
+          authSessionId: requestContext?.authSessionId ?? null,
           condominiumId: user.condominiumId ?? null,
           startedAt: now,
           lastActivityAt: now,
@@ -29,12 +26,12 @@ class UserSessionService {
     }
   }
 
-  async touch(userId) {
+  async touch(userId, authSessionId) {
     if (!userId) return null;
     try {
       const now = new Date();
       return await prisma.userSession.updateMany({
-        where: { userId, endedAt: null },
+        where: { userId, endedAt: null, ...(authSessionId ? {authSessionId} : {}) },
         data: { lastActivityAt: now },
       });
     } catch (error) {
@@ -43,16 +40,16 @@ class UserSessionService {
     }
   }
 
-  async endLatest(userId, reason = "LOGOUT") {
-    if (!userId) return null;
+  async endLatest(userId, reason = "LOGOUT", authSessionId = null) {
+    if (!userId || !authSessionId) return null;
     try {
       const session = await prisma.userSession.findFirst({
-        where: { userId, endedAt: null },
+        where: { userId, endedAt: null, ...(authSessionId ? {authSessionId} : {}) },
         orderBy: { startedAt: "desc" },
       });
       if (!session) return null;
       const now = new Date();
-      return prisma.userSession.update({
+      return await prisma.userSession.update({
         where: { id: session.id },
         data: { endedAt: now, lastActivityAt: now, endReason: reason },
       });
@@ -65,7 +62,7 @@ class UserSessionService {
   async listByUser(userId, condominiumId, days = 30) {
     const since = new Date(Date.now() - Math.max(1, days) * 86400000);
     try {
-      return prisma.userSession.findMany({
+      return await prisma.userSession.findMany({
         where: { userId, condominiumId, startedAt: { gte: since } },
         orderBy: { startedAt: "desc" },
         take: 200,

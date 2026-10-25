@@ -1,3 +1,5 @@
+import CondominiumStructure from "../../components/CondominiumStructure.jsx";
+import api from "../../Services/api.js";
 import { confirmDialog } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useState } from "react";
 import apartmentApi from "../../Services/apartmentApi";
@@ -18,7 +20,7 @@ function Apartamentos() {
     moradoresNomes: [],
     moradorPrincipalId: null,
     moradorPrincipalNome: "",
-    status: "Ocupado"
+    status: "Não informado"
   };
 
   const [apartamentos, setApartamentos] = useState([]);
@@ -29,7 +31,11 @@ function Apartamentos() {
   const [novoAp, setNovoAp] = useState(estadoInicialApartamento);
   const [editId, setEditId] = useState(null);
 
+  const [abrirEstrutura,setAbrirEstrutura] = useState(0);
+  const [capacidade,setCapacidade] = useState(null);
+  useEffect(()=>{api.get("/v1/apartments/structure").then(r=>setCapacidade(r.data.metrics.total)).catch(()=>{});},[]);
   const statusFront = {
+    UNKNOWN:"Não informado",
     OCCUPIED: "Ocupado",
     VACANT: "Disponível",
     MAINTENANCE: "Manutenção",
@@ -37,6 +43,7 @@ function Apartamentos() {
   };
 
   const statusBack = {
+    "Não informado":"UNKNOWN",
     "Ocupado": "OCCUPIED",
     "Disponível": "VACANT",
     "Manutenção": "MAINTENANCE",
@@ -240,13 +247,11 @@ function Apartamentos() {
     )
   ];
 
-  const taxaOcupacao =
-    apartamentos.length > 0
-      ? Math.round((totalOcupados / apartamentos.length) * 100)
-      : 0;
+  const taxaOcupacao = capacidade ? (totalOcupados / capacidade * 100).toFixed(1) : null;
 
   return (
     <div style={styles.container}>
+      <CondominiumStructure requestOpen={abrirEstrutura} onChange={d=>{setCapacidade(d.metrics.total);carregar();}}/>
       <div style={styles.hero}>
         <div style={styles.heroContent}>
           <span style={styles.heroBadge}>
@@ -273,7 +278,7 @@ function Apartamentos() {
             </span>
 
             <span style={styles.heroChip}>
-              {taxaOcupacao}% ocupação
+              {taxaOcupacao == null ? "Configure a estrutura" : `${taxaOcupacao}%`} ocupação
             </span>
           </div>
         </div>
@@ -312,7 +317,7 @@ function Apartamentos() {
             style={styles.filter}
           >
             <option>Todos</option>
-            <option>Ocupado</option>
+            <option>Não informado</option><option>Ocupado</option>
             <option>Disponível</option>
             <option>Manutenção</option>
           </select>
@@ -321,6 +326,7 @@ function Apartamentos() {
         <button
           style={styles.button}
           onClick={() => {
+            if (!capacidade) return alert("Configure primeiro a estrutura do condomínio.");
             setEditId(null);
             setNovoAp(estadoInicialApartamento);
             setMostrarModal(true);
@@ -440,6 +446,7 @@ function Apartamentos() {
               <button
                 style={styles.emptyButton}
                 onClick={() => {
+                  if (!capacidade) return alert("Configure primeiro a estrutura do condomínio.");
                   setEditId(null);
                   setNovoAp(estadoInicialApartamento);
                   setMostrarModal(true);
@@ -566,13 +573,13 @@ function Apartamentos() {
               Ocupação geral
             </h2>
 
-            <div style={styles.progressCircle}>
-              {taxaOcupacao}%
+            <div style={{...styles.progressCircle,background:capacidade?`conic-gradient(#c4b5fd ${Math.min(100,Number(taxaOcupacao))*3.6}deg, rgba(255,255,255,.12) 0deg)`:"rgba(255,255,255,.12)"}}>
+              {taxaOcupacao == null ? "—" : `${taxaOcupacao}%`}
             </div>
+            <button type="button" style={styles.editButton} onClick={()=>setAbrirEstrutura(v=>v+1)}>{capacidade?"Editar estrutura":"Configurar estrutura"}</button>
 
             <p style={styles.sideText}>
-              Taxa calculada somente com apartamentos cadastrados
-              no painel do síndico.
+              {capacidade ? `${totalOcupados} unidades ocupadas de ${capacidade} previstas. Cadastrar uma unidade não significa que ela está ocupada.` : "Informe blocos, andares e apartamentos para calcular a ocupação real."}
             </p>
           </div>
 
@@ -731,7 +738,7 @@ function Apartamentos() {
                   }
                   style={styles.input}
                 >
-                  <option>Ocupado</option>
+                  <option>Não informado</option><option>Ocupado</option>
                   <option>Disponível</option>
                   <option>Manutenção</option>
                 </select>

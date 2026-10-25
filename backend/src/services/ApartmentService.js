@@ -1,9 +1,11 @@
+import {validateStructureUnit} from "./CondominiumStructureService.js";
 import BaseService from "./BaseService.js";
 import apartmentRepository from "../repositories/ApartmentRepository.js";
 import AuditLogService from "./AuditLogService.js";
 import { ApiError } from "../utils/ApiError.js";
 
 const ALLOWED_STATUSES = [
+  "UNKNOWN",
   "OCCUPIED",
   "VACANT",
   "MAINTENANCE",
@@ -212,6 +214,8 @@ class ApartmentService extends BaseService {
         );
     }
 
+    await validateStructureUnit(condominiumId,normalizedData);
+    normalizedData.status ??= "UNKNOWN";
     const existing =
       await apartmentRepository
         .findByBlockAndNumber(
@@ -276,6 +280,7 @@ class ApartmentService extends BaseService {
     const normalizedData = {
       ...data,
     };
+    if (["block","number","floor"].some(k=>data[k]!==undefined)) await validateStructureUnit(condominiumId,{...before,...data});
 
     if (
       normalizedData.block !==

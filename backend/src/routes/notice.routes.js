@@ -1,3 +1,6 @@
+import prisma from "../config/prisma.js";
+import { evidence } from "../services/OperationalEvidenceService.js";
+import { requireTrustedOrigin } from "../middlewares/securityMiddleware.js";
 import { Router } from "express";
 
 import NoticeController from "../controllers/NoticeController.js";
@@ -47,6 +50,9 @@ const viewerRoles = authorizeRoles(
  * ESTATÍSTICAS
  * =====================================================
  */
+noticeRoutes.get("/:id/assembly",adminRoles,async(req,res,next)=>{try{res.set("Cache-Control","no-store").json({success:true,data:await evidence(prisma,req.user,"assembly",req.params.id)});}catch(e){next(e);}});
+noticeRoutes.post("/:id/assembly",adminRoles,requireTrustedOrigin,async(req,res,next)=>{try{res.status(201).json({success:true,data:await evidence(prisma,req.user,"assembly",req.params.id,req.body)});}catch(e){next(e);}});
+
 noticeRoutes.get(
   "/statistics",
   adminRoles,

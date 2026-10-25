@@ -1,3 +1,4 @@
+import GlobalSearch from "../components/GlobalSearch.jsx";
 import ResponsiveNavigation from "../components/ResponsiveNavigation.jsx";
 import {
   Outlet,
@@ -379,7 +380,9 @@ function DashboardPorteiroLayout() {
 
       <main className="app-dashboard-content" style={styles.content}>
 
-        <Outlet />
+        <a className="ic-handover-link" href="/dashboard/porteiro/passagem-servico">Passagem de serviço</a>
+          <GlobalSearch />
+          <Outlet />
 
       </main>
 

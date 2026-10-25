@@ -36,6 +36,7 @@ import authApi, {
  *    é migrado módulo por módulo.
  */
 function Login() {
+  const sessionNotice = {inatividade:"Sua sessão terminou por inatividade. Entre novamente para continuar.",expiracao:"Sua sessão expirou. Entre novamente para continuar.",encerrada:"Sua sessão foi encerrada. Entre novamente para continuar."}[new URLSearchParams(window.location.search).get("motivo")];
   const { tipo } = useParams();
   const navigate = useNavigate();
 
@@ -970,6 +971,7 @@ function Login() {
             </div>
           )}
 
+          {sessionNotice && <p role="status">{sessionNotice}</p>}
           {remainingSeconds > 0 && <p role="status" aria-live="polite">Acesso temporariamente bloqueado. Tente novamente em {Math.floor(remainingSeconds / 60)}min {String(remainingSeconds % 60).padStart(2, "0")}s.</p>}
           <button
             style={{

@@ -1,3 +1,4 @@
+import ContextHelp from "../../components/ContextHelp.jsx";
 import WhatsAppConnection from "../../components/WhatsAppConnection.jsx";
 import { confirmDialog } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useState } from "react";
@@ -14,7 +15,7 @@ function Configuracoes() {
   const [config, setConfig] = useState({
     nomeCondominio: "", cnpj: "", endereco: "", telefone: "", sindico: "", email: "",
     corTema: "#8b5cf6", tema: { corPrincipal: "#8b5cf6", corSecundaria: "#5b21b6", aplicarTemaPersonalizado: false, logoUrl: "", atualizadoEm: "" },
-    logoUrl: "", plano: "Completo", statusComercial: "Ativo", quantidadeUnidades: "", responsavelTecnico: "", observacoesComerciais: ""
+    logoUrl: "", plano: "Carregando…", statusComercial: "Carregando…", quantidadeUnidades: "", responsavelTecnico: "", observacoesComerciais: ""
   });
 
   const [preferencias, setPreferencias] = useState({
@@ -54,7 +55,7 @@ function Configuracoes() {
     setCarregando(true);
     try {
       const data = await configurationApi.getAll();
-      if (data?.condominium) setConfig((prev) => ({ ...prev, ...data.condominium, tema: { ...prev.tema, ...(data.condominium.tema || {}) } }));
+      if (data?.condominium) setConfig((prev) => ({ ...prev, ...data.condominium, corTema: data.condominium.tema?.corPrincipal || data.condominium.corTema || prev.corTema, tema: { ...prev.tema, ...(data.condominium.tema || {}) } }));
       if (data?.preferences) setPreferencias((prev) => ({ ...prev, ...data.preferences }));
       if (data?.whatsapp) setWhatsappConfig((prev) => ({ ...prev, ...data.whatsapp }));
       if (data?.bi) setBiConfig((prev) => ({ ...prev, ...data.bi }));
@@ -73,7 +74,7 @@ function Configuracoes() {
       const aplicarTemaPersonalizado = Boolean(config.tema?.aplicarTemaPersonalizado);
 
       await configurationApi.updateCondominium({
-        ...config,
+        ...Object.fromEntries(Object.entries(config).filter(([key]) => !["plano", "statusComercial"].includes(key))),
         tema: {
           ...(config.tema || {}),
           corPrincipal: config.corTema,
@@ -82,10 +83,14 @@ function Configuracoes() {
         },
       });
 
-      applyCondominiumTheme({
+      const temaSalvo = {
         corPrincipal: config.corTema,
         aplicarTemaPersonalizado,
-      });
+      };
+      applyCondominiumTheme(temaSalvo);
+      window.dispatchEvent(new CustomEvent("infinitycondo:theme-updated", {
+        detail: { theme: temaSalvo },
+      }));
 
       await carregarTudo();
     }, "Dados do condomínio salvos com sucesso.");
@@ -101,19 +106,12 @@ function Configuracoes() {
   }
   async function testarWhatsapp() { await executar(async()=>{const result=await configurationApi.testWhatsapp(); alert(result.message); await carregarTudo();}, "Conexão consultada."); }
   async function carregarHistorico() { await executar(async()=>setMessagingHistory(await configurationApi.messagingHistory()), "Histórico atualizado."); }
-  async function reenviarAviso(id) {await executar(async()=>{await configurationApi.retryMessage(id); setMessagingHistory(await configurationApi.messagingHistory());}, "Nova tentativa registrada.");}
+  async function reenviarAviso(id) {if(!await confirmDialog("Você conferiu os dados? Deseja confirmar uma nova tentativa de envio?"))return;await executar(async()=>{await configurationApi.retryMessage(id, true); setMessagingHistory(await configurationApi.messagingHistory());}, "Nova tentativa registrada.");}
 
 
-  async function salvarBI() {
-    await executar(async () => { await configurationApi.updateSettings("bi", biConfig); }, "Configurações do BI salvas com sucesso.");
-  }
 
-  async function salvarSeguranca() {
-    await executar(async () => {
-      const updated = await configurationApi.updateSettings("security", { tempoSessao: segurancaConfig.tempoSessao });
-      setSegurancaConfig((prev) => ({ ...prev, ...updated, jwtAtivo: true, refreshToken: true, loginPorPerfil: true }));
-    }, "Preferência de sessão salva. JWT e refresh token permanecem protegidos pelo servidor.");
-  }
+
+
 
   async function salvarUsuarioAdministrativo() {
     if (!isMestre) return alert("Apenas o Síndico Mestre pode gerenciar usuários.");
@@ -210,7 +208,7 @@ function Configuracoes() {
           { id: "seguranca", label: "🔐 Segurança" },
           { id: "backup", label: "💾 Backup" },
           { id: "whatsapp", label: "📲 WhatsApp" },
-          { id: "bi", label: "📊 BI" },
+
           { id: "preferencias", label: "🎛️ Preferências" }
         ].map((aba) => (
           <button
@@ -384,18 +382,19 @@ function Configuracoes() {
               />
             </Campo>
 
+            <ContextHelp label="Sobre plano e acesso">Plano e status comercial são definidos pela Central Star. Para alterar sua contratação, abra um chamado em Suporte.</ContextHelp>
             <Campo label="Plano comercial">
               <select
                 value={config.plano}
-                onChange={(e) => setConfig({ ...config, plano: e.target.value })}
+                disabled title="Solicite alterações de plano à Central Star"
                 style={styles.input}
               >
-                <option>Básico</option>
+                <option value={config.plano}>{config.plano}</option>
                 <option>Completo</option>
               </select>
 
               <div style={styles.planInfo}>
-                {config.plano === "Básico"
+                {/b[aá]sico/i.test(config.plano)
                   ? "Plano Básico: libera todos os módulos operacionais e bloqueia somente BI Analytics, BI Monitor e Central de BI."
                   : "Plano Completo: libera todos os módulos, incluindo visualizações e central de BI."}
               </div>
@@ -404,12 +403,10 @@ function Configuracoes() {
             <Campo label="Status comercial">
               <select
                 value={config.statusComercial}
-                onChange={(e) =>
-                  setConfig({ ...config, statusComercial: e.target.value })
-                }
+                disabled title="Controlado pela Central Star"
                 style={styles.input}
               >
-                <option>Ativo</option>
+                <option value={config.statusComercial}>{config.statusComercial}</option>
                 <option>Teste</option>
                 <option>Suspenso</option>
                 <option>Cancelado</option>
@@ -589,7 +586,7 @@ function Configuracoes() {
                   style={styles.input}
                   disabled={!isMestre}
                 >
-                  <option>Ativo</option>
+                  <option value={config.statusComercial}>{config.statusComercial}</option>
                   <option>Inativo</option>
                 </select>
               </Campo>
@@ -611,16 +608,10 @@ function Configuracoes() {
           <div style={styles.panelHeader}>
             <div>
               <span style={styles.panelBadgeGold}>Segurança e senhas</span>
-              <h2 style={styles.panelTitle}>Credenciais e autenticação</h2>
+              <h2 style={styles.panelTitle}>Suas credenciais de acesso</h2>
             </div>
 
-            <button
-              style={styles.primaryButton}
-              onClick={salvarSeguranca}
-              disabled={!isMestre}
-            >
-              Salvar segurança
-            </button>
+
           </div>
 
           {usandoPadrao ? (
@@ -633,7 +624,7 @@ function Configuracoes() {
           )}
 
           <div style={styles.formGrid}>
-            <Campo label="Usuário mestre">
+            <Campo label="Seu usuário de acesso">
               <input
                 value={credenciaisMestre.usuario}
                 onChange={(e) =>
@@ -677,58 +668,10 @@ function Configuracoes() {
               />
             </Campo>
 
-            <Campo label="Sessão autenticada ativa">
-              <select
-                value={segurancaConfig.jwtAtivo ? "Sim" : "Não"}
-                onChange={(e) =>
-                  setSegurancaConfig({
-                    ...segurancaConfig,
-                    jwtAtivo: e.target.value === "Sim"
-                  })
-                }
-                style={styles.input}
-                disabled={!isMestre}
-              >
-                <option>Não</option>
-                <option>Sim</option>
-              </select>
-            </Campo>
-
-            <Campo label="Tempo de sessão em minutos">
-              <input
-                type="number"
-                value={segurancaConfig.tempoSessao}
-                onChange={(e) =>
-                  setSegurancaConfig({
-                    ...segurancaConfig,
-                    tempoSessao: Number(e.target.value)
-                  })
-                }
-                style={styles.input}
-                disabled={!isMestre}
-              />
-            </Campo>
-
-            <Campo label="Renovação segura de sessão">
-              <select
-                value={segurancaConfig.refreshToken ? "Ativo" : "Inativo"}
-                onChange={(e) =>
-                  setSegurancaConfig({
-                    ...segurancaConfig,
-                    refreshToken: e.target.value === "Ativo"
-                  })
-                }
-                style={styles.input}
-                disabled={!isMestre}
-              >
-                <option>Ativo</option>
-                <option>Inativo</option>
-              </select>
-            </Campo>
           </div>
 
           <button
-            style={styles.primaryButton}
+            style={{...styles.primaryButton, marginTop: 20}}
             onClick={alterarCredenciaisMestre}
             disabled={!isMestre}
           >
@@ -779,9 +722,9 @@ function Configuracoes() {
       )}
 
       {abaAtiva === "whatsapp" && (
-        <section style={styles.panel}>
-          <div style={styles.panelHeader}><div><span style={styles.panelBadgeGold}>Avisos de encomendas</span><h2 style={styles.panelTitle}>WhatsApp ou e-mail</h2></div><button style={styles.primaryButton} onClick={salvarWhatsapp}>Salvar canal</button></div>
-          <p style={styles.warningBox}>Ao registrar uma encomenda, a portaria aciona o aviso automaticamente aos moradores e contatos autorizados. Com WhatsApp desativado, usa e-mail. A falha de uma mensagem WhatsApp não gera envio automático por e-mail. E-mail depende do serviço configurado na plataforma.</p>
+        <section className="ic-messaging-settings" style={styles.panel}>
+          <div style={styles.panelHeader}><div><span style={styles.panelBadgeGold}>Avisos de encomendas</span><h2 style={styles.panelTitle}>WhatsApp ou e-mail</h2><p>Canal selecionado: {whatsappConfig.ativo && whatsappConfig.channel === "WHATSAPP" ? "WhatsApp do condomínio" : "E-mail"} · Entrega real: validação pendente</p></div><button style={styles.primaryButton} onClick={salvarWhatsapp}>Salvar canal</button></div>
+          <p style={styles.warningBox}>Cadastrar uma encomenda não envia mensagens. A portaria confere os dados, clica em enviar aviso e confirma o envio aos contatos autorizados. Com WhatsApp desativado, usa e-mail. A falha de uma mensagem WhatsApp não gera envio automático por e-mail. E-mail depende do serviço configurado na plataforma.</p>
           <WhatsAppConnection config={whatsappConfig} onUpdated={carregarTudo} />
           <div style={styles.formGrid}>
             <Campo label="Canal de aviso"><select style={styles.input} value={whatsappConfig.channel} onChange={e=>setWhatsappConfig({...whatsappConfig,channel:e.target.value})}><option value="EMAIL">E-mail</option><option value="WHATSAPP">WhatsApp oficial do condomínio</option></select></Campo>
@@ -797,96 +740,8 @@ function Configuracoes() {
             </div></details>}
           </div>
           {whatsappConfig.channel==="WHATSAPP" && <><p>Use um número conectado à API oficial da Meta. Cadastrar um telefone comum não conecta o WhatsApp. O modelo deve conter três parâmetros no corpo, nesta ordem: condomínio, bloco/apartamento e código de retirada. Autorize apenas os moradores que aceitaram receber avisos.</p><button style={styles.primaryButton} onClick={testarWhatsapp}>Testar conexão salva</button><p>{whatsappConfig.verifiedAt?"Credenciais verificadas; envio e webhook ainda devem ser testados.":"Conexão ainda não verificada."}</p></>}
-          <h3>Últimos avisos de encomendas</h3><button style={styles.secondaryButton} onClick={carregarHistorico}>Atualizar histórico</button>
+          <h3>Histórico de avisos</h3><p>Enviado significa aceito pelo provedor; entregue exige confirmação pelo webhook. Não compartilhe credenciais nos chamados.</p><button style={styles.secondaryButton} onClick={carregarHistorico}>Atualizar histórico</button>
           <div style={{overflowX:"auto"}}><table><thead><tr><th>Data</th><th>Canal</th><th>Destinatário</th><th>Status</th><th>Ação</th></tr></thead><tbody>{messagingHistory.map(item=><tr key={item.id}><td>{new Date(item.createdAt).toLocaleString("pt-BR")}</td><td>{item.channel}</td><td>{item.recipient}</td><td>{item.status}</td><td>{["FAILED","PENDING"].includes(item.status)&&<button onClick={()=>reenviarAviso(item.id)}>Tentar novamente</button>}</td></tr>)}</tbody></table></div>
-        </section>
-      )}
-
-      {abaAtiva === "bi" && (
-        <section style={styles.panel}>
-          <div style={styles.panelHeader}>
-            <div>
-              <span style={styles.panelBadge}>BI Analytics</span>
-              <h2 style={styles.panelTitle}>Configurações do BI</h2>
-            </div>
-
-            <button style={styles.primaryButton} onClick={salvarBI}>
-              Salvar BI
-            </button>
-          </div>
-
-          <div style={styles.formGrid}>
-            <Campo label="Período padrão">
-              <select
-                value={biConfig.periodoPadrao}
-                onChange={(e) =>
-                  setBiConfig({
-                    ...biConfig,
-                    periodoPadrao: e.target.value
-                  })
-                }
-                style={styles.input}
-              >
-                <option value="geral">Geral</option>
-                <option value="hoje">Hoje</option>
-                <option value="7dias">7 dias</option>
-                <option value="30dias">30 dias</option>
-                <option value="mes">Mês</option>
-                <option value="ano">Ano</option>
-              </select>
-            </Campo>
-
-            <Campo label="Retenção de histórico">
-              <select
-                value={biConfig.retencaoHistorico}
-                onChange={(e) =>
-                  setBiConfig({
-                    ...biConfig,
-                    retencaoHistorico: e.target.value
-                  })
-                }
-                style={styles.input}
-              >
-                <option>3 meses</option>
-                <option>6 meses</option>
-                <option>12 meses</option>
-                <option>24 meses</option>
-                <option>Permanente</option>
-              </select>
-            </Campo>
-
-            <Campo label="Dashboard executivo">
-              <select
-                value={biConfig.dashboardExecutivo ? "Ativo" : "Inativo"}
-                onChange={(e) =>
-                  setBiConfig({
-                    ...biConfig,
-                    dashboardExecutivo: e.target.value === "Ativo"
-                  })
-                }
-                style={styles.input}
-              >
-                <option>Ativo</option>
-                <option>Inativo</option>
-              </select>
-            </Campo>
-
-            <Campo label="Exportação automática">
-              <select
-                value={biConfig.exportacaoAutomatica ? "Ativa" : "Inativa"}
-                onChange={(e) =>
-                  setBiConfig({
-                    ...biConfig,
-                    exportacaoAutomatica: e.target.value === "Ativa"
-                  })
-                }
-                style={styles.input}
-              >
-                <option>Inativa</option>
-                <option>Ativa</option>
-              </select>
-            </Campo>
-          </div>
         </section>
       )}
 

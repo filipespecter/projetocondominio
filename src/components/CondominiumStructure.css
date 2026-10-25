@@ -1,0 +1,67 @@
+/* Only the condominium structure editor. Does not restyle other forms. */
+#ic-condominium-structure.ic-structure-final{padding:0;overflow:hidden;border:1px solid #e5d9f8;border-radius:20px;background:#f8f5fd;color:#241735;box-shadow:0 8px 28px #4c1d950a;scroll-margin-top:24px;font-size:14px}
+#ic-condominium-structure .ic-structure-heading{display:flex;align-items:center;gap:16px;padding:24px 26px;background:linear-gradient(115deg,#f1e8ff,#fff 75%);border-bottom:1px solid #e8ddf6;flex-wrap:wrap}
+#ic-condominium-structure .ic-structure-brand{display:grid;place-items:center;background:linear-gradient(145deg,var(--ic-primary-dark),var(--ic-primary));color:white;width:58px;height:58px;flex-shrink:0;border-radius:16px}
+#ic-condominium-structure .ic-structure-heading>div{flex:1;min-width:210px}
+#ic-condominium-structure .ic-structure-eyebrow{font-size:11px;font-weight:800;letter-spacing:.8px;color:var(--ic-primary-strong)}
+#ic-condominium-structure h2{font-size:23px;margin:5px 0;color:#37135c;line-height:1.25}
+#ic-condominium-structure .ic-structure-heading p{font-size:14px;line-height:1.5;color:#61536f;margin:6px 0 0}
+#ic-condominium-structure button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border-radius:10px;font-size:14px;font-weight:750;padding:11px 15px;margin:0;white-space:normal;line-height:1.35;cursor:pointer}
+#ic-condominium-structure button.ic-structure-primary{background:linear-gradient(120deg,var(--ic-primary-dark),var(--ic-primary));color:#fff;border:1px solid var(--ic-primary-dark);box-shadow:0 5px 12px #6d28d926}
+#ic-condominium-structure button.ic-structure-secondary{background:#fff;color:var(--ic-primary-strong);border:1px solid #c9b3e9}
+#ic-condominium-structure button.ic-structure-remove{background:#fff5f5;color:#b42335;border:1px solid #f5d6db;padding:10px;box-shadow:none}
+#ic-condominium-structure button:disabled{opacity:.5;cursor:default}
+#ic-condominium-structure button:focus-visible,#ic-condominium-structure input:focus-visible{outline:3px solid #a78bfa;outline-offset:3px}
+#ic-condominium-structure .ic-structure-status{display:flex;align-items:flex-start;gap:9px;margin:18px 26px 0;padding:12px 15px;border:1px solid #d4e9db;background:#f1fbf4;color:#24633c;border-radius:10px;font-size:13px;line-height:1.5}
+#ic-condominium-structure .ic-structure-status svg{flex-shrink:0;margin-top:1px}
+#ic-condominium-structure .ic-structure-status:last-child{margin-bottom:20px}
+#ic-condominium-structure .ic-structure-steps{display:flex;align-items:center;gap:16px;padding:22px 26px}
+#ic-condominium-structure .ic-structure-steps>span{display:flex;align-items:center;gap:9px;font-size:13px;color:#71647f;font-weight:650}
+#ic-condominium-structure .ic-structure-steps b{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#e9e3f1;color:#77688b}
+#ic-condominium-structure .ic-structure-steps .is-current{color:var(--ic-primary-strong)}
+#ic-condominium-structure .ic-structure-steps .is-current b,#ic-condominium-structure .ic-structure-steps .is-done b{background:var(--ic-primary);color:white}
+#ic-condominium-structure .ic-structure-steps i{height:1px;width:64px;background:#d9c9ed}
+#ic-condominium-structure .ic-structure-workspace{display:grid;grid-template-columns:minmax(0,1fr) 280px;align-items:start;gap:20px;padding:0 26px 24px}
+#ic-condominium-structure .ic-structure-editor{min-width:0}
+#ic-condominium-structure label.ic-structure-choice{display:flex;align-items:flex-start;justify-content:flex-start;gap:12px;padding:16px;margin:0 0 18px;border:1px solid #dfd0f1;background:#fff;border-radius:12px;cursor:pointer}
+#ic-condominium-structure label.ic-structure-choice input[type=checkbox]{appearance:auto;width:19px!important;height:19px!important;min-width:19px!important;max-width:19px!important;margin:2px 0 0!important;flex:0 0 19px;accent-color:var(--ic-primary);padding:0!important}
+#ic-condominium-structure label.ic-structure-choice strong{display:block;font-size:14px;line-height:1.5;color:#34233f}
+#ic-condominium-structure label.ic-structure-choice small{display:block;font-size:12px;color:#6a5a78;line-height:1.5;margin-top:3px}
+#ic-condominium-structure fieldset.ic-structure-block{margin:0 0 18px;padding:18px;background:white;border:1px solid #dac9ef;border-radius:14px;min-width:0}
+#ic-condominium-structure .ic-structure-block legend{display:flex;align-items:center;gap:7px;font-size:15px;font-weight:750;padding:0 9px;color:#522482}
+#ic-condominium-structure label.ic-structure-field{display:flex;flex-direction:column;align-items:stretch;justify-content:start;gap:7px;margin:0;min-width:0;font-size:13px;font-weight:650}
+#ic-condominium-structure .ic-structure-field input{width:100%;min-width:0;max-width:100%;height:44px;background:#fdfcff;color:#241735;border:1px solid #cdbde0;border-radius:9px;padding:10px 12px;font-size:14px;box-sizing:border-box}
+#ic-condominium-structure .ic-structure-field small{font-size:11px;font-weight:400;color:#786587}
+#ic-condominium-structure .ic-structure-floor-header,#ic-condominium-structure .ic-structure-floor{display:grid;grid-template-columns:80px minmax(0,1fr) 104px;gap:12px;align-items:start}
+#ic-condominium-structure .ic-structure-floor-header{font-size:12px;font-weight:750;color:#786587;padding:14px 0 9px}
+#ic-condominium-structure .ic-structure-floor{padding:12px 0;border-bottom:1px solid #f0e9f7}
+#ic-condominium-structure .ic-structure-mobile-label{display:none}
+#ic-condominium-structure .ic-structure-block-actions{display:flex;gap:10px;flex-wrap:wrap;padding-top:16px}
+#ic-condominium-structure .ic-structure-generate{margin-top:18px!important;background:#f5efff!important}
+#ic-condominium-structure .ic-structure-summary{padding:20px;background:linear-gradient(155deg,#fff,#f0e7fc);border:1px solid #d8c4ed;border-radius:15px;position:sticky;top:20px;min-width:0}
+#ic-condominium-structure .ic-structure-summary h3{font-size:18px;color:#392050;margin:10px 0 17px}
+#ic-condominium-structure .ic-structure-capacity{display:flex;align-items:center;gap:10px;flex-wrap:wrap;color:var(--ic-primary-strong);padding:0 0 18px;border-bottom:1px solid #ddceee}
+#ic-condominium-structure .ic-structure-capacity strong{font-size:42px;font-weight:800;line-height:1}
+#ic-condominium-structure .ic-structure-capacity>span{font-size:13px;color:#6a5a78}
+#ic-condominium-structure dl{margin:14px 0}
+#ic-condominium-structure dl>div{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0}
+#ic-condominium-structure dt{display:flex;align-items:center;gap:7px;color:#6a5a78;font-size:13px}
+#ic-condominium-structure dd{margin:0;font-size:16px;font-weight:750;color:#41215e}
+#ic-condominium-structure .ic-structure-summary p{display:flex;gap:8px;color:#645273;font-size:12px;line-height:1.6;margin:14px 0 18px}
+#ic-condominium-structure .ic-structure-summary p svg{flex-shrink:0}
+#ic-condominium-structure .ic-structure-summary button{width:100%}
+#ic-condominium-structure .ic-structure-summary>small{display:block;color:#786587;font-size:11px;line-height:1.5;margin:12px 0 0}
+#ic-condominium-structure .ic-structure-preview{margin:0 26px 24px;padding:20px;border-radius:14px;border:1px solid #cbb2ec;background:white}
+#ic-condominium-structure .ic-structure-preview-title{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+#ic-condominium-structure .ic-structure-preview-title>span{display:grid;place-items:center;background:#eee4ff;color:var(--ic-primary-strong);width:44px;height:44px;border-radius:12px;flex-shrink:0}
+#ic-condominium-structure .ic-structure-preview h3{font-size:18px;color:#41215e;margin:0 0 6px}
+#ic-condominium-structure .ic-structure-preview p{font-size:13px;line-height:1.5;color:#786587;margin:0}
+#ic-condominium-structure .ic-structure-preview-blocks{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+#ic-condominium-structure .ic-structure-preview article{padding:15px;background:#faf7ff;border:1px solid #e9def8;border-radius:10px;min-width:0;overflow-wrap:anywhere}
+#ic-condominium-structure .ic-structure-preview article strong{color:#522482;font-size:14px}
+#ic-condominium-structure .ic-structure-preview article p{display:flex;gap:10px;padding-top:9px;flex-wrap:wrap}
+#ic-condominium-structure .ic-structure-footer{display:flex;gap:20px;justify-content:space-between;align-items:center;flex-wrap:wrap;border-top:1px solid #eee3f9;padding-top:18px;margin-top:18px}
+#ic-condominium-structure .ic-structure-footer p{flex:1;min-width:180px}
+#ic-condominium-structure .ic-structure-error{padding:13px 16px;margin:16px 26px;border:1px solid #fecaca;background:#fff1f2;color:#b42335;border-radius:10px;font-size:14px;line-height:1.5}
+@media(max-width:1050px){#ic-condominium-structure .ic-structure-workspace{grid-template-columns:minmax(0,1fr)}#ic-condominium-structure .ic-structure-summary{position:static;display:block}}
+@media(max-width:600px){#ic-condominium-structure .ic-structure-heading{padding:18px;gap:12px}#ic-condominium-structure .ic-structure-heading>div{min-width:0;flex:1}#ic-condominium-structure h2{font-size:20px}#ic-condominium-structure .ic-structure-heading>button{width:100%}#ic-condominium-structure .ic-structure-brand{width:46px;height:46px}#ic-condominium-structure .ic-structure-status{margin:14px 16px 0}#ic-condominium-structure .ic-structure-steps{padding:18px 16px;gap:8px}#ic-condominium-structure .ic-structure-steps>span{font-size:11px;gap:5px}#ic-condominium-structure .ic-structure-steps i{width:20px}#ic-condominium-structure .ic-structure-workspace{padding:0 16px 16px;gap:16px}#ic-condominium-structure .ic-structure-floor-header{display:none}#ic-condominium-structure .ic-structure-floor{grid-template-columns:68px minmax(0,1fr);gap:10px;padding:14px 0}#ic-condominium-structure .ic-structure-mobile-label{display:block}#ic-condominium-structure .ic-structure-floor>.ic-structure-remove{grid-column:2;justify-self:end;min-height:36px}#ic-condominium-structure .ic-structure-preview{margin:0 16px 16px;padding:16px}#ic-condominium-structure .ic-structure-footer button{width:100%}}

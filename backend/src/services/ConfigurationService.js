@@ -46,6 +46,7 @@ class ConfigurationService {
       .map((user) => this.mapUser(user));
 
     const settings = this.normalizeSettings(condominium.settings);
+    const subscription = condominium.subscriptions?.find(s => !s.deletedAt) ?? null;
 
     return {
       condominium: {
@@ -67,8 +68,8 @@ class ConfigurationService {
           logoUrl: condominium.logoUrl || settings.theme?.logoUrl || "",
           atualizadoEm: settings.theme?.atualizadoEm || "",
         },
-        plano: settings.commercial?.plano || "Completo",
-        statusComercial: condominium.status || "ACTIVE",
+        plano: subscription?.plan?.name || "Sem plano contratado",
+        statusComercial: subscription?.status || condominium.status,
         quantidadeUnidades: settings.commercial?.quantidadeUnidades || "",
         responsavelTecnico: settings.commercial?.responsavelTecnico || "",
         observacoesComerciais: settings.commercial?.observacoesComerciais || "",
@@ -96,6 +97,11 @@ class ConfigurationService {
     const current = await CondominiumService.findById(condominiumId);
     const currentSettings = this.normalizeSettings(current.settings);
     const theme = payload.tema || {};
+    for (const color of [payload.corTema, theme.corPrincipal, theme.corSecundaria]) if(color && !/^#[0-9a-f]{6}$/i.test(color)) throw new ApiError("Informe uma cor hexadecimal válida.",422);
+
+
+
+    if (Object.hasOwn(payload, "plano") || Object.hasOwn(payload, "statusComercial")) throw new ApiError("Plano e status comercial são controlados pela Central Star.", 403);
     if (payload.settings || payload.whatsapp) throw new ApiError("Use a configuração específica de comunicação.",422);
 
     const settings = {
@@ -110,13 +116,7 @@ class ConfigurationService {
         logoUrl: payload.logoUrl || theme.logoUrl || current.logoUrl || "",
         atualizadoEm: new Date().toISOString(),
       },
-      commercial: {
-        ...(current.settings?.commercial || {}),
-        plano: payload.plano,
-        quantidadeUnidades: payload.quantidadeUnidades,
-        responsavelTecnico: payload.responsavelTecnico,
-        observacoesComerciais: payload.observacoesComerciais,
-      },
+      commercial: current.settings?.commercial || {},
     };
 
     return CondominiumService.update(condominiumId, {

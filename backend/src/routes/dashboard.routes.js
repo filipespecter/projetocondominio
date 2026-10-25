@@ -1,3 +1,5 @@
+import {operationEvents,operationPage,feedState,clearFeed} from "../services/OperationalReviewService.js";
+import {requireTrustedOrigin} from "../middlewares/securityMiddleware.js";
 import { Router } from "express";
 
 import DashboardController from "../controllers/DashboardController.js";
@@ -13,6 +15,11 @@ const managerRoles = authorizeRoles(
 const doormanOnly = authorizeRoles("DOORMAN");
 const residentOnly = authorizeRoles("RESIDENT");
 
+const respondReview=fn=>async(req,res,next)=>{try{res.set("Cache-Control","no-store").json({success:true,data:await fn(req)});}catch(e){next(e);}};
+dashboardRoutes.get("/operations/:kind/events",managerRoles,respondReview(req=>operationEvents(req.user,req.params.kind,req.query)));
+dashboardRoutes.get("/operations/:kind",managerRoles,respondReview(req=>operationPage(req.user,req.params.kind,req.query)));
+dashboardRoutes.get("/feed-state",managerRoles,respondReview(req=>feedState(req.user)));
+dashboardRoutes.post("/feed-clear",managerRoles,requireTrustedOrigin,respondReview(req=>clearFeed(req.user,req.body?.through)));
 // GET /api/v1/dashboard/manager
 dashboardRoutes.get("/manager", managerRoles, (req, res, next) =>
   DashboardController.manager(req, res, next)

@@ -5,7 +5,7 @@ const unwrap = (response) => response?.data?.data ?? response?.data ?? response 
 const configurationApi = {
   async testWhatsapp() { return unwrap(await api.post("/v1/configuration/whatsapp/test", {})); },
   async messagingHistory() { return unwrap(await api.get("/v1/configuration/messaging/history")); },
-  async retryMessage(id) { return unwrap(await api.post(`/v1/configuration/messaging/${id}/retry`, {})); },
+  async retryMessage(id, confirmed) { return unwrap(await api.post(`/v1/configuration/messaging/${id}/retry`, {confirmed})); },
   async getAll() { return unwrap(await api.get("/v1/configuration")); },
   async updateCondominium(data) { return unwrap(await api.patch("/v1/configuration/condominium", data)); },
   async updateSettings(group, data) { return unwrap(await api.patch(`/v1/configuration/settings/${group}`, data)); },

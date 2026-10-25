@@ -1,6 +1,10 @@
+import managementReportRoutes from "./management-report.routes.js";
 import { Router } from "express";
 
 import authRoutes from "./auth.routes.js";
+import sessionRoutes from "./session.routes.js";
+import handoverRoutes from "./handover.routes.js";
+import searchRoutes from "./search.routes.js";
 import onboardingRoutes from "./onboarding.routes.js";
 import apartmentRoutes from "./apartment.routes.js";
 import residentRoutes from "./resident.routes.js";
@@ -52,6 +56,7 @@ import { requireFeature } from "../middlewares/featureAccessMiddleware.js";
 import { onboardingLimiter,webhookLimiter } from "../middlewares/securityMiddleware.js";
 
 export const router = Router();
+router.use("/v1/session", sessionRoutes);
 
 /**
  * =====================================================
@@ -406,6 +411,9 @@ const operationalGuards = [
   subscriptionAccessMiddleware,
 ];
 
+router.use("/v1/handovers", ...operationalGuards, handoverRoutes);
+router.use("/v1/search", ...operationalGuards, searchRoutes);
+
 router.use(
   "/v1/configuration",
   ...operationalGuards,
@@ -609,6 +617,8 @@ router.use(
  * ANALYTICS / BI
  * =====================================================
  */
+router.use("/v1/management-reports",...operationalGuards,managementReportRoutes);
+
 router.use(
   "/v1/analytics",
   ...operationalGuards,

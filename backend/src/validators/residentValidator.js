@@ -244,7 +244,7 @@ const documentSchema = z
 const passwordSchema = z
   .string()
   .min(
-    8,
+    12,
     "A senha deve possuir pelo menos 12 caracteres."
   )
   .max(
@@ -286,7 +286,8 @@ export const createResidentSchema = z
       documentSchema,
 
     password:
-      passwordSchema,
+      passwordSchema.optional(),
+    createAccess: z.boolean().optional().default(true),
 
     residentType:
       residentTypeSchema
@@ -324,7 +325,7 @@ export const createResidentSchema = z
       .optional()
       .default(true),
   })
-  .strict();
+  .strict().refine(v=>v.createAccess===false || Boolean(v.password),{message:"Informe a senha temporária para criar o acesso.",path:["password"]});
 
 /**
  * Atualização parcial de morador.

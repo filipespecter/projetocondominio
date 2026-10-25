@@ -1,3 +1,6 @@
+import PassagemServico from "./pages/shared/PassagemServico.jsx";
+import Ajuda from "./pages/shared/Ajuda.jsx";
+import SessionActivity from "./components/SessionActivity.jsx";
 import AccessCard from "./components/AccessCard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PlatformProtectedRoute from "./components/PlatformProtectedRoute";
@@ -154,6 +157,7 @@ function Home() {
 function App() {
   return (
     <BrowserRouter>
+      <SessionActivity />
       <Routes>
         <Route path="/" element={<Home />} />
 
@@ -253,6 +257,7 @@ function App() {
         >
           <Route index element={<Navigate to="/dashboard/sindico" replace />} />
           <Route path="sindico" element={<DashboardSindico />} />
+          <Route path="passagem-servico" element={<PassagemServico />} />
           <Route path="apartamentos" element={<Apartamentos />} />
           <Route path="moradores" element={<Moradores />} />
           <Route path="porteiros" element={<Porteiros />} />
@@ -276,6 +281,8 @@ function App() {
           <Route path="prestadores" element={<Prestadores />} />
         </Route>
 
+        <Route path="/bi-analytics" element={<ProtectedRoute tipoPermitido="sindico"><BIAnalytics /></ProtectedRoute>} />
+
         <Route
           path="/bi-monitor"
           element={
@@ -294,6 +301,8 @@ function App() {
           }
         >
           <Route index element={<DashboardPorteiro />} />
+          <Route path="ajuda" element={<Ajuda />} />
+          <Route path="passagem-servico" element={<PassagemServico />} />
           <Route path="encomendas" element={<EncomendasPorteiro />} />
           <Route path="visitantes" element={<VisitantesPorteiro />} />
           <Route path="moradores" element={<MoradoresPorteiro />} />
@@ -311,6 +320,7 @@ function App() {
           }
         >
           <Route index element={<DashboardMorador />} />
+          <Route path="ajuda" element={<Ajuda />} />
           <Route path="avisos" element={<AvisosMorador />} />
           <Route path="encomendas" element={<EncomendasMorador />} />
           <Route path="reservas" element={<ReservasMorador />} />

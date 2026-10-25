@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import ApartmentContactService from "./ApartmentContactService.js";
 import { normalizeWhatsAppPhone } from "../utils/MessagingSecrets.js";
 import PackageCredentialService from "./PackageCredentialService.js";
@@ -187,41 +188,15 @@ class CommunicationService {
       }
     }
 
-    return communicationLogRepository
-      .createLog({
-        condominiumId,
-        recipientUserId,
-        channel:
-          normalizedChannel,
-        status:
-          "PENDING",
-        recipient:
-          normalizedRecipient,
-        subject:
-          this.normalizeOptionalText(
-            subject
-          ),
-        templateCode:
-          normalizedTemplateCode,
-        contentSnapshot:
-          String(content).trim(),
-        module:
-          normalizedModule,
-        referenceId:
-          normalizedReferenceId,
-        requestId:
-          this.normalizeOptionalText(
-            requestId
-          ),
-        provider:
-          provider
-            ? String(provider)
-                .trim()
-                .toUpperCase()
-            : null,
-        metadata,
-        preventDuplicate,
-      });
+    const deduplicationKey = preventDuplicate && normalizedModule === "PACKAGE"
+      ? crypto.createHash("sha256").update(JSON.stringify([condominiumId,normalizedChannel,normalizedRecipient,normalizedReferenceId,normalizedTemplateCode])).digest("hex") : null;
+    try {
+      return await prisma.communicationLog.create({data:{condominiumId,recipientUserId,channel:normalizedChannel,status:"PENDING",recipient:normalizedRecipient,subject:this.normalizeOptionalText(subject),templateCode:normalizedTemplateCode,contentSnapshot:String(content).trim(),module:normalizedModule,referenceId:normalizedReferenceId,requestId:this.normalizeOptionalText(requestId),provider:provider?String(provider).trim().toUpperCase():null,metadata,deduplicationKey}});
+    } catch(error) {
+      if(error.code!=="P2002"||!deduplicationKey)throw error;
+      const existing=await prisma.communicationLog.findUnique({where:{deduplicationKey}});
+      if(!existing)throw error;return existing;
+    }
   }
 
   async queueForUser({
@@ -340,9 +315,11 @@ class CommunicationService {
       return before;
     }
 
+    if(before.metadata?.requiresReview) throw new ApiError("Resultado anterior incerto. Confira a entrega no provedor antes de autorizar outro envio.",409);
     const claimed = await communicationLogRepository.markAttempt(id);
     if (!claimed) throw new ApiError("Aviso já está sendo enviado ou foi concluído. Atualize o histórico.",409);
 
+    let providerAccepted = false;
     try {
       let content=before.contentSnapshot;
       let metadata=before.metadata;
@@ -359,9 +336,9 @@ class CommunicationService {
         }
         const credential=canPickup?await PackageCredentialService.ensure(before.referenceId,before.condominiumId):null;
         const instructions=canPickup?`Código de retirada: ${credential.code}. Apresente à portaria. Não compartilhe a credencial.`:"Avise o responsável autorizado pela retirada. Este aviso não autoriza retirar a encomenda.";
-        content+=` ${instructions}`;
+        content+=` Destinatário: ${metadata.recipientName || "Contato autorizado"}. ${metadata.packageDetails || ""}. ${instructions}`;
         const thirdParameter=credential?.code||"Consulte o responsável autorizado pela retirada.";
-        metadata={...metadata,components:[{type:"body",parameters:[metadata.condominiumName,metadata.apartmentLabel,thirdParameter].map(text=>({type:"text",text:String(text)}))}]};
+        metadata={...metadata,components:[{type:"body",parameters:[metadata.condominiumName,[metadata.apartmentLabel,metadata.recipientName,metadata.packageDetails].filter(Boolean).join(" · "),thirdParameter].map(text=>({type:"text",text:String(text)}))}]};
       }
       const result =
         await CommunicationProviderService
@@ -382,6 +359,7 @@ class CommunicationService {
             metadata,
           });
 
+      providerAccepted = true;
       const sent =
         await communicationLogRepository
           .markSent(
@@ -402,6 +380,7 @@ class CommunicationService {
             }
           );
 
+      try {
       await AuditLogService
         .createLog({
           condominiumId:
@@ -450,6 +429,7 @@ class CommunicationService {
               ?.userAgent ??
             null,
         });
+      } catch { console.error("[COMMUNICATION_AUDIT] Provedor aceitou mensagem; auditoria pendente. Não reenviar."); }
 
       return sent;
     } catch (error) {
@@ -465,6 +445,7 @@ class CommunicationService {
               errorName:
                 error?.name ??
                 null,
+              requiresReview: providerAccepted || error?.statusCode === 502 || error?.name === "AbortError" || error?.name === "TimeoutError",
             }
           );
 

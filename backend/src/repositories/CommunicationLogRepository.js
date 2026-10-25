@@ -120,6 +120,7 @@ class CommunicationLogRepository extends BaseRepository {
 
     return this.model.findMany({
       where: {
+        NOT:{module:"PACKAGE"},
         status:
           "FAILED",
 
@@ -428,7 +429,7 @@ class CommunicationLogRepository extends BaseRepository {
       await this.model.updateMany({
         where: {
           id,
-          OR: [{lastAttemptAt:null},{lastAttemptAt:{lt:new Date(Date.now()-60000)}}],
+          OR: [{status:"PENDING",lastAttemptAt:null},{status:"FAILED",lastAttemptAt:{lt:new Date(Date.now()-60000)}}],
           status: {
             in: [
               "PENDING",

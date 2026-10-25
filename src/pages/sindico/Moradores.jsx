@@ -1,3 +1,4 @@
+import ResidentAccess from "../../components/ResidentAccess.jsx";
 import ApartmentContacts from "../../components/ApartmentContacts.jsx";
 import { confirmDialog } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useState } from "react";
@@ -25,6 +26,9 @@ function Moradores() {
   const [filtroStatus, setFiltroStatus] = useState("Todos");
   const [novoMorador, setNovoMorador] = useState(estadoInicialMorador);
   const [editId, setEditId] = useState(null);
+  const [saving,setSaving] = useState(false);
+  const [createAccess,setCreateAccess] = useState(true);
+  const [accessReceipt,setAccessReceipt] = useState(null);
 
   const typeFront = { OWNER:"Proprietário", TENANT:"Inquilino", DEPENDENT:"Dependente", OTHER:"Outro" };
   const typeBack = { "Proprietário":"OWNER", "Inquilino":"TENANT", "Dependente":"DEPENDENT", "Cônjuge":"DEPENDENT", "Outro":"OTHER" };
@@ -109,7 +113,7 @@ function Moradores() {
       alert("Preencha nome, usuário e apartamento.");
       return false;
     }
-    if (!editId && String(novoMorador.senha || "").length < 12) {
+    if (!editId && createAccess && String(novoMorador.senha || "").length < 12) {
       alert("A senha inicial deve possuir pelo menos 12 caracteres.");
       return false;
     }
@@ -117,7 +121,8 @@ function Moradores() {
   }
 
   async function salvarMorador() {
-    if (!validarMorador()) return;
+    if (saving || !validarMorador()) return;
+    setSaving(true);
     const payload = {
       apartmentId: novoMorador.apartamentoId,
       name: novoMorador.nome.trim(),
@@ -135,12 +140,13 @@ function Moradores() {
     };
     try {
       if (editId) await residentApi.update(editId, payload);
-      else await residentApi.create({ ...payload, password: novoMorador.senha, mustChangePassword: true });
+      else await residentApi.create({ ...payload, password: createAccess ? novoMorador.senha : undefined, createAccess, mustChangePassword: true });
+      if (!editId && createAccess) setAccessReceipt({username:payload.username,password:novoMorador.senha});
       await carregar();
-      fecharModal();
+      fecharModal(true);
     } catch (error) {
       alert(error?.message ?? "Erro ao salvar morador.");
-    }
+    } finally { setSaving(false); }
   }
 
   async function excluirMorador(id) {
@@ -155,7 +161,8 @@ function Moradores() {
     setMostrarModal(true);
   }
 
-  function fecharModal() {
+  function fecharModal(force=false) {
+    if (force !== true && mostrarModal && !window.confirm("Fechar a ficha? Alterações ainda não salvas serão descartadas.")) return;
     setMostrarModal(false);
     setEditId(null);
     setNovoMorador(estadoInicialMorador);
@@ -187,6 +194,7 @@ function Moradores() {
 
   return (
     <div style={styles.container}>
+      {accessReceipt && <section className="ic-feature-panel" role="status"><h2>Acesso do morador criado</h2><p>Usuário: {accessReceipt.username}</p><p>Senha temporária: {accessReceipt.password}</p><p>Portal: {location.origin}/login/morador. Troca obrigatória no primeiro acesso.</p><button onClick={()=>navigator.clipboard.writeText(`Usuário: ${accessReceipt.username}\nSenha temporária: ${accessReceipt.password}\nPortal: ${location.origin}/login/morador`).catch(()=>alert("Selecione e copie os dados manualmente."))}>Copiar dados</button><button onClick={()=>setAccessReceipt(null)}>Fechar e ocultar senha</button></section>}
       <ApartmentContacts apartments={apartamentos} residents={moradores} />
       <section style={styles.hero}>
         <div style={styles.heroLeft}>
@@ -522,6 +530,7 @@ function Moradores() {
                   <option>Dependente</option>
                   <option>Cônjuge</option>
                 </select>
+                {novoMorador.tipoMorador === "Inquilino" && <small>O inquilino pode ser cadastrado sem dois contatos prévios no apartamento. Autorizações de aviso e retirada são configuradas separadamente.</small>}
               </div>
 
               <div style={styles.formRow}>
@@ -613,7 +622,8 @@ function Moradores() {
                 </label>
 
                 <input
-                  minLength="4"
+                  minLength="12"
+                  disabled={!!editId || !createAccess}
                   placeholder="Ex: joao101"
                   value={novoMorador.usuario}
                   onChange={(e) =>
@@ -628,13 +638,14 @@ function Moradores() {
 
               <div style={styles.formRow}>
                 <label style={styles.label}>
-                  Senha
+                  {editId ? "Senha protegida — redefina abaixo" : "Senha temporária inicial"}
                 </label>
 
                 <input
                   type="password"
-                  minLength="4"
-                  placeholder="Senha de acesso"
+                  minLength="12"
+                  disabled={!!editId || !createAccess}
+                  placeholder={editId ? "A senha atual não é exibida" : "Senha temporária de primeiro acesso"}
                   value={novoMorador.senha}
                   onChange={(e) =>
                     setNovoMorador({
@@ -646,6 +657,8 @@ function Moradores() {
                 />
               </div>
 
+              {!editId && <label style={styles.formRowFull}><input type="checkbox" checked={createAccess} onChange={e=>setCreateAccess(e.target.checked)}/> Criar acesso agora. Desmarcado: salvar somente o cadastro, sem liberar login.</label>}
+              {editId && <div style={styles.formRowFull}><ResidentAccess key={editId} resident={novoMorador} onChanged={carregar}/></div>}
               <div style={styles.formRowFull}>
                 <label style={styles.label}>
                   Status
@@ -671,7 +684,7 @@ function Moradores() {
             <div style={styles.modalActions}>
               <button
                 style={styles.saveButton}
-                onClick={salvarMorador}
+                onClick={salvarMorador} disabled={saving}
               >
                 Salvar morador
               </button>

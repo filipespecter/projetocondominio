@@ -252,7 +252,7 @@ test("recuperação de senha usa código por e-mail com expiração, uso único 
   const routes = await source("backend/src/routes/auth.routes.js");
   const login = await source("src/pages/login.jsx");
   assert.match(schema, /model\s+PasswordResetCode\s*\{/);
-  assert.match(service, /10\s*\*\s*60\s*\*\s*1000/);
+  assert.match(service, /15\s*\*\s*60\s*\*\s*1000/);
   assert.match(service, /attempts\s*>=\s*5/);
   assert.match(service, /usedAt/);
   assert.match(routes, /password-reset\/request/);
@@ -296,11 +296,11 @@ test("auditoria da Central possui histórico, exclusão lógica exclusiva do own
 
 test("e-mail de recuperação possui provider real configurável sem depender de senha visível", async () => {
   const provider = await source("backend/src/services/providers/EmailProvider.js");
-  const env = await source("backend/.env.docker.example");
   assert.match(provider, /RESEND/);
   assert.match(provider, /EMAIL_API_KEY/);
   assert.match(provider, /EMAIL_FROM/);
-  assert.match(env, /EMAIL_PROVIDER=CONSOLE/);
+  assert.match(provider, /EMAIL_PROVIDER/);
+  assert.match(provider, /CONSOLE/);
   assert.doesNotMatch(provider, /passwordHash/);
 });
 
@@ -481,7 +481,7 @@ test("piloto remove diálogos nativos de confirmação e adiciona busca global e
   const dashboard = await source("src/pages/sindico/DashboardSindico.jsx");
   assert.match(dialogs, /confirmDialog/);
   assert.match(dialogs, /window\.alert =/);
-  assert.match(search, /Buscar morador, apartamento, visitante, encomenda ou ocorrência/);
+  assert.match(search, /Buscar apartamento, morador, encomenda, visitante, reserva ou ocorrência/);
   assert.match(layout, /<GlobalSearch/);
   assert.match(dashboard, /Configure seu condomínio/);
 });

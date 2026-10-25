@@ -1,6 +1,6 @@
+import { enforceIdle } from "../utils/sessionIdle.js";
 import Jwt from "../utils/Jwt.js";
 import { ApiError } from "../utils/ApiError.js";
-import UserSessionService from "../services/UserSessionService.js";
 import prisma from "../config/prisma.js";
 import { enforcePasswordChange } from "./passwordChangeGuard.js";
 
@@ -66,15 +66,17 @@ export async function authMiddleware(
       );
     }
     const [user,session]=await Promise.all([
-      prisma.user.findFirst({where:{id:payload.sub,deletedAt:null},select:{id:true,condominiumId:true,role:true,status:true,securityVersion:true,mustChangePassword:true}}),
-      payload.sid?prisma.authSession.findUnique({where:{id:payload.sid},select:{userId:true,revokedAt:true,expiresAt:true}}):null,
+      prisma.user.findFirst({where:{id:payload.sub,deletedAt:null},select:{id:true,name:true,condominiumId:true,role:true,status:true,securityVersion:true,mustChangePassword:true,idleTimeoutMinutes:true}}),
+      payload.sid?prisma.authSession.findUnique({where:{id:payload.sid},select:{id:true,userId:true,revokedAt:true,expiresAt:true,lastInteractionAt:true,createdAt:true}}):null,
     ]);
-    if(!user||user.status!=="ACTIVE"||user.securityVersion!==payload.sv||!session||session.userId!==user.id||session.revokedAt||session.expiresAt<=new Date()) throw new ApiError("Sessão inválida ou revogada.",401);
+    if(!user||user.status!=="ACTIVE"||user.securityVersion!==payload.sv||!session||session.userId!==user.id||session.revokedAt) throw new ApiError("Sessão inválida ou revogada.",401,{code:"SESSION_REVOKED"});
 
+    await enforceIdle(session,user,prisma);
     enforcePasswordChange(user, req);
 
     req.user = {
       id: payload.sub,
+      name:user.name,
 
       condominiumId: user.condominiumId ?? null,
 
@@ -85,12 +87,6 @@ export async function authMiddleware(
       token,
       payload,
     };
-
-    // Mantém a última atividade operacional do porteiro atualizada sem
-    // atrasar a requisição principal. Falhas de telemetria não bloqueiam o uso.
-    if (req.user.role === "DOORMAN") {
-      void UserSessionService.touch(req.user.id).catch(() => null);
-    }
 
     return next();
   } catch (error) {

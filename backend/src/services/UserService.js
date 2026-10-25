@@ -301,6 +301,7 @@ class UserService extends BaseService {
               data.phone ?? null,
             passwordHash,
             role: data.role,
+            loginEnabled: data.loginEnabled !== false,
             status:
               data.status ?? "ACTIVE",
             mustChangePassword:

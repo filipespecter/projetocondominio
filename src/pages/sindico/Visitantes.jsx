@@ -1,5 +1,7 @@
+import api from "../../Services/api.js";
+import OperationalHistoryTools from "../../components/OperationalHistoryTools.jsx";
 import { confirmDialog } from "../../components/GlobalDialogs.jsx";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import visitorApi from "../../Services/visitorApi";
 
 function Visitantes() {
@@ -26,6 +28,12 @@ function Visitantes() {
   const [filtroStatus, setFiltroStatus] = useState("Todos");
   const [novoVisitante, setNovoVisitante] = useState(estadoInicialVisitante);
   const [editId, setEditId] = useState(null);
+  const [historyMonth,setHistoryMonth]=useState("");
+  const [historyPage,setHistoryPage]=useState(1);
+  const [historyTotal,setHistoryTotal]=useState(0);
+  const [historyUpdated,setHistoryUpdated]=useState(null);
+  const [liveError,setLiveError]=useState("");
+
 
   const statusFront = {
     WAITING: "Aguardando",
@@ -116,34 +124,40 @@ function Visitantes() {
     };
   }
 
+  const liveRequest=useRef(0);
   async function carregar() {
+    const request=++liveRequest.current;
     try {
       const [visitorData, residentData] =
         await Promise.all([
-          visitorApi.list(),
-          visitorApi.residentsDirectory(),
+          api.get(`/v1/dashboard/operations/visitors?`+new URLSearchParams({page:historyPage,...(historyMonth?{history:historyMonth}:{}),q:busca,...({"Aguardando": "WAITING", "Autorizado": "AUTHORIZED", "Em Visita": "INSIDE", "Saiu": "EXITED", "Bloqueado": "DENIED"}[filtroStatus]?{status:{"Aguardando": "WAITING", "Autorizado": "AUTHORIZED", "Em Visita": "INSIDE", "Saiu": "EXITED", "Bloqueado": "DENIED"}[filtroStatus]}:{})})),
+          moradores.length ? Promise.resolve(moradores) : visitorApi.residentsDirectory(),
         ]);
 
+      if(request!==liveRequest.current)return;
+      setHistoryTotal(visitorData.data.total);setHistoryUpdated(visitorData.data.refreshedAt);setLiveError("");
       const mappedResidents =
         (residentData ?? []).map(mapResident);
 
       setMoradores(mappedResidents);
       setVisitantes(
-        (visitorData ?? []).map((v) =>
+        (visitorData?.data?.items ?? []).map((v) =>
           mapVisitor(v, mappedResidents)
         )
       );
     } catch (error) {
-      alert(
-        error?.message ??
-        "Não foi possível carregar visitantes."
-      );
+      if(request!==liveRequest.current)return;
+      setLiveError(error?.message || "Não foi possível atualizar o acompanhamento.");
     }
   }
 
   useEffect(() => {
-    carregar();
-  }, []);
+    let active=true,inFlight=false;
+    const refresh=async()=>{if(!active||inFlight||document.hidden)return;inFlight=true;try{await carregar();}finally{inFlight=false;}};
+    const debounce=setTimeout(refresh,300),timer=setInterval(refresh,10000);
+    document.addEventListener("visibilitychange",refresh);
+    return ()=>{active=false;liveRequest.current++;clearTimeout(debounce);clearInterval(timer);document.removeEventListener("visibilitychange",refresh);};
+  }, [historyPage,historyMonth,busca,filtroStatus]);
 
   const visitantesNormalizados = visitantes;
 
@@ -505,6 +519,7 @@ function Visitantes() {
 
   return (
     <div style={styles.container}>
+      <OperationalHistoryTools kind="visitors" month={historyMonth} onMonth={setHistoryMonth} page={historyPage} onPage={setHistoryPage} total={historyTotal} error={liveError} updatedAt={historyUpdated}/>
       <section style={styles.hero}>
         <div style={styles.heroLeft}>
           <span style={styles.heroBadge}>🛂 Controle de acesso</span>
@@ -557,14 +572,14 @@ function Visitantes() {
           <input
             placeholder="Buscar visitante, documento, morador, apartamento ou tipo..."
             value={busca}
-            onChange={(e) => setBusca(e.target.value)}
+            onChange={(e) => {setBusca(e.target.value);setHistoryPage(1);}}
             style={styles.search}
           />
         </div>
 
         <select
           value={filtroStatus}
-          onChange={(e) => setFiltroStatus(e.target.value)}
+          onChange={(e) => {setFiltroStatus(e.target.value);setHistoryPage(1);}}
           style={styles.filter}
         >
           <option>Todos</option>
@@ -692,7 +707,7 @@ function Visitantes() {
 
                     <div style={styles.infoItem}>
                       <span>Data</span>
-                      <strong>{v.data || "-"}</strong>
+                      <strong>{v.data || "-"}</strong><small>Registrado por: {v.registeredBy?.name || "Não identificado"}</small><small>Entrada: {v.enteredAt ? new Date(v.enteredAt).toLocaleString("pt-BR") : "Não registrada"} · Saída: {v.exitedAt ? new Date(v.exitedAt).toLocaleString("pt-BR") : "Em aberto"}</small>
                     </div>
                   </div>
 

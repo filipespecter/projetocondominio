@@ -263,7 +263,7 @@ function NotificationCenter() {
                       </div>
 
                       <p style={styles.message}>
-                        {item.message}
+                        {item.message}{item.module==="MONTHLY_REVIEW"&&<a href="/dashboard/relatorios?fechamento=1#fechamento-mensal" onClick={()=>setOpen(false)}>Revisar fechamento mensal</a>}
                       </p>
 
                       <div style={styles.meta}>

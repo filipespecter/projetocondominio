@@ -98,8 +98,8 @@ class UserRepository extends BaseRepository {
     const where = {
       deletedAt: null,
       OR: [
-        { username: normalized },
-        { email: normalized },
+        { username: {equals: normalized,mode:"insensitive"} },
+        { email: {equals: normalized,mode:"insensitive"} },
       ],
     };
 

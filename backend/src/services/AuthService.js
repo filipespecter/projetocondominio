@@ -33,6 +33,10 @@ class AuthService {
     delete safeUser.lockedUntil;
     delete safeUser.deletedAt;
 
+    if(safeUser.condominium){
+      const c=safeUser.condominium;
+      safeUser.condominium={...c,settings:{...(c.settings||{}),whatsapp:{}}};
+    }
     return safeUser;
   }
 
@@ -292,6 +296,7 @@ class AuthService {
       );
     }
 
+    if (user.loginEnabled === false) throw new ApiError("Usuário ou senha inválidos.",401);
     this.validateUserAccess(user);
     if (user.condominiumId) this.validateCondominiumAccess(user.condominium);
 
@@ -324,7 +329,7 @@ class AuthService {
 
     // Sessão operacional persistente para supervisão de equipe. A coleta é
     // tolerante à ausência da migration para não bloquear o login.
-    await UserSessionService.start(authenticatedUser, requestContext);
+    await UserSessionService.start(authenticatedUser, {...requestContext,authSessionId:tokens.sessionId});
 
     return {
       ...tokens,
@@ -389,6 +394,10 @@ class AuthService {
       );
     }
 
+    if(user.condominiumId && user.condominium){
+      const subscription=await prisma.subscription.findFirst({where:{condominiumId:user.condominiumId,status:{in:["TRIAL","ACTIVE","OVERDUE"]}},orderBy:{createdAt:"desc"},select:{status:true,plan:{select:{name:true,code:true}}}});
+      user.condominium={...user.condominium,subscription,plan:subscription?.plan??null};
+    }
     return this.sanitizeUser(user);
   }
 
@@ -420,7 +429,7 @@ class AuthService {
       user.id
     );
 
-    await UserSessionService.endLatest(user.id, "LOGOUT");
+    await UserSessionService.endLatest(user.id, "LOGOUT", sessionId);
     await AuthSessionService.revokeSession(sessionId, "LOGOUT");
 
     await AuditLogService.logLogout({
@@ -641,16 +650,20 @@ class AuthService {
     const user = await this.findUserForPasswordReset(data ?? {});
     const generic = { message: "Se o e-mail informado estiver cadastrado, enviaremos um código de recuperação." };
     if (!user || !user.email) return generic;
-    this.validateUserAccess(user);
+    try { this.validateUserAccess(user); } catch { return generic; }
     const code = String(crypto.randomInt(0, 1000000)).padStart(6, "0");
     const codeHash = this.hashResetCode(code);
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
     await prisma.passwordResetCode.updateMany({ where: { userId: user.id, usedAt: null }, data: { usedAt: new Date() } });
     await prisma.passwordResetCode.create({ data: { userId: user.id, codeHash, expiresAt } });
-    await CommunicationProviderService.send({
+    try { await CommunicationProviderService.send({
       channel: "EMAIL", recipient: user.email, subject: "InfinityCondo - código para redefinir sua senha",
-      content: `Seu código de recuperação InfinityCondo é ${code}. Ele expira em 10 minutos e só pode ser usado uma vez. Se você não solicitou esta alteração, ignore esta mensagem.`,
-    });
+      content: `Seu código de recuperação InfinityCondo é ${code}. Ele expira em 15 minutos e só pode ser usado uma vez. Se você não solicitou esta alteração, ignore esta mensagem.`,
+    }); } catch {
+      await prisma.passwordResetCode.updateMany({where:{userId:user.id,codeHash,usedAt:null},data:{usedAt:new Date()}});
+      await AuditLogService.createLog({condominiumId:user.condominiumId,userId:user.id,userRole:user.role,action:"PASSWORD_RESET_SEND_FAILED",module:"AUTH",details:"Falha no envio do código; conferir provedor transacional."});
+      return generic;
+    }
     await AuditLogService.createLog({ condominiumId:user.condominiumId, userId:user.id, userName:user.name, userRole:user.role, action:"PASSWORD_RESET_REQUEST", module:"AUTH", details:"Código de recuperação de senha solicitado.", referenceId:user.id, ipAddress:requestContext?.ipAddress ?? null, userAgent:requestContext?.userAgent ?? null });
     return generic;
   }
@@ -668,10 +681,13 @@ class AuthService {
     validatePasswordPolicy(data.newPassword, "nova senha");
     if (data.newPassword !== data.newPasswordConfirmation) throw new ApiError("Nova senha inválida.", 400);
     const passwordHash = await Password.hash(String(data.newPassword));
-    await userRepository.updatePassword(user.id, passwordHash, false);
-    await AuthSessionService.revokeAllForUser(user.id, "PASSWORD_RESET");
-    await prisma.passwordResetCode.update({ where:{id:record.id}, data:{usedAt:new Date()} });
-    await prisma.passwordResetCode.updateMany({ where:{userId:user.id,usedAt:null}, data:{usedAt:new Date()} });
+    await prisma.$transaction(async tx => {
+      const claimed = await tx.passwordResetCode.updateMany({where:{id:record.id,usedAt:null,expiresAt:{gt:new Date()},attempts:{lt:5}},data:{usedAt:new Date()}});
+      if (claimed.count !== 1) throw new ApiError("Código inválido ou expirado.",400);
+      await tx.user.update({where:{id:user.id},data:{passwordHash,mustChangePassword:false,passwordChangedAt:new Date(),failedLoginAttempts:0,lockedUntil:null,securityVersion:{increment:1}}});
+      await tx.authSession.updateMany({where:{userId:user.id,revokedAt:null},data:{revokedAt:new Date(),revokeReason:"PASSWORD_RESET"}});
+      await tx.passwordResetCode.updateMany({where:{userId:user.id,usedAt:null},data:{usedAt:new Date()}});
+    });
     await AuditLogService.createLog({ condominiumId:user.condominiumId, userId:user.id, userName:user.name, userRole:user.role, action:"PASSWORD_RESET_CONFIRMED", module:"AUTH", details:"Senha redefinida por código enviado ao e-mail cadastrado.", referenceId:user.id, ipAddress:requestContext?.ipAddress ?? null, userAgent:requestContext?.userAgent ?? null });
     return { message:"Senha redefinida com sucesso. Faça login com a nova senha." };
   }

@@ -17,7 +17,7 @@ const reportApi={
     const [moradores,apartamentos,porteiros,visitantes,encomendas,reservas,areasComuns,avisos,prestadores,ocorrencias,movimentacoes,audit,me]=await Promise.all([
       residentApi.list(),apartmentApi.list(),doormanApi.list(),visitorApi.list(),packageApi.list(),reservationApi.list(),commonAreaApi.list(),noticeApi.list(),serviceProviderApi.list(),occurrenceApi.list(),operationalRecordApi.list(),api.get("/v1/audit"),api.get("/v1/auth/me")
     ]);
-    const auditoria=unwrap(audit); const usuario=unwrap(me);
+    const auditoria=unwrap(audit); const usuario=unwrap(me)?.user ?? unwrap(me);
     return {moradores,apartamentos,porteiros,visitantes,encomendas,reservas,areasComuns,avisos,prestadores,ocorrencias,sugestoes:ocorrencias.filter(x=>["SUGGESTION","COMPLAINT","REQUEST"].includes(String(x.type||x.category||"").toUpperCase())),movimentacoes,auditoria:Array.isArray(auditoria)?auditoria:(auditoria?.items||[]),configuracoes:usuario?.condominium||{},usuario};
   },
   async registrarExportacao({tipo,titulo,periodo}){

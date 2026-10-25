@@ -1,3 +1,7 @@
+import { Building2, Users, UserRound, BriefcaseBusiness, Package, CalendarDays, MessageSquareWarning, Shield, Layers3, Megaphone, Bell, ClipboardList, Wrench, ChevronRight, Plus, Trash2, BookOpen, X, Check, Activity, BarChart3, Flag } from "lucide-react";
+import "../../styles/dashboardFinal.css";
+import api from "../../Services/api.js";
+import {confirmDialog} from "../../components/GlobalDialogs.jsx";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -11,7 +15,7 @@ function DashboardSindico() {
   const [perfilCondominio, setPerfilCondominio] = useState({
     condominioId: null,
     nomeCondominio: "InfinityCondo",
-    plano: "Plano Completo",
+    plano: "Plano não informado",
     statusComercial: "Ativo",
     quantidadeUnidades: ""
   });
@@ -41,6 +45,10 @@ function DashboardSindico() {
   });
 
   const [atividades, setAtividades] = useState([]);
+  const [clearedThrough,setClearedThrough]=useState(null),[clearBusy,setClearBusy]=useState(false),[feedError,setFeedError]=useState("");
+  const visibleActivities=atividades.filter(item=>!clearedThrough||new Date(item.tempo)>new Date(clearedThrough));
+  async function clearHistory(){if(clearBusy||!visibleActivities.length)return;if(!await confirmDialog("Limpar somente as movimentações exibidas no seu painel? Os registros continuam nos módulos e relatórios."))return;setClearBusy(true);try{const through=new Date(Math.max(...visibleActivities.map(x=>new Date(x.tempo).getTime()).filter(Number.isFinite))).toISOString();const r=await api.post("/v1/dashboard/feed-clear",{through});setClearedThrough(r.data.clearedThrough);setFeedError("");}catch(e){setFeedError(e.message);}finally{setClearBusy(false);}}
+
 
   useEffect(() => {
     carregarDados();
@@ -60,7 +68,8 @@ function DashboardSindico() {
 
   async function carregarDados() {
     try {
-      const payload = await dashboardApi.manager();
+      const [payload,feed]=await Promise.all([dashboardApi.manager(),api.get("/v1/dashboard/feed-state")]);
+      setClearedThrough(old=>old&&old>feed.data.clearedThrough?old:feed.data.clearedThrough);setFeedError("");
       const base = payload.dashboard || {};
       const residents = base.residents || {};
       const apartments = base.apartments || {};
@@ -87,7 +96,7 @@ function DashboardSindico() {
       setPerfilCondominio({
         condominioId: me.condominiumId || null,
         nomeCondominio: me.condominium?.name || me.condominiumName || "Condomínio",
-        plano: me.condominium?.plan?.name || me.planName || "Plano Completo",
+        plano: me.condominium?.plan?.name || me.planName || "Plano não informado",
         statusComercial: me.condominium?.status || "Ativo",
         quantidadeUnidades: apartments.total || ""
       });
@@ -105,16 +114,16 @@ function DashboardSindico() {
       });
 
       const historico = [
-        ...notifications.slice(0, 5).map((n) => ({ id:n.id, icon:n.readAt ? "🔔" : "🟡", titulo:n.title || "Notificação", texto:n.message || "Nova notificação do sistema", tempo:n.createdAt || "", tipo:n.readAt ? "Notificação lida" : "Notificação pendente" })),
-        ...audit.slice(0, 5).map((a) => ({ id:a.id, icon:"🧾", titulo:a.action || a.acao || "Registro de auditoria", texto:`${a.user?.name || a.usuario || "Sistema"} • ${a.module || a.modulo || "Sistema"}`, tempo:a.createdAt || a.criadoEm || "", tipo:"Auditoria" })),
+        ...notifications.slice(0, 5).map((n) => ({ id:n.id, apartamento:n.apartmentLabel, icon:n.readAt ? "🔔" : "🟡", titulo:n.title || "Notificação", texto:n.message || "Nova notificação do sistema", tempo:n.createdAt || "", tipo:n.readAt ? "Notificação lida" : "Notificação pendente" })),
+        ...audit.filter(a => !["AUTH", "CONFIGURATION_SECURITY", "PLATFORM_CLIENT_ACCESS", "DASHBOARD_FEED"].includes(a.module) && !/LOGIN|LOGOUT|PASSWORD|SESSION|SECURITY/.test(a.action || "")).slice(0, 5).map((a) => ({ id:a.id, operador:a.userName || a.user?.name || a.usuario, icon:"🧾", titulo:a.action || a.acao || "Registro de auditoria", texto:`${a.userName || a.user?.name || a.usuario || "Sistema"} • ${a.module || a.modulo || "Sistema"}`, tempo:a.createdAt || a.criadoEm || "", tipo:"Auditoria" })),
         ...occurrences.slice(0, 4).map((o) => ({ id:o.id, icon:"💬", titulo:o.title || o.type || "Ocorrência registrada", texto:o.description || o.descricao || "Ocorrência do condomínio", tempo:o.createdAt || "", tipo:"Ocorrência" })),
-        ...payload.packages.slice(0, 4).map((e) => ({ id:e.id, icon:"📦", titulo:"Encomenda registrada", texto:`Apartamento ${e.apartment?.number || e.apartmentNumber || "N/A"}`, tempo:e.createdAt || e.receivedAt || "", tipo:"Encomenda" })),
-        ...payload.reservations.slice(0, 4).map((r) => ({ id:r.id, icon:"📅", titulo:"Reserva solicitada", texto:r.commonArea?.name || r.area || "Área comum", tempo:r.createdAt || "", tipo:"Reserva" })),
-        ...payload.visitors.slice(0, 4).map((v) => ({ id:v.id, icon:"👤", titulo:"Visitante registrado", texto:v.name || v.nome || "Visitante", tempo:v.createdAt || v.entryAt || "", tipo:"Visitante" }))
+        ...payload.packages.slice(0, 4).map((e) => ({ id:e.id, apartamento:[e.apartment?.block,e.apartment?.number].filter(Boolean).join(" · "), operador:e.deliveredBy?.name || e.receivedBy?.name, icon:"📦", titulo:e.status==="DELIVERED"?"Retirada confirmada":"Encomenda registrada", texto:`Apartamento ${e.apartment?.number || e.apartmentNumber || "N/A"} • ${e.deliveredBy?.name || e.receivedBy?.name || "Operador não informado"}`, tempo:e.updatedAt || e.receivedAt || e.createdAt || "", tipo:"Encomenda" })),
+        ...payload.reservations.slice(0, 4).map((r) => ({ id:r.id, apartamento:[r.apartment?.block,r.apartment?.number].filter(Boolean).join(" · "), icon:"📅", titulo:"Reserva solicitada", texto:r.commonArea?.name || r.area || "Área comum", tempo:r.createdAt || "", tipo:"Reserva" })),
+        ...payload.visitors.slice(0, 4).map((v) => ({ id:v.id, apartamento:[v.apartment?.block,v.apartment?.number].filter(Boolean).join(" · "), operador:v.registeredBy?.name, icon:"👤", titulo:"Visitante registrado", texto:`${v.name || v.nome || "Visitante"} • Apartamento ${v.apartment?.number || "N/A"} • ${v.registeredBy?.name || "Operador não informado"}`, tempo:v.updatedAt || v.createdAt || v.entryAt || "", tipo:"Visitante" }))
       ];
-      setAtividades(historico.slice(0, 12));
+      setAtividades(historico.filter(x=>Number.isFinite(new Date(x.tempo).getTime())).sort((a,b)=>new Date(b.tempo)-new Date(a.tempo)).slice(0, 30));
     } catch (error) {
-      console.error("Erro ao carregar dashboard:", error);
+      setFeedError(error.message || "Não foi possível atualizar o painel.");
     }
   }
 
@@ -144,10 +153,6 @@ function DashboardSindico() {
     1
   );
 
-  function larguraGrafico(valor) {
-    return `${Math.max((valor / maxGrafico) * 100, valor > 0 ? 8 : 0)}%`;
-  }
-
   const onboardingSteps = [
     { label: "Cadastrar apartamentos", done: dados.apartamentos > 0, to: "/dashboard/apartamentos" },
     { label: "Cadastrar moradores", done: dados.moradores > 0, to: "/dashboard/moradores" },
@@ -156,1007 +161,75 @@ function DashboardSindico() {
   ];
   const onboardingDone = onboardingSteps.filter((step) => step.done).length;
   const onboardingComplete = onboardingDone === onboardingSteps.length;
-    return (
-    <div style={styles.container}>
-      <div style={styles.hero}>
-        <div>
-          <span style={styles.heroBadge}>👑 Central de gestão</span>
 
-          <h1 style={styles.title}>Painel Executivo InfinityCondo</h1>
-
-          <p style={styles.subtitle}>
-            Visão executiva com indicadores reais, módulos integrados
-            e acompanhamento operacional em tempo real.
-          </p>
-
-          <div style={styles.heroInfo}>
-            <span style={styles.heroDot}></span>
-            Sistema online • {perfilCondominio.nomeCondominio}
-          </div>
-
-          <div style={styles.heroInfo}>
-            Plano: {perfilCondominio.plano} • Status: {perfilCondominio.statusComercial}
-            {perfilCondominio.quantidadeUnidades
-              ? ` • Unidades: ${perfilCondominio.quantidadeUnidades}`
-              : ""}
-          </div>
-        </div>
-
-        <div style={styles.heroPanel}>
-          <p style={styles.heroLabel}>Operações ativas</p>
-
-          <h3 style={styles.heroNumber}>{totalOperacao}</h3>
-
-          <span style={styles.heroStatus}>tempo real</span>
-        </div>
-      </div>
-
-      {!onboardingComplete && (
-        <section style={styles.onboardingCard}>
-          <div style={styles.onboardingHeader}>
-            <div>
-              <span style={styles.onboardingBadge}>PRIMEIROS PASSOS</span>
-              <h2 style={styles.onboardingTitle}>Configure seu condomínio</h2>
-              <p style={styles.onboardingText}>Complete a estrutura inicial para liberar toda a operação do InfinityCondo.</p>
-            </div>
-            <strong style={styles.onboardingProgress}>{onboardingDone}/{onboardingSteps.length}</strong>
-          </div>
-          <div style={styles.onboardingSteps}>
-            {onboardingSteps.map((step) => (
-              <button key={step.label} style={{...styles.onboardingStep,...(step.done?styles.onboardingStepDone:{})}} onClick={() => navigate(step.to)}>
-                <span style={styles.onboardingCheck}>{step.done ? "✓" : "→"}</span>
-                <span>{step.label}</span>
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
-
-      <div style={styles.quickActions}>
-        <button
-          style={styles.quickPrimary}
-          onClick={() => navigate("/dashboard/moradores")}
-        >
-          <span style={styles.quickIconLight}>👥</span>
-
-          <div>
-            <strong>Moradores</strong>
-            <p>Gerenciar cadastros</p>
-          </div>
-        </button>
-
-        <button
-          style={styles.quickButton}
-          onClick={() => navigate("/dashboard/apartamentos")}
-        >
-          <span style={styles.quickIcon}>🏢</span>
-
-          <div>
-            <strong>Apartamentos</strong>
-            <p>Unidades cadastradas</p>
-          </div>
-        </button>
-
-        <button
-          style={styles.quickButton}
-          onClick={() => navigate("/dashboard/avisos")}
-        >
-          <span style={styles.quickIcon}>📢</span>
-
-          <div>
-            <strong>Avisos</strong>
-            <p>Central do síndico</p>
-          </div>
-        </button>
-
-        <button
-          style={styles.quickButton}
-          onClick={() => setMostrarManual(true)}
-        >
-          <span style={styles.quickIcon}>📘</span>
-
-          <div>
-            <strong>Guia rápido</strong>
-            <p>Manual de uso</p>
-          </div>
-        </button>
-      </div>
-
-      <div style={styles.cards}>
-        <div style={styles.cardPrimary}>
-          <div>
-            <p style={styles.cardLabelLight}>Moradores cadastrados</p>
-
-            <h2 style={styles.cardNumberLight}>{dados.moradores}</h2>
-
-            <span style={styles.cardHintLight}>base residencial</span>
-          </div>
-
-          <div style={styles.cardIconLight}>👥</div>
-        </div>
-
-        <KpiCard icon="🏢" label="Apartamentos" value={dados.apartamentos} color="var(--ic-primary-strong)" bg="var(--ic-primary-soft)" />
-        <KpiCard icon="🏠" label="Aptos ocupados" value={dados.apartamentosOcupados} color="var(--ic-primary-strong)" bg="var(--ic-primary-soft)" />
-        <KpiCard icon="👑" label="Moradores principais" value={dados.moradoresPrincipais} color="var(--ic-primary-strong)" bg="var(--ic-primary-soft-2)" />
-        <KpiCard icon="👨‍👩‍👧" label="Dependentes" value={dados.dependentes} color="var(--ic-primary)" bg="var(--ic-primary-soft-2)" />
-        <KpiCard icon="🛡️" label="Porteiros" value={dados.porteiros} color="var(--ic-primary-strong)" bg="var(--ic-primary-soft-2)" />
-        <KpiCard icon="🧰" label="Prestadores" value={dados.prestadores} color="#92400e" bg="#fef3c7" />
-        <KpiCard icon="🔧" label="Prestadores em execução" value={dados.prestadoresExecucao} color="#92400e" bg="#fef3c7" />
-        <KpiCard icon="✅" label="Prestadores finalizados" value={dados.prestadoresFinalizados} color="var(--ic-primary-strong)" bg="var(--ic-primary-soft)" />
-        <KpiCard icon="📦" label="Encomendas pendentes" value={dados.encomendas} color="#7c2d12" bg="#ffedd5" />
-        <KpiCard icon="👤" label="Visitantes" value={dados.visitantes} color="var(--ic-primary)" bg="var(--ic-primary-soft-2)" />
-        <KpiCard icon="📅" label="Reservas pendentes" value={dados.reservas} color="#be123c" bg="#ffe4e6" />
-        <KpiCard icon="💬" label="Ocorrências abertas" value={dados.ocorrencias} color="#dc2626" bg="#fee2e2" />
-        <KpiCard icon="💡" label="Sugestões abertas" value={dados.sugestoes} color="var(--ic-primary-strong)" bg="var(--ic-primary-soft)" />
-        <KpiCard icon="⚠️" label="Reclamações abertas" value={dados.reclamacoes} color="#b91c1c" bg="#fee2e2" />
-        <KpiCard icon="📢" label="Central do síndico" value={dados.avisos} color="#92400e" bg="#fef3c7" />
-        <KpiCard icon="🔔" label="Notificações pendentes" value={dados.notificacoes} color="#92400e" bg="#fef3c7" />
-        <KpiCard icon="🧾" label="Auditoria" value={dados.auditoria} color="var(--ic-primary)" bg="var(--ic-primary-soft)" />
-        <KpiCard icon="🛠️" label="Áreas em manutenção" value={dados.areasManutencao} color="#dc2626" bg="#fee2e2" />
-      </div>
-
-      <div style={styles.middleGrid}>
-        <div style={styles.chartCard}>
-          <div style={styles.sectionHeader}>
-            <div>
-              <h2 style={styles.sectionTitle}>
-                Visualização operacional
-              </h2>
-
-              <p style={styles.sectionSubtitle}>
-                Gráfico temporário com dados reais já cadastrados no sistema.
-              </p>
-            </div>
-
-            <span style={styles.sectionBadge}>
-              Visualização
-            </span>
-          </div>
-
-          <div style={styles.chartList}>
-            <ChartBar label="Moradores" value={dados.moradores} width={larguraGrafico(dados.moradores)} icon="👥" />
-            <ChartBar label="Moradores principais" value={dados.moradoresPrincipais} width={larguraGrafico(dados.moradoresPrincipais)} icon="👑" />
-            <ChartBar label="Dependentes" value={dados.dependentes} width={larguraGrafico(dados.dependentes)} icon="👨‍👩‍👧" />
-            <ChartBar label="Apartamentos" value={dados.apartamentos} width={larguraGrafico(dados.apartamentos)} icon="🏢" />
-            <ChartBar label="Aptos ocupados" value={dados.apartamentosOcupados} width={larguraGrafico(dados.apartamentosOcupados)} icon="🏠" />
-            <ChartBar label="Porteiros" value={dados.porteiros} width={larguraGrafico(dados.porteiros)} icon="🛡️" />
-            <ChartBar label="Prestadores" value={dados.prestadores} width={larguraGrafico(dados.prestadores)} icon="🧰" />
-            <ChartBar label="Encomendas" value={dados.encomendas} width={larguraGrafico(dados.encomendas)} icon="📦" />
-            <ChartBar label="Visitantes" value={dados.visitantes} width={larguraGrafico(dados.visitantes)} icon="👤" />
-            <ChartBar label="Reservas" value={dados.reservas} width={larguraGrafico(dados.reservas)} icon="📅" />
-            <ChartBar label="Ocorrências" value={dados.ocorrencias} width={larguraGrafico(dados.ocorrencias)} icon="💬" />
-            <ChartBar label="Sugestões" value={dados.sugestoes} width={larguraGrafico(dados.sugestoes)} icon="💡" />
-            <ChartBar label="Reclamações" value={dados.reclamacoes} width={larguraGrafico(dados.reclamacoes)} icon="⚠️" />
-            <ChartBar label="Movimentações" value={dados.movimentacoes} width={larguraGrafico(dados.movimentacoes)} icon="📈" />
-            <ChartBar label="Notificações" value={dados.notificacoes} width={larguraGrafico(dados.notificacoes)} icon="🔔" />
-            <ChartBar label="Auditoria" value={dados.auditoria} width={larguraGrafico(dados.auditoria)} icon="🧾" />
-          </div>
-        </div>
-
-        <div style={styles.controlPanel}>
-          <span style={styles.controlBadge}>
-            Painel inteligente
-          </span>
-
-          <h2 style={styles.controlTitle}>
-            Central de prioridades
-          </h2>
-
-          <div style={styles.priorityList}>
-            <PriorityItem icon="💬" label="Ocorrências abertas" value={dados.ocorrencias} alert={dados.ocorrencias > 0} />
-            <PriorityItem icon="📅" label="Reservas pendentes" value={dados.reservas} alert={dados.reservas > 0} />
-            <PriorityItem icon="📦" label="Encomendas pendentes" value={dados.encomendas} alert={dados.encomendas > 0} />
-            <PriorityItem icon="👤" label="Visitantes registrados" value={dados.visitantes} alert={dados.visitantes > 0} />
-            <PriorityItem icon="💡" label="Sugestões abertas" value={dados.sugestoes} alert={dados.sugestoes > 0} />
-            <PriorityItem icon="⚠️" label="Reclamações abertas" value={dados.reclamacoes} alert={dados.reclamacoes > 0} />
-            <PriorityItem icon="🔔" label="Notificações pendentes" value={dados.notificacoes} alert={dados.notificacoes > 0} />
-            <PriorityItem icon="🧾" label="Logs de auditoria" value={dados.auditoria} alert={false} />
-          </div>
-
-          <button
-            style={styles.manualButton}
-            onClick={() => setMostrarManual(true)}
-          >
-            Abrir mini manual
-          </button>
-        </div>
-      </div>
-
-      <div style={styles.activityCard}>
-        <div style={styles.activityHeader}>
-          <div>
-            <h3 style={styles.activityTitle}>
-              Atividades recentes
-            </h3>
-
-            <p style={styles.sectionSubtitle}>
-              Últimas ações reais registradas no sistema.
-            </p>
-          </div>
-
-          <span style={styles.viewAll}>
-            Sistema ativo
-          </span>
-        </div>
-
-        {atividades.length === 0 ? (
-          <div style={styles.empty}>
-            <div style={styles.emptyIcon}>📭</div>
-
-            <h3 style={styles.emptyTitle}>
-              Nenhuma atividade recente
-            </h3>
-
-            <p style={styles.emptyText}>
-              As atividades aparecerão quando houver cadastros,
-              reservas, visitas, encomendas, notificações, auditorias ou ocorrências.
-            </p>
-          </div>
-        ) : (
-          <div style={styles.timeline}>
-            {atividades.map((item, index) => (
-              <div key={item.id || index} style={styles.activityItem}>
-                <div style={styles.activityIcon}>
-                  {item.icon}
-                </div>
-
-                <div style={styles.activityContent}>
-                  <span style={styles.activityType}>
-                    {item.tipo}
-                  </span>
-
-                  <h4 style={styles.activityItemTitle}>
-                    {item.titulo}
-                  </h4>
-
-                  <p style={styles.activityText}>
-                    {item.texto}
-                  </p>
-
-                  <small style={styles.time}>
-                    {item.tempo}
-                  </small>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-            {mostrarManual && (
-        <div className="ic-modal-overlay" style={styles.overlay}>
-          <div style={styles.modal}>
-            <div style={styles.modalHero}>
-              <div>
-                <span style={styles.modalBadge}>
-                  📘 Mini manual
-                </span>
-
-                <h2 style={styles.modalTitle}>
-                  Como usar o painel do síndico
-                </h2>
-
-                <p style={styles.modalText}>
-                  Guia rápido para operar os módulos principais do sistema.
-                </p>
-              </div>
-
-              <button
-                style={styles.closeButton}
-                onClick={() => setMostrarManual(false)}
-              >
-                ✕
-              </button>
-            </div>
-
-            <div style={styles.manualGrid}>
-              <ManualItem number="01" title="Cadastre apartamentos" text="Comece criando as unidades reais do condomínio. Elas serão usadas em moradores, reservas e portaria." />
-              <ManualItem number="02" title="Cadastre moradores" text="Vincule cada morador ao apartamento correto para liberar integração com encomendas, visitantes e login do morador." />
-              <ManualItem number="03" title="Cadastre porteiros" text="Os porteiros terão login próprio para registrar visitantes, encomendas e ocorrências." />
-              <ManualItem number="04" title="Crie áreas comuns" text="As áreas cadastradas aparecem no módulo de reservas dos moradores." />
-              <ManualItem number="05" title="Publique avisos" text="Os comunicados e registros da central aparecem no painel do síndico e alimentam relatórios e BI." />
-              <ManualItem number="06" title="Acompanhe operações" text="Reservas, ocorrências, visitantes, reclamações, notificações e auditorias aparecem no dashboard conforme forem gerados." />
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  const cadastros = [
+    {key:"apartamentos",label:"Apartamentos",icon:Building2},
+    {key:"moradores",label:"Moradores",icon:Users},
+    {key:"dependentes",label:"Dependentes",icon:UserRound},
+    {key:"prestadores",label:"Prestadores",icon:BriefcaseBusiness},
+  ];
+  const operacao = [
+    {key:"encomendas",label:"Encomendas pendentes",icon:Package,tone:"amber"},
+    {key:"visitantes",label:"Visitantes",icon:UserRound},
+    {key:"reservas",label:"Reservas pendentes",icon:CalendarDays},
+    {key:"ocorrencias",label:"Ocorrências abertas",icon:MessageSquareWarning,tone:"red"},
+  ];
+  const complementares = [
+    {key:"apartamentosOcupados",label:"Apartamentos ocupados",icon:Building2},
+    {key:"moradoresPrincipais",label:"Moradores principais",icon:Users},
+    {key:"porteiros",label:"Porteiros",icon:Shield},
+    {key:"prestadoresExecucao",label:"Prestadores em execução",icon:Wrench},
+    {key:"prestadoresFinalizados",label:"Prestadores finalizados",icon:Check},
+    {key:"sugestoes",label:"Sugestões abertas",icon:MessageSquareWarning},
+    {key:"reclamacoes",label:"Reclamações abertas",icon:Flag},
+    {key:"avisos",label:"Central do síndico",icon:Megaphone},
+    {key:"notificacoes",label:"Notificações pendentes",icon:Bell},
+    {key:"auditoria",label:"Auditoria",icon:ClipboardList},
+    {key:"areasManutencao",label:"Áreas em manutenção",icon:Wrench},
+  ];
+  const grafico = [
+    ...cadastros,
+    {key:"moradoresPrincipais",label:"Moradores principais",icon:Users},
+    {key:"apartamentosOcupados",label:"Apartamentos ocupados",icon:Building2},
+    {key:"porteiros",label:"Porteiros",icon:Shield},
+    {key:"visitantes",label:"Visitantes",icon:UserRound},
+    {key:"encomendas",label:"Encomendas pendentes",icon:Package},
+  ];
+  const prioridades = [
+    {key:"encomendas",label:"Encomendas aguardando retirada",icon:Package,to:"/dashboard/encomendas"},
+    {key:"reservas",label:"Reservas aguardando decisão",icon:CalendarDays,to:"/dashboard/reservas"},
+    {key:"ocorrencias",label:"Ocorrências abertas",icon:MessageSquareWarning},
+    {key:"areasManutencao",label:"Áreas em manutenção",icon:Wrench,to:"/dashboard/areas-comuns"},
+    {key:"sugestoes",label:"Sugestões abertas",icon:MessageSquareWarning},
+    {key:"reclamacoes",label:"Reclamações abertas",icon:Flag},
+    {key:"notificacoes",label:"Notificações pendentes",icon:Bell},
+    {key:"visitantes",label:"Visitantes registrados",icon:UserRound,to:"/dashboard/visitantes"},
+  ];
+  const maxVisivel = Math.max(1,...grafico.map(x=>dados[x.key]));
+  const maisGraficos=[
+    {key:"reservas",label:"Reservas",icon:CalendarDays},
+    {key:"ocorrencias",label:"Ocorrências",icon:MessageSquareWarning},
+    {key:"sugestoes",label:"Sugestões",icon:MessageSquareWarning},
+    {key:"reclamacoes",label:"Reclamações",icon:Flag},
+    {key:"movimentacoes",label:"Movimentações",icon:Activity},
+    {key:"notificacoes",label:"Notificações",icon:Bell},
+    {key:"auditoria",label:"Auditoria",icon:ClipboardList},
+  ];
+  function barras(items,maximum){return items.map(({key,label,icon:Icon})=><div className="ic-dr-bar" key={key}><span className="ic-dr-bar-label"><Icon size={16}/><span>{label}</span></span><div className="ic-dr-track"><span style={{width:`${dados[key]/maximum*100}%`}}/></div><strong>{dados[key]}</strong></div>);}
+  return <div className="ic-dash-reference">
+    <header className="ic-dr-hero"><div><span className="ic-dr-overline"><Layers3 size={13}/> PAINEL EXECUTIVO</span><h1>Painel Executivo InfinityCondo</h1><p>Visão consolidada do condomínio e acompanhamento das atividades em tempo real.</p><div className="ic-dr-identity"><Building2 size={14}/><span>{perfilCondominio.nomeCondominio}</span><span className="ic-dr-divider">•</span><span>{perfilCondominio.plano}</span><span className="ic-dr-commercial">{perfilCondominio.statusComercial}</span></div></div><div className="ic-dr-hero-number"><span>Apartamentos</span><strong>{dados.apartamentos}</strong><button type="button" onClick={()=>navigate("/dashboard/apartamentos")}>Ver detalhes <ChevronRight size={12}/></button></div></header>
+    {!onboardingComplete&&<section className="ic-dr-onboarding"><div className="ic-dr-section-head"><div><h2>Configure seu condomínio</h2><p>Conclua as etapas iniciais para organizar a operação.</p></div><strong className="ic-dr-step-count">{onboardingDone}/{onboardingSteps.length}</strong></div><div className="ic-dr-steps">{onboardingSteps.map(step=><button type="button" key={step.label} className={step.done?"is-done":""} onClick={()=>navigate(step.to)}>{step.done?<Check size={16}/>:<Plus size={16}/>}<span>{step.label}</span></button>)}</div></section>}
+    <div className="ic-dr-groups">{[["Cadastros","Principais registros do condomínio",Users,cadastros],["Operação","Movimentações e atendimento da portaria",Activity,operacao]].map(([title,subtitle,Icon,items])=><section className="ic-dr-panel ic-dr-group" key={title}><div className="ic-dr-section-head"><span className="ic-dr-heading-icon"><Icon size={23}/></span><div><h2>{title}</h2><p>{subtitle}</p></div></div><div className="ic-dr-metrics">{items.map(({key,label,icon:MetricIcon,tone})=><article className={`ic-dr-metric ${tone||""}`} key={key}><span><MetricIcon size={24}/></span><div><h3>{label}</h3><strong>{dados[key]}</strong></div></article>)}</div></section>)}</div>
+    <details className="ic-dr-additional"><summary><ClipboardList size={16}/> Demais indicadores do condomínio <ChevronRight size={16}/></summary><div className="ic-dr-additional-grid"><div><Activity size={18}/><span>Operações ativas</span><strong>{totalOperacao}</strong></div>{complementares.map(({key,label,icon:Icon})=><div key={key}><Icon size={18}/><span>{label}</span><strong>{dados[key]}</strong></div>)}</div></details>
+    <div className="ic-dr-middle"><section className="ic-dr-panel"><div className="ic-dr-section-head"><span className="ic-dr-heading-icon"><BarChart3 size={23}/></span><div><h2>Visão operacional</h2><p>Quantidade por categoria · dados atuais</p></div><span className="ic-dr-chip">Cadastro atual</span></div><div className="ic-dr-bars">{barras(grafico,maxVisivel)}</div><details className="ic-dr-more-bars"><summary>Ver demais categorias <ChevronRight size={15}/></summary>{barras(maisGraficos,maxGrafico)}</details></section>
+     <section className="ic-dr-panel"><div className="ic-dr-section-head"><span className="ic-dr-heading-icon"><Flag size={23}/></span><div><h2>Central de prioridades</h2><p>Informações para acompanhar e agir</p></div></div><div className="ic-dr-priorities">{prioridades.map(({key,label,icon:Icon,to})=><div className="ic-dr-priority" key={key}><span className="ic-dr-priority-icon"><Icon size={19}/></span><span>{label}</span><strong className={dados[key]>0?"has-value":""}>{dados[key]}</strong>{to&&<button type="button" aria-label={`Abrir ${label.toLowerCase()}`} onClick={()=>navigate(to)}><ChevronRight size={18}/></button>}</div>)}</div></section></div>
+    <section className="ic-dr-panel ic-dr-activity"><div className="ic-dr-section-head"><span className="ic-dr-heading-icon"><Activity size={23}/></span><div><h2>Movimentações em tempo real</h2><p>Últimas atividades registradas no sistema</p></div><div className="ic-dr-feed-actions"><span className="ic-dr-live"><i/> Atualização a cada 10 s</span><button type="button" className="ic-dr-outline" disabled={clearBusy||!visibleActivities.length} onClick={clearHistory}><Trash2 size={16}/>{clearBusy?"Limpando…":"Limpar histórico"}</button><button type="button" className="ic-dr-text-button" onClick={()=>navigate("/dashboard/relatorios")}>Ver relatórios <ChevronRight size={15}/></button></div></div>
+     {feedError&&<p role="alert" className="ic-dr-error">{feedError} O painel pode estar desatualizado.</p>}
+     {visibleActivities.length?<div className="ic-dr-table-wrap"><table><thead><tr><th>Evento</th><th>Apartamento</th><th>Responsável pelo registro</th><th>Data e hora</th></tr></thead><tbody>{visibleActivities.map((item,index)=><tr key={`${item.tipo}-${item.id||index}`}><td><div className="ic-dr-event"><span aria-hidden="true">{item.icon}</span><div><strong>{item.titulo}</strong><small>{item.texto || item.tipo}</small></div></div></td><td>{item.apartamento || "—"}</td><td>{item.operador || "Não informado"}</td><td><time dateTime={item.tempo}>{new Date(item.tempo).toLocaleString("pt-BR")}</time></td></tr>)}</tbody></table></div>:<div className="ic-dr-empty"><Activity size={28}/><strong>Nenhuma movimentação nesta visualização</strong><p>Novas atividades aparecem aqui automaticamente. O histórico completo permanece nos módulos e relatórios.</p></div>}
+     <p className="ic-dr-footnote"><Shield size={13}/> Limpar afeta somente a sua visualização. Os registros permanecem no sistema.</p>
+    </section>
+    <nav className="ic-dr-shortcuts" aria-label="Atalhos do painel"><button type="button" onClick={()=>navigate("/dashboard/moradores")}><Users size={17}/> Gerenciar moradores</button><button type="button" onClick={()=>navigate("/dashboard/apartamentos")}><Building2 size={17}/> Gerenciar apartamentos</button><button type="button" onClick={()=>navigate("/dashboard/avisos")}><Megaphone size={17}/> Central do síndico</button><button type="button" onClick={()=>setMostrarManual(true)}><BookOpen size={17}/> Guia rápido</button></nav>
+    {mostrarManual&&<div className="ic-dr-modal-overlay" role="presentation"><section className="ic-dr-modal" role="dialog" aria-modal="true" aria-label="Guia rápido do painel"><header><h2>Como usar o painel do síndico</h2><button type="button" aria-label="Fechar guia" onClick={()=>setMostrarManual(false)}><X size={22}/></button></header><ol><li><strong>Cadastre apartamentos.</strong> Configure a estrutura e as unidades reais usadas pelos módulos.</li><li><strong>Cadastre moradores.</strong> Vincule cada pessoa ao apartamento correto.</li><li><strong>Cadastre porteiros.</strong> Cada operador usa seu próprio login.</li><li><strong>Configure as áreas comuns.</strong> Elas estarão disponíveis para reservas.</li><li><strong>Publique avisos.</strong> Use a Central do síndico para os comunicados.</li><li><strong>Acompanhe a operação.</strong> Confira atividades, prioridades e relatórios.</li></ol><button type="button" className="ic-dr-outline" onClick={()=>setMostrarManual(false)}>Entendi</button></section></div>}
+  </div>;
 }
-
-function KpiCard({ icon, label, value, color, bg }) {
-  return (
-    <div style={styles.kpiCard}>
-      <div style={{ ...styles.kpiIcon, background: bg }}>
-        {icon}
-      </div>
-
-      <div>
-        <p style={styles.kpiLabel}>{label}</p>
-
-        <h2 style={{ ...styles.kpiValue, color }}>
-          {value}
-        </h2>
-      </div>
-    </div>
-  );
-}
-
-function ChartBar({ icon, label, value, width }) {
-  return (
-    <div style={styles.chartRow}>
-      <div style={styles.chartInfo}>
-        <span style={styles.chartIcon}>{icon}</span>
-        <span>{label}</span>
-      </div>
-
-      <div style={styles.chartTrack}>
-        <div style={{ ...styles.chartFill, width }}></div>
-      </div>
-
-      <strong style={styles.chartValue}>
-        {value}
-      </strong>
-    </div>
-  );
-}
-
-function PriorityItem({ icon, label, value, alert }) {
-  return (
-    <div style={styles.priorityItem}>
-      <div style={styles.priorityLeft}>
-        <span style={styles.priorityIcon}>
-          {icon}
-        </span>
-
-        <span>{label}</span>
-      </div>
-
-      <strong
-        style={{
-          ...styles.priorityValue,
-          color: alert ? "#dc2626" : "var(--ic-primary-strong)"
-        }}
-      >
-        {value}
-      </strong>
-    </div>
-  );
-}
-
-function ManualItem({ number, title, text }) {
-  return (
-    <div style={styles.manualItem}>
-      <span style={styles.manualNumber}>
-        {number}
-      </span>
-
-      <h3 style={styles.manualTitle}>
-        {title}
-      </h3>
-
-      <p style={styles.manualText}>
-        {text}
-      </p>
-    </div>
-  );
-}
-
-const styles = {
-  onboardingCard: { background: "#fff", border: "1px solid #e9e1f2", borderRadius: "18px", padding: "18px", marginBottom: "18px", boxShadow: "0 12px 34px rgba(59,24,88,.07)" },
-  onboardingHeader: { display: "flex", justifyContent: "space-between", gap: "14px", alignItems: "center", flexWrap: "wrap" },
-  onboardingBadge: { fontSize: "10px", fontWeight: 900, letterSpacing: "1px", color: "var(--ic-primary)" },
-  onboardingTitle: { margin: "5px 0 4px", color: "#31213c", fontSize: "19px" },
-  onboardingText: { margin: 0, color: "#776a80", fontSize: "12px" },
-  onboardingProgress: { width: "54px", height: "54px", borderRadius: "16px", display: "grid", placeItems: "center", background: "linear-gradient(135deg,var(--ic-primary-dark),var(--ic-primary))", color: "#fff", fontSize: "16px" },
-  onboardingSteps: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: "10px", marginTop: "14px" },
-  onboardingStep: { border: "1px solid #e5ddee", background: "#faf8fc", borderRadius: "12px", padding: "11px 12px", display: "flex", alignItems: "center", gap: "9px", color: "#4a3b55", fontWeight: 800, cursor: "pointer", textAlign: "left" },
-  onboardingStepDone: { background: "#f0fdf4", borderColor: "#bbf7d0", color: "#166534" },
-  onboardingCheck: { width: "24px", height: "24px", borderRadius: "8px", display: "grid", placeItems: "center", background: "var(--ic-primary-soft-2)", color: "var(--ic-primary-strong)", fontWeight: 900 },
-  container: {
-    width: "100%",
-    fontFamily: "Arial",
-    color: "#111827"
-  },
-
-  hero: {
-    background:
-      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.22),transparent 36%), linear-gradient(135deg,var(--ic-primary-deepest),var(--ic-primary-deep),var(--ic-primary-strong))",
-    borderRadius: "34px",
-    padding: "34px",
-    color: "white",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: "30px",
-    marginBottom: "26px",
-    boxShadow: "0 24px 60px rgb(var(--ic-primary-rgb) / 0.20)",
-    position: "relative",
-    overflow: "hidden"
-  },
-
-  heroBadge: {
-    background: "rgba(255,255,255,0.14)",
-    padding: "10px 14px",
-    borderRadius: "999px",
-    fontSize: "13px",
-    fontWeight: "900",
-    display: "inline-block",
-    marginBottom: "16px"
-  },
-
-  title: {
-    margin: 0,
-    fontSize: "40px",
-    letterSpacing: "-0.8px"
-  },
-
-  subtitle: {
-    margin: "12px 0 0",
-    color: "rgba(255,255,255,0.78)",
-    maxWidth: "730px",
-    lineHeight: "1.55",
-    fontSize: "15px"
-  },
-
-  heroInfo: {
-    marginTop: "18px",
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    color: "var(--ic-primary-soft)",
-    fontSize: "14px",
-    fontWeight: "700"
-  },
-
-  heroDot: {
-    width: "9px",
-    height: "9px",
-    borderRadius: "50%",
-    background: "var(--ic-primary-bright)",
-    boxShadow: "0 0 0 5px rgba(34,197,94,0.16)"
-  },
-
-  heroPanel: {
-    background: "rgba(255,255,255,0.12)",
-    border: "1px solid rgba(255,255,255,0.16)",
-    borderRadius: "26px",
-    padding: "24px",
-    width: "100%",
-    maxWidth: "245px",
-    textAlign: "center"
-  },
-
-  heroLabel: {
-    margin: 0,
-    color: "rgba(255,255,255,0.70)",
-    fontSize: "13px"
-  },
-
-  heroNumber: {
-    margin: "8px 0 12px",
-    color: "white",
-    fontSize: "42px"
-  },
-
-  heroStatus: {
-    background: "var(--ic-primary-soft)",
-    color: "var(--ic-primary-strong)",
-    padding: "8px 12px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: "900"
-  },
-
-  quickActions: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))",
-    gap: "18px",
-    marginBottom: "26px"
-  },
-
-  quickPrimary: {
-    background: "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary))",
-    color: "white",
-    border: "none",
-    padding: "22px",
-    borderRadius: "26px",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    gap: "16px",
-    textAlign: "left",
-    boxShadow: "0 16px 35px rgb(var(--ic-primary-rgb) / 0.20)"
-  },
-
-  quickButton: {
-    background: "white",
-    color: "#111827",
-    border: "1px solid #eef2f7",
-    padding: "22px",
-    borderRadius: "26px",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    gap: "16px",
-    textAlign: "left",
-    boxShadow: "0 12px 35px rgba(15,23,42,0.07)"
-  },
-
-  quickIconLight: {
-    width: "54px",
-    height: "54px",
-    borderRadius: "18px",
-    background: "rgba(255,255,255,0.16)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "27px"
-  },
-
-  quickIcon: {
-    width: "54px",
-    height: "54px",
-    borderRadius: "18px",
-    background: "var(--ic-primary-soft)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "27px"
-  },
-
-  cards: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))",
-    gap: "18px",
-    marginBottom: "26px"
-  },
-
-  cardPrimary: {
-    background: "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary))",
-    borderRadius: "26px",
-    padding: "24px",
-    color: "white",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    boxShadow: "0 16px 35px rgb(var(--ic-primary-rgb) / 0.18)"
-  },
-
-  cardLabelLight: {
-    margin: 0,
-    color: "rgba(255,255,255,0.76)",
-    fontSize: "14px"
-  },
-
-  cardNumberLight: {
-    margin: "10px 0 2px",
-    color: "white",
-    fontSize: "40px"
-  },
-
-  cardHintLight: {
-    color: "rgba(255,255,255,0.72)",
-    fontSize: "13px"
-  },
-
-  cardIconLight: {
-    width: "60px",
-    height: "60px",
-    borderRadius: "20px",
-    background: "rgba(255,255,255,0.16)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "30px"
-  },
-
-  kpiCard: {
-    background: "white",
-    borderRadius: "26px",
-    padding: "24px",
-    display: "flex",
-    alignItems: "center",
-    gap: "18px",
-    boxShadow: "0 12px 35px rgba(15,23,42,0.07)",
-    border: "1px solid #eef2f7"
-  },
-
-  kpiIcon: {
-    width: "56px",
-    height: "56px",
-    borderRadius: "19px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "27px",
-    flexShrink: 0
-  },
-
-  kpiLabel: {
-    margin: 0,
-    color: "#6b7280",
-    fontSize: "14px"
-  },
-
-  kpiValue: {
-    margin: "8px 0 0",
-    fontSize: "36px"
-  },
-
-  middleGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
-    gap: "24px",
-    marginBottom: "26px"
-  },
-
-  chartCard: {
-    background: "white",
-    borderRadius: "30px",
-    padding: "28px",
-    boxShadow: "0 16px 45px rgba(15,23,42,0.08)",
-    border: "1px solid #eef2f7"
-  },
-
-  controlPanel: {
-    background:
-      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.18),transparent 34%), linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary-dark))",
-    color: "white",
-    borderRadius: "30px",
-    padding: "28px",
-    boxShadow: "0 18px 50px rgba(88,28,135,0.20)"
-  },
-
-  controlBadge: {
-    background: "rgba(255,255,255,0.14)",
-    padding: "9px 13px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: "900"
-  },
-
-  controlTitle: {
-    margin: "18px 0 20px",
-    fontSize: "25px"
-  },
-
-  priorityList: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "13px"
-  },
-
-  priorityItem: {
-    background: "rgba(255,255,255,0.10)",
-    border: "1px solid rgba(255,255,255,0.12)",
-    borderRadius: "17px",
-    padding: "14px",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center"
-  },
-
-  priorityLeft: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    color: "rgba(255,255,255,0.82)",
-    fontSize: "13px",
-    fontWeight: "800"
-  },
-
-  priorityIcon: {
-    fontSize: "20px"
-  },
-
-  priorityValue: {
-    background: "white",
-    padding: "6px 10px",
-    borderRadius: "12px"
-  },
-
-  manualButton: {
-    width: "100%",
-    marginTop: "20px",
-    background: "var(--ic-primary-soft)",
-    color: "var(--ic-primary-strong)",
-    border: "none",
-    padding: "14px",
-    borderRadius: "16px",
-    cursor: "pointer",
-    fontWeight: "900"
-  },
-
-  sectionHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: "18px",
-    marginBottom: "22px"
-  },
-
-  sectionTitle: {
-    margin: 0,
-    color: "var(--ic-primary-deep)",
-    fontSize: "25px"
-  },
-
-  sectionSubtitle: {
-    margin: "7px 0 0",
-    color: "#6b7280",
-    fontSize: "14px",
-    lineHeight: "1.5"
-  },
-
-  sectionBadge: {
-    background: "var(--ic-primary-soft)",
-    color: "var(--ic-primary-strong)",
-    padding: "9px 13px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: "900",
-    whiteSpace: "nowrap"
-  },
-
-  chartList: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "16px"
-  },
-
-  chartRow: {
-    display: "grid",
-    gridTemplateColumns: "160px 1fr 40px",
-    gap: "14px",
-    alignItems: "center"
-  },
-
-  chartInfo: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    color: "#374151",
-    fontWeight: "800",
-    fontSize: "14px"
-  },
-
-  chartIcon: {
-    width: "34px",
-    height: "34px",
-    borderRadius: "12px",
-    background: "var(--ic-primary-soft)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center"
-  },
-
-  chartTrack: {
-    height: "13px",
-    background: "#f3f4f6",
-    borderRadius: "999px",
-    overflow: "hidden"
-  },
-
-  chartFill: {
-    height: "100%",
-    background: "linear-gradient(135deg,var(--ic-primary),var(--ic-primary-bright))",
-    borderRadius: "999px"
-  },
-
-  chartValue: {
-    textAlign: "right",
-    color: "var(--ic-primary-deep)"
-  },
-
-  activityCard: {
-    background: "white",
-    borderRadius: "30px",
-    padding: "28px",
-    boxShadow: "0 16px 45px rgba(15,23,42,0.08)",
-    border: "1px solid #eef2f7"
-  },
-
-  activityHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: "22px"
-  },
-
-  activityTitle: {
-    margin: 0,
-    color: "var(--ic-primary-deep)",
-    fontSize: "25px"
-  },
-
-  viewAll: {
-    color: "var(--ic-primary-strong)",
-    fontSize: "13px",
-    fontWeight: "900",
-    background: "var(--ic-primary-soft)",
-    padding: "8px 12px",
-    borderRadius: "999px"
-  },
-
-  empty: {
-    background: "#f9fafb",
-    border: "1px dashed #d1d5db",
-    borderRadius: "24px",
-    padding: "40px",
-    textAlign: "center"
-  },
-
-  emptyIcon: {
-    fontSize: "42px",
-    marginBottom: "12px"
-  },
-
-  emptyTitle: {
-    margin: 0,
-    color: "#111827"
-  },
-
-  emptyText: {
-    margin: "8px 0 0",
-    color: "#6b7280"
-  },
-
-  timeline: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "14px"
-  },
-
-  activityItem: {
-    display: "flex",
-    gap: "14px",
-    background: "#f9fafb",
-    border: "1px solid #eef2f7",
-    borderRadius: "20px",
-    padding: "16px"
-  },
-
-  activityIcon: {
-    width: "46px",
-    height: "46px",
-    borderRadius: "16px",
-    background: "var(--ic-primary-soft)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "22px",
-    flexShrink: 0
-  },
-
-  activityContent: {
-    flex: 1
-  },
-
-  activityType: {
-    display: "inline-block",
-    background: "white",
-    border: "1px solid #e5e7eb",
-    color: "var(--ic-primary-strong)",
-    padding: "5px 9px",
-    borderRadius: "999px",
-    fontSize: "11px",
-    fontWeight: "900",
-    marginBottom: "7px"
-  },
-
-  activityItemTitle: {
-    margin: 0,
-    color: "#111827"
-  },
-
-  activityText: {
-    margin: "5px 0",
-    color: "#6b7280"
-  },
-
-  time: {
-    color: "#9ca3af"
-  },
-
-  overlay: {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(15,23,42,0.62)",
-    backdropFilter: "blur(8px)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 999,
-    padding: "20px"
-  },
-
-  modal: {
-    width: "100%",
-    maxWidth: "850px",
-    maxHeight: "90vh",
-    overflowY: "auto",
-    background: "#f8fafc",
-    borderRadius: "34px",
-    padding: "26px",
-    boxShadow: "0 30px 80px rgba(0,0,0,0.28)"
-  },
-
-  modalHero: {
-    background:
-      "linear-gradient(135deg,var(--ic-primary-deep),var(--ic-primary-strong))",
-    color: "white",
-    borderRadius: "28px",
-    padding: "28px",
-    display: "flex",
-    justifyContent: "space-between",
-    gap: "20px",
-    marginBottom: "20px"
-  },
-
-  modalBadge: {
-    background: "rgba(255,255,255,0.14)",
-    padding: "8px 12px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: "900"
-  },
-
-  modalTitle: {
-    margin: "16px 0 8px",
-    fontSize: "28px"
-  },
-
-  modalText: {
-    margin: 0,
-    color: "rgba(255,255,255,0.75)"
-  },
-
-  closeButton: {
-    width: "42px",
-    height: "42px",
-    borderRadius: "15px",
-    border: "none",
-    background: "rgba(255,255,255,0.14)",
-    color: "white",
-    cursor: "pointer",
-    fontWeight: "900"
-  },
-
-  manualGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))",
-    gap: "16px"
-  },
-
-  manualItem: {
-    background: "white",
-    border: "1px solid #eef2f7",
-    borderRadius: "22px",
-    padding: "20px"
-  },
-
-  manualNumber: {
-    display: "inline-block",
-    background: "var(--ic-primary-soft)",
-    color: "var(--ic-primary-strong)",
-    padding: "7px 10px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: "900",
-    marginBottom: "12px"
-  },
-
-  manualTitle: {
-    margin: "0 0 8px",
-    color: "var(--ic-primary-deep)"
-  },
-
-  manualText: {
-    margin: 0,
-    color: "#6b7280",
-    lineHeight: "1.5",
-    fontSize: "14px"
-  }
-};
-
 export default DashboardSindico;

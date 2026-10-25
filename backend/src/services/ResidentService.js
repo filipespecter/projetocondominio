@@ -1,4 +1,5 @@
-import ApartmentContactService from "./ApartmentContactService.js";
+import crypto from "node:crypto";
+import prisma from "../config/prisma.js";
 import BaseService from "./BaseService.js";
 import UserService from "./UserService.js";
 import AuditLogService from "./AuditLogService.js";
@@ -294,8 +295,6 @@ class ResidentService extends BaseService {
       );
     }
 
-    await ApartmentContactService.requireComplete(data.apartmentId, condominiumId);
-
     await this.validateApartment(
       data.apartmentId,
       condominiumId
@@ -307,6 +306,10 @@ class ResidentService extends BaseService {
     this.validateResidentType(
       residentType
     );
+
+    // Inquilinos podem ser cadastrados antes da complementação dos contatos.
+    // As permissões de aviso/retirada continuam independentes do cadastro.
+
 
     if (data.isPrimary) {
       await this.removePreviousPrimary(
@@ -333,10 +336,11 @@ class ResidentService extends BaseService {
             email: data.email,
             phone: data.phone,
             document: data.document,
-            password: data.password,
+            password: data.createAccess === false ? crypto.randomBytes(32).toString("base64url") : data.password,
             role: "RESIDENT",
             status:
               data.status ?? "ACTIVE",
+            loginEnabled: data.createAccess !== false,
             mustChangePassword:
               data.mustChangePassword ??
               true,
@@ -800,6 +804,8 @@ class ResidentService extends BaseService {
         condominiumId,
         newPassword
       );
+
+    await prisma.user.updateMany({where:{id:resident.userId,condominiumId,deletedAt:null},data:{loginEnabled:true}});
 
     await AuditLogService.createLog({
       condominiumId,

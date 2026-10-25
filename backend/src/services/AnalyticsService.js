@@ -1,3 +1,4 @@
+import {readStructure} from "./CondominiumStructureService.js";
 import apartmentRepository from "../repositories/ApartmentRepository.js";
 import residentRepository from "../repositories/ResidentRepository.js";
 import visitorRepository from "../repositories/VisitorRepository.js";
@@ -1024,23 +1025,8 @@ class AnalyticsService {
         ),
     ]);
 
-    const occupiedApartments =
-      apartments.filter(
-        (apartment) =>
-          apartment.status ===
-          "OCCUPIED"
-      ).length;
-
-    const occupancyRate =
-      apartments.length > 0
-        ? Number(
-            (
-              (occupiedApartments /
-                apartments.length) *
-              100
-            ).toFixed(2)
-          )
-        : 0;
+    const structure = await readStructure({condominiumId,role:"MANAGER"});
+    const occupancyRate = structure.metrics.occupancyPercent;
 
     return {
       apartments: {
@@ -1056,6 +1042,8 @@ class AnalyticsService {
           ),
 
         occupancyRate,
+        capacity: structure.metrics.total,
+        registrationPercent: structure.metrics.registrationPercent,
       },
 
       residents: {

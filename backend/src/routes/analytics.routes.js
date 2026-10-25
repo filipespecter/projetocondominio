@@ -1,5 +1,9 @@
+import {operationalMonitor} from "../services/OperationalMonitorService.js";
+import {apartmentReport} from "../services/ApartmentReportService.js";
 import { Router } from "express";
 
+import { intelligence } from "../services/IntelligenceService.js";
+import { rateLimit } from "express-rate-limit";
 import AnalyticsController from "../controllers/AnalyticsController.js";
 import { authorizeRoles } from "../middlewares/authMiddleware.js";
 
@@ -11,6 +15,10 @@ const administrativeRoles = authorizeRoles(
 );
 
 analyticsRoutes.use(administrativeRoles);
+analyticsRoutes.get("/monitor",rateLimit({windowMs:60000,limit:6,standardHeaders:true,legacyHeaders:false}),async(req,res,next)=>{try{res.set("Cache-Control","no-store").json({success:true,data:await operationalMonitor(req.user)});}catch(e){next(e);}});
+analyticsRoutes.get("/apartment-report",rateLimit({windowMs:60000,limit:12,standardHeaders:true,legacyHeaders:false}),async(req,res,next)=>{try{res.set("Cache-Control","no-store").json({success:true,data:await apartmentReport(req.user,req.query)});}catch(e){next(e);}});
+analyticsRoutes.get("/intelligence",rateLimit({windowMs:60000,limit:12,standardHeaders:true,legacyHeaders:false}),async(req,res,next)=>{try{res.set("Cache-Control","no-store").json({success:true,data:await intelligence(req.user,req.query)});}catch(e){next(e);}});
+
 
 analyticsRoutes.get("/overview", (req, res, next) =>
   AnalyticsController.overview(req, res, next)

@@ -1,3 +1,4 @@
+import {notifyMonthlyReview} from "../services/OperationalReviewService.js";
 import SchedulerService from "../services/SchedulerService.js";
 import JobRegistryService from "../services/JobRegistryService.js";
 import { Logger } from "../utils/logger.js";
@@ -196,6 +197,7 @@ export function registerJobs() {
       false,
   });
 
+  JobRegistryService.register({name:"MONTHLY_OPERATIONAL_REVIEW",description:"Recomenda revisão mensal da portaria sem excluir dados.",handler:()=>notifyMonthlyReview(),intervalMs:24*60*60*1000,enabled:true,runOnStart:false});
   jobsRegistered =
     true;
 

@@ -1,3 +1,4 @@
+import PackageNoticeButton from "../../components/PackageNoticeButton.jsx";
 import PortariaMessaging from "../../components/PortariaMessaging.jsx";
 import { useEffect, useState } from "react";
 import { me as getAuthenticatedUser } from "../../Services/authApi.js";
@@ -306,6 +307,7 @@ function EncomendasPorteiro() {
           </div>
         </div>
       </div>
+      <section className="ic-feature-panel"><h2>Avisos de encomendas pendentes</h2><p>O cadastro não envia mensagens. Confira os dados e confirme cada envio.</p>{encomendas.filter(e=>e.status==="Recebido").map(e=><article key={e.id}><strong>{e.descricao || e.tipo || "Encomenda"} · Apartamento {e.apartamento}</strong><PackageNoticeButton id={e.id}/></article>)}</section>
       <div style={styles.expectedSection}>
         <div style={styles.sectionHeader}>
           <div>

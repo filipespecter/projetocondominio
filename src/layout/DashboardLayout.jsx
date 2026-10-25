@@ -33,6 +33,7 @@ import {
 
 import { contarNaoLidas } from "../Services/notificacaoService";
 import authApi from "../Services/authApi.js";
+import configurationApi from "../Services/configurationApi.js";
 import { buildCondominiumThemeVariables } from "../utils/condominiumTheme.js";
 import NotificationCenter from "../components/NotificationCenter.jsx";
 import GlobalSearch from "../components/GlobalSearch.jsx";
@@ -45,13 +46,13 @@ function DashboardLayout() {
   const [perfilCondominio, setPerfilCondominio] = useState({
     nomeCondominio: "InfinityCondo",
     logoUrl: "",
-    plano: "Completo"
+    plano: "Não informado"
   });
 
   const [notificacoesNaoLidas, setNotificacoesNaoLidas] = useState(0);
 
-  const planoAtual = perfilCondominio?.plano || "Completo";
-  const possuiBI = planoAtual === "Completo";
+  const planoAtual = perfilCondominio?.plano || "Não informado";
+  const possuiBI = /completo/i.test(planoAtual);
   const textoPlano = possuiBI ? "Completo" : "Básico";
 
   const [
@@ -60,6 +61,17 @@ function DashboardLayout() {
   ] = useState(null);
 
   const [themeVariables, setThemeVariables] = useState(() => buildCondominiumThemeVariables());
+
+  // Sincroniza o tema salvo sem recriar o layout ou recarregar a página.
+  useEffect(() => {
+    const syncTheme = (event) => {
+      if (event?.detail?.theme) {
+        setThemeVariables(buildCondominiumThemeVariables(event.detail.theme));
+      }
+    };
+    window.addEventListener("infinitycondo:theme-updated", syncTheme);
+    return () => window.removeEventListener("infinitycondo:theme-updated", syncTheme);
+  }, []);
 
   useEffect(() => {
     if (location.pathname === "/dashboard/sindico") {
@@ -76,6 +88,15 @@ function DashboardLayout() {
           await authApi.me();
 
         setThemeVariables(buildCondominiumThemeVariables(user));
+        // A preferência persistida do condomínio é a fonte de verdade.
+        try {
+          const saved = await configurationApi.getAll();
+          if (saved?.condominium?.tema && mounted) {
+            setThemeVariables(buildCondominiumThemeVariables(saved.condominium.tema));
+          }
+        } catch (themeError) {
+          console.warn("Tema do condomínio indisponível; mantendo tema do perfil.", themeError);
+        }
 
         if (!mounted) {
           return;
@@ -126,7 +147,7 @@ function DashboardLayout() {
             condominium.subscription
               ?.plan
               ?.name ??
-            "Completo",
+            "Não informado",
         });
 
         await carregarNotificacoes();
@@ -444,7 +465,7 @@ function DashboardLayout() {
 
       <main className="app-dashboard-content" style={styles.content}>
         <GlobalSearch />
-        <Outlet />
+          <Outlet />
       </main>
     </div>
   );

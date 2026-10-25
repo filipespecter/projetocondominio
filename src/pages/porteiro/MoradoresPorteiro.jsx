@@ -1,3 +1,5 @@
+import {useRouteFilters} from "../../utils/useRouteFilters.js";
+import {Link} from "react-router-dom";
 import { useEffect, useState } from "react";
 import residentApi from "../../Services/residentApi.js";
 
@@ -6,11 +8,16 @@ function MoradoresPorteiro() {
   const [moradores, setMoradores] =
     useState([]);
 
+  const [routeFilters,setRouteFilters] = useRouteFilters({q:"",status:"Todos"},"consulta_");
+  const [consulta, setConsulta] = useState(routeFilters.q);
+  const [erro, setErro] = useState("");
+  const [carregando, setCarregando] = useState(false);
   const [busca, setBusca] =
-    useState("");
+    useState(routeFilters.q);
 
   const [filtroStatus, setFiltroStatus] =
-    useState("Todos");
+    useState(routeFilters.status);
+  useEffect(()=>setRouteFilters({q:consulta,status:filtroStatus}),[consulta,filtroStatus,setRouteFilters]);
 
   useEffect(() => {
 
@@ -19,13 +26,14 @@ function MoradoresPorteiro() {
   }, []);
 
   async function carregarMoradores() {
+    setCarregando(true); setErro("");
     try {
       const data = await residentApi.directory();
-      setMoradores(Array.isArray(data) ? data : []);
+      setMoradores(Array.isArray(data) ? data.map(r => ({...r, nome:r.user?.name || "", apartamento:r.apartment?.number || "", bloco:r.apartment?.block || "", telefone:r.user?.phone || "", email:r.user?.email || "", status:r.user?.status === "ACTIVE" ? "Ativo" : "Inativo", tipoMorador:r.residentType, perfilMorador:r.isPrimary ? "Principal" : "Morador"})) : []);
     } catch (error) {
       console.error("Erro ao carregar moradores para a portaria:", error);
-      setMoradores([]);
-    }
+      setErro(error.message || "Não foi possível carregar moradores.");
+    } finally { setCarregando(false); }
   }
 
   function obterStatus(status) {
@@ -58,36 +66,10 @@ function MoradoresPorteiro() {
   const moradoresFiltrados =
     moradores.filter((item) => {
 
-      const texto =
-        busca.toLowerCase();
+      const normalizar = value => String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+      const texto = normalizar(consulta);
 
-      const correspondeBusca =
-        item.nome
-          ?.toLowerCase()
-          .includes(texto) ||
-        item.apartamento
-          ?.toString()
-          .toLowerCase()
-          .includes(texto) ||
-        item.apto
-          ?.toString()
-          .toLowerCase()
-          .includes(texto) ||
-        item.bloco
-          ?.toLowerCase()
-          .includes(texto) ||
-        item.telefone
-          ?.toLowerCase()
-          .includes(texto) ||
-        item.email
-          ?.toLowerCase()
-          .includes(texto) ||
-        item.tipoMorador
-          ?.toLowerCase()
-          .includes(texto) ||
-        item.perfilMorador
-          ?.toLowerCase()
-          .includes(texto);
+      const correspondeBusca = [item.nome,item.apartamento,item.bloco,item.telefone,item.email].some(v=>normalizar(v).includes(texto));
 
       const statusAtual =
         obterStatus(item.status).texto;
@@ -127,6 +109,8 @@ function MoradoresPorteiro() {
 
     <div style={styles.container}>
 
+      {erro && <div role="alert">{erro} <button onClick={carregarMoradores}>Tentar novamente</button></div>}
+      {carregando && <p role="status">Carregando moradores…</p>}
       {/* HERO */}
 
       <div style={styles.hero}>
@@ -257,13 +241,16 @@ function MoradoresPorteiro() {
           <div style={styles.filters}>
 
             <input
-              placeholder="Buscar por nome, apto, bloco ou telefone..."
+              aria-label="Buscar morador" placeholder="Nome, apartamento, bloco ou telefone"
               value={busca}
+              onKeyDown={e=>{if(e.key === "Enter"){e.preventDefault();setConsulta(busca);}}}
               onChange={(e) =>
                 setBusca(e.target.value)
               }
               style={styles.search}
             />
+            <button type="button" className="ic-action" onClick={()=>setConsulta(busca)}>Pesquisar</button>
+            <button type="button" className="ic-action-secondary" onClick={()=>{setBusca("");setConsulta("");setFiltroStatus("Todos");}}>Limpar filtros</button>
 
             <select
               value={filtroStatus}
@@ -343,7 +330,7 @@ function MoradoresPorteiro() {
                   </div>
 
                   <h3 style={styles.nome}>
-                    {item.nome || "Morador"}
+                    <Link to={`?${new URLSearchParams({...Object.fromEntries(new URLSearchParams(location.search)),registro:item.id,tipo:"Morador"})}`}>{item.nome || "Morador"}</Link>
                   </h3>
 
                   <div style={styles.infoGrid}>

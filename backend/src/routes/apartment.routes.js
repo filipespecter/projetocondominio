@@ -1,3 +1,5 @@
+import {requireTrustedOrigin} from "../middlewares/securityMiddleware.js";
+import {readStructure,saveStructure} from "../services/CondominiumStructureService.js";
 import ApartmentContactService from "../services/ApartmentContactService.js";
 import { Router } from "express";
 
@@ -44,6 +46,8 @@ const operationalReadRoles =
     "DOORMAN"
   );
 
+apartmentRoutes.get("/structure",administrativeRoles,async(req,res,next)=>{try{res.json({success:true,data:await readStructure(req.user)});}catch(e){next(e);}});
+apartmentRoutes.put("/structure",administrativeRoles,requireTrustedOrigin,async(req,res,next)=>{try{res.json({success:true,data:await saveStructure(req.user,req.body)});}catch(e){next(e);}});
 /**
  * GET /api/v1/apartments/statistics
  *

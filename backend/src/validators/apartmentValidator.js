@@ -5,6 +5,7 @@ import { ApiError } from "../utils/ApiError.js";
  * Status aceitos para apartamentos.
  */
 export const APARTMENT_STATUSES = [
+  "UNKNOWN",
   "OCCUPIED",
   "VACANT",
   "MAINTENANCE",

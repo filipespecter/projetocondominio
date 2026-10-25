@@ -8,8 +8,7 @@ class EmailProvider {
     if (!email || !email.includes("@")) throw new ApiError("E-mail de destino inválido.", 400);
 
     if (this.providerName === "CONSOLE" && process.env.NODE_ENV !== "production") {
-      console.log("[EMAIL DEV] Envio simulado; conteúdo e destinatário omitidos.");
-      return { provider: "CONSOLE", providerMessageId: `dev-${Date.now()}` };
+      throw new ApiError("Envio real indisponível: provedor de homologação está em modo CONSOLE.",503);
     }
 
     if (this.providerName !== "RESEND") {

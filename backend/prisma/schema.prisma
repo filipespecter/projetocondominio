@@ -55,6 +55,7 @@ enum FeatureValueType {
 }
 
 enum ApartmentStatus {
+  UNKNOWN
   OCCUPIED
   VACANT
   MAINTENANCE
@@ -387,6 +388,9 @@ model PlanFeature {
 }
 
 model Condominium {
+  maintenanceRecords AssetMaintenance[]
+  assemblyRecords AssemblyRecord[]
+  shiftHandovers ShiftHandover[]
   id   String @id @default(uuid()) @db.Uuid
   code String @unique
 
@@ -512,6 +516,9 @@ model Subscription {
 }
 
 model User {
+  maintenanceRecords AssetMaintenance[]
+  assemblyRecords AssemblyRecord[]
+  loginEnabled Boolean @default(true)
   id            String  @id @default(uuid()) @db.Uuid
   condominiumId String? @db.Uuid
 
@@ -533,6 +540,7 @@ model User {
   role         UserRole
   status       UserStatus @default(ACTIVE)
 
+  idleTimeoutMinutes Int @default(30)
   mustChangePassword  Boolean @default(true)
   failedLoginAttempts Int     @default(0)
   lockedUntil         DateTime?
@@ -579,6 +587,9 @@ model User {
   requestedPrivateServices PrivateServiceRequest[] @relation("PrivateServiceRequester")
   reviewedPrivateServices  PrivateServiceRequest[] @relation("PrivateServiceReviewer")
   userSessions             UserSession[]
+  handoversCreated ShiftHandover[] @relation("HandoverAuthor")
+  handoversResolved ShiftHandover[] @relation("HandoverResolver")
+  handoverAcknowledgements ShiftHandoverAck[]
 
   @@unique([condominiumId, username])
   @@unique([condominiumId, email])
@@ -590,12 +601,14 @@ model User {
 }
 
 model AuthSession {
+  operationalSession UserSession?
   id               String   @id @default(uuid()) @db.Uuid
   userId           String   @db.Uuid
   tokenFamilyId    String   @db.Uuid
   refreshTokenHash String   @unique
   createdAt        DateTime @default(now())
   lastUsedAt       DateTime @default(now())
+  lastInteractionAt DateTime @default(now())
   expiresAt        DateTime
   revokedAt        DateTime?
   revokeReason     String?
@@ -608,13 +621,14 @@ model AuthSession {
 }
 
 model Apartment {
+  assemblyRecords AssemblyRecord[]
   id            String @id @default(uuid()) @db.Uuid
   condominiumId String @db.Uuid
 
   block      String
   number     String
   floor      Int?
-  status     ApartmentStatus @default(VACANT)
+  status     ApartmentStatus @default(UNKNOWN)
   notes      String?
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
@@ -721,6 +735,8 @@ model Visitor {
   invitationCanceledAt    DateTime?
   invitationStatus        VisitorInvitationStatus?
 
+  operationalArchivedAt DateTime?
+
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
   deletedAt          DateTime?
@@ -737,6 +753,8 @@ model Visitor {
   @@index([condominiumId, apartmentId, createdAt])
   @@index([document])
   @@index([deletedAt])
+  @@index([condominiumId, createdAt])
+  @@index([condominiumId, operationalArchivedAt, createdAt])
 }
 
 model Package {
@@ -776,6 +794,8 @@ model Package {
   withdrawnResidentBlock String?
   withdrawnResidentApartment String?
 
+  operationalArchivedAt DateTime?
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   deletedAt     DateTime?
@@ -798,6 +818,8 @@ model Package {
   @@index([trackingCode])
   @@index([createdAt])
   @@index([deletedAt])
+  @@index([condominiumId, receivedAt])
+  @@index([condominiumId, operationalArchivedAt, createdAt])
 }
 
 model CommonArea {
@@ -856,9 +878,11 @@ model Reservation {
   @@index([condominiumId, commonAreaId, reservationDate])
   @@index([apartmentId, reservationDate])
   @@index([deletedAt])
+  @@index([condominiumId, createdAt])
 }
 
 model Notice {
+  assemblyRecords AssemblyRecord[]
   id            String @id @default(uuid()) @db.Uuid
   condominiumId String @db.Uuid
   authorUserId  String @db.Uuid
@@ -1010,6 +1034,7 @@ model CondominiumDocument {
 }
 
 model Asset {
+  maintenanceRecords AssetMaintenance[]
   id            String @id @default(uuid()) @db.Uuid
   condominiumId String @db.Uuid
   supplierId    String? @db.Uuid
@@ -1308,6 +1333,8 @@ model PrivateServiceRequest {
 }
 
 model UserSession {
+  authSessionId String? @unique @db.Uuid
+  authSession AuthSession? @relation(fields:[authSessionId],references:[id],onDelete:SetNull)
   id             String @id @default(uuid()) @db.Uuid
   userId         String @db.Uuid
   condominiumId  String? @db.Uuid
@@ -1509,6 +1536,7 @@ model SupportTicket {
 }
 
 model CommunicationLog {
+  deduplicationKey String? @unique @db.VarChar(64)
   id              String  @id @default(uuid()) @db.Uuid
   condominiumId   String? @db.Uuid
   recipientUserId String? @db.Uuid
@@ -1702,4 +1730,68 @@ model MessagingConnectionAttempt {
   consumedAt DateTime?
   createdAt DateTime @default(now())
   @@index([expiresAt])
+}
+
+model ShiftHandover {
+ id String @id @default(uuid()) @db.Uuid
+ condominiumId String @db.Uuid
+ createdByUserId String @db.Uuid
+ title String @db.VarChar(160)
+ notes String @db.VarChar(4000)
+ priority String @default("NORMAL") @db.VarChar(10)
+ createdAt DateTime @default(now())
+ resolvedAt DateTime?
+ resolvedByUserId String? @db.Uuid
+ resolvedBy User? @relation("HandoverResolver",fields:[resolvedByUserId],references:[id],onDelete:Restrict)
+ condominium Condominium @relation(fields:[condominiumId],references:[id],onDelete:Restrict)
+ createdBy User @relation("HandoverAuthor",fields:[createdByUserId],references:[id],onDelete:Restrict)
+ acknowledgements ShiftHandoverAck[]
+ @@index([condominiumId,createdAt])
+ @@index([condominiumId,resolvedAt])
+}
+model ShiftHandoverAck {
+ id String @id @default(uuid()) @db.Uuid
+ handoverId String @db.Uuid
+ userId String @db.Uuid
+ acknowledgedAt DateTime @default(now())
+ handover ShiftHandover @relation(fields:[handoverId],references:[id],onDelete:Restrict)
+ user User @relation(fields:[userId],references:[id],onDelete:Restrict)
+ @@unique([handoverId,userId])
+}
+
+model AssetMaintenance {
+ id String @id @default(uuid()) @db.Uuid
+ condominiumId String @db.Uuid
+ assetId String @db.Uuid
+ recordedByUserId String @db.Uuid
+ description String @db.VarChar(2000)
+ scheduledAt DateTime
+ completedAt DateTime?
+ costInCents Int?
+ createdAt DateTime @default(now())
+ condominium Condominium @relation(fields:[condominiumId],references:[id],onDelete:Restrict)
+ recordedBy User @relation(fields:[recordedByUserId],references:[id],onDelete:Restrict)
+ asset Asset @relation(fields:[assetId], references:[id], onDelete:Restrict)
+ @@index([condominiumId, scheduledAt])
+ @@index([assetId, scheduledAt])
+}
+model AssemblyRecord {
+ id String @id @default(uuid()) @db.Uuid
+ condominiumId String @db.Uuid
+ noticeId String @db.Uuid
+ apartmentId String @db.Uuid
+ recordedByUserId String @db.Uuid
+ present Boolean
+ topic String @db.VarChar(160)
+ vote String? @db.VarChar(16)
+ evidence String @db.VarChar(1000)
+ eligibleUnits Int?
+ voteFinalized Boolean @default(false)
+ createdAt DateTime @default(now())
+ condominium Condominium @relation(fields:[condominiumId],references:[id],onDelete:Restrict)
+ recordedBy User @relation(fields:[recordedByUserId],references:[id],onDelete:Restrict)
+ apartment Apartment @relation(fields:[apartmentId],references:[id],onDelete:Restrict)
+ notice Notice @relation(fields:[noticeId], references:[id], onDelete:Restrict)
+ @@unique([noticeId, apartmentId, topic])
+ @@index([condominiumId, createdAt])
 }

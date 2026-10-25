@@ -1,3 +1,4 @@
+import { currentReportIdentity } from "../../utils/reportIdentity.js";
 import {
   LineChart,
   Line,
@@ -92,8 +93,8 @@ function Movimentacoes() {
     }
   }
 
-  function exportarPDF() {
-
+  async function exportarPDF() {
+    let identity;try{identity=await currentReportIdentity();}catch(e){window.alert(e.message);return;}
     const doc = new jsPDF();
 
     doc.setFontSize(22);
@@ -104,16 +105,19 @@ function Movimentacoes() {
       20
     );
 
+    doc.setFontSize(10);
+    const nameLines=doc.splitTextToSize(identity.name,180);
+    doc.text(nameLines,14,27);
     doc.setFontSize(12);
 
     doc.text(
       `Mês selecionado: ${mesSelecionado}`,
       14,
-      32
+      32+Math.max(0,nameLines.length-1)*4
     );
 
     autoTable(doc, {
-      startY: 45,
+      startY: 45+Math.max(0,nameLines.length-1)*4,
       head: [["Categoria", "Quantidade"]],
       body: [
         ["Visitantes", totais.visitantes],

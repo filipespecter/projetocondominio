@@ -1,9 +1,16 @@
+import prisma from "../config/prisma.js";
+import { evidence, completeMaintenance } from "../services/OperationalEvidenceService.js";
+import { requireTrustedOrigin } from "../middlewares/securityMiddleware.js";
 import { Router } from "express";
 import AssetController from "../controllers/AssetController.js";
 import { authMiddleware, authorizeRoles } from "../middlewares/authMiddleware.js";
 import { validateAssetId, validateAssetList, validateCreateAsset, validateUpdateAsset } from "../validators/assetValidator.js";
 const routes=Router();
 routes.use(authMiddleware,authorizeRoles("CONDOMINIUM_ADMIN","MANAGER"));
+routes.get("/:id/maintenance",async(req,res,next)=>{try{res.set("Cache-Control","no-store").json({success:true,data:await evidence(prisma,req.user,"maintenance",req.params.id)});}catch(e){next(e);}});
+routes.post("/:id/maintenance",requireTrustedOrigin,async(req,res,next)=>{try{res.status(201).json({success:true,data:await evidence(prisma,req.user,"maintenance",req.params.id,req.body)});}catch(e){next(e);}});
+routes.patch("/maintenance/:id/complete",requireTrustedOrigin,async(req,res,next)=>{try{res.json({success:true,data:await completeMaintenance(prisma,req.user,req.params.id,req.body)});}catch(e){next(e);}});
+
 routes.get("/",validateAssetList,(req,res,next)=>AssetController.index(req,res,next));
 routes.post("/",validateCreateAsset,(req,res,next)=>AssetController.create(req,res,next));
 routes.get("/:id/download",validateAssetId,(req,res,next)=>AssetController.download(req,res,next));

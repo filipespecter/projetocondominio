@@ -3,7 +3,6 @@ import PackageCredentialService from "./PackageCredentialService.js";
 import BaseService from "./BaseService.js";
 import AuditLogService from "./AuditLogService.js";
 import NotificationService from "./NotificationService.js";
-import CommunicationTriggerService from "./CommunicationTriggerService.js";
 
 import packageRepository from "../repositories/PackageRepository.js";
 import apartmentRepository from "../repositories/ApartmentRepository.js";
@@ -734,7 +733,7 @@ class PackageService extends BaseService {
     condominiumId,
     apartment,
     packageRecord,
-    requestId = null,
+    requestId: _requestId = null,
   }) {
     const apartmentResidents = await this.getApartmentRecipients(apartment.id, condominiumId);
     const residents = packageRecord.expectedByResidentId ? apartmentResidents.filter(resident => resident.id === packageRecord.expectedByResidentId) : apartmentResidents;
@@ -776,16 +775,7 @@ class PackageService extends BaseService {
      * CommunicationTriggerService aplica a regra de segurança:
      * eventual falha no provider não desfaz o recebimento da encomenda.
      */
-    const whatsapp =
-      await CommunicationTriggerService
-        .notifyPackageArrival({
-          condominiumId,
-          apartment,
-          packageRecord,
-          residents,
-          contacts,
-          requestId,
-        });
+    const whatsapp = {count:0,results:[],manualConfirmationRequired:true};
 
     return {
       count: residents.length,
