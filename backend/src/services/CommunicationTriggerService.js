@@ -130,7 +130,7 @@ class CommunicationTriggerService {
           content:`${condo?.name||"Condomínio"}: encomenda recebida para bloco ${apartment.block}, apartamento ${apartment.number}.`,
           templateCode:channel==="WHATSAPP"?config.templateName:null,
           module:"PACKAGE",referenceId:packageRecord.id,requestId,
-          metadata:{event:"PACKAGE_RECEIVED",packageDetails:details,recipientName:resident.user?.name||"Morador",apartmentId:apartment.id,condominiumName:condo?.name||"Condomínio",apartmentLabel:`${apartment.block} - ${apartment.number}`,languageCode:config.languageCode,pickupCredential:true},preventDuplicate:true}));
+          metadata:{emailApartmentLabel:`${apartment.block ? "Bloco "+apartment.block+", " : ""}Apto ${apartment.number}`,event:"PACKAGE_RECEIVED",packageDetails:details,recipientName:resident.user?.name||"Morador",apartmentId:apartment.id,condominiumName:condo?.name||"Condomínio",apartmentLabel:`${apartment.block} - ${apartment.number}`,languageCode:config.languageCode,pickupCredential:true},preventDuplicate:true}));
       } catch { results.push({failed:true,userId:resident.userId,error:"Falha ao enviar aviso. Consulte o histórico de comunicação."}); }
     }
     const seen=new Set(residents.flatMap(r=>{
@@ -151,7 +151,7 @@ class CommunicationTriggerService {
         results.push(await CommunicationService.queueAndSend({authenticatedUser,condominiumId,recipient,channel,provider:channel==="WHATSAPP"?"META_CLOUD_API":null,
           subject:`${condo?.name||"Condomínio"}: encomenda na portaria`,content:`${condo?.name||"Condomínio"}: encomenda recebida para bloco ${apartment.block}, apartamento ${apartment.number}.`,
           templateCode:channel==="WHATSAPP"?config.templateName:"PACKAGE_RECEIVED_CONTACT",module:"PACKAGE",referenceId:packageRecord.id,requestId,
-          metadata:{event:"PACKAGE_RECEIVED",packageDetails:details,recipientName:contact.name,contactId:contact.id,apartmentId:apartment.id,condominiumName:condo?.name||"Condomínio",apartmentLabel:`${apartment.block} - ${apartment.number}`,languageCode:config.languageCode,contactNotice:true,pickupCredential:contact.canPickup},preventDuplicate:true}));
+          metadata:{emailApartmentLabel:`${apartment.block ? "Bloco "+apartment.block+", " : ""}Apto ${apartment.number}`,event:"PACKAGE_RECEIVED",packageDetails:details,recipientName:contact.name,contactId:contact.id,apartmentId:apartment.id,condominiumName:condo?.name||"Condomínio",apartmentLabel:`${apartment.block} - ${apartment.number}`,languageCode:config.languageCode,contactNotice:true,pickupCredential:contact.canPickup},preventDuplicate:true}));
       } catch {results.push({failed:true,contactId:contact.id,error:"Falha ao enviar aviso ao contato autorizado."});}
     }
     return {count:results.filter(r=>r?.status==="SENT"||r?.queued).length,results};

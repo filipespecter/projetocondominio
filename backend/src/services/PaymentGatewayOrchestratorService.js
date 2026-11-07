@@ -1,3 +1,5 @@
+import { reservePaymentAttempt, releaseRejectedAttempt } from "../utils/paymentAttempt.js";
+import { assertPaymentMatches } from "../utils/paymentConsistency.js";
 import crypto from "node:crypto";
 
 import prisma from "../config/prisma.js";
@@ -230,12 +232,22 @@ class PaymentGatewayOrchestratorService {
         paymentData
       );
 
-    const idempotencyKey =
-      requestContext
-        ?.requestId ??
-      crypto.randomUUID();
+    let previousAttempt = "initial";
+    if (charge.providerChargeId) {
+      const previous=await PaymentGatewayService.getPayment({provider,providerPaymentId:charge.providerChargeId});
+      assertPaymentMatches(charge,previous,charge.providerChargeId);
+      if (!["rejected","cancelled","canceled"].includes(previous.status)) {
+        throw new ApiError("Esta cobrança já possui um pagamento em processamento ou concluído. Consulte seu estado antes de iniciar outra tentativa.",409);
+      }
+      previousAttempt=String(charge.providerChargeId);
+    }
+    const idempotencyKey = crypto.createHash("sha256")
+      .update(`InfinityCondo:charge:${charge.id}:${previousAttempt}:${Number(charge.metadata?.gatewayAttemptSequence)||0}`).digest("hex");
 
-    const providerPayment =
+    await reservePaymentAttempt(prisma,charge,idempotencyKey);
+    let providerPayment;
+    try {
+      providerPayment =
       await PaymentGatewayService
         .createCharge({
           provider,
@@ -245,6 +257,14 @@ class PaymentGatewayOrchestratorService {
           paymentData,
           idempotencyKey,
         });
+
+    } catch (error) {
+      // Only a definitive refusal unlocks a new attempt. Uncertain outcomes stay blocked.
+      if (error.statusCode >= 400 && error.statusCode < 500) await releaseRejectedAttempt(prisma,charge.id,idempotencyKey);
+      throw error;
+    }
+
+    assertPaymentMatches(charge, providerPayment);
 
     const transactionStatus =
       PaymentGatewayService
@@ -343,6 +363,8 @@ class PaymentGatewayOrchestratorService {
             metadata: {
               ...(charge.metadata ??
                 {}),
+              gatewayAttemptPending: false,
+              gatewayAttemptKey: idempotencyKey,
 
               pixQrCodeBase64:
                 providerPayment
@@ -654,7 +676,7 @@ class PaymentGatewayOrchestratorService {
           providerPaymentId,
         });
 
-    const charge =
+    let charge =
       await chargeRepository
         .findByProviderChargeId(
           provider,
@@ -662,6 +684,16 @@ class PaymentGatewayOrchestratorService {
             providerPaymentId
           )
         );
+
+    let recoveryFromUncertainAttempt = false;
+    if (!charge && providerPayment.externalReference) {
+      const candidate=await chargeRepository.findById(providerPayment.externalReference);
+      if (candidate?.metadata?.gatewayAttemptPending &&
+          (candidate.providerChargeId ?? null) === (candidate.metadata.gatewayAttemptPriorPaymentId ?? null)) {
+        charge=candidate;
+        recoveryFromUncertainAttempt=true;
+      }
+    }
 
     if (!charge) {
       return {
@@ -672,6 +704,15 @@ class PaymentGatewayOrchestratorService {
           "Cobrança local não encontrada.",
       };
     }
+
+    assertPaymentMatches(charge, providerPayment, providerPaymentId);
+    if (recoveryFromUncertainAttempt) {
+      await chargeRepository.updateProviderData(charge.id,{
+        provider,providerChargeId:String(providerPaymentId),
+        metadata:{...(charge.metadata ?? {}),gatewayAttemptPending:false},
+      });
+    }
+
 
     const status =
       PaymentGatewayService

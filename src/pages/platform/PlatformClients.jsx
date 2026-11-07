@@ -1,3 +1,4 @@
+import ClientProfileEditor from "../../components/ClientProfileEditor.jsx";
 import { useEffect, useMemo, useState } from "react";
 import {
   FaBuilding,
@@ -278,6 +279,13 @@ function PlatformClients() {
               ]} />
             </div>
 
+            <ClientProfileEditor key={`profile-${selected.id}`} client={selected} onSaved={profile=>{
+              const patch={...profile.condominium,administrator:profile.administrator?{...selected.administrator,...profile.administrator}:selected.administrator,
+                address:Object.fromEntries(["postalCode","addressLine","addressNumber","addressExtra","neighborhood","city","state"].map(key=>[key,profile.condominium[key]])),
+                subscription:profile.billingContact?{...selected.subscription,billingContactName:profile.billingContact.name,billingEmail:profile.billingContact.email,billingPhone:profile.billingContact.phone}:selected.subscription};
+              setSelected(current=>current?.id===selected.id?{...current,...patch}:current);
+              setData(current=>({...current,items:(current?.items||[]).map(item=>item.id===selected.id?{...item,...patch}:item)}));
+            }}/>
             <ClientPasswordReset key={selected.id} client={selected} />
             <div style={styles.modalFooter}>
               <span><FaPhone /> Central mantém controle de plano, acesso e cobrança deste cliente.</span>

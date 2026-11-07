@@ -1,3 +1,4 @@
+import "./LoginRecovery.css";
 import { useParams, useNavigate } from "react-router-dom";
 
 import {
@@ -736,6 +737,7 @@ function Login() {
    * Mantido visualmente como na versão atual.
    */
   function abrirRecuperacaoSenha() {
+    if (tipo === "platform") return;
     setRecuperarSenha(true); setErro(""); setRecuperacaoEtapa(1); setRecuperacaoMensagem("");
     setRecuperacaoEmail(""); setRecuperacaoCodigo(""); setRecuperacaoNovaSenha(""); setRecuperacaoConfirmacao("");
   }
@@ -747,7 +749,7 @@ function Login() {
     setRecuperacaoCarregando(true); setRecuperacaoMensagem("");
     try {
       await authApi.requestPasswordReset({ portalType: tipo, email: recuperacaoEmail.trim().toLowerCase() });
-      setRecuperacaoEtapa(2); setRecuperacaoMensagem("Código enviado. Confira o e-mail cadastrado. Ele expira em 10 minutos.");
+      setRecuperacaoEtapa(2); setRecuperacaoMensagem("Se o e-mail estiver cadastrado e o envio estiver disponível, você receberá um código válido por 15 minutos. Use o código do pedido mais recente.");
     } catch (error) { setRecuperacaoMensagem(error?.message ?? "Não foi possível enviar o código."); }
     finally { setRecuperacaoCarregando(false); }
   }
@@ -758,7 +760,7 @@ function Login() {
       await authApi.confirmPasswordReset({ portalType: tipo, email: recuperacaoEmail.trim().toLowerCase(), code: recuperacaoCodigo.trim(), newPassword: recuperacaoNovaSenha, newPasswordConfirmation: recuperacaoConfirmacao });
       setRecuperacaoMensagem("Senha redefinida com sucesso. Você já pode entrar com a nova senha.");
       setTimeout(() => fecharRecuperacaoSenha(), 1200);
-    } catch (error) { setRecuperacaoMensagem(error?.message ?? "Não foi possível redefinir a senha."); }
+    } catch (error) { setRecuperacaoMensagem(Array.isArray(error?.details) ? error.details.map(item => item.message).filter(Boolean).join(" ") || error.message : error?.message ?? "Não foi possível redefinir a senha."); }
     finally { setRecuperacaoCarregando(false); }
   }
 
@@ -948,6 +950,7 @@ function Login() {
             </div>
           </div>
 
+          {tipo !== "platform" && (
           <button
             type="button"
             style={
@@ -960,6 +963,7 @@ function Login() {
             <FaKey />
             Esqueci minha senha
           </button>
+          )}
 
           {erro && (
             <div
@@ -1131,28 +1135,37 @@ function Login() {
        * RECUPERAÇÃO DE SENHA
        * =================================================
        */}
-      {recuperarSenha && (
-        <div className="ic-modal-overlay" style={styles.modalOverlay}>
-          <div style={{ ...styles.warningModal, width: "min(480px, calc(100vw - 32px))" }}>
-            <div style={styles.warningIcon}>🔐</div>
-            <h2 style={styles.warningTitle}>Recuperar acesso</h2>
-            <p style={styles.warningText}>O código será enviado somente para o e-mail cadastrado no InfinityCondo.</p>
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>E-mail cadastrado</label>
-              <input type="email" style={styles.input} value={recuperacaoEmail} disabled={recuperacaoEtapa === 2} onChange={(e)=>setRecuperacaoEmail(e.target.value)} placeholder="seuemail@exemplo.com" />
-            </div>
-            {recuperacaoEtapa === 2 && (<>
-              <div style={styles.inputGroup}><label style={styles.label}>Código de 6 dígitos</label><input inputMode="numeric" maxLength={6} style={styles.input} value={recuperacaoCodigo} onChange={(e)=>setRecuperacaoCodigo(e.target.value.replace(/\D/g, ""))} /></div>
-              <div style={styles.inputGroup}><label style={styles.label}>Nova senha</label><input type="password" style={styles.input} value={recuperacaoNovaSenha} onChange={(e)=>setRecuperacaoNovaSenha(e.target.value)} /></div>
-              <div style={styles.inputGroup}><label style={styles.label}>Confirmar nova senha</label><input type="password" style={styles.input} value={recuperacaoConfirmacao} onChange={(e)=>setRecuperacaoConfirmacao(e.target.value)} /></div>
-            </>)}
-            {recuperacaoMensagem && <div style={{...styles.errorBox,background:"var(--ic-primary-soft-4)",color:"var(--ic-primary-dark)",borderColor:"var(--ic-primary-border-soft)"}}>{recuperacaoMensagem}</div>}
-            <div style={{...styles.warningActions,gap:"10px"}}>
-              <button type="button" style={styles.changeNowButton} onClick={fecharRecuperacaoSenha}>Cancelar</button>
-              <button type="button" style={{...styles.changeNowButton,background:perfil.gradient,color:"white"}} disabled={recuperacaoCarregando} onClick={recuperacaoEtapa===1?enviarCodigoRecuperacao:redefinirSenhaRecuperacao}>
-                {recuperacaoCarregando ? "Processando..." : recuperacaoEtapa===1 ? "Enviar código" : "Criar nova senha"}
-              </button>
-            </div>
+      {tipo !== "platform" && recuperarSenha && (
+        <div className="ic-recovery-overlay" onKeyDown={event=>{
+          if(event.key==="Escape"&&!recuperacaoCarregando)fecharRecuperacaoSenha();
+          if(event.key==="Tab"){
+            const fields=event.currentTarget.querySelectorAll("button:not([disabled]),input:not([disabled])");
+            const first=fields[0],last=fields[fields.length-1];
+            if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}
+            else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}
+          }
+        }}>
+          <div className="ic-recovery-card" role="dialog" aria-modal="true" aria-labelledby="ic-recovery-title">
+            <header className="ic-recovery-top">
+              <button className="ic-recovery-close" type="button" aria-label="Fechar recuperação" disabled={recuperacaoCarregando} onClick={fecharRecuperacaoSenha}>×</button>
+              <div className="ic-recovery-badge"><FaKey/></div>
+              <small>INFINITYCONDO · ACESSO À CONTA</small>
+              <h2 id="ic-recovery-title">Recuperar acesso</h2>
+              <p>Receba um código no e-mail cadastrado para definir uma nova senha com segurança.</p>
+            </header>
+            <form className="ic-recovery-body" onSubmit={event=>{event.preventDefault();if(!recuperacaoCarregando)(recuperacaoEtapa===1?enviarCodigoRecuperacao():redefinirSenhaRecuperacao());}}>
+              <div className="ic-recovery-steps"><span className={recuperacaoEtapa===1?"active":""}><b>1</b> E-mail</span><i className="ic-recovery-line"/><span className={recuperacaoEtapa===2?"active":""}><b>2</b> Nova senha</span></div>
+              <label className="ic-recovery-field">E-mail cadastrado<input autoFocus type="email" autoComplete="email" required maxLength={200} value={recuperacaoEmail} disabled={recuperacaoEtapa===2||recuperacaoCarregando} onChange={event=>setRecuperacaoEmail(event.target.value)} placeholder="seuemail@exemplo.com"/></label>
+              {recuperacaoEtapa===2&&<>
+                <label className="ic-recovery-field">Código de 6 dígitos<input autoFocus inputMode="numeric" autoComplete="one-time-code" required pattern="[0-9]{6}" maxLength={6} disabled={recuperacaoCarregando} value={recuperacaoCodigo} onChange={event=>setRecuperacaoCodigo(event.target.value.replace(/\D/g,""))} placeholder="000000"/></label>
+                <label className="ic-recovery-field">Nova senha<input type="password" autoComplete="new-password" required minLength={12} maxLength={128} disabled={recuperacaoCarregando} value={recuperacaoNovaSenha} onChange={event=>setRecuperacaoNovaSenha(event.target.value)}/></label>
+                <p className="ic-recovery-hint">Use uma frase-senha exclusiva de 12 a 128 caracteres.</p>
+                <label className="ic-recovery-field">Confirmar nova senha<input type="password" autoComplete="new-password" required minLength={12} maxLength={128} disabled={recuperacaoCarregando} value={recuperacaoConfirmacao} onChange={event=>setRecuperacaoConfirmacao(event.target.value)}/></label>
+              </>}
+              {recuperacaoMensagem&&<div className="ic-recovery-message" role="status" aria-live="polite">{recuperacaoMensagem}</div>}
+              <div className="ic-recovery-buttons"><button className="ic-recovery-secondary" type="button" disabled={recuperacaoCarregando} onClick={fecharRecuperacaoSenha}>Cancelar</button><button className="ic-recovery-primary" type="submit" disabled={recuperacaoCarregando}>{recuperacaoCarregando?"Processando…":recuperacaoEtapa===1?"Enviar código":"Criar nova senha"}</button></div>
+              <p className="ic-recovery-footer">Código válido por 15 minutos e de uso único. Não compartilhe.</p>
+            </form>
           </div>
         </div>
       )}

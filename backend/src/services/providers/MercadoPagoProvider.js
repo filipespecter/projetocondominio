@@ -79,11 +79,14 @@ class MercadoPagoProvider {
   ) {
     this.ensureConfigured();
 
-    const response =
+    let response;
+    try {
+      response =
       await fetch(
         `${this.apiBaseUrl}${path}`,
         {
           method,
+          signal: AbortSignal.timeout(20000),
 
           headers:
             this.buildHeaders(
@@ -97,6 +100,10 @@ class MercadoPagoProvider {
         }
       );
 
+    } catch {
+      throw new ApiError("A comunicação com o Mercado Pago não foi concluída. O resultado precisa ser consultado antes de uma nova tentativa.",502);
+    }
+
     let responseBody;
 
     try {
@@ -109,9 +116,7 @@ class MercadoPagoProvider {
 
     if (!response.ok) {
       throw new ApiError(
-        responseBody?.message ??
-        responseBody?.error ??
-        "Erro ao comunicar com o Mercado Pago.",
+        "O Mercado Pago não concluiu a operação. Confira os dados e consulte o estado da cobrança antes de tentar novamente.",
         response.status >= 500
           ? 502
           : 400,
@@ -122,8 +127,7 @@ class MercadoPagoProvider {
           statusCode:
             response.status,
 
-          providerResponse:
-            responseBody,
+          providerResponse: null,
         }
       );
     }
@@ -436,6 +440,8 @@ class MercadoPagoProvider {
         payment
           ?.date_approved ??
         null,
+
+      currency: payment?.currency_id ?? null,
 
       transactionAmount:
         payment

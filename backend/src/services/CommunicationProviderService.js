@@ -82,6 +82,7 @@ class CommunicationProviderService {
     subject = null,
     templateCode = null,
     content,
+    html = undefined,
     metadata = null,
   }) {
     const selectedProvider = channel === "WHATSAPP" ? await TenantMessagingService.provider(condominiumId) : this.getProvider(channel, provider);
@@ -91,6 +92,7 @@ class CommunicationProviderService {
       subject,
       templateCode,
       content,
+      html,
       metadata,
     });
   }

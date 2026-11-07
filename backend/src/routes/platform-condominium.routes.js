@@ -1,3 +1,5 @@
+import prisma from "../config/prisma.js";
+import { readClientProfile, updateClientProfile } from "../services/ClientProfileService.js";
 import { Router } from "express";
 import resetClientPassword from "../services/ClientPasswordResetService.js";
 import { resetLimiter, requireTrustedOrigin } from "../middlewares/securityMiddleware.js";
@@ -168,6 +170,15 @@ platformCondominiumRoutes.get(
       next
     )
 );
+
+platformCondominiumRoutes.get("/:id/profile", platformManagementMiddleware, async (req,res,next)=>{
+  res.set("Cache-Control","no-store");
+  try{const data=await readClientProfile({actor:req.user,condominiumId:req.params.id,administratorId:req.query.administratorId||null},{db:prisma});res.json({success:true,data});}catch(error){next(error);}
+});
+platformCondominiumRoutes.patch("/:id/profile", platformManagementMiddleware, requireTrustedOrigin, async (req,res,next)=>{
+  res.set("Cache-Control","no-store");
+  try{const data=await updateClientProfile({actor:req.user,condominiumId:req.params.id,data:req.body,context:{ipAddress:req.ip,userAgent:req.get("user-agent")}},{db:prisma});res.json({success:true,message:"Ficha atualizada com sucesso.",data});}catch(error){next(error);}
+});
 
 platformCondominiumRoutes.post(
   "/:id/users/:userId/temporary-password",

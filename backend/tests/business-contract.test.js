@@ -248,7 +248,7 @@ test("retirada de encomenda aceita comprovante fotográfico opcional e o armazen
 
 test("recuperação de senha usa código por e-mail com expiração, uso único e limite de tentativas", async () => {
   const schema = await source("backend/prisma/schema.prisma");
-  const service = await source("backend/src/services/AuthService.js");
+  const service = await source("backend/src/services/PasswordRecoveryService.js");
   const routes = await source("backend/src/routes/auth.routes.js");
   const login = await source("src/pages/login.jsx");
   assert.match(schema, /model\s+PasswordResetCode\s*\{/);

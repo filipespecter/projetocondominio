@@ -537,14 +537,15 @@ class CommunicationLogRepository extends BaseRepository {
   async markFailed(
     id,
     errorMessage,
-    metadata = null
+    metadata = null,
+    providerFailure = false
   ) {
     const result =
       await this.updateMany(
         {
           id,
           status: {
-            not: "CANCELED",
+            in: providerFailure ? ["PENDING", "FAILED", "SENT"] : ["PENDING", "FAILED"],
           },
         },
         {

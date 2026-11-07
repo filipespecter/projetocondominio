@@ -1,3 +1,4 @@
+import { packageEmail } from "../utils/packageEmail.js";
 import crypto from "node:crypto";
 import ApartmentContactService from "./ApartmentContactService.js";
 import { normalizeWhatsAppPhone } from "../utils/MessagingSecrets.js";
@@ -323,6 +324,8 @@ class CommunicationService {
     try {
       let content=before.contentSnapshot;
       let metadata=before.metadata;
+      let html;
+      let subject=before.subject;
       if((metadata?.pickupCredential || metadata?.contactNotice) && before.module==="PACKAGE") {
         const pkg=await prisma.package.findFirst({where:{id:before.referenceId,condominiumId:before.condominiumId,status:"RECEIVED",deletedAt:null}});
         if(!pkg) throw new ApiError("Encomenda não está mais disponível.",409);
@@ -337,6 +340,11 @@ class CommunicationService {
         const credential=canPickup?await PackageCredentialService.ensure(before.referenceId,before.condominiumId):null;
         const instructions=canPickup?`Código de retirada: ${credential.code}. Apresente à portaria. Não compartilhe a credencial.`:"Avise o responsável autorizado pela retirada. Este aviso não autoriza retirar a encomenda.";
         content+=` Destinatário: ${metadata.recipientName || "Contato autorizado"}. ${metadata.packageDetails || ""}. ${instructions}`;
+        if (before.channel === "EMAIL") {
+          const formatted=packageEmail({condominiumName:metadata.condominiumName,recipientName:metadata.recipientName,
+            apartmentLabel:metadata.emailApartmentLabel || metadata.apartmentLabel,packageRecord:pkg,instructions});
+          content=formatted.content; html=formatted.html; subject=formatted.subject;
+        }
         const thirdParameter=credential?.code||"Consulte o responsável autorizado pela retirada.";
         metadata={...metadata,components:[{type:"body",parameters:[metadata.condominiumName,[metadata.apartmentLabel,metadata.recipientName,metadata.packageDetails].filter(Boolean).join(" · "),thirdParameter].map(text=>({type:"text",text:String(text)}))}]};
       }
@@ -351,12 +359,13 @@ class CommunicationService {
             recipient:
               before.recipient,
             subject:
-              before.subject,
+              subject,
             templateCode:
               before.templateCode,
             content:
               content,
             metadata,
+            html,
           });
 
       providerAccepted = true;
@@ -379,6 +388,12 @@ class CommunicationService {
               },
             }
           );
+
+      if (!sent) {
+        const current=await this.findById(id);
+        if (current.status === "DELIVERED" || current.status === "SENT") return current;
+        throw new ApiError("Provedor aceitou o aviso, mas a confirmação local precisa ser conferida. Não reenvie.",502);
+      }
 
       try {
       await AuditLogService
@@ -433,6 +448,10 @@ class CommunicationService {
 
       return sent;
     } catch (error) {
+      if (providerAccepted) {
+        const current=await this.findById(id);
+        if (["SENT","DELIVERED"].includes(current.status)) return current;
+      }
       const failed =
         await communicationLogRepository
           .markFailed(

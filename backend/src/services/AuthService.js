@@ -1,3 +1,4 @@
+import { requestRecovery, confirmRecovery } from "./PasswordRecoveryService.js";
 import crypto from "node:crypto";
 import { enforceLoginLock } from "../utils/loginLock.js";
 import AuditLogService from "./AuditLogService.js";
@@ -647,49 +648,18 @@ class AuthService {
   }
 
   async requestPasswordReset(data, requestContext = null) {
-    const user = await this.findUserForPasswordReset(data ?? {});
-    const generic = { message: "Se o e-mail informado estiver cadastrado, enviaremos um código de recuperação." };
-    if (!user || !user.email) return generic;
-    try { this.validateUserAccess(user); } catch { return generic; }
-    const code = String(crypto.randomInt(0, 1000000)).padStart(6, "0");
-    const codeHash = this.hashResetCode(code);
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-    await prisma.passwordResetCode.updateMany({ where: { userId: user.id, usedAt: null }, data: { usedAt: new Date() } });
-    await prisma.passwordResetCode.create({ data: { userId: user.id, codeHash, expiresAt } });
-    try { await CommunicationProviderService.send({
-      channel: "EMAIL", recipient: user.email, subject: "InfinityCondo - código para redefinir sua senha",
-      content: `Seu código de recuperação InfinityCondo é ${code}. Ele expira em 15 minutos e só pode ser usado uma vez. Se você não solicitou esta alteração, ignore esta mensagem.`,
-    }); } catch {
-      await prisma.passwordResetCode.updateMany({where:{userId:user.id,codeHash,usedAt:null},data:{usedAt:new Date()}});
-      await AuditLogService.createLog({condominiumId:user.condominiumId,userId:user.id,userRole:user.role,action:"PASSWORD_RESET_SEND_FAILED",module:"AUTH",details:"Falha no envio do código; conferir provedor transacional."});
-      return generic;
-    }
-    await AuditLogService.createLog({ condominiumId:user.condominiumId, userId:user.id, userName:user.name, userRole:user.role, action:"PASSWORD_RESET_REQUEST", module:"AUTH", details:"Código de recuperação de senha solicitado.", referenceId:user.id, ipAddress:requestContext?.ipAddress ?? null, userAgent:requestContext?.userAgent ?? null });
-    return generic;
+    return requestRecovery(data, requestContext, {
+      db:prisma, findUser:input => this.findUserForPasswordReset(input),
+      validateAccess:user => this.validateUserAccess(user),
+      send:input => CommunicationProviderService.send(input),
+    });
   }
 
   async confirmPasswordReset(data, requestContext = null) {
-    const user = await this.findUserForPasswordReset(data ?? {});
-    if (!user) throw new ApiError("Código inválido ou expirado.", 400);
-    const record = await prisma.passwordResetCode.findFirst({ where: { userId:user.id, usedAt:null, expiresAt:{ gt:new Date() } }, orderBy:{createdAt:"desc"} });
-    if (!record || record.attempts >= 5) throw new ApiError("Código inválido ou expirado.", 400);
-    const matches = crypto.timingSafeEqual(Buffer.from(record.codeHash), Buffer.from(this.hashResetCode(data.code)));
-    if (!matches) {
-      await prisma.passwordResetCode.update({ where:{id:record.id}, data:{attempts:{increment:1}} });
-      throw new ApiError("Código inválido ou expirado.", 400);
-    }
-    validatePasswordPolicy(data.newPassword, "nova senha");
-    if (data.newPassword !== data.newPasswordConfirmation) throw new ApiError("Nova senha inválida.", 400);
-    const passwordHash = await Password.hash(String(data.newPassword));
-    await prisma.$transaction(async tx => {
-      const claimed = await tx.passwordResetCode.updateMany({where:{id:record.id,usedAt:null,expiresAt:{gt:new Date()},attempts:{lt:5}},data:{usedAt:new Date()}});
-      if (claimed.count !== 1) throw new ApiError("Código inválido ou expirado.",400);
-      await tx.user.update({where:{id:user.id},data:{passwordHash,mustChangePassword:false,passwordChangedAt:new Date(),failedLoginAttempts:0,lockedUntil:null,securityVersion:{increment:1}}});
-      await tx.authSession.updateMany({where:{userId:user.id,revokedAt:null},data:{revokedAt:new Date(),revokeReason:"PASSWORD_RESET"}});
-      await tx.passwordResetCode.updateMany({where:{userId:user.id,usedAt:null},data:{usedAt:new Date()}});
+    return confirmRecovery(data, requestContext, {
+      db:prisma, findUser:input => this.findUserForPasswordReset(input),
+      validateAccess:user => this.validateUserAccess(user), hashPassword:value => Password.hash(value),
     });
-    await AuditLogService.createLog({ condominiumId:user.condominiumId, userId:user.id, userName:user.name, userRole:user.role, action:"PASSWORD_RESET_CONFIRMED", module:"AUTH", details:"Senha redefinida por código enviado ao e-mail cadastrado.", referenceId:user.id, ipAddress:requestContext?.ipAddress ?? null, userAgent:requestContext?.userAgent ?? null });
-    return { message:"Senha redefinida com sucesso. Faça login com a nova senha." };
   }
 
 }

@@ -1,3 +1,4 @@
+import "./ClientPasswordReset.css";
 import { useEffect, useState } from "react";
 import authApi from "../Services/authApi.js";
 import api from "../Services/api.js";
@@ -22,18 +23,18 @@ export default function ClientPasswordReset({ client }) {
     } catch (error) { setMessage(error?.message || "Não foi possível redefinir. Confira a ficha antes de repetir."); }
     finally { setBusy(false); }
   }
-  return <section style={{marginTop:20,padding:16,border:"1px solid #ddd6fe",borderRadius:12}}>
+  return <section className="ic-client-password-reset">
     <h3>Acesso do administrador do cliente</h3>
     <p>Usuário: <strong>{client.administrator.username || "—"}</strong> · E-mail: {client.administrator.email || "—"}</p>
     <p>Entre pelo portal Síndico / Adm usando o usuário ou e-mail. O código do condomínio não é uma senha.</p>
-    {!open && <button type="button" onClick={()=>{setOpen(true);setMessage("");}}>Definir senha temporária</button>}
+    {!open && <button className="ic-client-password-primary" type="button" onClick={()=>{setOpen(true);setMessage("");}}>Definir senha temporária</button>}
     {open && <form onSubmit={submit}>
       <p>Esta ação encerra as sessões deste usuário e exige nova senha no primeiro acesso. O status do condomínio e do usuário não será alterado.</p>
-      <label style={{display:"block"}}>Senha temporária<input style={{display:"block",maxWidth:"100%"}} type="password" autoComplete="new-password" minLength={12} maxLength={128} required value={password} onChange={e=>setPassword(e.target.value)}/></label>
-      <label style={{display:"block"}}>Confirmar senha temporária<input style={{display:"block",maxWidth:"100%"}} type="password" autoComplete="new-password" required maxLength={128} value={confirmation} onChange={e=>setConfirmation(e.target.value)}/></label>
-      <button disabled={busy} type="submit">{busy?"Salvando…":"Confirmar redefinição"}</button>{" "}
-      <button disabled={busy} type="button" onClick={()=>{setPassword("");setConfirmation("");setOpen(false);}}>Cancelar</button>
+      <label>Senha temporária<input type="password" autoComplete="new-password" minLength={12} maxLength={128} required value={password} onChange={e=>setPassword(e.target.value)}/></label>
+      <label>Confirmar senha temporária<input type="password" autoComplete="new-password" required maxLength={128} value={confirmation} onChange={e=>setConfirmation(e.target.value)}/></label>
+      <button className="ic-client-password-primary" disabled={busy} type="submit">{busy?"Salvando…":"Confirmar redefinição"}</button>{" "}
+      <button className="ic-client-password-secondary" disabled={busy} type="button" onClick={()=>{setPassword("");setConfirmation("");setOpen(false);}}>Cancelar</button>
     </form>}
-    {message && <p role="status">{message}</p>}
+    {message && <p className="ic-client-password-message" role="status">{message}</p>}
   </section>;
 }

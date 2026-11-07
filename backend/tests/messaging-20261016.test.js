@@ -98,7 +98,7 @@ function onboardingHarness({duplicate=false,phone="400",coexistence=false,approv
     calls.push({url,options});let data;
     if(url.includes("oauth/access_token"))data={access_token:"private-access"};
     else if(url.includes("debug_token"))data={data:{is_valid:true,app_id:"100",scopes:["whatsapp_business_management","whatsapp_business_messaging"]}};
-    else if(url.includes("phone_numbers"))data={data:[{id:phone,display_phone_number:"+55 81 99999-0000"}]};
+    else if(url.includes("phone_numbers"))data={data:[{id:phone,display_phone_number:"+55 81 99999-0000",is_on_biz_app:coexistence,platform_type:"CLOUD_API"}]};
     else if(url.includes("message_templates?")&&approved)data={data:[template]};
     else if(url.includes("message_templates?"))data={data:[]};
     else if(url.endsWith("/message_templates"))data={id:"template-id",status:"PENDING"};

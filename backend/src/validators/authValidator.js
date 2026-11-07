@@ -188,8 +188,8 @@ export const confirmPasswordResetSchema = z.object({
   portalType: portalTypeSchema,
   email: z.string().trim().email("Informe um e-mail válido.").max(200).transform(v => v.toLowerCase()),
   code: z.string().trim().regex(/^\d{6}$/, "Informe o código de 6 dígitos."),
-  newPassword: z.string().min(12, "A nova senha deve possuir pelo menos 12 caracteres.").max(128),
-  newPasswordConfirmation: z.string().min(1),
+  newPassword: z.string().min(12, "A nova senha deve possuir pelo menos 12 caracteres.").max(128, "A nova senha deve possuir no máximo 128 caracteres."),
+  newPasswordConfirmation: z.string().min(1, "Confirme a nova senha.").max(128, "A confirmação deve possuir no máximo 128 caracteres."),
 }).strict().superRefine((data, ctx) => {
   if (data.newPassword !== data.newPasswordConfirmation) ctx.addIssue({ code: z.ZodIssueCode.custom, path:["newPasswordConfirmation"], message:"A confirmação da nova senha não corresponde." });
 });

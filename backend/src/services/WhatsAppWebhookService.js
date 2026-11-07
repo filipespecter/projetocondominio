@@ -119,7 +119,8 @@ class WhatsAppWebhookService {
                   {}),
                 whatsappWebhook:
                   event.raw,
-              }
+              },
+              true
             );
       }
 
