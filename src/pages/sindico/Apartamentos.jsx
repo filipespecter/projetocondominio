@@ -1,9 +1,13 @@
+import { FiHome, FiPlus, FiSettings, FiCheckCircle, FiUsers, FiTool, FiSearch, FiUser, FiEdit2, FiMoreHorizontal, FiPieChart } from "react-icons/fi";
+import "./GestaoVisual.css";
+import "./EncomendasReferencia.css";
+import "../../components/UnitDirectory.css";
 import CondominiumStructure from "../../components/CondominiumStructure.jsx";
 import api from "../../Services/api.js";
 import { confirmDialog } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useState } from "react";
 import apartmentApi from "../../Services/apartmentApi";
-import residentApi from "../../Services/residentApi";
+import { Link } from "react-router-dom";
 
 function limparNumero(valor) {
   return String(valor ?? "")
@@ -24,7 +28,6 @@ function Apartamentos() {
   };
 
   const [apartamentos, setApartamentos] = useState([]);
-  const [moradores, setMoradores] = useState([]);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("Todos");
@@ -67,30 +70,7 @@ function Apartamentos() {
     };
   }
 
-  function mapResident(r) {
-    return {
-      ...r,
-      nome: r.user?.name ?? r.name ?? r.nome ?? "",
-      apartamentoId: r.apartmentId ?? r.apartment?.id ?? null,
-      apartamento: r.apartment?.number ?? "",
-      apto: r.apartment?.number ?? "",
-      moradorPrincipal: Boolean(r.isPrimary)
-    };
-  }
-
-  async function carregar() {
-    try {
-      const [aps, residents] = await Promise.all([
-        apartmentApi.list(),
-        residentApi.list()
-      ]);
-      setApartamentos((aps ?? []).map(mapApartment));
-      setMoradores((residents ?? []).map(mapResident));
-    } catch (error) {
-      alert(error?.message ?? "Não foi possível carregar apartamentos.");
-    }
-  }
-
+  async function carregar() { try {setApartamentos((await apartmentApi.list()??[]).map(mapApartment));} catch(error){alert(error.message);} }
   useEffect(() => { carregar(); }, []);
 
   const apartamentosFiltrados = apartamentos.filter((ap) => {
@@ -104,35 +84,6 @@ function Apartamentos() {
       ap.status?.toLowerCase().includes(texto);
     return correspondeBusca && (filtroStatus === "Todos" || ap.status === filtroStatus);
   });
-
-  function selecionarMorador(moradorId) {
-    const morador = moradores.find((m) => String(m.id) === String(moradorId));
-    if (!morador) return;
-    setNovoAp((prev) => ({
-      ...prev,
-      moradoresIds: [...new Set([...(prev.moradoresIds || []), morador.id])],
-      moradoresNomes: [...new Set([...(prev.moradoresNomes || []), morador.nome])],
-      morador: prev.morador || morador.nome,
-      moradorPrincipalId: prev.moradorPrincipalId || morador.id,
-      moradorPrincipalNome: prev.moradorPrincipalNome || morador.nome
-    }));
-  }
-
-  function removerMoradorVinculado(moradorId) {
-    const morador = moradores.find((m) => String(m.id) === String(moradorId));
-    setNovoAp((prev) => {
-      const ids = (prev.moradoresIds || []).filter((id) => String(id) !== String(moradorId));
-      const nomes = (prev.moradoresNomes || []).filter((nome) => nome !== morador?.nome);
-      return {
-        ...prev,
-        moradoresIds: ids,
-        moradoresNomes: nomes,
-        moradorPrincipalId: String(prev.moradorPrincipalId) === String(moradorId) ? null : prev.moradorPrincipalId,
-        moradorPrincipalNome: String(prev.moradorPrincipalId) === String(moradorId) ? "" : prev.moradorPrincipalNome,
-        morador: nomes[0] || ""
-      };
-    });
-  }
 
   function validarApartamento() {
     if (!novoAp.bloco.trim() || !novoAp.numero.trim() || String(novoAp.andar).trim() === "") {
@@ -183,42 +134,6 @@ function Apartamentos() {
     setNovoAp(estadoInicialApartamento);
   }
 
-  function corStatus(status) {
-    switch (status) {
-      case "Ocupado":
-        return {
-          background: "var(--ic-primary-soft-2)",
-          color: "var(--ic-primary-strong)",
-          border: "var(--ic-primary-border-soft)",
-          icon: "👥"
-        };
-
-      case "Disponível":
-        return {
-          background: "var(--ic-primary-soft)",
-          color: "var(--ic-primary)",
-          border: "var(--ic-primary-border-soft)",
-          icon: "✅"
-        };
-
-      case "Manutenção":
-        return {
-          background: "#fee2e2",
-          color: "#dc2626",
-          border: "#fecaca",
-          icon: "🛠️"
-        };
-
-      default:
-        return {
-          background: "var(--ic-primary-soft-4)",
-          color: "#374151",
-          border: "var(--ic-primary-border-soft)",
-          icon: "🏢"
-        };
-    }
-  }
-
   const totalDisponiveis = apartamentos.filter(
     (a) => a.status === "Disponível"
   ).length;
@@ -231,365 +146,32 @@ function Apartamentos() {
     (a) => a.status === "Manutenção"
   ).length;
 
-  const blocosUnicos = [
-    ...new Set(
-      apartamentos
-        .map((ap) => ap.bloco)
-        .filter(Boolean)
-    )
-  ];
-
-  const andaresUnicos = [
-    ...new Set(
-      apartamentos
-        .map((ap) => ap.andar)
-        .filter(Boolean)
-    )
-  ];
-
   const taxaOcupacao = capacidade ? (totalOcupados / capacidade * 100).toFixed(1) : null;
 
   return (
-    <div style={styles.container}>
+    <div className="ic-pkg-reference ic-gestao-visual">
+      <header className="ic-pkg-hero"><div className="ic-pkg-heading"><span className="ic-pkg-icon"><FiHome/></span><div><h1>Apartamentos</h1><p>Gerencie as unidades e a ocupação do condomínio.</p></div></div><div className="ic-pkg-actions"><button type="button" onClick={()=>setAbrirEstrutura(v=>v+1)}><FiSettings/> Configurar estrutura</button><button type="button" onClick={()=>{if(!capacidade)return alert("Configure primeiro a estrutura do condomínio.");setEditId(null);setNovoAp(estadoInicialApartamento);setMostrarModal(true);}}><FiPlus/> Novo apartamento</button></div></header>
       <CondominiumStructure requestOpen={abrirEstrutura} onChange={d=>{setCapacidade(d.metrics.total);carregar();}}/>
-      <div style={styles.hero}>
-        <div style={styles.heroContent}>
-          <span style={styles.heroBadge}>
-            🏢 Dashboard Principal
-          </span>
-
-          <h1 style={styles.title}>
-            Gestão de Apartamentos
-          </h1>
-
-          <p style={styles.subtitle}>
-            Controle premium das unidades reais cadastradas pelo síndico.
-            Cada apartamento registrado aqui alimenta automaticamente moradores,
-            reservas, portaria, encomendas e relatórios.
-          </p>
-
-          <div style={styles.heroChips}>
-            <span style={styles.heroChip}>
-              {blocosUnicos.length} bloco(s)
-            </span>
-
-            <span style={styles.heroChip}>
-              {andaresUnicos.length} andar(es)
-            </span>
-
-            <span style={styles.heroChip}>
-              {taxaOcupacao == null ? "Configure a estrutura" : `${taxaOcupacao}%`} ocupação
-            </span>
-          </div>
-        </div>
-
-        <div style={styles.heroPanel}>
-          <div style={styles.heroPanelIcon}>
-            🏢
-          </div>
-
-          <p style={styles.heroLabel}>
-            Unidades cadastradas
-          </p>
-
-          <h3 style={styles.heroNumber}>
-            {apartamentos.length}
-          </h3>
-
-          <span style={styles.heroStatus}>
-            base real do sistema
-          </span>
-        </div>
+      <div className="ic-gestao-metrics ic-gestao-metrics-four"><div><span className="ic-pkg-icon"><FiHome/></span><div><strong>{apartamentos.length}</strong><span>Total de unidades</span></div></div><div><span className="ic-pkg-icon"><FiCheckCircle/></span><div><strong>{totalDisponiveis}</strong><span>Disponíveis</span></div></div><div><span className="ic-pkg-icon"><FiUsers/></span><div><strong>{totalOcupados}</strong><span>Ocupadas</span></div></div><div><span className="ic-pkg-icon"><FiTool/></span><div><strong>{totalManutencao}</strong><span>Em manutenção</span></div></div></div>
+      <div className="ic-gestao-searchbar">
+        <label className="ic-pkg-search"><FiSearch/><input aria-label="Buscar" placeholder="Buscar por bloco, número, andar ou morador..." value={busca} onChange={e=>setBusca(e.target.value)}/></label>
+        <select aria-label="Status" value={filtroStatus} onChange={e=>setFiltroStatus(e.target.value)}><option value="Todos">Todos os status</option>{Object.keys(statusBack).map(t=><option key={t}>{t}</option>)}</select>
       </div>
-
-      <div style={styles.commandBar}>
-        <div style={styles.searchBox}>
-          <input
-            placeholder="Buscar por bloco, número, andar, morador ou status..."
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            style={styles.search}
-          />
-
-          <select
-            value={filtroStatus}
-            onChange={(e) => setFiltroStatus(e.target.value)}
-            style={styles.filter}
-          >
-            <option>Todos</option>
-            <option>Não informado</option><option>Ocupado</option>
-            <option>Disponível</option>
-            <option>Manutenção</option>
-          </select>
-        </div>
-
-        <button
-          style={styles.button}
-          onClick={() => {
-            if (!capacidade) return alert("Configure primeiro a estrutura do condomínio.");
-            setEditId(null);
-            setNovoAp(estadoInicialApartamento);
-            setMostrarModal(true);
-          }}
-        >
-          <span style={styles.buttonIcon}>＋</span>
-          Novo apartamento
-        </button>
-      </div>
-
-      <div style={styles.resumeGrid}>
-        <div style={styles.cardPrimary}>
-          <div>
-            <p style={styles.cardLabelLight}>
-              Total de unidades
-            </p>
-
-            <h2 style={styles.cardNumberLight}>
-              {apartamentos.length}
-            </h2>
-
-            <span style={styles.cardHintLight}>
-              cadastradas pelo síndico
-            </span>
-          </div>
-
-          <div style={styles.cardIconLight}>
-            🏢
-          </div>
-        </div>
-
-        <div style={styles.resumeCard}>
-          <div style={styles.cardIconGreen}>
-            ✅
-          </div>
-
-          <div>
-            <p style={styles.resumeLabel}>
-              Disponíveis
-            </p>
-
-            <h2 style={styles.resumeNumberGreen}>
-              {totalDisponiveis}
-            </h2>
-          </div>
-        </div>
-
-        <div style={styles.resumeCard}>
-          <div style={styles.cardIconBlue}>
-            👥
-          </div>
-
-          <div>
-            <p style={styles.resumeLabel}>
-              Ocupados
-            </p>
-
-            <h2 style={styles.resumeNumberBlue}>
-              {totalOcupados}
-            </h2>
-          </div>
-        </div>
-
-        <div style={styles.resumeCard}>
-          <div style={styles.cardIconRed}>
-            🛠️
-          </div>
-
-          <div>
-            <p style={styles.resumeLabel}>
-              Manutenção
-            </p>
-
-            <h2 style={styles.resumeNumberRed}>
-              {totalManutencao}
-            </h2>
-          </div>
-        </div>
-      </div>
-
-      <div style={styles.premiumGrid}>
-        <div style={styles.apartmentsPanel}>
-          <div style={styles.tableHeader}>
-            <div>
-              <span style={styles.sectionMini}>
-                Unidades
-              </span>
-
-              <h2 style={styles.sectionTitle}>
-                Mapa residencial cadastrado
-              </h2>
-
-              <p style={styles.sectionSubtitle}>
-                Visualização executiva dos apartamentos reais do condomínio.
-              </p>
-            </div>
-
-            <span style={styles.sectionBadge}>
-              {apartamentosFiltrados.length} resultado(s)
-            </span>
-          </div>
-
-          {apartamentosFiltrados.length === 0 ? (
-            <div style={styles.empty}>
-              <div style={styles.emptyIcon}>
-                🏢
-              </div>
-
-              <h3 style={styles.emptyTitle}>
-                Nenhum apartamento encontrado
-              </h3>
-
-              <p style={styles.emptyText}>
-                Cadastre a primeira unidade real para ela aparecer nos módulos integrados.
-              </p>
-
-              <button
-                style={styles.emptyButton}
-                onClick={() => {
-                  if (!capacidade) return alert("Configure primeiro a estrutura do condomínio.");
-                  setEditId(null);
-                  setNovoAp(estadoInicialApartamento);
-                  setMostrarModal(true);
-                }}
-              >
-                Cadastrar primeira unidade
-              </button>
-            </div>
-          ) : (
-            <div style={styles.grid}>
-              {apartamentosFiltrados.map((ap) => {
-                const status = corStatus(ap.status);
-
-                return (
-                  <div
-                    key={ap.id}
-                    style={{
-                      ...styles.apCard,
-                      border: `1px solid ${status.border}`
-                    }}
-                  >
-                    <div style={styles.cardGlow}></div>
-
-                    <div style={styles.apCardTop}>
-                      <div style={styles.apIcon}>
-                        🏢
-                      </div>
-
-                      <span
-                        style={{
-                          ...styles.statusBadge,
-                          background: status.background,
-                          color: status.color
-                        }}
-                      >
-                        {status.icon} {ap.status}
-                      </span>
-                    </div>
-
-                    <div style={styles.apIdentity}>
-                      <span style={styles.apLabel}>
-                        Unidade
-                      </span>
-
-                      <h3 style={styles.apTitle}>
-                        Bloco {ap.bloco} • Apto {ap.numero}
-                      </h3>
-                    </div>
-
-                    <div style={styles.infoGrid}>
-                      <div style={styles.infoItem}>
-                        <span style={styles.infoLabel}>
-                          Andar
-                        </span>
-
-                        <strong>
-                          {ap.andar}
-                        </strong>
-                      </div>
-
-                      <div style={styles.infoItem}>
-                        <span style={styles.infoLabel}>
-                          Morador principal
-                        </span>
-
-                        <strong>
-                          {ap.moradorPrincipalNome || ap.morador || "Sem principal"}
-                        </strong>
-                      </div>
-
-                      <div style={styles.infoItem}>
-                        <span style={styles.infoLabel}>
-                          Moradores vinculados
-                        </span>
-
-                        <strong>
-                          {ap.moradoresNomes?.length > 0
-                            ? ap.moradoresNomes.join(", ")
-                            : ap.morador || "Sem morador"}
-                        </strong>
-                      </div>
-                    </div>
-
-                    <div style={styles.integrationBox}>
-                      <span>
-                        🔗 Integração
-                      </span>
-
-                      <p>
-                        Esta unidade pode aparecer em portaria, reservas,
-                        moradores e relatórios.
-                      </p>
-                    </div>
-
-                    <div style={styles.cardFooter}>
-                      <button
-                        style={styles.editButton}
-                        onClick={() => editarApartamento(ap)}
-                      >
-                        Editar unidade
-                      </button>
-
-                      <button
-                        style={styles.deleteButton}
-                        onClick={() => excluirApartamento(ap.id)}
-                      >
-                        Excluir
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div style={styles.sidePanel}>
-          <div style={styles.sideCardDark}>
-            <span style={styles.sideBadge}>
-              Visão premium
-            </span>
-
-            <h2 style={styles.sideTitle}>
-              Ocupação geral
-            </h2>
-
-            <div style={{...styles.progressCircle,background:capacidade?`conic-gradient(#c4b5fd ${Math.min(100,Number(taxaOcupacao))*3.6}deg, rgba(255,255,255,.12) 0deg)`:"rgba(255,255,255,.12)"}}>
-              {taxaOcupacao == null ? "—" : `${taxaOcupacao}%`}
-            </div>
-            <button type="button" style={styles.editButton} onClick={()=>setAbrirEstrutura(v=>v+1)}>{capacidade?"Editar estrutura":"Configurar estrutura"}</button>
-
-            <p style={styles.sideText}>
-              {capacidade ? `${totalOcupados} unidades ocupadas de ${capacidade} previstas. Cadastrar uma unidade não significa que ela está ocupada.` : "Informe blocos, andares e apartamentos para calcular a ocupação real."}
-            </p>
-          </div>
-
-        </div>
-      </div>
+      <section className="ic-gestao-list">
+        <h2 className="ic-pkg-section-title"><FiHome/> Unidades cadastradas</h2>
+        <div className="ic-pkg-unit-grid">{apartamentosFiltrados.map(ap=><article key={ap.id} className="ic-pkg-unit">
+          <div className="ic-pkg-unit-head"><span className="ic-pkg-icon"><FiHome/></span><div><h3>Apartamento {ap.numero}</h3><p>{ap.bloco?`Bloco ${ap.bloco}`:"Sem bloco"} · Andar {ap.andar||"—"}</p></div><span className="ic-pkg-tag" data-tone={ap.status==="Ocupado"?"green":undefined}>{ap.status}</span></div>
+          <p className="ic-pkg-received"><FiUser/> {ap.morador||"Sem morador principal"}{ap.moradoresNomes.length>1?` · ${ap.moradoresNomes.length} vinculados`:""}</p>
+          <div className="ic-pkg-row-actions"><button type="button" className="ic-pkg-primary" onClick={()=>editarApartamento(ap)}><FiEdit2/> Editar unidade</button><details className="ic-pkg-action-menu"><summary aria-label="Mais ações"><FiMoreHorizontal/></summary><div><small>Moradores: {ap.moradoresNomes.join(", ")||"—"}</small><button type="button" onClick={()=>excluirApartamento(ap.id)}>Excluir</button></div></details></div>
+        </article>)}</div>
+        {!apartamentosFiltrados.length&&<p className="ic-pkg-empty">Nenhuma unidade encontrada.</p>}
+      </section>
+      <section className="ic-gestao-occupation"><FiPieChart/><div><strong>Ocupação geral · {taxaOcupacao==null?"—":`${taxaOcupacao}%`}</strong><p>{capacidade?`${totalOcupados} unidades ocupadas de ${capacidade} previstas.`:"Configure a estrutura para calcular a ocupação real."}</p></div></section>
 
       {mostrarModal && (
         <div style={styles.modalBackground}>
-          <div style={styles.modal}>
-            <div style={styles.modalHero}>
+          <div style={styles.modal} className="ic-apartment-modal ic-apartment-reference">
+            <div style={styles.modalHero} className="ic-apartment-reference-hero">
               <div>
                 <span style={styles.modalBadge}>
                   {editId !== null ? "Editar unidade" : "Nova unidade"}
@@ -608,13 +190,14 @@ function Apartamentos() {
 
               <button
                 style={styles.closeButton}
+                aria-label="Fechar formulário"
                 onClick={fecharModal}
               >
                 ✕
               </button>
             </div>
 
-            <div style={styles.formPanel}>
+            <div style={styles.formPanel} className="ic-apartment-form">
               <div style={styles.formRow}>
                 <label style={styles.label}>
                   Bloco
@@ -672,58 +255,11 @@ function Apartamentos() {
                 />
               </div>
 
-              <div style={styles.formRow}>
-                <label style={styles.label}>
-                  Morador
-                </label>
-
-                <select
-                  value=""
-                  onChange={(e) => selecionarMorador(e.target.value)}
-                  style={styles.input}
-                >
-                  <option value="">
-                    Adicionar morador
-                  </option>
-
-                  {moradores.map((morador) => (
-                    <option key={morador.id} value={morador.id}>
-                      {morador.nome} - Apto{" "}
-                      {morador.apartamento || morador.apto || "-"} -{" "}
-                      {morador.tipoMorador || "Morador"}
-                      {morador.moradorPrincipal ? " - Principal" : ""}
-                    </option>
-                  ))}
-                </select>
-
-                {(novoAp.moradoresIds || []).length > 0 && (
-                  <div style={styles.linkedResidents}>
-                    {(novoAp.moradoresIds || []).map((moradorId) => {
-                      const morador = moradores.find(
-                        (m) => String(m.id) === String(moradorId)
-                      );
-
-                      if (!morador) return null;
-
-                      return (
-                        <span key={moradorId} style={styles.linkedResident}>
-                          {morador.nome}
-                          {morador.moradorPrincipal ? " ★" : ""}
-                          <button
-                            type="button"
-                            style={styles.removeResidentButton}
-                            onClick={() => removerMoradorVinculado(moradorId)}
-                          >
-                            ×
-                          </button>
-                        </span>
-                      );
-                    })}
-                  </div>
-                )}
+              <div style={styles.formRow}><strong>Moradores desta unidade</strong>
+                {(novoAp.residents??[]).map(r=><small key={r.id}>{r.user?.name} · {({OWNER:"Proprietário",TENANT:"Inquilino",DEPENDENT:"Dependente",OTHER:"Outro"})[r.residentType]}{r.isPrimary?" · 1º responsável":r.isSecondary?" · 2º responsável":""}</small>)}
+                {editId?<Link className="ic-pkg-outline" to={`/dashboard/moradores?apartamento=${encodeURIComponent(editId)}`}>Gerenciar moradores desta unidade</Link>:<small>Salve a unidade antes de cadastrar moradores.</small>}
               </div>
-
-              <div style={styles.formRow}>
+              <div style={styles.formRow} className="ic-apartment-reference-status">
                 <label style={styles.label}>
                   Status
                 </label>
@@ -745,7 +281,7 @@ function Apartamentos() {
               </div>
             </div>
 
-            <div style={styles.modalButtons}>
+            <div style={styles.modalButtons} className="ic-apartment-reference-actions">
               <button
                 style={styles.saveButton}
                 onClick={salvarApartamento}

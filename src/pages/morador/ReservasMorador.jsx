@@ -1,3 +1,4 @@
+import api from "../../Services/api.js";
 import { confirmDialog } from "../../components/GlobalDialogs.jsx";
 import {
   useEffect,
@@ -47,6 +48,7 @@ function ReservasMorador() {
       "pendente",
     APPROVED:
       "aprovada",
+    DENIED: "recusada",
     REJECTED:
       "recusada",
     CANCELED:
@@ -109,6 +111,15 @@ function ReservasMorador() {
     };
   }
 
+  const [availability,setAvailability]=useState(null);
+  useEffect(()=>{
+    if(!area||!data)return;
+    let active=true;
+    const query=new URLSearchParams({areaId:area,day:data});
+    const refresh=()=>api.get(`/v1/reservations/availability?${query}`).then(r=>{if(active)setAvailability({area,data,slots:r.data});}).catch(()=>{if(active)setAvailability({area,data,error:true});});
+    refresh();const timer=setInterval(refresh,15000);return()=>{active=false;clearInterval(timer);};
+  },[area,data]);
+  const schedule=availability?.area===area&&availability?.data===data?availability:null;
   async function carregar() {
     try {
       const [
@@ -183,8 +194,7 @@ function ReservasMorador() {
     const areaSelecionada =
       areasComuns.find(
         (item) =>
-          item.nome ===
-          area
+          item.id === area
       );
 
     if (
@@ -553,7 +563,7 @@ function ReservasMorador() {
             {opcoesAreas.map((item) => (
               <option
                 key={item.id || item.nome}
-                value={item.nome || item.area || item.titulo}
+                value={item.id}
               >
                 {item.nome || item.area || item.titulo}
               </option>
@@ -609,6 +619,9 @@ function ReservasMorador() {
             Observação
           </label>
 
+          {area&&data&&<section style={{gridColumn:"1/-1"}} aria-live="polite"><strong>Horários em {data.split("-").reverse().join("/")}</strong>
+          {schedule?.error?<p>Não foi possível consultar a disponibilidade.</p>:schedule?.slots?.length?<ul>{schedule.slots.map(slot=><li key={slot.startTime}>{slot.startTime}–{slot.endTime} · {slot.status==="APPROVED"?"Reservado":"Em análise"}</li>)}</ul>:<p>{schedule?"Nenhum horário reservado ou em análise.":"Consultando horários…"}</p>}
+          <small>Solicitações pendentes expiram em 24 horas ou no início do horário, o que ocorrer primeiro.</small></section>}
           <textarea
             placeholder="Ex: reserva para aniversário, reunião familiar..."
             value={observacao}

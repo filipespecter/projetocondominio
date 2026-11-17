@@ -1,3 +1,7 @@
+import prisma from "../config/prisma.js";
+import { z } from "zod";
+import { ApiError } from "../utils/ApiError.js";
+import { expirePendingReservations } from "../services/ReservationExpiryService.js";
 import { Router } from "express";
 
 import ReservationController from "../controllers/ReservationController.js";
@@ -44,6 +48,20 @@ const reservationUsers =
     "RESIDENT"
   );
 
+reservationRoutes.use(async(req,_res,next)=>{
+  try{if(req.user?.condominiumId&&["RESIDENT","CONDOMINIUM_ADMIN","MANAGER"].includes(req.user.role)&&(req.method==="POST"||req.path==="/availability"||req.path.endsWith("/approve")))await expirePendingReservations(req.user.condominiumId);next();}catch(e){next(e);}
+});
+reservationRoutes.get("/availability",reservationUsers,async(req,res,next)=>{
+  try{
+    const condominiumId=req.user.condominiumId;
+    const result=z.object({areaId:z.string().uuid(),day:z.string().regex(/^\d{4}-\d{2}-\d{2}$/)}).strict().safeParse(req.query);
+    if(!condominiumId||!result.success)throw new ApiError("Informe área e data válidas.",422);
+    const {areaId,day}=result.data,date=new Date(day+"T00:00:00Z");
+    if(!Number.isFinite(+date)||date.toISOString().slice(0,10)!==day)throw new ApiError("Data inválida.",422);
+    const data=await prisma.reservation.findMany({where:{condominiumId,commonAreaId:areaId,reservationDate:date,deletedAt:null,status:{in:["PENDING","APPROVED"]}},select:{startTime:true,endTime:true,status:true},orderBy:{startTime:"asc"}});
+    res.set("Cache-Control","no-store").json({success:true,data});
+  }catch(e){next(e);}
+});
 /**
  * GET /api/v1/reservations/statistics
  *

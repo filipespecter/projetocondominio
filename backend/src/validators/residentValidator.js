@@ -294,6 +294,7 @@ export const createResidentSchema = z
         .optional()
         .default("OWNER"),
 
+    isSecondary: z.boolean().optional(),
     isPrimary: z
       .boolean()
       .optional()
@@ -366,6 +367,7 @@ export const updateResidentSchema = z
     residentType:
       residentTypeSchema.optional(),
 
+    isSecondary: z.boolean().optional(),
     isPrimary:
       z.boolean().optional(),
 

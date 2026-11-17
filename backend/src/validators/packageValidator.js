@@ -386,6 +386,7 @@ export const confirmPickupSchema =
 
       deliveryProofImageDataUrl:
         z.string().max(1200000).optional().nullable(),
+      pickupNote: optionalText(400, "A observação da retirada"),
     })
     .strict();
 

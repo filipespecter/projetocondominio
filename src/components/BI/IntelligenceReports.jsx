@@ -188,6 +188,7 @@ export default function IntelligenceReports() {
   const [boot, setBoot] = useState(null),
     [config, setConfig] = useState(defaults),
     [preview, setPreview] = useState(null),
+    [previewKey, setPreviewKey] = useState(null),
     [document, setDocument] = useState(null),
     [busy, setBusy] = useState(false),
     [exporting, setExporting] = useState(false),
@@ -208,6 +209,7 @@ export default function IntelligenceReports() {
   useEffect(()=>{let mounted=true;const refreshHistory=()=>api.get("/v1/management-reports/workspace/history").then(r=>{if(mounted)setHistory(r.data);}).catch(()=>{});window.addEventListener("infinitycondo:report-issued",refreshHistory);return ()=>{mounted=false;window.removeEventListener("infinitycondo:report-issued",refreshHistory);};},[]);
   const load = useCallback(async (selection) => {
     const request = ++sequence.current;
+    const requestedKey=key(selection);
     setBusy(true);
     setError("");
     setMessage("");
@@ -219,6 +221,7 @@ export default function IntelligenceReports() {
       const prepared = await prepareReportDocument(response.data.model);
       if (alive.current && request === sequence.current) {
         setPreview(response.data);
+        setPreviewKey(requestedKey);
         setDocument(prepared);
         setPage(0);
       }
@@ -290,7 +293,7 @@ export default function IntelligenceReports() {
     });
   const dirty =
     !!preview &&
-    key(config) !== key({ ...defaults(), ...preview.model.config });
+    key(config) !== previewKey;
   const selectedGroups = allowed(config, boot),
     groups = boot?.groups.filter(([id]) => selectedGroups.includes(id)) || [];
   async function savePreset() {
@@ -786,7 +789,7 @@ export default function IntelligenceReports() {
               </p>
             </div>
           </div>
-          {dirty && (
+          {dirty && !error && !busy && (
             <p className="ic-rw-status" role="status">
               Seleção alterada. Atualize a prévia para liberar a exportação.
             </p>

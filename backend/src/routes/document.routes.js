@@ -5,7 +5,7 @@ import { validateCreateDocument, validateDocumentId, validateDocumentList, valid
 
 const routes = Router();
 routes.use(authMiddleware);
-const readers = authorizeRoles("CONDOMINIUM_ADMIN", "MANAGER", "RESIDENT", "DOORMAN");
+const readers = authorizeRoles("CONDOMINIUM_ADMIN", "MANAGER", "DOORMAN");
 const managers = authorizeRoles("CONDOMINIUM_ADMIN", "MANAGER");
 
 routes.get("/", readers, validateDocumentList, (req,res,next) => DocumentController.index(req,res,next));

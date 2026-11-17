@@ -1,3 +1,4 @@
+import dualNotice from "../services/DualChannelPackageNoticeService.js";
 import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 const noticeLimiter=rateLimit({windowMs:60000,limit:60,standardHeaders:true,legacyHeaders:false});
@@ -61,6 +62,9 @@ const administrativeRoles =
     "CONDOMINIUM_ADMIN",
     "MANAGER"
   );
+packageRoutes.get("/:id/notice-v2/history", operationalRoles, async(req,res,next)=>{try{res.set("Cache-Control","no-store").json({success:true,data:await dualNotice.history(req.user,req.params.id)});}catch(e){next(e);}});
+packageRoutes.get("/:id/notice-v2/preview", operationalRoles, async(req,res,next)=>{try{res.set("Cache-Control","no-store").json({success:true,data:await dualNotice.preview(req.user,req.params.id)});}catch(e){next(e);}});
+packageRoutes.post("/:id/notice-v2/confirm", operationalRoles, requireTrustedOrigin, noticeLimiter, async(req,res,next)=>{try{res.json({success:true,data:await dualNotice.confirm(req.user,req.params.id,req.body)});}catch(e){next(e);}});
 packageRoutes.get("/:id/notice-preview", operationalRoles, async(req,res,next)=>{try{res.set("Cache-Control","no-store").json({success:true,data:await previewNotice(req.user,req.params.id)});}catch(e){next(e);}});
 packageRoutes.post("/:id/notice-confirm", operationalRoles, requireTrustedOrigin, noticeLimiter, async(req,res,next)=>{try{res.json({success:true,data:await confirmNotice(req.user,req.params.id,req.body)});}catch(e){next(e);}});
 

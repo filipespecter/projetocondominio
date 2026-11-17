@@ -1,3 +1,4 @@
+import { useSearchParams } from "react-router-dom";
 import { confirmDialog, promptDialog } from "../../components/GlobalDialogs.jsx";
 import {
   useEffect,
@@ -27,6 +28,8 @@ function Reservas() {
     status: "pendente",
   };
 
+  const [params,setParams]=useSearchParams();
+  const areaFiltrada=params.get("area");
   const [reservas, setReservas] =
     useState([]);
 
@@ -58,6 +61,7 @@ function Reservas() {
       "pendente",
     APPROVED:
       "aprovada",
+    DENIED: "recusada",
     REJECTED:
       "recusada",
     CANCELED:
@@ -260,7 +264,7 @@ function Reservas() {
             .includes(texto);
 
         return (
-          match &&
+          (!areaFiltrada || reserva.areaId===areaFiltrada) && match &&
           (
             filtroStatus ===
               "Todos" ||
@@ -638,6 +642,7 @@ function Reservas() {
 
   return (
     <div style={styles.container}>
+      {areaFiltrada&&<p>Reservas de {areasComuns.find(a=>a.id===areaFiltrada)?.nome??"uma área"} <button type="button" onClick={()=>{const next=new URLSearchParams(params);next.delete("area");setParams(next);}}>Mostrar todas as áreas</button></p>}
       <section style={styles.hero}>
         <div style={styles.heroLeft}>
           <span style={styles.heroBadge}>

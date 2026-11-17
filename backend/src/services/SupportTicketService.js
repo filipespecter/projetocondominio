@@ -1,3 +1,4 @@
+import { billingDate, createCycleCharge, currentBillingSubscription } from "./SubscriptionBillingService.js";
 import prisma from "../config/prisma.js";
 import { ApiError } from "../utils/ApiError.js";
 
@@ -36,6 +37,7 @@ class SupportTicketService {
     if (title.length < 4) throw new ApiError("Informe um título com pelo menos 4 caracteres.", 400);
     if (description.length < 10) throw new ApiError("Descreva a solicitação com pelo menos 10 caracteres.", 400);
     const classification = classify({ title, description, category: payload?.category });
+    if (classification.category === "PAGAMENTO_ANTECIPADO") throw new ApiError("Use Financeiro → Assinatura para solicitar antecipação.",422);
     return prisma.supportTicket.create({
       data: {
         condominiumId: user.condominiumId,
@@ -118,7 +120,11 @@ class SupportTicketService {
       data.priority = priority;
     }
 
-    if (payload.category) data.category = String(payload.category).trim();
+    if (payload.category) {
+      const category=String(payload.category).trim();
+      if ((category==="PAGAMENTO_ANTECIPADO") !== (current.category==="PAGAMENTO_ANTECIPADO")) throw new ApiError("Categoria de antecipação não pode ser alterada.",422);
+      data.category=category;
+    }
     if (payload.assignToMe) data.assignedToUserId = platformUser.id;
 
     const now = new Date();
@@ -153,6 +159,26 @@ class SupportTicketService {
     if (["OPEN", "IN_PROGRESS", "WAITING_CUSTOMER"].includes(data.status)) {
       data.resolvedAt = null;
       data.closedAt = null;
+    }
+
+    if (payload.approveAdvance === true) {
+      if (!["PLATFORM_OWNER","PLATFORM_ADMIN"].includes(platformUser.role)) throw new ApiError("Aprovação reservada à gestão da plataforma.",403);
+      if (data.status !== "RESOLVED" || current.category !== "PAGAMENTO_ANTECIPADO" || current.metadata?.kind !== "SUBSCRIPTION_ADVANCE") {
+        throw new ApiError("Esta solicitação não possui uma antecipação vinculada ao ciclo.",422);
+      }
+      return prisma.$transaction(async tx=>{
+        await tx.$queryRaw`SELECT id FROM "Condominium" WHERE id=${current.condominiumId}::uuid FOR UPDATE`;
+        await tx.$queryRaw`SELECT id FROM "SupportTicket" WHERE id=${id}::uuid FOR UPDATE`;
+        const ticket=await tx.supportTicket.findUnique({where:{id}});
+        if (!ticket || !OPEN_STATUSES.includes(ticket.status) || ticket.metadata?.kind !== "SUBSCRIPTION_ADVANCE") throw new ApiError("Solicitação já tratada.",409);
+        const subscription=await currentBillingSubscription(tx,current.condominiumId);
+        if (!subscription || subscription.id !== ticket.metadata.subscriptionId ||
+          billingDate(subscription).toISOString().slice(0,10) !== ticket.metadata.dueDate) {
+          throw new ApiError("O ciclo da assinatura mudou. Confira se a cobrança já está disponível.",409);
+        }
+        const {charge}=await createCycleCharge(tx,subscription,billingDate(subscription),platformUser);
+        return tx.supportTicket.update({where:{id},data:{...data,metadata:{...ticket.metadata,approvedChargeId:charge.id}}});
+      });
     }
 
     return prisma.supportTicket.update({

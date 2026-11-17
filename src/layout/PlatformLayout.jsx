@@ -10,22 +10,7 @@ import {
   useNavigate,
 } from "react-router-dom";
 
-import {
-  FaChartLine,
-  FaBuilding,
-  FaUsers,
-  FaAddressBook,
-  FaTags,
-  FaFileInvoiceDollar,
-  FaClipboardList,
-  FaServer,
-  FaHeadset,
-  FaTasks,
-  FaSignOutAlt,
-  FaShieldAlt,
-  FaBars,
-  FaTimes,
-} from "react-icons/fa";
+import { FiTrendingUp, FiGrid, FiUsers, FiUser, FiTag, FiDollarSign, FiClipboard, FiServer, FiHeadphones, FiList, FiLogOut, FiShield, FiMenu, FiX } from "react-icons/fi";
 
 import logoStar from "../assets/images/logo-star-infinity.png";
 import authApi from "../Services/authApi.js";
@@ -33,7 +18,7 @@ import authApi from "../Services/authApi.js";
 const menu = [
   {
     label: "Dashboard",
-    icon: <FaChartLine />,
+    icon: <FiTrendingUp />,
     to: "/platform",
     enabled: true,
     roles: [
@@ -44,7 +29,7 @@ const menu = [
   },
   {
     label: "Condomínios",
-    icon: <FaBuilding />,
+    icon: <FiGrid />,
     to: "/platform/condominios",
     enabled: true,
     roles: [
@@ -55,7 +40,7 @@ const menu = [
   },
   {
     label: "Clientes",
-    icon: <FaAddressBook />,
+    icon: <FiUser />,
     to: "/platform/clientes",
     enabled: true,
     roles: [
@@ -66,7 +51,7 @@ const menu = [
   },
   {
     label: "Usuários",
-    icon: <FaUsers />,
+    icon: <FiUsers />,
     to: "/platform/usuarios",
     enabled: true,
     roles: [
@@ -76,7 +61,7 @@ const menu = [
   },
   {
     label: "Planos",
-    icon: <FaTags />,
+    icon: <FiTag />,
     to: "/platform/planos",
     enabled: true,
     roles: [
@@ -87,14 +72,14 @@ const menu = [
   },
   {
     label: "Financeiro",
-    icon: <FaFileInvoiceDollar />,
+    icon: <FiDollarSign />,
     to: "/platform/financeiro",
     enabled: true,
     ownerOnly: true,
   },
   {
     label: "Auditoria",
-    icon: <FaClipboardList />,
+    icon: <FiClipboard />,
     to: "/platform/auditoria",
     enabled: true,
     roles: [
@@ -105,7 +90,7 @@ const menu = [
   },
   {
     label: "Eventos",
-    icon: <FaServer />,
+    icon: <FiServer />,
     to: "/platform/eventos",
     enabled: true,
     roles: [
@@ -116,7 +101,7 @@ const menu = [
   },
   {
     label: "Suporte",
-    icon: <FaHeadset />,
+    icon: <FiHeadphones />,
     to: "/platform/suporte",
     enabled: true,
     roles: [
@@ -127,7 +112,7 @@ const menu = [
   },
   {
     label: "Jobs / Backups",
-    icon: <FaTasks />,
+    icon: <FiList />,
     to: "/platform/operacoes",
     enabled: true,
     roles: [
@@ -307,7 +292,7 @@ function PlatformLayout() {
         </div>
 
         <div style={styles.platformBadge}>
-          <FaShieldAlt />
+          <FiShield />
 
           <span>
             {getRoleLabel()}
@@ -369,7 +354,7 @@ function PlatformLayout() {
           onClick={handleLogout}
           style={styles.logout}
         >
-          <FaSignOutAlt />
+          <FiLogOut />
           Sair da Central
         </button>
       </aside>
@@ -383,7 +368,7 @@ function PlatformLayout() {
             onClick={() => setSidebarOpen((value) => !value)}
             aria-label="Abrir menu da Central"
           >
-            {sidebarOpen ? <FaTimes /> : <FaBars />}
+            {sidebarOpen ? <FiX /> : <FiMenu />}
           </button>
 
           <div>

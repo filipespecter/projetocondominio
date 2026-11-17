@@ -15,11 +15,11 @@ const definitions={
  reservations:{model:"reservation",select:{status:true,createdAt:true,reservationDate:true,startTime:true,endTime:true,apartment:{select:{block:true,number:true}}}},
  occurrences:{model:"occurrence",select:{title:true,category:true,status:true,priority:true,createdAt:true,resolvedAt:true,apartment:{select:{block:true,number:true}}}}
 };
-export async function managementReport(user,subject,input,db=prisma){
+export async function managementReport(user,subject,input,db=prisma,options={}){
  if(!user?.condominiumId||!["CONDOMINIUM_ADMIN","MANAGER"].includes(user.role))throw new ApiError("Relatório restrito à gestão.",403);
  const def=definitions[subject];if(!def)throw new ApiError("Assunto inválido.",422);
  const p=z.object({start:z.string().optional(),end:z.string().optional(),status:z.string().regex(/^[A-Z_]{2,40}$/).optional()}).strict().safeParse(input);if(!p.success)throw new ApiError("Confira o período e a situação.",422);const q=p.data;
- const c=await db.condominium.findUnique({where:{id:user.condominiumId},select:{name:true,logoUrl:true,timezone:true,settings:true}}),dates=period(q,new Date(),c.timezone||"America/Recife");
+ const c=await db.condominium.findUnique({where:{id:user.condominiumId},select:{name:true,logoUrl:true,timezone:true,settings:true}}),dates=period(q,new Date(),c.timezone||"America/Recife",options.closure ? 370 : 90);
  const rows=await db[def.model].findMany({where:{condominiumId:user.condominiumId,deletedAt:null,...(def.stock?{}:{[def.date||"createdAt"]:{gte:dates.start,lte:dates.end}}),...(q.status?{status:q.status}:{})},select:def.select,take:10001});if(rows.length>10000)throw new ApiError("Mais de 10 mil registros. Reduza o período; nenhum arquivo foi truncado.",422);
  const totals=[[def.stock?"Registros atuais":"Registros no período",rows.length]];
  if(subject==="apartments"){const total=c.settings?.structure?.total;totals.push(["Capacidade prevista",total||null],["Cadastro concluído (%)",total?rows.length/total*100:null],["Ocupação confirmada (%)",total?rows.filter(r=>r.status==="OCCUPIED").length/total*100:null]);}

@@ -3,7 +3,7 @@ import { ApiError } from "../../utils/ApiError.js";
 class EmailProvider {
   get providerName() { return String(process.env.EMAIL_PROVIDER ?? "").trim().toUpperCase(); }
 
-  async send({ recipient, subject, content, html }) {
+  async send({ recipient, subject, content, html, attachments }) {
     const email = String(recipient ?? "").trim().toLowerCase();
     if (!email || !email.includes("@")) throw new ApiError("E-mail de destino inválido.", 400);
 
@@ -24,7 +24,7 @@ class EmailProvider {
       response = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ from, to: [email], subject: subject ?? "InfinityCondo", text: String(content ?? ""), ...(html ? {html:String(html)} : {}) }),
+        body: JSON.stringify({ from, to: [email], subject: subject ?? "InfinityCondo", text: String(content ?? ""), ...(html ? {html:String(html)} : {}), ...(attachments?.length ? { attachments } : {}) }),
         signal: AbortSignal.timeout(20000),
       });
     } catch {

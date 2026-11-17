@@ -1,3 +1,4 @@
+import { startWahaControlServer } from "./services/WahaControlServer.js";
 import { app } from "./app.js";
 import { env } from "./config/env.js";
 import prisma from "./config/prisma.js";
@@ -7,6 +8,7 @@ import {
   stopJobs,
 } from "./jobs/index.js";
 
+const wahaControl = startWahaControlServer();
 const server = app.listen(env.PORT, () => {
   Logger.info("==========================================");
   Logger.info("InfinityCondo API");
@@ -59,6 +61,7 @@ async function encerrarServidor(
    * Impede novos disparos de jobs.
    */
   stopJobs();
+  wahaControl?.close();
 
   server.close(
     async (error) => {

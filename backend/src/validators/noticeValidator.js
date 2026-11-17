@@ -13,6 +13,7 @@ export const NOTICE_AUDIENCES = [
   "DOORMEN",
   "MANAGERS",
   "APARTMENT",
+  "INDIVIDUAL",
 ];
 
 export const NOTICE_PRIORITIES = [
@@ -278,6 +279,7 @@ const optionalDateSchema = z
 export const createNoticeSchema =
   z
     .object({
+      recipientUserId: uuidSchema.optional().nullable(),
       apartmentId:
         uuidSchema
           .optional()
@@ -350,8 +352,7 @@ export const createNoticeSchema =
         validateAssemblyFields(data, ctx);
 
         if (
-          data.audience ===
-            "APARTMENT" &&
+          ["APARTMENT","INDIVIDUAL"].includes(data.audience) &&
           !data.apartmentId
         ) {
           ctx.addIssue({
@@ -366,8 +367,7 @@ export const createNoticeSchema =
         }
 
         if (
-          data.audience !==
-            "APARTMENT" &&
+          !["APARTMENT","INDIVIDUAL"].includes(data.audience) &&
           data.apartmentId
         ) {
           ctx.addIssue({
@@ -409,6 +409,7 @@ export const createNoticeSchema =
 export const updateNoticeSchema =
   z
     .object({
+      recipientUserId: uuidSchema.optional().nullable(),
       apartmentId:
         uuidSchema
           .optional()
@@ -476,8 +477,7 @@ export const updateNoticeSchema =
     .superRefine(
       (data, ctx) => {
         if (
-          data.audience ===
-            "APARTMENT" &&
+          ["APARTMENT","INDIVIDUAL"].includes(data.audience) &&
           data.apartmentId === null
         ) {
           ctx.addIssue({
@@ -493,8 +493,7 @@ export const updateNoticeSchema =
 
         if (
           data.audience &&
-          data.audience !==
-            "APARTMENT" &&
+          !["APARTMENT","INDIVIDUAL"].includes(data.audience) &&
           data.apartmentId
         ) {
           ctx.addIssue({

@@ -223,9 +223,10 @@ class NoticeRepository extends BaseRepository {
         condominiumId,
         authorUserId,
         apartmentId:
-          audience === "APARTMENT"
+          ["APARTMENT","INDIVIDUAL"].includes(audience)
             ? data.apartmentId ?? null
             : null,
+        recipientUserId: audience==="INDIVIDUAL"?data.recipientUserId:null,
         title:
           String(data.title).trim(),
         message:
@@ -341,6 +342,7 @@ class NoticeRepository extends BaseRepository {
           .toUpperCase();
     }
 
+    if(data.recipientUserId!==undefined)updateData.recipientUserId=data.recipientUserId;
     if (data.audience !== undefined) {
       updateData.audience =
         String(data.audience)
@@ -534,6 +536,7 @@ class NoticeRepository extends BaseRepository {
     condominiumId,
     role,
     apartmentId = null,
+    recipientUserId=null,
     type = null,
   }) {
     const audienceConditions = [
@@ -547,6 +550,7 @@ class NoticeRepository extends BaseRepository {
         audience: "RESIDENTS",
       });
 
+      if(apartmentId&&recipientUserId)audienceConditions.push({audience:"INDIVIDUAL",apartmentId,recipientUserId});
       if (apartmentId) {
         audienceConditions.push({
           audience: "APARTMENT",
@@ -613,6 +617,7 @@ class NoticeRepository extends BaseRepository {
     condominiumId,
     role,
     apartmentId = null,
+    recipientUserId=null,
     type = null,
   }) {
     const audienceConditions = [
@@ -626,6 +631,7 @@ class NoticeRepository extends BaseRepository {
         audience: "RESIDENTS",
       });
 
+      if(apartmentId&&recipientUserId)audienceConditions.push({audience:"INDIVIDUAL",apartmentId,recipientUserId});
       if (apartmentId) {
         audienceConditions.push({
           audience: "APARTMENT",

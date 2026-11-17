@@ -1,4 +1,4 @@
-import {monthlySummary,monthlyDocument,closeMonth} from "../services/OperationalReviewService.js";
+import {monthlySummary,monthlyDocument,closeMonth,closureSummary,closureDocument,closePeriod} from "../services/OperationalReviewService.js";
 import { requireTrustedOrigin } from "../middlewares/securityMiddleware.js";
 import {
   reportWorkspaceBoot,
@@ -32,6 +32,9 @@ const respond = (fn) => async (req, res, next) => {
     next(e);
   }
 };
+r.get("/closure",respond(req=>closureSummary(req.user,req.query)));
+r.post("/closure/document",requireTrustedOrigin,respond(req=>closureDocument(req.user,req.body)));
+r.post("/closure/close",requireTrustedOrigin,respond(req=>closePeriod(req.user,req.body)));
 r.get("/monthly",respond(req=>monthlySummary(req.user,req.query.month)));
 r.post("/monthly/document",requireTrustedOrigin,respond(req=>monthlyDocument(req.user,req.body)));
 r.post("/monthly/close",requireTrustedOrigin,respond(req=>closeMonth(req.user,req.body)));

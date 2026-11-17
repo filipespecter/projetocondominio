@@ -179,14 +179,11 @@ class PlatformChargeController {
         "../services/PaymentGatewayOrchestratorService.js"
       );
 
-      const result =
-        await PaymentGatewayOrchestratorService
-          .processCharge(
-            req.params.id,
-            req.body ?? {},
-            req.user,
-            this.getRequestContext(req)
-          );
+      const { method, ...paymentData } = req.body ?? {};
+      const result = await PaymentGatewayOrchestratorService.processCharge(
+        req.params.id, paymentData, req.user, this.getRequestContext(req),
+        method === undefined ? {} : { platformMethod: method },
+      );
 
       return res.status(200).json({
         success: true,

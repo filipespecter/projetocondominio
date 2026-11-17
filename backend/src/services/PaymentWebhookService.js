@@ -34,6 +34,13 @@ class PaymentWebhookService {
       };
     }
 
+    if (normalized.type === "order") {
+      const result = await PaymentGatewayOrchestratorService.synchronizePixOrder({
+        providerOrderId: normalized.dataId, requestContext,
+      });
+      return { received: true, ignored: Boolean(result.ignored) };
+    }
+
     if (
       normalized.type !==
         "payment" &&

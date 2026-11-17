@@ -288,7 +288,7 @@ async function main() {
   console.log("");
   const plans = [
     { name:"Plano Básico", code:"BASICO", description:"Operação essencial do condomínio.", monthlyPriceInCents:30000, billingCycle:"MONTHLY", active:true, displayOrder:1 },
-    { name:"Plano Completo", code:"COMPLETO", description:"Operação completa com financeiro, BI, comprovantes e automações premium.", monthlyPriceInCents:40000, billingCycle:"MONTHLY", active:true, displayOrder:2 },
+    { name:"Plano Completo", code:"COMPLETO", description:"Operação completa com financeiro, BI, comprovantes e automações premium.", monthlyPriceInCents:45000, billingCycle:"MONTHLY", active:true, displayOrder:2 },
   ];
   const savedPlans = {};
   for (const plan of plans) {

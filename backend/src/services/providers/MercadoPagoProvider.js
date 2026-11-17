@@ -1,3 +1,6 @@
+import {normalizeBoletoOrder} from "../../utils/mercadoPagoBoletoOrder.js";
+import {normalizeCardOrder} from "../../utils/mercadoPagoCardOrder.js";
+import { normalizePixOrder } from "../../utils/mercadoPagoOrder.js";
 import {
   WebhookSignatureValidator,
   InvalidWebhookSignatureError,
@@ -6,6 +9,8 @@ import {
 import { randomUUID } from "node:crypto";
 
 import { ApiError } from "../../utils/ApiError.js";
+
+const safeErrorCode = value => /^[a-zA-Z0-9_-]{1,80}$/.test(String(value ?? "")) ? String(value) : null;
 
 class MercadoPagoProvider {
   get providerName() {
@@ -33,7 +38,7 @@ class MercadoPagoProvider {
   }
 
   ensureConfigured() {
-    if (!this.accessToken) {
+    if (process.env.MERCADO_PAGO_ENABLED !== "true" || !this.accessToken) {
       throw new ApiError(
         "Mercado Pago ainda não está configurado no servidor.",
         503
@@ -117,7 +122,7 @@ class MercadoPagoProvider {
     if (!response.ok) {
       throw new ApiError(
         "O Mercado Pago não concluiu a operação. Confira os dados e consulte o estado da cobrança antes de tentar novamente.",
-        response.status >= 500
+        (response.status >= 500 || (method === "POST" && [408, 409, 429].includes(response.status)))
           ? 502
           : 400,
         {
@@ -127,7 +132,12 @@ class MercadoPagoProvider {
           statusCode:
             response.status,
 
-          providerResponse: null,
+          providerResponse: {
+            error: safeErrorCode(responseBody?.error),
+            causes: [...(Array.isArray(responseBody?.cause) ? responseBody.cause : []),
+              ...(Array.isArray(responseBody?.errors) ? responseBody.errors : [])]
+              .slice(0, 5).map(item => safeErrorCode(item?.code)).filter(Boolean),
+          },
         }
       );
     }
@@ -228,6 +238,10 @@ class MercadoPagoProvider {
       paymentMethod.type ===
       "BOLETO"
     ) {
+      const document = payer.identification;
+      if (!document || !({ CPF: /^\d{11}$/, CNPJ: /^\d{14}$/ })[document.type]?.test(document.number)) {
+        throw new ApiError("Para boleto, informe o CPF ou CNPJ do pagador.", 400);
+      }
       const address =
         customer.address;
 
@@ -442,6 +456,7 @@ class MercadoPagoProvider {
         null,
 
       currency: payment?.currency_id ?? null,
+      expiresAt: payment?.date_of_expiration ?? null,
 
       transactionAmount:
         payment
@@ -532,6 +547,88 @@ class MercadoPagoProvider {
     return "ERROR";
   }
 
+  buildPixOrder(charge, customer) {
+    const total = (charge.amountInCents / 100).toFixed(2);
+    if (process.env.MERCADO_PAGO_PIX_TEST_PAYER === "true") {
+      const db = new URL(process.env.DATABASE_URL ?? "http://invalid");
+      if (process.env.NODE_ENV === "production" || db.hostname !== "postgres" || db.pathname !== "/infinitycondo_homolog") {
+        throw new ApiError("O pagador simulado só pode ser usado na Homolog local.", 400);
+      }
+      return this.pixOrderBody(charge.id, total, { email: "test_payer@example.com", first_name: "APRO" });
+    }
+    return this.pixOrderBody(charge.id, total, this.buildPayer({ customer, paymentMethod: { type: "PIX" } }));
+  }
+
+  pixOrderBody(reference, total, payer) {
+    return {
+      type: "online", processing_mode: "automatic", external_reference: reference, total_amount: total, payer,
+      transactions: { payments: [{ amount: total, payment_method: { id: "pix", type: "bank_transfer" } }] },
+    };
+  }
+
+  async createPixOrder({ charge, customer, idempotencyKey }) {
+    const body = this.buildPixOrder(charge, customer);
+    const order = await this.request("/v1/orders", { method: "POST", body, idempotencyKey });
+    return normalizePixOrder(order);
+  }
+
+  async getPixOrder(id) {
+    return normalizePixOrder(await this.request(`/v1/orders/${encodeURIComponent(id)}`), id);
+  }
+
+  async cardOrderBody(charge) {
+    const amount = (charge.amountInCents / 100).toFixed(2);
+    const frontend = new URL(process.env.FRONTEND_URL);
+    if (frontend.protocol !== "https:") throw new ApiError("Configure o endereço HTTPS do portal para receber o retorno do checkout.", 503);
+    const local = ["localhost", "127.0.0.1", "[::1]"].includes(frontend.hostname);
+    const back = new URL("/dashboard/financeiro#assinatura", frontend).href;
+    const catalog = await this.request("/v1/payment_methods");
+    const types = new Set(Array.isArray(catalog) ? catalog.map(method => safeErrorCode(method?.payment_type_id)).filter(Boolean) : []);
+    if (!types.delete("credit_card")) throw new ApiError("Cartão de crédito indisponível na credencial do Mercado Pago.", 503);
+    const excludedTypes = [...new Set([...types].map(type => ["digital_wallet", "digital_currency"].includes(type) ? "wallet" : type))].sort();
+    return {
+      type:"online", processing_mode:"manual", capture_mode:"automatic", total_amount:amount, external_reference:charge.id,
+      items:[{title:"Mensalidade InfinityCondo",quantity:1,unit_price:amount}],
+      config:{
+        ...(!local ? {online:{success_url:back,failure_url:back,pending_url:back}} : {}),
+        ...(excludedTypes.length ? {payment_method:{not_allowed_types:excludedTypes}} : {}),
+      },
+    };
+  }
+
+  async createCardOrder({charge,idempotencyKey,body}) {
+    const order=await this.request("/v1/orders",{method:"POST",body:body??await this.cardOrderBody(charge),idempotencyKey});
+    return normalizeCardOrder(order);
+  }
+
+  async getOrderPayment(id) {
+    const order=await this.request(`/v1/orders/${encodeURIComponent(id)}`);
+    if(order?.transactions?.payments?.[0]?.payment_method?.type==="ticket")return normalizeBoletoOrder(order,id);
+    return order?.processing_mode==="manual"?normalizeCardOrder(order,id):normalizePixOrder(order,id);
+  }
+
+  buildBoletoOrder(charge,customer) {
+    const payer=this.buildPayer({customer,paymentMethod:{type:"BOLETO"}});
+    const {federal_unit:state,...address}=payer.address;
+    if(!/^[A-Z]{2}$/.test(state)||!/^\d{8}$/.test(address.zip_code))throw new ApiError("Confira o CEP e a UF do responsável financeiro.",400);
+    const total=(charge.amountInCents/100).toFixed(2);
+    return {type:"online",processing_mode:"automatic",total_amount:total,external_reference:charge.id,
+      description:"Mensalidade InfinityCondo",payer:{...payer,address:{...address,state}},
+      transactions:{payments:[{amount:total,payment_method:{id:"boleto",type:"ticket"}}]}};
+  }
+
+  async createBoletoOrder({charge,customer,idempotencyKey}) {
+    return normalizeBoletoOrder(await this.request("/v1/orders",{method:"POST",body:this.buildBoletoOrder(charge,customer),idempotencyKey}));
+  }
+
+  async cancelPixOrder(id, idempotencyKey) {
+    return this.cancelOrder(id,idempotencyKey);
+  }
+
+  async cancelOrder(id, idempotencyKey) {
+    await this.request(`/v1/orders/${encodeURIComponent(id)}/cancel`, { method:"POST", idempotencyKey });
+  }
+
   async createCharge({
     charge,
     paymentMethod,
@@ -539,6 +636,8 @@ class MercadoPagoProvider {
     paymentData = {},
     idempotencyKey = null,
   }) {
+    this.ensureConfigured();
+    this.ensureWebhookConfigured();
     const body =
       this.buildPaymentBody({
         charge,
@@ -702,19 +801,14 @@ class MercadoPagoProvider {
       payload?.data?.id ??
       null;
 
-    this.validateWebhookSignature({
-      xSignature:
-        headers?.[
-          "x-signature"
-        ],
-
-      xRequestId:
-        headers?.[
-          "x-request-id"
-        ],
-
-      dataId,
-    });
+    const signature = { xSignature: headers?.["x-signature"], xRequestId: headers?.["x-request-id"], dataId };
+    try {
+      this.validateWebhookSignature(signature);
+    } catch (error) {
+      const lower = typeof dataId === "string" ? dataId.toLowerCase() : dataId;
+      if (lower === dataId || error.statusCode !== 401) throw error;
+      this.validateWebhookSignature({ ...signature, dataId: lower });
+    }
 
     return {
       provider:

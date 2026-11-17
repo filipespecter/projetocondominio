@@ -116,6 +116,7 @@ export default function PlatformSupport() {
   }
 
   async function resolveTicket(event) {
+    const approveAdvance=event.nativeEvent.submitter?.value==="approve";
     event.preventDefault();
     if (!resolutionTarget?.id) return;
     if (resolution.trim().length < 5) {
@@ -129,6 +130,7 @@ export default function PlatformSupport() {
       await platformApi.support.updateTicket(resolutionTarget.id, {
         status: "RESOLVED",
         resolution: resolution.trim(),
+        ...(approveAdvance?{approveAdvance:true}:{}),
       });
       setResolutionTarget(null);
       setResolution("");
@@ -327,7 +329,8 @@ export default function PlatformSupport() {
             </label>
             <div className="modal-actions">
               <button type="button" disabled={saving} onClick={() => setResolutionTarget(null)}>Cancelar</button>
-              <button disabled={saving || resolution.trim().length < 5}>{saving ? "Registrando..." : "Resolver SA"}</button>
+              {resolutionTarget.metadata?.kind==="SUBSCRIPTION_ADVANCE"&&<button type="submit" value="approve" disabled={saving||resolution.trim().length<5}>Aprovar e liberar cobrança</button>}
+              <button disabled={saving || resolution.trim().length < 5}>{saving ? "Registrando..." : resolutionTarget.metadata?.kind==="SUBSCRIPTION_ADVANCE"?"Resolver sem emitir":"Resolver SA"}</button>
             </div>
           </form>
         </div>

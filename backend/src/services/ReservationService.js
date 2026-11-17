@@ -22,7 +22,7 @@ class ReservationService extends BaseService {
     const allowedStatuses = [
       "PENDING",
       "APPROVED",
-      "REJECTED",
+      "DENIED",
       "CANCELED",
       "COMPLETED",
     ];
@@ -1152,7 +1152,7 @@ class ReservationService extends BaseService {
 
     if (
       ![
-        "REJECTED",
+        "DENIED",
         "CANCELED",
       ].includes(
         before.status
@@ -1421,7 +1421,7 @@ class ReservationService extends BaseService {
 
     if (
       ![
-        "REJECTED",
+        "DENIED",
         "CANCELED",
         "COMPLETED",
       ].includes(before.status) &&
@@ -1502,7 +1502,7 @@ class ReservationService extends BaseService {
       reservationRepository
         .countByStatus(
           condominiumId,
-          "REJECTED"
+          "DENIED"
         ),
 
       reservationRepository

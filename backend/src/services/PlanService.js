@@ -30,7 +30,7 @@ class PlanService extends BaseService {
         name: "Plano Completo",
         code: "COMPLETO",
         description: "Operação completa com financeiro, BI, comprovantes e automações premium.",
-        monthlyPriceInCents: 40000,
+        monthlyPriceInCents: 45000,
         billingCycle: "MONTHLY",
         active: true,
         displayOrder: 2,

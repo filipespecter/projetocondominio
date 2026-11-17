@@ -17,6 +17,11 @@ class ResidentService extends BaseService {
   /**
    * Tipos de moradores permitidos pelo schema.
    */
+  async validateResponsibility(data,condominiumId,apartmentId,id){
+    if(data.isPrimary&&data.isSecondary)throw new ApiError("Escolha apenas uma ordem de responsabilidade.",422);
+    if(!data.isSecondary)return;
+    if(await prisma.resident.findFirst({where:{condominiumId,apartmentId,isSecondary:true,deletedAt:null,...(id?{id:{not:id}}:{})},select:{id:true}}))throw new ApiError("A unidade já possui segundo responsável.",409);
+  }
   validateResidentType(residentType) {
     const allowedTypes = [
       "OWNER",
@@ -311,6 +316,7 @@ class ResidentService extends BaseService {
     // As permissões de aviso/retirada continuam independentes do cadastro.
 
 
+    await this.validateResponsibility(data,condominiumId,data.apartmentId);
     if (data.isPrimary) {
       await this.removePreviousPrimary(
         data.apartmentId,
@@ -364,6 +370,7 @@ class ResidentService extends BaseService {
 
               whatsappOptIn: data.whatsappOptIn === true,
               residentType,
+              isSecondary:data.isSecondary===true,
 
               isPrimary:
                 data.isPrimary ??
@@ -464,6 +471,7 @@ class ResidentService extends BaseService {
       data.apartmentId ??
       before.apartmentId;
 
+    await this.validateResponsibility(data,condominiumId,targetApartmentId,id);
     if (data.isPrimary === true) {
       await this.removePreviousPrimary(
         targetApartmentId,
@@ -533,10 +541,8 @@ class ResidentService extends BaseService {
         data.residentType;
     }
 
-    if (data.isPrimary !== undefined) {
-      residentData.isPrimary =
-        data.isPrimary;
-    }
+    if(data.isPrimary!==undefined||data.isSecondary===true)residentData.isPrimary=data.isSecondary===true?false:data.isPrimary;
+    if(data.isSecondary!==undefined||data.isPrimary===true||targetApartmentId!==before.apartmentId)residentData.isSecondary=data.isPrimary!==true&&data.isSecondary===true;
 
     if (data.canReserve !== undefined) {
       residentData.canReserve =

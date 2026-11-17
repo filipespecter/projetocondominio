@@ -611,7 +611,7 @@ class PackageService extends BaseService {
       afterData:
         updated,
       details:
-        `Retirada confirmada via ${data.method}. Retirado por ${withdrawnBy}.`,
+        `Retirada confirmada via ${data.method}. Retirado por ${withdrawnBy}.${data.pickupNote ? " Observação: " + data.pickupNote : ""}`,
       requestContext,
     });
 

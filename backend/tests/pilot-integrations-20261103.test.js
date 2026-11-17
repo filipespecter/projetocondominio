@@ -127,11 +127,11 @@ test("sincronização recusa divergência antes de criar transação ou baixar c
   await assert.rejects(payments.synchronizeProviderPayment({provider:"MERCADO_PAGO",providerPaymentId:"p1"}),e=>e.statusCode===409);assert.equal(writes,0);
 });
 test("Mercado Pago aplica timeout e preserva a chave de idempotência no transporte",async t=>{
-  const prev=process.env.MERCADO_PAGO_ACCESS_TOKEN;process.env.MERCADO_PAGO_ACCESS_TOKEN="test-placeholder";
+  const prev=process.env.MERCADO_PAGO_ACCESS_TOKEN, enabled=process.env.MERCADO_PAGO_ENABLED;process.env.MERCADO_PAGO_ACCESS_TOKEN="test-placeholder";process.env.MERCADO_PAGO_ENABLED="true";
   try {let options;t.mock.method(globalThis,"fetch",async(_u,o)=>{options=o;throw Error("private-token");});
     await assert.rejects(mercado.request("/v1/payments",{method:"POST",body:{},idempotencyKey:"stable-key"}),e=>e.statusCode===502&&!e.message.includes("private-token"));
     assert.ok(options.signal);assert.equal(options.headers["X-Idempotency-Key"],"stable-key");
-  }finally{if(prev===undefined)delete process.env.MERCADO_PAGO_ACCESS_TOKEN;else process.env.MERCADO_PAGO_ACCESS_TOKEN=prev;}
+  }finally{if(enabled===undefined)delete process.env.MERCADO_PAGO_ENABLED;else process.env.MERCADO_PAGO_ENABLED=enabled;if(prev===undefined)delete process.env.MERCADO_PAGO_ACCESS_TOKEN;else process.env.MERCADO_PAGO_ACCESS_TOKEN=prev;}
 });
 test("exceção local não sobrescreve entrega confirmada durante o envio",async t=>{
   let reads=0,failed=0;
@@ -182,7 +182,9 @@ test("processamento bloqueia nova chamada ao gateway depois de timeout",async t=
   prisma.$transaction=async fn=>fn({$queryRaw:async()=>[],charge:{findUnique:async()=>current,update:async({data})=>Object.assign(current,data)}});
   t.after(()=>{prisma.$transaction=originalTransaction;});
   let calls=0;
-  t.mock.method(gateway,"createCharge",async args=>{calls++;assert.match(args.idempotencyKey,/^[a-f0-9]{64}$/);throw Object.assign(Error("timeout"),{statusCode:502});});
+  t.mock.method(mercado,"ensureConfigured",()=>{});
+  t.mock.method(mercado,"ensureWebhookConfigured",()=>{});
+  t.mock.method(mercado,"createPixOrder",async args=>{calls++;assert.match(args.idempotencyKey,/^[a-f0-9]{64}$/);throw Object.assign(Error("timeout"),{statusCode:502});});
   await assert.rejects(payments.processCharge(charge.id,{},null,{requestId:"first"}),e=>e.statusCode===502);
   await assert.rejects(payments.processCharge(charge.id,{},null,{requestId:"second"}),e=>e.statusCode===409);
   assert.equal(calls,1);assert.equal(current.metadata.gatewayAttemptPending,true);

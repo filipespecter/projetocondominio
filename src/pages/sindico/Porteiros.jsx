@@ -1,3 +1,5 @@
+import { FiUser, FiPlus, FiUsers, FiCheckCircle, FiXCircle, FiSearch, FiMoon, FiSun, FiCheck, FiX, FiEye, FiEdit2, FiMoreHorizontal } from "react-icons/fi";
+import "./GestaoVisual.css";
 import { confirmDialog } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useState } from "react";
 import doormanApi from "../../Services/doormanApi";
@@ -76,9 +78,6 @@ function Porteiros() {
 
   const totalAtivos = porteiros.filter((p) => p.status === "Ativo").length;
   const totalInativos = porteiros.filter((p) => p.status === "Inativo").length;
-  const totalManha = porteiros.filter((p) => p.turno === "Manhã").length;
-  const totalTarde = porteiros.filter((p) => p.turno === "Tarde").length;
-  const totalNoite = porteiros.filter((p) => p.turno === "Noite").length;
 
   function gerarCodigoPorteiro(numero) {
     return `P${String(numero).padStart(3, "0")}`;
@@ -149,60 +148,6 @@ function Porteiros() {
     limparFormulario();
   }
 
-  function obterStatus(status) {
-    if (status === "Ativo") {
-      return {
-        background: "var(--ic-primary-soft)",
-        color: "var(--ic-primary)",
-        border: "var(--ic-primary-border-soft)",
-        label: "Operando"
-      };
-    }
-
-    return {
-      background: "#fee2e2",
-      color: "#b91c1c",
-      border: "#fecaca",
-      label: "Bloqueado"
-    };
-  }
-
-  function obterTurno(turno) {
-    if (turno === "Manhã") {
-      return {
-        icon: "🌤️",
-        background: "#ecfdf5",
-        color: "var(--ic-primary)",
-        border: "#a7f3d0"
-      };
-    }
-
-    if (turno === "Tarde") {
-      return {
-        icon: "☀️",
-        background: "#fef3c7",
-        color: "#92400e",
-        border: "#fde68a"
-      };
-    }
-
-    if (turno === "Noite") {
-      return {
-        icon: "🌙",
-        background: "var(--ic-primary-soft-2)",
-        color: "#3730a3",
-        border: "#c7d2fe"
-      };
-    }
-
-    return {
-      icon: "🕒",
-      background: "var(--ic-primary-soft-4)",
-      color: "#374151",
-      border: "var(--ic-primary-border-soft)"
-    };
-  }
-
   function iniciais(nome) {
     if (!nome) return "P";
 
@@ -247,245 +192,29 @@ function Porteiros() {
   }
 
   return (
-    <div style={styles.container}>
-      <section style={styles.hero}>
-        <div style={styles.heroLeft}>
-          <span style={styles.heroBadge}>
-            🛡️ Central operacional
-          </span>
-
-          <h1 style={styles.title}>
-            Equipe de Portaria
-          </h1>
-
-          <p style={styles.subtitle}>
-            Controle de operadores, turnos, credenciais e acesso ao painel da portaria.
-          </p>
-        </div>
-
-        <div style={styles.heroRight}>
-          <div style={styles.shiftBoard}>
-            <div style={styles.shiftItem}>
-              <span>🌤️</span>
-              <strong>{totalManha}</strong>
-              <small>manhã</small>
-            </div>
-
-            <div style={styles.shiftItem}>
-              <span>☀️</span>
-              <strong>{totalTarde}</strong>
-              <small>tarde</small>
-            </div>
-
-            <div style={styles.shiftItem}>
-              <span>🌙</span>
-              <strong>{totalNoite}</strong>
-              <small>noite</small>
-            </div>
-          </div>
-
-          <button
-            style={styles.heroButton}
-            onClick={() => {
-              limparFormulario();
-              setMostrarModal(true);
-            }}
-          >
-            + Novo operador
-          </button>
-        </div>
-      </section>
-
-      <section style={styles.controlStrip}>
-        <div style={styles.searchWrap}>
-          <span style={styles.searchIcon}>⌕</span>
-
-          <input
-            placeholder="Buscar por nome, turno, telefone ou usuário..."
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            style={styles.search}
-          />
-        </div>
-
-        <select
-          value={filtroStatus}
-          onChange={(e) => setFiltroStatus(e.target.value)}
-          style={styles.filter}
-        >
-          <option>Todos</option>
-          <option>Ativo</option>
-          <option>Inativo</option>
-        </select>
-
-        <select
-          value={filtroTurno}
-          onChange={(e) => setFiltroTurno(e.target.value)}
-          style={styles.filter}
-        >
-          <option>Todos</option>
-          <option>Manhã</option>
-          <option>Tarde</option>
-          <option>Noite</option>
-        </select>
-
-        <div style={styles.compactStats}>
-          <span>
-            <b>{porteiros.length}</b> operadores
-          </span>
-
-          <span>
-            <b>{totalAtivos}</b> ativos
-          </span>
-
-          <span>
-            <b>{totalInativos}</b> inativos
-          </span>
-        </div>
-      </section>
-
-      <section style={styles.operatorPanel}>
-        <div style={styles.panelHeader}>
-          <div>
-            <span style={styles.panelLabel}>
-              Operadores cadastrados
-            </span>
-
-            <h2 style={styles.panelTitle}>
-              Escala da portaria
-            </h2>
-          </div>
-
-          <span style={styles.resultBadge}>
-            {porteirosFiltrados.length} resultado(s)
-          </span>
-        </div>
-
-        {porteirosFiltrados.length === 0 ? (
-          <div style={styles.empty}>
-            <div style={styles.emptyIcon}>
-              🛡️
-            </div>
-
-            <h3 style={styles.emptyTitle}>
-              Nenhum porteiro encontrado
-            </h3>
-
-            <p style={styles.emptyText}>
-              Cadastre operadores para liberar acesso ao painel da portaria.
-            </p>
-
-            <button
-              style={styles.emptyButton}
-              onClick={() => {
-                limparFormulario();
-                setMostrarModal(true);
-              }}
-            >
-              Cadastrar operador
-            </button>
-          </div>
-        ) : (
-          <div style={styles.operatorGrid}>
-            {porteirosFiltrados.map((p) => {
-              const status = obterStatus(p.status);
-              const turno = obterTurno(p.turno);
-
-              return (
-                <article
-                  key={p.id}
-                  style={{
-                    ...styles.operatorCard,
-                    borderColor: status.border
-                  }}
-                >
-                  <div style={styles.operatorHeader}>
-                    <div style={styles.operatorAvatar}>
-                      {iniciais(p.nome)}
-                    </div>
-
-                    <div style={styles.operatorIdentity}>
-                      <h3 style={styles.operatorName}>
-                        {p.nome}
-                      </h3>
-
-                      <p style={styles.operatorUser}>
-                        @{p.usuario} • {p.codigoPorteiro || "P---"}
-                      </p>
-                    </div>
-
-                    <span
-                      style={{
-                        ...styles.statusBadge,
-                        background: status.background,
-                        color: status.color
-                      }}
-                    >
-                      {status.label}
-                    </span>
-                  </div>
-
-                  <div
-                    style={{
-                      ...styles.shiftBadge,
-                      background: turno.background,
-                      color: turno.color,
-                      border: `1px solid ${turno.border}`
-                    }}
-                  >
-                    <span>{turno.icon}</span>
-                    <strong>Turno {p.turno || "-"}</strong>
-                  </div>
-
-                  <div style={styles.operatorData}>
-                    <div style={styles.dataItem}>
-                      <span>Código</span>
-                      <strong>{p.codigoPorteiro || "P---"}</strong>
-                    </div>
-
-                    <div style={styles.dataItem}>
-                      <span>Telefone</span>
-                      <strong>{p.telefone || "-"}</strong>
-                    </div>
-
-                    <div style={styles.dataItem}>
-                      <span>Usuário</span>
-                      <strong>{p.usuario || "-"}</strong>
-                    </div>
-
-                    <div style={styles.dataItem}>
-                      <span>Último acesso</span>
-                      <strong>{p.ultimoLogin || "Ainda sem acesso"}</strong>
-                    </div>
-                  </div>
-
-                  <div style={styles.operatorFooter}>
-                    <button
-                      style={styles.editButton}
-                      onClick={() => abrirSupervisao(p)}
-                    >
-                      Supervisão
-                    </button>
-
-                    <button
-                      style={styles.editButton}
-                      onClick={() => editarPorteiro(p)}
-                    >
-                      Editar
-                    </button>
-
-                    <button
-                      style={styles.deleteButton}
-                      onClick={() => excluirPorteiro(p.id)}
-                    >
-                      Excluir
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        )}
+    <div className="ic-pkg-reference ic-gestao-visual">
+      <header className="ic-pkg-hero"><div className="ic-pkg-heading"><span className="ic-pkg-icon"><FiUser/></span><div><h1>Porteiros</h1><p>Gerencie a equipe de portaria, os turnos e os acessos.</p></div></div><div className="ic-pkg-actions"><button type="button" onClick={()=>{limparFormulario();setMostrarModal(true);}}><FiPlus/> Novo operador</button></div></header>
+      <div className="ic-gestao-metrics"><div><span className="ic-pkg-icon"><FiUsers/></span><div><strong>{porteiros.length}</strong><span>Total de operadores</span></div></div><div><span className="ic-pkg-icon"><FiCheckCircle/></span><div><strong>{totalAtivos}</strong><span>Ativos</span></div></div><div><span className="ic-pkg-icon"><FiXCircle/></span><div><strong>{totalInativos}</strong><span>Inativos</span></div></div></div>
+      <div className="ic-pkg-filters">
+        <label className="ic-pkg-search"><FiSearch/><input aria-label="Buscar" placeholder="Buscar por nome, telefone ou usuário..." value={busca} onChange={e=>setBusca(e.target.value)}/></label>
+        <select aria-label="Turno" value={filtroTurno} onChange={e=>setFiltroTurno(e.target.value)}><option value="Todos">Todos os turnos</option>{[...new Set([...Object.values(shiftFront),...porteiros.map(p=>p.turno).filter(Boolean)])].map(t=><option key={t}>{t}</option>)}</select>
+        <select aria-label="Status" value={filtroStatus} onChange={e=>setFiltroStatus(e.target.value)}><option value="Todos">Todos os status</option>{Object.values(statusFront).map(t=><option key={t}>{t}</option>)}</select>
+      </div>
+      <section className="ic-gestao-list">
+        <h2 className="ic-pkg-section-title"><FiUsers/> Equipe de portaria</h2>
+        <div className="ic-pkg-table-wrap"><table className="ic-pkg-table"><thead><tr><th>Porteiro</th><th>Usuário</th><th>Turno</th><th>Status</th><th>Último acesso</th><th>Ações</th></tr></thead>
+        <tbody>{porteirosFiltrados.map(p=><tr key={p.id}>
+          <td data-label="Porteiro"><span className="ic-pkg-description"><span className="ic-gestao-avatar">{iniciais(p.nome)}</span><strong>{p.nome}</strong></span></td>
+          <td data-label="Usuário">{p.usuario||"—"}</td>
+          <td data-label="Turno"><span className="ic-pkg-tag">{p.turno==="Noite"?<FiMoon/>:<FiSun/>} {p.turno||"—"}</span></td>
+          <td data-label="Status"><span className="ic-pkg-tag" data-tone={p.status==="Ativo"?"green":p.status==="Inativo"||p.status==="Bloqueado"?"red":undefined}>{p.status==="Ativo"?<FiCheck/>:<FiX/>} {p.status}</span></td>
+          <td data-label="Último acesso">{dataHora(p.ultimoLogin)}</td>
+          <td data-label="Ações"><div className="ic-pkg-row-actions">
+            <button type="button" className="ic-pkg-primary" onClick={()=>abrirSupervisao(p)}><FiEye/> Supervisão</button>
+            <button type="button" className="ic-pkg-outline" onClick={()=>editarPorteiro(p)}><FiEdit2/> Editar</button>
+            <details className="ic-pkg-action-menu"><summary aria-label="Mais ações"><FiMoreHorizontal/></summary><div><small>Telefone: {p.telefone||"—"} · Código: {p.codigoPorteiro||"—"}</small><button type="button" onClick={()=>excluirPorteiro(p.id)}>Excluir</button></div></details>
+          </div></td>
+        </tr>)}</tbody></table>{!porteirosFiltrados.length&&<p className="ic-pkg-empty">Nenhum porteiro encontrado.</p>}</div>
       </section>
 
       {porteiroSupervisionado && (

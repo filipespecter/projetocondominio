@@ -1,3 +1,4 @@
+import QRCode from "qrcode";
 import { packageEmail } from "../utils/packageEmail.js";
 import crypto from "node:crypto";
 import ApartmentContactService from "./ApartmentContactService.js";
@@ -163,6 +164,11 @@ class CommunicationService {
      * Comunicações FAILED são reaproveitadas e poderão
      * ser reenviadas pelo fluxo de retry.
      */
+    if (preventDuplicate && normalizedModule === "PACKAGE" && metadata?.dualChannelV1) {
+      // Reuse legacy package notices as well: a provider migration must not send the same notice again.
+      const previous = await prisma.communicationLog.findFirst({ where: { condominiumId, channel: normalizedChannel, recipient: normalizedRecipient, module: "PACKAGE", referenceId: normalizedReferenceId, status: { in: ["PENDING", "SENT", "DELIVERED", "FAILED"] } }, orderBy: { createdAt: "asc" } });
+      if (previous) return previous;
+    }
     if (
       preventDuplicate &&
       normalizedTemplateCode
@@ -321,12 +327,14 @@ class CommunicationService {
     if (!claimed) throw new ApiError("Aviso já está sendo enviado ou foi concluído. Atualize o histórico.",409);
 
     let providerAccepted = false;
+    let providerReceipt = null;
     try {
       let content=before.contentSnapshot;
       let metadata=before.metadata;
       let html;
+      let attachments;
       let subject=before.subject;
-      if((metadata?.pickupCredential || metadata?.contactNotice) && before.module==="PACKAGE") {
+      if((metadata?.pickupCredential || metadata?.contactNotice || metadata?.dualChannelV1) && before.module==="PACKAGE") {
         const pkg=await prisma.package.findFirst({where:{id:before.referenceId,condominiumId:before.condominiumId,status:"RECEIVED",deletedAt:null}});
         if(!pkg) throw new ApiError("Encomenda não está mais disponível.",409);
         let canPickup=true;
@@ -340,10 +348,16 @@ class CommunicationService {
         const credential=canPickup?await PackageCredentialService.ensure(before.referenceId,before.condominiumId):null;
         const instructions=canPickup?`Código de retirada: ${credential.code}. Apresente à portaria. Não compartilhe a credencial.`:"Avise o responsável autorizado pela retirada. Este aviso não autoriza retirar a encomenda.";
         content+=` Destinatário: ${metadata.recipientName || "Contato autorizado"}. ${metadata.packageDetails || ""}. ${instructions}`;
-        if (before.channel === "EMAIL") {
+        if (before.channel === "EMAIL" || (before.channel === "WHATSAPP" && metadata.dualChannelV1)) {
           const formatted=packageEmail({condominiumName:metadata.condominiumName,recipientName:metadata.recipientName,
-            apartmentLabel:metadata.emailApartmentLabel || metadata.apartmentLabel,packageRecord:pkg,instructions});
-          content=formatted.content; html=formatted.html; subject=formatted.subject;
+            apartmentLabel:metadata.emailApartmentLabel || metadata.apartmentLabel,packageRecord:pkg,instructions,observation:metadata.dualChannelV1 ? metadata.observation : null});
+          content=formatted.content;
+          if (before.channel === "EMAIL") { html=formatted.html; subject=formatted.subject; }
+        }
+        if (metadata.dualChannelV1 && credential) {
+          const image = await QRCode.toBuffer(credential.qrToken, { type: "png", width: 420, margin: 4, errorCorrectionLevel: "M" });
+          attachments = [{ filename: "retirada.png", content: image.toString("base64"), content_id: "pickup-qr" }];
+          if (before.channel === "EMAIL") html = html.replace('</main>', '<p>QR de retirada (também anexado):</p><img src="cid:pickup-qr" alt="QR de retirada" width="280" height="280"></main>');
         }
         const thirdParameter=credential?.code||"Consulte o responsável autorizado pela retirada.";
         metadata={...metadata,components:[{type:"body",parameters:[metadata.condominiumName,[metadata.apartmentLabel,metadata.recipientName,metadata.packageDetails].filter(Boolean).join(" · "),thirdParameter].map(text=>({type:"text",text:String(text)}))}]};
@@ -366,9 +380,11 @@ class CommunicationService {
               content,
             metadata,
             html,
+            attachments,
           });
 
       providerAccepted = true;
+      if (result.provider === "WAHA" && result.providerMessageId) providerReceipt = { id: result.providerMessageId, chatId: result.metadata?.wahaChatId };
       const sent =
         await communicationLogRepository
           .markSent(
@@ -464,6 +480,7 @@ class CommunicationService {
               errorName:
                 error?.name ??
                 null,
+              ...(providerReceipt ? { wahaReviewReceipt: providerReceipt } : {}),
               requiresReview: providerAccepted || error?.statusCode === 502 || error?.name === "AbortError" || error?.name === "TimeoutError",
             }
           );
@@ -572,9 +589,7 @@ class CommunicationService {
 
     return {
       queued: true,
-      deduplicated:
-        communication.attemptCount >
-        0,
+      deduplicated: false,
       communication:
         sent,
     };

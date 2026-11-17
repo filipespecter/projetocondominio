@@ -533,7 +533,7 @@ function PlatformFinance() {
   }
 
   async function processCharge(
-    charge
+    charge, method
   ) {
     setBusyId(charge.id);
     setError("");
@@ -546,6 +546,7 @@ function PlatformFinance() {
           .processCharge(
             charge.id,
             {
+              method,
               identificationType:
                 String(
                   selectedCondominium
@@ -889,7 +890,7 @@ function PlatformFinance() {
         <div style={styles.formGrid}>
           <label style={styles.field}>
             <span style={styles.fieldLabel}>
-              Valor da cobrança (R$)
+              Valor final da cobrança (R$)
             </span>
 
             <input
@@ -899,10 +900,17 @@ function PlatformFinance() {
                   event.target.value
                 )
               }
-              placeholder="350.00"
+              placeholder="450.00"
               style={styles.input}
               inputMode="decimal"
             />
+            {activeSubscription?.plan?.monthlyPriceInCents != null && (() => {
+              const official = activeSubscription.plan.monthlyPriceInCents;
+              const final = Math.round(Number(String(amount).replace(",", ".")) * 100);
+              return Number.isFinite(final) && final > 0 ? (
+                <small>Plano: {money(official)}{final < official && ` − desconto de ${money(official - final)}`} · Total: {money(final)}</small>
+              ) : null;
+            })()}
           </label>
 
           <label style={styles.field}>
@@ -1174,29 +1182,15 @@ function PlatformFinance() {
                       </td>
 
                       <td style={platformTableStyles.td}>
-                        {charge.status ===
-                        "PENDING" ? (
-                          <PlatformButton
-                            disabled={
-                              busyId ===
-                                charge.id ||
-                              !activePrimaryMethod
-                            }
-                            onClick={() =>
-                              processCharge(
-                                charge
-                              )
-                            }
-                          >
-                            {busyId ===
-                            charge.id
-                              ? "Processando..."
-                              : activePrimaryMethod
-                                  ?.type ===
-                                "BOLETO"
-                                ? "Gerar boleto"
-                                : "Gerar PIX"}
-                          </PlatformButton>
+                        {charge.metadata?.gatewayAttemptPending ? "Em verificação" :
+                          ["PENDING","OVERDUE","FAILED"].includes(charge.status) &&
+                          !charge.providerChargeId && !charge.paymentUrl && !charge.pixCopyPaste && !charge.boletoBarcode ? (
+                          <>
+                            <PlatformButton disabled={busyId===charge.id} onClick={()=>processCharge(charge,"PIX")}>Gerar Pix</PlatformButton>{" "}
+                            <PlatformButton disabled={busyId===charge.id} onClick={()=>processCharge(charge,"BOLETO")}>Gerar boleto</PlatformButton>
+                          </>
+                        ) : charge.pixCopyPaste && ["PENDING","OVERDUE"].includes(charge.status) ? (
+                          <PlatformButton onClick={()=>copyValue(charge.pixCopyPaste,"Pix Copia e Cola")}>Copiar Pix</PlatformButton>
                         ) : charge.paymentUrl ? (
                           <a
                             href={

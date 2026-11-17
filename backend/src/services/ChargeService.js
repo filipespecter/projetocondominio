@@ -1,3 +1,4 @@
+import prisma from "../config/prisma.js";
 import chargeRepository from "../repositories/ChargeRepository.js";
 import paymentMethodRepository from "../repositories/PaymentMethodRepository.js";
 import subscriptionRepository from "../repositories/SubscriptionRepository.js";
@@ -26,6 +27,7 @@ class ChargeService {
   }
 
   normalizeDate(value, fieldName) {
+    if (value == null || value === "") throw new ApiError(`${fieldName} inválida.`, 400);
     const date =
       value instanceof Date
         ? new Date(value)
@@ -181,33 +183,26 @@ class ChargeService {
       }
     }
 
-    const charge =
-      await chargeRepository
-        .createCharge({
-          condominiumId:
-            data.condominiumId,
-          subscriptionId:
-            data.subscriptionId,
-          paymentMethodId,
-          amountInCents:
-            this.normalizeAmount(
-              data.amountInCents ??
-              subscription.priceInCents
-            ),
-          dueDate:
-            this.normalizeDate(
-              data.dueDate,
-              "Data de vencimento"
-            ),
-          requestId:
-            requestContext
-              ?.requestId ??
-            data.requestId ??
-            null,
-          metadata:
-            data.metadata ??
-            null,
-        });
+    const dueDate = this.normalizeDate(data.dueDate, "Data de vencimento");
+    const monthStart = new Date(Date.UTC(dueDate.getUTCFullYear(), dueDate.getUTCMonth(), 1));
+    const nextMonth = new Date(Date.UTC(dueDate.getUTCFullYear(), dueDate.getUTCMonth() + 1, 1));
+    const amountInCents = this.normalizeAmount(data.amountInCents ?? subscription.priceInCents);
+    const official = subscription.plan?.monthlyPriceInCents ?? subscription.priceInCents;
+    const charge = await prisma.$transaction(async tx => {
+      await tx.$queryRaw`SELECT "id" FROM "Condominium" WHERE "id" = CAST(${subscription.condominiumId} AS uuid) FOR UPDATE`;
+      const existing = await tx.charge.findFirst({
+        where:{condominiumId:subscription.condominiumId,dueDate:{gte:monthStart,lt:nextMonth},OR:[
+          {status:{not:"CANCELED"}},{providerChargeId:{not:null}},
+          {metadata:{path:["gatewayAttemptPending"],equals:true}},
+        ]},select:{id:true},
+      });
+      if (existing) throw new ApiError("Já existe uma cobrança para este condomínio neste mês. Confira a cobrança anterior antes de emitir outra.",409);
+      return tx.charge.create({data:{
+        condominiumId:subscription.condominiumId,subscriptionId:subscription.id,paymentMethodId,amountInCents,dueDate,
+        requestId:requestContext?.requestId ?? null,
+        metadata:{officialPriceInCents:official,discountInCents:Math.max(0,official-amountInCents)},
+      },include:chargeRepository.defaultInclude});
+    });
 
     await AuditLogService.logCreate({
       condominiumId:

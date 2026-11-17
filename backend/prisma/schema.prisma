@@ -119,6 +119,7 @@ enum NoticeStatus {
 }
 
 enum NoticeAudience {
+  INDIVIDUAL
   ALL
   RESIDENTS
   DOORMEN
@@ -388,6 +389,7 @@ model PlanFeature {
 }
 
 model Condominium {
+  wahaProvisioning WahaProvisioning?
   maintenanceRecords AssetMaintenance[]
   assemblyRecords AssemblyRecord[]
   shiftHandovers ShiftHandover[]
@@ -659,6 +661,7 @@ model Resident {
 
   residentType ResidentType @default(OWNER)
   isPrimary    Boolean      @default(false)
+  isSecondary  Boolean      @default(false)
   canReserve   Boolean      @default(true)
   canOpenOccurrence Boolean @default(true)
   whatsappOptIn Boolean @default(false)
@@ -882,6 +885,7 @@ model Reservation {
 }
 
 model Notice {
+  recipientUserId String? @db.Uuid
   assemblyRecords AssemblyRecord[]
   id            String @id @default(uuid()) @db.Uuid
   condominiumId String @db.Uuid
@@ -1794,4 +1798,22 @@ model AssemblyRecord {
  notice Notice @relation(fields:[noticeId], references:[id], onDelete:Restrict)
  @@unique([noticeId, apartmentId, topic])
  @@index([condominiumId, createdAt])
+}
+
+model WahaProvisioning {
+  condominiumId String @id @db.Uuid
+  condominium Condominium @relation(fields: [condominiumId], references: [id], onDelete: Restrict)
+  enabled Boolean @default(false)
+  state String @default("NOT_ENABLED") @db.VarChar(32)
+  operationId String @unique @db.Uuid
+  requestedBy String @db.Uuid
+  leaseId String? @db.Uuid
+  leaseExpiresAt DateTime?
+  attemptCount Int @default(0)
+  nextAttemptAt DateTime @default(now())
+  errorCode String? @db.VarChar(64)
+  preparedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([state, nextAttemptAt])
 }

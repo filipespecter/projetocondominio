@@ -1,4 +1,6 @@
-import ContextHelp from "../../components/ContextHelp.jsx";
+import {FiSettings,FiCreditCard,FiAlertTriangle} from "react-icons/fi";
+import CondominiumRequests from "../../components/CondominiumRequests.jsx";
+import "./GestaoVisual.css";
 import WhatsAppConnection from "../../components/WhatsAppConnection.jsx";
 import { confirmDialog } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useState } from "react";
@@ -36,8 +38,6 @@ function Configuracoes() {
   const [ultimoBackup, setUltimoBackup] = useState("Backup operacional gerenciado pelo servidor");
 
   const isMestre = currentUser?.role === "CONDOMINIUM_ADMIN" || currentUser?.perfil === "mestre";
-  const usandoPadrao = false;
-  const totalUsuarios = usuariosSindico.length;
 
   useEffect(() => { carregarTudo(); }, []);
 
@@ -69,12 +69,13 @@ function Configuracoes() {
     } finally { setCarregando(false); }
   }
 
-  async function salvarDadosCondominio() {
+  async function salvarDadosCondominio(mode) {
+    if(!isMestre)return;
     await executar(async () => {
       const aplicarTemaPersonalizado = Boolean(config.tema?.aplicarTemaPersonalizado);
 
       await configurationApi.updateCondominium({
-        ...Object.fromEntries(Object.entries(config).filter(([key]) => !["plano", "statusComercial"].includes(key))),
+        ...(mode==="dados"?Object.fromEntries(["nomeCondominio","sindico","email","telefone","endereco"].map(k=>[k,config[k]])):{logoUrl:config.logoUrl}),
         tema: {
           ...(config.tema || {}),
           corPrincipal: config.corTema,
@@ -101,11 +102,8 @@ function Configuracoes() {
   }
 
   const [messagingHistory,setMessagingHistory]=useState([]);
-  async function salvarWhatsapp() {
-    await executar(async () => { const saved=await configurationApi.updateSettings("whatsapp", whatsappConfig); setWhatsappConfig(saved); }, "Canal de avisos salvo. Faça o teste de conexão e envio antes de utilizar.");
-  }
-  async function testarWhatsapp() { await executar(async()=>{const result=await configurationApi.testWhatsapp(); alert(result.message); await carregarTudo();}, "Conexão consultada."); }
   async function carregarHistorico() { await executar(async()=>setMessagingHistory(await configurationApi.messagingHistory()), "Histórico atualizado."); }
+  async function conferirEntrega(id) { await executar(async()=>{const result=await configurationApi.checkMessageDelivery(id);alert(result.message);setMessagingHistory(await configurationApi.messagingHistory());}, "Consulta de entrega concluída."); }
   async function reenviarAviso(id) {if(!await confirmDialog("Você conferiu os dados? Deseja confirmar uma nova tentativa de envio?"))return;await executar(async()=>{await configurationApi.retryMessage(id, true); setMessagingHistory(await configurationApi.messagingHistory());}, "Nova tentativa registrada.");}
 
 
@@ -170,119 +168,20 @@ function Configuracoes() {
   const corPreview = temaPersonalizadoAtivo ? config.corTema : corPadraoInfinityCondo;
 
   return (
-    <div style={styles.container}>
-      <section style={styles.hero}>
-        <div>
-          <span style={styles.heroBadge}>⚙️ Central administrativa</span>
-
-          <h1 style={styles.title}>Configurações</h1>
-
-          <p style={styles.subtitle}>
-            Gerencie dados do condomínio, usuários, segurança, backup,
-            integrações, BI e preferências gerais do sistema.
-          </p>
-        </div>
-
-        <div style={styles.heroInfo}>
-          <div style={styles.heroCard}>
-            <span>Perfil atual</span>
-            <strong>{isMestre ? "Síndico Mestre" : "Subsíndico"}</strong>
-          </div>
-
-          <div style={styles.heroCard}>
-            <span>Usuários</span>
-            <strong>{totalUsuarios}</strong>
-          </div>
-
-          <div style={styles.heroCardGold}>
-            <span>Segurança</span>
-            <strong>{usandoPadrao ? "Atenção" : "Protegido"}</strong>
-          </div>
-        </div>
-      </section>
-
-      <section style={styles.tabs}>
-        {[
-          { id: "dados", label: "🏢 Dados" },
-          { id: "usuarios", label: "👥 Usuários" },
-          { id: "seguranca", label: "🔐 Segurança" },
-          { id: "backup", label: "💾 Backup" },
-          { id: "whatsapp", label: "📲 WhatsApp" },
-
-          { id: "preferencias", label: "🎛️ Preferências" }
-        ].map((aba) => (
-          <button
-            key={aba.id}
-            style={{
-              ...styles.tab,
-              ...(abaAtiva === aba.id ? styles.activeTab : {})
-            }}
-            onClick={() => setAbaAtiva(aba.id)}
-          >
-            {aba.label}
-          </button>
-        ))}
-      </section>
-
-      {salvo && <div style={styles.success}>✅ {mensagem}</div>}
-
-      {abaAtiva === "dados" && (
-        <section style={styles.panel}>
-          <div style={styles.panelHeader}>
-            <div>
-              <span style={styles.panelBadge}>Dados institucionais</span>
-              <h2 style={styles.panelTitle}>Informações do condomínio</h2>
-            </div>
-
-            <button style={styles.primaryButton} onClick={salvarDadosCondominio}>
-              Salvar dados
-            </button>
-          </div>
-
-          <div style={styles.formGrid}>
-            <Campo label="Nome do condomínio">
-              <input
-                value={config.nomeCondominio}
-                onChange={(e) =>
-                  setConfig({ ...config, nomeCondominio: e.target.value })
-                }
-                style={styles.input}
-              />
-            </Campo>
-
-            <Campo label="CNPJ">
-              <input
-                value={config.cnpj}
-                onChange={(e) => setConfig({ ...config, cnpj: e.target.value })}
-                style={styles.input}
-              />
-            </Campo>
-
-            <Campo label="Nome do síndico">
-              <input
-                value={config.sindico}
-                onChange={(e) => setConfig({ ...config, sindico: e.target.value })}
-                style={styles.input}
-              />
-            </Campo>
-
-            <Campo label="Telefone">
-              <input
-                value={config.telefone}
-                onChange={(e) => setConfig({ ...config, telefone: e.target.value })}
-                style={styles.input}
-              />
-            </Campo>
-
-            <Campo label="E-mail">
-              <input
-                type="email"
-                value={config.email}
-                onChange={(e) => setConfig({ ...config, email: e.target.value })}
-                style={styles.input}
-              />
-            </Campo>
-
+    <div className="ic-pkg-reference ic-nov-settings">
+      <header className="ic-pkg-hero"><div className="ic-pkg-heading"><span className="ic-pkg-icon"><FiSettings/></span><div><h1>Configurações</h1><p>Gerencie os dados e as preferências do condomínio.</p></div></div></header>
+      {salvo&&<div role="status" style={styles.success}>{mensagem}</div>}
+      <div className="ic-nov-layout">
+      <nav className="ic-nov-nav" aria-label="Configurações">{[["dados","Dados cadastrais"],["aparencia","Aparência"],["plano","Plano e acesso"],["usuarios","Usuários"],["seguranca","Segurança"],["backup","Backup"],["whatsapp","WhatsApp"],["preferencias","Preferências"],...(isMestre?[["risco","Área de risco"]]:[])].map(([id,label])=><button type="button" key={id} className={abaAtiva===id?"ic-pkg-primary":"ic-pkg-outline"} aria-pressed={abaAtiva===id} onClick={()=>setAbaAtiva(id)}>{label}</button>)}</nav>
+      <div className="ic-nov-content">
+      {abaAtiva==="dados"&&<div className="ic-nov-overview"><section className="ic-nov-card"><h2>Dados cadastrais</h2><p>Informações principais do condomínio.</p><form className="ic-nov-fields" onSubmit={e=>{e.preventDefault();void salvarDadosCondominio("dados");}}>
+      {[["nomeCondominio","Nome do condomínio"],["cnpj","CNPJ"],["sindico","Nome do síndico"],["telefone","Telefone"],["email","E-mail"],["endereco","Endereço"]].map(([id,label])=><div key={id} className={["email","endereco"].includes(id)?"ic-nov-full":undefined}><label>{label}<input value={config[id]??""} readOnly={!isMestre||id==="cnpj"} required={id==="nomeCondominio"} type={id==="email"?"email":"text"} onChange={e=>setConfig({...config,[id]:e.target.value})}/></label>{isMestre&&id==="cnpj"&&<button type="button" className="ic-pkg-outline" onClick={()=>setAbaAtiva("cnpj")}>Solicitar alteração</button>}</div>)}
+      {isMestre&&<div className="ic-nov-full"><button className="ic-pkg-primary">Salvar alterações</button> <small>A Central será avisada quando os dados forem atualizados.</small></div>}</form></section>
+      <aside className="ic-nov-aside"><section className="ic-nov-card"><h2>Plano e acesso</h2><strong>{config.plano}</strong>{isMestre&&<p><a className="ic-pkg-primary" href="/dashboard/financeiro#assinatura"><FiCreditCard/> Pagar assinatura</a></p>}</section>{isMestre&&<section className="ic-nov-card"><h2><FiAlertTriangle/> Área de risco</h2><button type="button" className="ic-pkg-outline" onClick={()=>setAbaAtiva("risco")}>Reiniciar cadastros</button></section>}</aside></div>}
+      {abaAtiva==="plano"&&<section className="ic-nov-card"><h2>Plano e acesso</h2><p>{config.plano}</p>{isMestre&&<a className="ic-pkg-primary" href="/dashboard/financeiro#assinatura">Ver assinatura e pagamento</a>}</section>}
+      {abaAtiva==="risco"&&isMestre&&<CondominiumRequests mode="RESET" condominium={config.nomeCondominio}/>}
+      {abaAtiva==="cnpj"&&isMestre&&<CondominiumRequests mode="CNPJ"/>}
+      {abaAtiva==="aparencia"&&<section className="ic-nov-card"><h2>Aparência</h2><div className="ic-nov-fields">
             <Campo label="Personalização visual">
               <ToggleCard
                 title="Personalizar cores do condomínio"
@@ -382,88 +281,7 @@ function Configuracoes() {
               />
             </Campo>
 
-            <ContextHelp label="Sobre plano e acesso">Plano e status comercial são definidos pela Central Star. Para alterar sua contratação, abra um chamado em Suporte.</ContextHelp>
-            <Campo label="Plano comercial">
-              <select
-                value={config.plano}
-                disabled title="Solicite alterações de plano à Central Star"
-                style={styles.input}
-              >
-                <option value={config.plano}>{config.plano}</option>
-                <option>Completo</option>
-              </select>
-
-              <div style={styles.planInfo}>
-                {/b[aá]sico/i.test(config.plano)
-                  ? "Plano Básico: libera todos os módulos operacionais e bloqueia somente BI Analytics, BI Monitor e Central de BI."
-                  : "Plano Completo: libera todos os módulos, incluindo visualizações e central de BI."}
-              </div>
-            </Campo>
-
-            <Campo label="Status comercial">
-              <select
-                value={config.statusComercial}
-                disabled title="Controlado pela Central Star"
-                style={styles.input}
-              >
-                <option value={config.statusComercial}>{config.statusComercial}</option>
-                <option>Teste</option>
-                <option>Suspenso</option>
-                <option>Cancelado</option>
-              </select>
-            </Campo>
-
-            <Campo label="Quantidade de unidades">
-              <input
-                value={config.quantidadeUnidades}
-                onChange={(e) =>
-                  setConfig({ ...config, quantidadeUnidades: e.target.value })
-                }
-                style={styles.input}
-                placeholder="Ex: 80 apartamentos"
-              />
-            </Campo>
-
-            <Campo label="Responsável técnico/comercial">
-              <input
-                value={config.responsavelTecnico}
-                onChange={(e) =>
-                  setConfig({ ...config, responsavelTecnico: e.target.value })
-                }
-                style={styles.input}
-                placeholder="Ex: Star Infinity Code"
-              />
-            </Campo>
-
-            <div style={styles.groupFull}>
-              <label style={styles.label}>Endereço</label>
-
-              <input
-                value={config.endereco}
-                onChange={(e) => setConfig({ ...config, endereco: e.target.value })}
-                style={styles.input}
-              />
-            </div>
-
-            <div style={styles.groupFull}>
-              <label style={styles.label}>Observações comerciais</label>
-
-              <input
-                value={config.observacoesComerciais}
-                onChange={(e) =>
-                  setConfig({
-                    ...config,
-                    observacoesComerciais: e.target.value
-                  })
-                }
-                style={styles.input}
-                placeholder="Ex: Cliente em fase de teste, contrato mensal, implantação inicial..."
-              />
-            </div>
-          </div>
-        </section>
-      )}
-
+</div>{isMestre&&<button type="button" className="ic-pkg-primary" onClick={()=>salvarDadosCondominio("aparencia")}>Salvar aparência</button>}</section>}
       {abaAtiva === "usuarios" && (
         <section style={styles.panel}>
           <div style={styles.panelHeader}>
@@ -614,15 +432,6 @@ function Configuracoes() {
 
           </div>
 
-          {usandoPadrao ? (
-            <div style={styles.warningBox}>
-              ⚠️ O sistema ainda está usando o acesso padrão{" "}
-              <strong>admin / 1234</strong>. Recomendamos alterar.
-            </div>
-          ) : (
-            <div style={styles.safeBox}>🟢 Credenciais personalizadas em uso.</div>
-          )}
-
           <div style={styles.formGrid}>
             <Campo label="Seu usuário de acesso">
               <input
@@ -723,25 +532,11 @@ function Configuracoes() {
 
       {abaAtiva === "whatsapp" && (
         <section className="ic-messaging-settings" style={styles.panel}>
-          <div style={styles.panelHeader}><div><span style={styles.panelBadgeGold}>Avisos de encomendas</span><h2 style={styles.panelTitle}>WhatsApp ou e-mail</h2><p>Canal selecionado: {whatsappConfig.ativo && whatsappConfig.channel === "WHATSAPP" ? "WhatsApp do condomínio" : "E-mail"} · Entrega real: validação pendente</p></div><button style={styles.primaryButton} onClick={salvarWhatsapp}>Salvar canal</button></div>
-          <p style={styles.warningBox}>Cadastrar uma encomenda não envia mensagens. A portaria confere os dados, clica em enviar aviso e confirma o envio aos contatos autorizados. Com WhatsApp desativado, usa e-mail. A falha de uma mensagem WhatsApp não gera envio automático por e-mail. E-mail depende do serviço configurado na plataforma.</p>
+          <div style={styles.panelHeader}><div><span style={styles.panelBadgeGold}>Avisos de encomendas</span><h2 style={styles.panelTitle}>WhatsApp e e-mail</h2><p>O padrão é enviar pelos dois canais, com confirmação na encomenda.</p></div></div>
+          <p style={styles.warningBox}>Cadastrar não dispara mensagens. A portaria confere os destinatários e confirma o envio. Uma falha no WhatsApp não impede a tentativa por e-mail; cada canal tem seu próprio resultado.</p>
           <WhatsAppConnection config={whatsappConfig} onUpdated={carregarTudo} />
-          <div style={styles.formGrid}>
-            <Campo label="Canal de aviso"><select style={styles.input} value={whatsappConfig.channel} onChange={e=>setWhatsappConfig({...whatsappConfig,channel:e.target.value})}><option value="EMAIL">E-mail</option><option value="WHATSAPP">WhatsApp oficial do condomínio</option></select></Campo>
-            <Campo label="WhatsApp ativo"><select style={styles.input} value={whatsappConfig.ativo?"Sim":"Não"} onChange={e=>setWhatsappConfig({...whatsappConfig,ativo:e.target.value==="Sim"})}><option>Não</option><option>Sim</option></select></Campo>
-            {whatsappConfig.channel==="WHATSAPP" && (!whatsappConfig.onboardingStatus||whatsappConfig.onboardingStatus==="MANUAL") && <details style={{gridColumn:"1 / -1"}}><summary>Configuração técnica avançada (opcional)</summary><div style={styles.formGrid}>
-              <Campo label="ID do número na Meta"><input style={styles.input} value={whatsappConfig.phoneNumberId} onChange={e=>setWhatsappConfig({...whatsappConfig,phoneNumberId:e.target.value})} /></Campo>
-              <Campo label="Número remetente"><input style={styles.input} value={whatsappConfig.numeroEmpresa} onChange={e=>setWhatsappConfig({...whatsappConfig,numeroEmpresa:e.target.value})} /></Campo>
-              <Campo label="Nome do modelo aprovado"><input style={styles.input} value={whatsappConfig.templateName} onChange={e=>setWhatsappConfig({...whatsappConfig,templateName:e.target.value})} placeholder="encomenda_recebida" /></Campo>
-              <Campo label="Idioma do modelo"><input style={styles.input} value={whatsappConfig.languageCode} onChange={e=>setWhatsappConfig({...whatsappConfig,languageCode:e.target.value})} /></Campo>
-              <Campo label="Versão da API"><input style={styles.input} value={whatsappConfig.apiVersion} onChange={e=>setWhatsappConfig({...whatsappConfig,apiVersion:e.target.value})} /></Campo>
-              {[['token','Token de acesso'],['appSecret','Segredo do aplicativo'],['verifyToken','Token de verificação do webhook']].map(([key,label])=><Campo key={key} label={label}><input type="password" autoComplete="new-password" style={styles.input} value={whatsappConfig[key]||""} placeholder={whatsappConfig.hasCredentials?"Deixe vazio para manter o valor salvo":""} onChange={e=>setWhatsappConfig({...whatsappConfig,[key]:e.target.value})}/></Campo>)}
-              <Campo label="URL do webhook"><input style={styles.input} value={whatsappConfig.webhook} readOnly /></Campo>
-            </div></details>}
-          </div>
-          {whatsappConfig.channel==="WHATSAPP" && <><p>Use um número conectado à API oficial da Meta. Cadastrar um telefone comum não conecta o WhatsApp. O modelo deve conter três parâmetros no corpo, nesta ordem: condomínio, bloco/apartamento e código de retirada. Autorize apenas os moradores que aceitaram receber avisos.</p><button style={styles.primaryButton} onClick={testarWhatsapp}>Testar conexão salva</button><p>{whatsappConfig.verifiedAt?"Credenciais verificadas; envio e webhook ainda devem ser testados.":"Conexão ainda não verificada."}</p></>}
-          <h3>Histórico de avisos</h3><p>Enviado significa aceito pelo provedor; entregue exige confirmação pelo webhook. Não compartilhe credenciais nos chamados.</p><button style={styles.secondaryButton} onClick={carregarHistorico}>Atualizar histórico</button>
-          <div style={{overflowX:"auto"}}><table><thead><tr><th>Data</th><th>Canal</th><th>Destinatário</th><th>Status</th><th>Ação</th></tr></thead><tbody>{messagingHistory.map(item=><tr key={item.id}><td>{new Date(item.createdAt).toLocaleString("pt-BR")}</td><td>{item.channel}</td><td>{item.recipient}</td><td>{item.status}</td><td>{["FAILED","PENDING"].includes(item.status)&&<button onClick={()=>reenviarAviso(item.id)}>Tentar novamente</button>}</td></tr>)}</tbody></table></div>
+          <h3>Histórico de avisos</h3><p>Enviado significa aceito pelo provedor; entregue exige confirmação do provedor. Não compartilhe credenciais nos chamados.</p><button style={styles.secondaryButton} onClick={carregarHistorico}>Atualizar histórico</button>
+          <div style={{overflowX:"auto"}}><table><thead><tr><th>Data</th><th>Canal</th><th>Destinatário</th><th>Status</th><th>Ação</th></tr></thead><tbody>{messagingHistory.map(item=><tr key={item.id}><td>{new Date(item.createdAt).toLocaleString("pt-BR")}</td><td>{item.channel}</td><td>{item.recipient}</td><td>{({SENT:"Aceito pelo serviço",DELIVERED:"Entrega confirmada",FAILED:"Falha / conferir resultado",PENDING:"Pendente",CANCELED:"Cancelado"})[item.status]||item.status}{item.lastError&&<small style={{display:"block"}}>{item.lastError}</small>}</td><td>{item.provider==="WAHA"&&item.status==="SENT"&&<button onClick={()=>conferirEntrega(item.id)}>Conferir entrega</button>}{["FAILED","PENDING"].includes(item.status)&&<button onClick={()=>reenviarAviso(item.id)}>Tentar novamente</button>}</td></tr>)}</tbody></table></div>
         </section>
       )}
 
@@ -877,6 +672,7 @@ function Configuracoes() {
           </div>
         </section>
       )}
+      </div></div>
     </div>
   );
 }

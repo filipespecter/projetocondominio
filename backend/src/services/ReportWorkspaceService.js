@@ -198,7 +198,7 @@ export async function previewWorkspaceReport(
     where: { id: user.condominiumId },
     select: { name: true, timezone: true, logoUrl: true },
   });
-  const dates = period(c, new Date(), condo.timezone || "America/Recife"),
+  const dates = period(c, new Date(), condo.timezone || "America/Recife", options.closure ? 370 : 90),
     zone = dates.timezone;
   const basicKeys = ["executive", "custom"].includes(c.subject)
     ? c.subject === "custom" && c.datasets.length
@@ -396,6 +396,7 @@ export async function previewWorkspaceReport(
             }).filter(([, v]) => v !== undefined),
           ),
           db,
+          { closure: options.closure === true },
         ),
       ),
     );
@@ -533,7 +534,7 @@ export async function previewWorkspaceReport(
     id,
     number: `${generatedAt.slice(0, 4)}-${id.replaceAll("-", "").slice(0, 16).toUpperCase()}`,
     title:
-      options.monthlyClosure ? "FECHAMENTO MENSAL DA PORTARIA" : c.subject === "executive"
+      options.monthlyClosure ? "FECHAMENTO MENSAL DA PORTARIA" : options.closure ? "FECHAMENTO DA PORTARIA" : c.subject === "executive"
         ? "RELATÓRIO EXECUTIVO CONDOMINIAL"
         : `RELATÓRIO DE ${subjects.find(([key]) => key === c.subject)[1].toLocaleUpperCase("pt-BR")}`,
     condominiumName: condo.name.replace(/\s+/g, " "),

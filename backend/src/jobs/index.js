@@ -1,3 +1,5 @@
+import { runSubscriptionBilling } from "../services/SubscriptionBillingService.js";
+import { expirePendingReservations } from "../services/ReservationExpiryService.js";
 import {notifyMonthlyReview} from "../services/OperationalReviewService.js";
 import SchedulerService from "../services/SchedulerService.js";
 import JobRegistryService from "../services/JobRegistryService.js";
@@ -49,6 +51,16 @@ export function registerJobs() {
     return JobRegistryService
       .list();
   }
+
+  JobRegistryService.register({
+    name: "SUBSCRIPTION_BILLING",
+    description: "Disponibiliza mensalidades vencidas no portal da assinatura.",
+    handler: () => runSubscriptionBilling({onError: (_error, condominiumId) =>
+      Logger.error("Falha ao disponibilizar mensalidade", {condominiumId})}),
+    intervalMs: 60 * 60 * 1000,
+    enabled: process.env.SUBSCRIPTION_BILLING_ENABLED === "true" && Boolean(process.env.SUBSCRIPTION_BILLING_NOT_BEFORE),
+    runOnStart: true,
+  });
 
   /**
    * =====================================================
@@ -198,6 +210,7 @@ export function registerJobs() {
   });
 
   JobRegistryService.register({name:"MONTHLY_OPERATIONAL_REVIEW",description:"Recomenda revisão mensal da portaria sem excluir dados.",handler:()=>notifyMonthlyReview(),intervalMs:24*60*60*1000,enabled:true,runOnStart:false});
+  JobRegistryService.register({name:"RESERVATION_PENDING_EXPIRY",description:"Libera horários sem aprovação em até 24 horas.",handler:()=>expirePendingReservations(),intervalMs:60000,enabled:true,runOnStart:false});
   jobsRegistered =
     true;
 

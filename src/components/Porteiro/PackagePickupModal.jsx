@@ -9,6 +9,7 @@ import { imageFileToDataUrl } from "../../utils/imageCompression.js";
 
 function PackagePickupModal({
   method,
+  expectedPackageId,
   onClose,
   onCompleted,
 }) {
@@ -19,6 +20,7 @@ function PackagePickupModal({
   const [loading, setLoading] =
     useState(false);
   const [deliveryProofImageDataUrl, setDeliveryProofImageDataUrl] = useState(null);
+  const [pickupNote, setPickupNote] = useState("");
   const [deliveryProofName, setDeliveryProofName] = useState("");
 
   const [isPrimary, setIsPrimary] =
@@ -87,6 +89,10 @@ function PackagePickupModal({
             normalized
           );
 
+      if (expectedPackageId && data.package?.id !== expectedPackageId) {
+        alert("A credencial não pertence à encomenda selecionada.");
+        return;
+      }
       setCredential(normalized);
       setValidated(data);
       setIsPrimary(true);
@@ -178,6 +184,8 @@ function PackagePickupModal({
           thirdParty.apartment.trim();
       }
     }
+
+    if (pickupNote.trim()) payload.pickupNote = pickupNote.trim();
 
     try {
       setLoading(true);
@@ -536,6 +544,10 @@ function PackagePickupModal({
               </>
             )}
 
+            <label style={{display: "grid", gap: 6, marginTop: 12}}>
+              Observação da retirada (opcional)
+              <textarea style={{...styles.input, boxSizing: "border-box", width: "100%"}} rows={3} maxLength={400} value={pickupNote} disabled={loading} onChange={e => setPickupNote(e.target.value)} />
+            </label>
             <div style={styles.footer}>
               <button
                 type="button"

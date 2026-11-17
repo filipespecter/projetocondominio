@@ -7,18 +7,7 @@ import {
   useNavigate
 } from "react-router-dom";
 
-import {
-  FaHome,
-  FaBullhorn,
-  FaBox,
-  FaCalendarAlt,
-  FaSignOutAlt,
-  FaCommentDots,
-  FaUserFriends,
-  FaFileAlt,
-  FaLandmark,
-  FaTools
-} from "react-icons/fa";
+import { FiHome, FiVolume2, FiPackage, FiCalendar, FiLogOut, FiMessageSquare, FiUsers, FiTool } from "react-icons/fi";
 
 import { useEffect, useState } from "react";
 import logoStar from "../assets/images/logo-star-infinity.png";
@@ -209,7 +198,7 @@ function DashboardMoradorLayout() {
               }}
             >
               <span style={styles.menuIcon}>
-                <FaHome />
+                <FiHome />
               </span>
 
               <span>
@@ -227,7 +216,7 @@ function DashboardMoradorLayout() {
               }}
             >
               <span style={styles.menuIcon}>
-                <FaBullhorn />
+                <FiVolume2 />
               </span>
 
               <span>
@@ -245,29 +234,11 @@ function DashboardMoradorLayout() {
               }}
             >
               <span style={styles.menuIcon}>
-                <FaUserFriends />
+                <FiUsers />
               </span>
 
               <span>
                 Convites de visitantes
-              </span>
-            </Link>
-
-            <Link
-              to="/dashboard/morador/documentos"
-              style={{
-                ...styles.item,
-                ...(active("/dashboard/morador/documentos")
-                  ? styles.active
-                  : {})
-              }}
-            >
-              <span style={styles.menuIcon}>
-                <FaFileAlt />
-              </span>
-
-              <span>
-                Documentos
               </span>
             </Link>
 
@@ -281,7 +252,7 @@ function DashboardMoradorLayout() {
               }}
             >
               <span style={styles.menuIcon}>
-                <FaLandmark />
+                <FiHome />
               </span>
 
               <span>
@@ -296,7 +267,7 @@ function DashboardMoradorLayout() {
                 ...(active("/dashboard/morador/servicos-apartamento") ? styles.active : {})
               }}
             >
-              <span style={styles.menuIcon}><FaTools /></span>
+              <span style={styles.menuIcon}><FiTool /></span>
               <span>Serviço no apartamento</span>
             </Link>
 
@@ -310,7 +281,7 @@ function DashboardMoradorLayout() {
               }}
             >
               <span style={styles.menuIcon}>
-                <FaBox />
+                <FiPackage />
               </span>
 
               <span>
@@ -328,7 +299,7 @@ function DashboardMoradorLayout() {
               }}
             >
               <span style={styles.menuIcon}>
-                <FaCalendarAlt />
+                <FiCalendar />
               </span>
 
               <span>
@@ -346,7 +317,7 @@ function DashboardMoradorLayout() {
               }}
             >
               <span style={styles.menuIcon}>
-                <FaCommentDots />
+                <FiMessageSquare />
               </span>
 
               <span>
@@ -379,7 +350,7 @@ function DashboardMoradorLayout() {
             onClick={sair}
           >
 
-            <FaSignOutAlt />
+            <FiLogOut />
 
             Encerrar sessão
 

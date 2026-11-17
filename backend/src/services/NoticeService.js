@@ -54,6 +54,7 @@ class NoticeService extends BaseService {
       "DOORMEN",
       "MANAGERS",
       "APARTMENT",
+      "INDIVIDUAL",
     ];
 
     const normalizedAudience =
@@ -387,8 +388,14 @@ class NoticeService extends BaseService {
     return noticeRepository.findByApartment(apartmentId, condominiumId);
   }
 
+  async validateIndividual(condominiumId,apartmentId,userId){
+    if(!userId||!apartmentId)throw new ApiError("Selecione apartamento e morador.",422);
+    const resident=await residentRepository.findByUserId(userId,condominiumId);
+    if(!resident||resident.apartmentId!==apartmentId||resident.user?.status!=="ACTIVE")throw new ApiError("Selecione um morador ativo desta unidade.",422);
+  }
+
   async notifyAudience(notice) {
-    await CommunicationTriggerService
+    if(notice.type==="ASSEMBLY"&&notice.audience!=="INDIVIDUAL") await CommunicationTriggerService
       .notifyNotice({
         notice,
       });
@@ -404,6 +411,7 @@ class NoticeService extends BaseService {
     };
 
     switch (notice.audience) {
+      case "INDIVIDUAL": return NotificationService.createForUsers(notice.condominiumId,[notice.recipientUserId],notificationData);
       case "RESIDENTS":
         return NotificationService
           .createForActiveRoleUsers(
@@ -575,7 +583,7 @@ class NoticeService extends BaseService {
 
     let apartmentId = null;
 
-    if (audience === "APARTMENT") {
+    if (["APARTMENT","INDIVIDUAL"].includes(audience)) {
       const apartment =
         await this.validateApartment(
           data.apartmentId,
@@ -590,6 +598,7 @@ class NoticeService extends BaseService {
       );
     }
 
+    if(audience==="INDIVIDUAL")await this.validateIndividual(condominiumId,apartmentId,data.recipientUserId);
     const expiresAt =
       this.normalizeOptionalDate(
         data.expiresAt,
@@ -628,6 +637,7 @@ class NoticeService extends BaseService {
           attachments: attachments.length ? attachments : null,
           priority,
           audience,
+          recipientUserId:data.recipientUserId,
           status,
           publishedAt: status === "PUBLISHED" ? new Date() : null,
           expiresAt,
@@ -762,7 +772,7 @@ class NoticeService extends BaseService {
         targetAudience;
     }
 
-    if (targetAudience === "APARTMENT") {
+    if (["APARTMENT","INDIVIDUAL"].includes(targetAudience)) {
       const apartmentId =
         data.apartmentId ??
         before.apartmentId;
@@ -779,6 +789,8 @@ class NoticeService extends BaseService {
       updateData.apartmentId = null;
     }
 
+    updateData.recipientUserId=targetAudience==="INDIVIDUAL"?(data.recipientUserId??before.recipientUserId):null;
+    if(targetAudience==="INDIVIDUAL")await this.validateIndividual(condominiumId,updateData.apartmentId,updateData.recipientUserId);
     if (data.expiresAt !== undefined) {
       updateData.expiresAt =
         this.normalizeOptionalDate(
@@ -900,6 +912,7 @@ class NoticeService extends BaseService {
       );
     }
 
+    if(before.audience==="INDIVIDUAL")await this.validateIndividual(condominiumId,before.apartmentId,before.recipientUserId);
     this.validateAssemblyData(before);
 
     const notice =
@@ -1222,6 +1235,7 @@ class NoticeService extends BaseService {
         role:
           authenticatedUser.role,
         apartmentId,
+        recipientUserId:authenticatedUser.id,
         type: filters.type ?? null,
       });
   }
@@ -1277,6 +1291,7 @@ class NoticeService extends BaseService {
           role:
             authenticatedUser?.role,
           apartmentId,
+          recipientUserId:authenticatedUser?.id,
         });
 
     if (!notice) {

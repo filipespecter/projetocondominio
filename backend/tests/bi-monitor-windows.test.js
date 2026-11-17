@@ -1,7 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {operationalMonitor} from "../src/services/OperationalMonitorService.js";
-import {biWindowUrl} from "../../src/utils/biWindows.js";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+const biWindowsModule = process.env.PROJECT_ROOT
+  ? pathToFileURL(resolve(process.env.PROJECT_ROOT, "src/utils/biWindows.js"))
+  : new URL("../../src/utils/biWindows.js", import.meta.url);
+const { biWindowUrl } = await import(biWindowsModule.href);
 const user={id:"manager",role:"CONDOMINIUM_ADMIN",condominiumId:"tenant-a"};
 function fixture(){const queries=[];const model=name=>({count:async q=>{queries.push([name,q]);return 3;},findMany:async q=>{queries.push([name,q]);return [];}});const db={};for(const name of ["package","visitor","occurrence","shiftHandover","resident","doorman","serviceProvider","commonArea","reservation","assetMaintenance","auditLog"])db[name]=model(name);db.condominium={findUnique:async()=>({name:"Edifício",timezone:"America/Recife",settings:{structure:{total:40}}})};db.apartment={groupBy:async q=>{queries.push(["apartment",q]);return [{status:"OCCUPIED",_count:{_all:2}},{status:"UNKNOWN",_count:{_all:1}}];}};return {db,queries};}
 test("monitor usa capacidade prevista, mantém zeros horários e restringe todas as consultas ao tenant",async()=>{const {db,queries}=fixture();const data=await operationalMonitor(user,db);assert.equal(data.panorama.occupancyPercent,5);assert.equal(data.panorama.registered,3);assert.equal(data.hourly.length,24);assert.equal(data.hourly.reduce((n,x)=>n+x.packages+x.visitors,0),0);assert.equal(data.score,undefined);for(const [name,q]of queries){assert.equal(q.where.condominiumId,"tenant-a");if(name!=="shiftHandover"&&name!=="assetMaintenance")assert.equal(q.where.deletedAt,null);}assert.ok(data.security);});

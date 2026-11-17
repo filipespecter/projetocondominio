@@ -1,6 +1,13 @@
+import { ApiError } from "../utils/ApiError.js";
 import BaseRepository from "./BaseRepository.js";
 
 class ReservationRepository extends BaseRepository {
+  async create(...args){try{return await super.create(...args);}catch(error){this.rethrowOverlap(error);}}
+  async updateMany(...args){try{return await super.updateMany(...args);}catch(error){this.rethrowOverlap(error);}}
+  rethrowOverlap(error){
+    if(JSON.stringify([error.message,error.meta]).includes("Reservation_no_active_overlap"))throw new ApiError("Horário reservado ou em análise. Escolha outro horário.",409);
+    throw error;
+  }
   constructor() {
     super("reservation");
   }
@@ -507,7 +514,7 @@ class ReservationRepository extends BaseRepository {
       id,
       condominiumId,
       {
-        status: "REJECTED",
+        status: "DENIED",
         reviewedByUserId,
         reviewReason,
       }
@@ -531,6 +538,7 @@ class ReservationRepository extends BaseRepository {
         id,
         condominiumId,
         deletedAt: null,
+        status:"PENDING",
       },
       {
         status,
@@ -564,7 +572,7 @@ class ReservationRepository extends BaseRepository {
           condominiumId,
           status: {
             in: [
-              "REJECTED",
+              "DENIED",
               "CANCELED",
             ],
           },

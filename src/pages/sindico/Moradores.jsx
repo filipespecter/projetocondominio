@@ -1,3 +1,5 @@
+import { useSearchParams } from "react-router-dom";
+import UnitDirectory, {unitLabel} from "../../components/UnitDirectory.jsx";
 import ResidentAccess from "../../components/ResidentAccess.jsx";
 import ApartmentContacts from "../../components/ApartmentContacts.jsx";
 import { confirmDialog } from "../../components/GlobalDialogs.jsx";
@@ -15,10 +17,14 @@ function Moradores() {
   const estadoInicialMorador = {
     id: null, nome: "", apto: "", apartamento: "", telefone: "", documento: "", email: "",
     usuario: "", senha: "", status: "Ativo", tipoMorador: "Proprietário",
-    whatsappOptIn: false, moradorPrincipal: false, perfilMorador: "principal", apartamentoId: null,
+    whatsappOptIn: false, moradorPrincipal: false, moradorSecundario:false, perfilMorador: "principal", apartamentoId: null,
     permissoesMorador: { podeReservar: true, podeAbrirSugestao: true, podeVisualizarEncomendas: true }
   };
 
+  const [params,setParams]=useSearchParams();
+  const unitFromLink=params.get("apartamento");
+  const [activeUnit,setActiveUnit]=useState(unitFromLink);
+  const [unitTab,setUnitTab]=useState("residents");
   const [moradores, setMoradores] = useState([]);
   const [apartamentos, setApartamentos] = useState([]);
   const [mostrarModal, setMostrarModal] = useState(false);
@@ -55,6 +61,7 @@ function Moradores() {
       apartamentoId: r.apartmentId ?? r.apartment?.id ?? null,
       tipoMorador: typeFront[r.residentType] ?? r.residentType ?? "Proprietário",
       moradorPrincipal: Boolean(r.isPrimary),
+      moradorSecundario:r.isSecondary===true,
       perfilMorador: r.isPrimary ? "principal" : "dependente",
       permissoesMorador: {
         podeReservar: r.canReserve !== false,
@@ -91,6 +98,13 @@ function Moradores() {
     return correspondeBusca && (filtroStatus === "Todos" || morador.status === filtroStatus);
   });
 
+  const selectedUnit=apartamentos.find(ap=>ap.id===activeUnit);
+  const residentCounts=new Map();
+  for(const person of moradoresFiltrados) residentCounts.set(person.apartamentoId,(residentCounts.get(person.apartamentoId)||0)+1);
+  const directoryUnits=apartamentos.filter(ap=>residentCounts.has(ap.id)||((filtroStatus==="Todos")&&(!busca.trim()||unitLabel(ap).toLowerCase().includes(busca.trim().toLowerCase())))).map(ap=>({...ap,count:residentCounts.get(ap.id)||0}));
+  if(residentCounts.has(null))directoryUnits.push({id:"unlinked",count:residentCounts.get(null)});
+  const shownResidents=moradoresFiltrados.filter(m=>activeUnit==="unlinked"?!m.apartamentoId:m.apartamentoId===activeUnit);
+  const newResidentForUnit=()=>({...estadoInicialMorador,...(selectedUnit?{apartamentoId:selectedUnit.id,apto:selectedUnit.numero,apartamento:selectedUnit.numero}: {})});
   const totalAtivos = moradores.filter((m) => m.status === "Ativo").length;
   const totalInativos = moradores.filter((m) => m.status === "Inativo").length;
   const totalBloqueados = moradores.filter((m) => m.status === "Bloqueado").length;
@@ -99,12 +113,12 @@ function Moradores() {
   const apartamentosVinculados = new Set(moradores.map((m) => m.apartamentoId).filter(Boolean)).size;
 
   const apartamentosDisponiveisParaSelect = apartamentos.map((ap) => ({
-    id: ap.id, label: `Bloco ${ap.bloco} - Apto ${ap.numero}`, value: ap.numero,
+    id: ap.id, label: `Bloco ${ap.bloco} - Apto ${ap.numero}`, value: ap.id,
     bloco: ap.bloco, numero: ap.numero
   }));
 
   function selecionarApartamento(valor) {
-    const ap = apartamentos.find((a) => String(a.numero) === String(valor) || String(a.id) === String(valor));
+    const ap = apartamentos.find((a) => String(a.id) === String(valor));
     setNovoMorador((prev) => ({ ...prev, apto: ap?.numero ?? valor, apartamento: ap?.numero ?? valor, apartamentoId: ap?.id ?? null }));
   }
 
@@ -133,6 +147,7 @@ function Moradores() {
       document: novoMorador.documento?.trim() || null,
       residentType: typeBack[novoMorador.tipoMorador] ?? "OWNER",
       isPrimary: Boolean(novoMorador.moradorPrincipal),
+      isSecondary:Boolean(novoMorador.moradorSecundario),
       canReserve: novoMorador.permissoesMorador?.podeReservar !== false,
       canOpenOccurrence: novoMorador.permissoesMorador?.podeAbrirSugestao !== false,
       canViewPackages: novoMorador.permissoesMorador?.podeVisualizarEncomendas !== false,
@@ -195,7 +210,7 @@ function Moradores() {
   return (
     <div style={styles.container}>
       {accessReceipt && <section className="ic-feature-panel" role="status"><h2>Acesso do morador criado</h2><p>Usuário: {accessReceipt.username}</p><p>Senha temporária: {accessReceipt.password}</p><p>Portal: {location.origin}/login/morador. Troca obrigatória no primeiro acesso.</p><button onClick={()=>navigator.clipboard.writeText(`Usuário: ${accessReceipt.username}\nSenha temporária: ${accessReceipt.password}\nPortal: ${location.origin}/login/morador`).catch(()=>alert("Selecione e copie os dados manualmente."))}>Copiar dados</button><button onClick={()=>setAccessReceipt(null)}>Fechar e ocultar senha</button></section>}
-      <ApartmentContacts apartments={apartamentos} residents={moradores} />
+      
       <section style={styles.hero}>
         <div style={styles.heroLeft}>
           <span style={styles.heroBadge}>
@@ -221,7 +236,7 @@ function Moradores() {
             style={styles.heroButton}
             onClick={() => {
               setEditId(null);
-              setNovoMorador(estadoInicialMorador);
+              setNovoMorador(newResidentForUnit());
               setMostrarModal(true);
             }}
           >
@@ -288,16 +303,17 @@ function Moradores() {
             </span>
 
             <h2 style={styles.registryTitle}>
-              Lista de moradores
+              {activeUnit ? `Moradores · ${unitLabel(selectedUnit || {})}` : "Unidades do condomínio"}
             </h2>
           </div>
 
           <span style={styles.resultBadge}>
-            {moradoresFiltrados.length} resultado(s)
+            {activeUnit ? shownResidents.length : directoryUnits.length} resultado(s)
           </span>
         </div>
 
-        {moradoresFiltrados.length === 0 ? (
+        {activeUnit&&<div className="ic-unit-detail"><button type="button" className="ic-unit-back" onClick={()=>{setActiveUnit(null);if(unitFromLink)setParams({}, {replace:true});}}>← Voltar às unidades</button>{selectedUnit&&<><button type="button" className="ic-unit-back" aria-pressed={unitTab==="residents"} onClick={()=>setUnitTab("residents")}>Moradores</button><button type="button" className="ic-unit-back" aria-pressed={unitTab==="contacts"} onClick={()=>setUnitTab("contacts")}>Contatos autorizados</button></>}</div>}
+        {!activeUnit ? <UnitDirectory units={directoryUnits} onOpen={u=>{setActiveUnit(u.id);setUnitTab("residents");}} noun="morador(es)" action="Ver moradores"/> : unitTab==="contacts"&&selectedUnit ? <ApartmentContacts key={selectedUnit.id} apartments={[selectedUnit]} residents={moradores} fixedApartmentId={selectedUnit.id} /> : shownResidents.length === 0 ? (
           <div style={styles.empty}>
             <div style={styles.emptyIcon}>
               👥
@@ -315,7 +331,7 @@ function Moradores() {
               style={styles.emptyButton}
               onClick={() => {
                 setEditId(null);
-                setNovoMorador(estadoInicialMorador);
+                setNovoMorador(newResidentForUnit());
                 setMostrarModal(true);
               }}
             >
@@ -324,7 +340,7 @@ function Moradores() {
           </div>
         ) : (
           <div style={styles.roster}>
-            {moradoresFiltrados.map((morador) => {
+            {shownResidents.map((morador) => {
               const status = corStatus(morador.status);
 
               return (
@@ -385,7 +401,7 @@ function Moradores() {
                     <div style={styles.dataPill}>
                       <span>Perfil</span>
                       <strong>
-                        {morador.moradorPrincipal ? "Principal" : "Dependente"}
+                        {morador.moradorPrincipal ? "1º responsável" : morador.moradorSecundario ? "2º responsável" : "Sem ordem de responsabilidade"}
                       </strong>
                     </div>
 
@@ -424,7 +440,7 @@ function Moradores() {
 
       {mostrarModal && (
         <div style={styles.modalBackground}>
-          <div style={styles.modal}>
+          <div style={styles.modal} className="ic-apartment-modal">
             <div style={styles.modalTop}>
               <div>
                 <span style={styles.modalBadge}>
@@ -446,7 +462,7 @@ function Moradores() {
               </button>
             </div>
 
-            <div style={styles.formPanel}>
+            <div style={styles.formPanel} className="ic-apartment-form">
               <div style={styles.formRow}>
                 <label style={styles.label}>
                   Nome completo
@@ -473,7 +489,7 @@ function Moradores() {
 
                 {apartamentosDisponiveisParaSelect.length > 0 ? (
                   <select
-                    value={novoMorador.apto}
+                    value={novoMorador.apartamentoId??""}
                     onChange={(e) =>
                       selecionarApartamento(e.target.value)
                     }
@@ -496,7 +512,7 @@ function Moradores() {
                   <input
                     inputMode="numeric"
                     placeholder="Ex: 101"
-                    value={novoMorador.apto}
+                    value={novoMorador.apartamentoId??""}
                     onChange={(e) =>
                       setNovoMorador({
                         ...novoMorador,
@@ -535,24 +551,13 @@ function Moradores() {
 
               <div style={styles.formRow}>
                 <label style={styles.label}>
-                  Morador principal deste apartamento?
+                  Responsabilidade na unidade
                 </label>
 
                 <select
-                  value={novoMorador.moradorPrincipal ? "Sim" : "Não"}
-                  onChange={(e) => {
-                    const principal = e.target.value === "Sim";
-
-                    setNovoMorador({
-                      ...novoMorador,
-                      moradorPrincipal: principal,
-                      perfilMorador: principal ? "principal" : "dependente"
-                    });
-                  }}
-                  style={styles.input}
-                >
-                  <option>Não</option>
-                  <option>Sim</option>
+                  style={styles.input} value={novoMorador.moradorPrincipal?"FIRST":novoMorador.moradorSecundario?"SECOND":"NONE"}
+                  onChange={e=>setNovoMorador({...novoMorador,moradorPrincipal:e.target.value==="FIRST",moradorSecundario:e.target.value==="SECOND"})}>
+                  <option value="NONE">Sem ordem de responsabilidade</option><option value="FIRST">1º responsável</option><option value="SECOND">2º responsável</option>
                 </select>
               </div>
 

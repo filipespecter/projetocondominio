@@ -55,7 +55,7 @@ function boundary(day, timezone) {
   }
   return new Date(guess);
 }
-export function period(query, now = new Date(), timezone = "America/Recife") {
+export function period(query, now = new Date(), timezone = "America/Recife", maxDays = 90) {
   try {
     new Intl.DateTimeFormat("pt-BR", {
       timeZone: timezone
@@ -70,7 +70,7 @@ export function period(query, now = new Date(), timezone = "America/Recife") {
     nextDay = new Date(Date.parse(endDay + "T00:00:00Z") + 86400000).toISOString().slice(0, 10),
     end = new Date(boundary(nextDay, timezone).getTime() - 1);
   boundary(endDay, timezone);
-  if (start > end || end - start > 90 * 86400000) throw new ApiError("Informe um período válido de até 90 dias.", 422);
+  if (start > end || end - start > maxDays * 86400000) throw new ApiError(`Informe um período válido de até ${maxDays} dias.`, 422);
   return {
     start,
     end,

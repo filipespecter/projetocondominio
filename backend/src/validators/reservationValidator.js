@@ -4,7 +4,7 @@ import { ApiError } from "../utils/ApiError.js";
 export const RESERVATION_STATUSES = [
   "PENDING",
   "APPROVED",
-  "REJECTED",
+  "DENIED",
   "CANCELED",
   "COMPLETED",
 ];

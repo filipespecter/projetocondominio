@@ -1,3 +1,6 @@
+import { FiGrid,FiPlus,FiCheckCircle,FiTool,FiSearch,FiUsers,FiClock,FiEdit2,FiCalendar,FiMoreHorizontal } from "react-icons/fi";
+import { Link } from "react-router-dom";
+import "./GestaoVisual.css";
 import { confirmDialog } from "../../components/GlobalDialogs.jsx";
 import {
   useEffect,
@@ -205,13 +208,6 @@ function AreasComuns() {
         "Disponível"
     );
 
-  const ocupadas =
-    areas.filter(
-      (area) =>
-        area.status ===
-        "Ocupado"
-    );
-
   const manutencao =
     areas.filter(
       (area) =>
@@ -399,327 +395,25 @@ function AreasComuns() {
     );
   }
 
-  function corStatus(status) {
-    if (
-      status === "Disponível"
-    ) {
-      return {
-        label:
-          "Disponível",
-        background:
-          "#dcfce7",
-        color:
-          "#166534",
-        border:
-          "#bbf7d0",
-      };
-    }
 
-    if (
-      status === "Ocupado"
-    ) {
-      return {
-        label:
-          "Ocupado",
-        background:
-          "#fef3c7",
-        color:
-          "#92400e",
-        border:
-          "#fde68a",
-      };
-    }
 
-    return {
-      label:
-        "Manutenção",
-      background:
-        "#fee2e2",
-      color:
-        "#b91c1c",
-      border:
-        "#fecaca",
-    };
-  }
 
-  function iconeArea(nome) {
-    const texto =
-      String(nome ?? "")
-        .toLowerCase();
 
-    if (
-      texto.includes(
-        "pisc"
-      )
-    ) {
-      return "🏊";
-    }
-
-    if (
-      texto.includes(
-        "churr"
-      )
-    ) {
-      return "🔥";
-    }
-
-    if (
-      texto.includes(
-        "quadra"
-      )
-    ) {
-      return "🏀";
-    }
-
-    if (
-      texto.includes(
-        "academ"
-      )
-    ) {
-      return "🏋️";
-    }
-
-    if (
-      texto.includes(
-        "salão"
-      ) ||
-      texto.includes(
-        "salao"
-      )
-    ) {
-      return "🎉";
-    }
-
-    return "🏢";
-  }
-
-    return (
-    <div style={styles.container}>
-      <section style={styles.hero}>
-        <div style={styles.heroLeft}>
-          <span style={styles.heroBadge}>
-            🏢 Centro de estruturas
-          </span>
-
-          <h1 style={styles.title}>
-            Áreas Comuns
-          </h1>
-
-          <p style={styles.subtitle}>
-            Catálogo operacional dos espaços do condomínio para reservas,
-            manutenção e controle administrativo.
-          </p>
-        </div>
-
-        <div style={styles.heroRight}>
-          <div style={styles.structureBoard}>
-            <div style={styles.structureItem}>
-              <span>✅</span>
-              <strong>{disponiveis.length}</strong>
-              <small>disponíveis</small>
-            </div>
-
-            <div style={styles.structureItem}>
-              <span>🟡</span>
-              <strong>{ocupadas.length}</strong>
-              <small>ocupadas</small>
-            </div>
-
-            <div style={styles.structureItem}>
-              <span>🛠️</span>
-              <strong>{manutencao.length}</strong>
-              <small>manutenção</small>
-            </div>
-          </div>
-
-          <button
-            style={styles.heroButton}
-            onClick={() => {
-              setEditId(null);
-              setNovaArea(estadoInicialArea);
-              setMostrarModal(true);
-            }}
-          >
-            + Nova área
-          </button>
-        </div>
+  return (
+    <div className="ic-pkg-reference ic-gestao-visual">
+      <header className="ic-pkg-hero"><div className="ic-pkg-heading"><span className="ic-pkg-icon"><FiGrid/></span><div><h1>Áreas comuns</h1><p>Gerencie os espaços do condomínio e suas regras de reserva.</p></div></div><div className="ic-pkg-actions"><button type="button" onClick={()=>{setEditId(null);setNovaArea(estadoInicialArea);setMostrarModal(true);}}><FiPlus/> Nova área</button></div></header>
+      <div className="ic-gestao-metrics">{[[areas.length,"Áreas cadastradas",FiGrid],[disponiveis.length,"Disponíveis",FiCheckCircle],[manutencao.length,"Em manutenção",FiTool]].map(([number,label,Icon])=><div key={label}><span className="ic-pkg-icon"><Icon/></span><div><strong>{number}</strong><span>{label}</span></div></div>)}</div>
+      <div className="ic-gestao-searchbar"><label className="ic-pkg-search"><FiSearch/><input aria-label="Buscar áreas comuns" placeholder="Buscar área pelo nome..." value={busca} onChange={e=>setBusca(e.target.value)}/></label><select aria-label="Status" value={filtroStatus} onChange={e=>setFiltroStatus(e.target.value)}><option value="Todos">Todos os status</option>{["Disponível","Ocupado","Manutenção"].map(status=><option key={status}>{status}</option>)}</select></div>
+      <section className="ic-gestao-list"><h2 className="ic-pkg-section-title"><FiGrid/> Espaços do condomínio</h2>
+        <div className="ic-pkg-unit-grid">{areasFiltradas.map(area=><article key={area.id} className="ic-pkg-unit">
+          <div className="ic-pkg-unit-head"><span className="ic-pkg-icon"><FiGrid/></span><div><h3>{area.nome}</h3></div><span className="ic-pkg-tag" data-tone={area.status==="Disponível"?"green":area.status==="Manutenção"?"amber":undefined}>{area.status==="Manutenção"?"Em manutenção":area.status}</span></div>
+          <div className="ic-area-line"><FiUsers/><div><strong>Capacidade</strong><span>{area.capacidade?`Até ${area.capacidade} pessoas`:"Não informada"}</span></div></div>
+          <div className="ic-area-line"><FiClock/><div><strong>Horário de uso</strong><span>{area.horario||"Não informado"}</span></div></div>
+          <div className="ic-pkg-row-actions"><button type="button" className="ic-pkg-outline" onClick={()=>editarArea(area)}><FiEdit2/> Editar área</button><Link className="ic-pkg-primary" to={`/dashboard/reservas?area=${encodeURIComponent(area.id)}`}><FiCalendar/> Ver reservas</Link>
+          <details className="ic-pkg-action-menu"><summary aria-label="Mais ações"><FiMoreHorizontal/></summary><div>{area.status!=="Disponível"&&<button type="button" onClick={()=>alterarStatus(area.id,"Disponível")}>Liberar</button>}{area.status!=="Manutenção"&&<button type="button" onClick={()=>alterarStatus(area.id,"Manutenção")}>Manutenção</button>}<button type="button" onClick={()=>excluirArea(area.id)}>Excluir</button></div></details></div>
+        </article>)}</div>
+        {!areasFiltradas.length&&<p className="ic-pkg-empty">Nenhuma área comum encontrada.</p>}
       </section>
-
-      <section style={styles.controlStrip}>
-        <div style={styles.searchWrap}>
-          <span style={styles.searchIcon}>⌕</span>
-
-          <input
-            placeholder="Buscar por área, capacidade, horário ou status..."
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            style={styles.search}
-          />
-        </div>
-
-        <select
-          value={filtroStatus}
-          onChange={(e) => setFiltroStatus(e.target.value)}
-          style={styles.filter}
-        >
-          <option>Todos</option>
-          <option>Disponível</option>
-          <option>Ocupado</option>
-          <option>Manutenção</option>
-        </select>
-
-        <div style={styles.compactStats}>
-          <span>
-            <b>{areas.length}</b> áreas
-          </span>
-
-          <span>
-            <b>{disponiveis.length}</b> disponíveis
-          </span>
-
-          <span>
-            <b>{manutencao.length}</b> manutenção
-          </span>
-        </div>
-      </section>
-
-      <section style={styles.catalogPanel}>
-        <div style={styles.panelHeader}>
-          <div>
-            <span style={styles.panelLabel}>
-              Catálogo
-            </span>
-
-            <h2 style={styles.panelTitle}>
-              Estruturas cadastradas
-            </h2>
-          </div>
-
-          <span style={styles.resultBadge}>
-            {areasFiltradas.length} resultado(s)
-          </span>
-        </div>
-
-        {areasFiltradas.length === 0 ? (
-          <div style={styles.empty}>
-            <div style={styles.emptyIcon}>
-              🏢
-            </div>
-
-            <h3 style={styles.emptyTitle}>
-              Nenhuma área comum encontrada
-            </h3>
-
-            <p style={styles.emptyText}>
-              Cadastre espaços como piscina, salão, churrasqueira,
-              quadra ou academia para liberar uso nas reservas.
-            </p>
-
-            <button
-              style={styles.emptyButton}
-              onClick={() => {
-                setEditId(null);
-                setNovaArea(estadoInicialArea);
-                setMostrarModal(true);
-              }}
-            >
-              Cadastrar área
-            </button>
-          </div>
-        ) : (
-          <div style={styles.areaGrid}>
-            {areasFiltradas.map((area) => {
-              const status = corStatus(area.status);
-
-              return (
-                <article
-                  key={area.id}
-                  style={{
-                    ...styles.areaCard,
-                    borderColor: status.border
-                  }}
-                >
-                  <div style={styles.cardCover}>
-                    <div style={styles.areaIcon}>
-                      {iconeArea(area.nome)}
-                    </div>
-
-                    <span
-                      style={{
-                        ...styles.statusBadge,
-                        background: status.background,
-                        color: status.color
-                      }}
-                    >
-                      {status.label}
-                    </span>
-                  </div>
-
-                  <div style={styles.areaBody}>
-                    <h3 style={styles.areaName}>
-                      {area.nome}
-                    </h3>
-
-                    <div style={styles.infoGrid}>
-                      <div style={styles.infoItem}>
-                        <span>Capacidade</span>
-                        <strong>{area.capacidade || "Opcional"}</strong>
-                      </div>
-
-                      <div style={styles.infoItem}>
-                        <span>Funcionamento</span>
-                        <strong>{area.horario}</strong>
-                      </div>
-                    </div>
-
-                    <div style={styles.integrationBox}>
-                      <span>🔗 Reservas</span>
-                      <p>
-                        Essa área pode ser usada nos módulos de reservas do síndico e morador.
-                      </p>
-                    </div>
-
-                    <div style={styles.actionRow}>
-                      {area.status !== "Disponível" && (
-                        <button
-                          style={styles.availableButton}
-                          onClick={() => alterarStatus(area.id, "Disponível")}
-                        >
-                          Liberar
-                        </button>
-                      )}
-
-                      {area.status !== "Manutenção" && (
-                        <button
-                          style={styles.maintenanceButton}
-                          onClick={() => alterarStatus(area.id, "Manutenção")}
-                        >
-                          Manutenção
-                        </button>
-                      )}
-
-                      <button
-                        style={styles.editButton}
-                        onClick={() => editarArea(area)}
-                      >
-                        Editar
-                      </button>
-
-                      <button
-                        style={styles.deleteButton}
-                        onClick={() => excluirArea(area.id)}
-                      >
-                        Excluir
-                      </button>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
       {mostrarModal && (
         <div style={styles.modalBackground}>
           <div style={styles.modal}>

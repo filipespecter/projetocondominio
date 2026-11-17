@@ -1,3 +1,4 @@
+import PlatformClientWhatsApp from "../../components/PlatformClientWhatsApp.jsx";
 import ClientProfileEditor from "../../components/ClientProfileEditor.jsx";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -286,6 +287,7 @@ function PlatformClients() {
               setSelected(current=>current?.id===selected.id?{...current,...patch}:current);
               setData(current=>({...current,items:(current?.items||[]).map(item=>item.id===selected.id?{...item,...patch}:item)}));
             }}/>
+            <PlatformClientWhatsApp key={`whatsapp-${selected.id}`} client={selected} />
             <ClientPasswordReset key={selected.id} client={selected} />
             <div style={styles.modalFooter}>
               <span><FaPhone /> Central mantém controle de plano, acesso e cobrança deste cliente.</span>

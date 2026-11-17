@@ -1,3 +1,6 @@
+import { Link,useLocation } from "react-router-dom";
+import CondominiumRequests from "../../components/CondominiumRequests.jsx";
+import "./GestaoVisual.css";
 import { currentReportIdentity } from "../../utils/reportIdentity.js";
 import { useEffect, useMemo, useState } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis } from "recharts";
@@ -12,6 +15,13 @@ const today=()=>new Date().toISOString().slice(0,10);
 const initialForm=()=>({expenseDate:today(),categoryId:"",description:"",supplier:"",paymentMethod:"PIX",amount:"",notes:"",receiptImageDataUrl:null});
 
 export default function Financeiro(){
+  const {hash}=useLocation();
+  return <><nav aria-label="Financeiro" className="ic-pkg-reference" style={{marginBottom:16,display:"flex",gap:12,flexWrap:"wrap"}}>
+    <Link className="ic-pkg-outline" to="/dashboard/financeiro">Despesas</Link>
+    <Link className="ic-pkg-outline" to="/dashboard/financeiro#assinatura">Assinatura</Link>
+  </nav>{hash==="#assinatura"?<div className="ic-pkg-reference"><CondominiumRequests mode="PAY"/></div>:<Despesas/>}</>;
+}
+function Despesas(){
   const [month,setMonth]=useState(new Date().toISOString().slice(0,7));
   const [categoryFilter,setCategoryFilter]=useState(""); const [search,setSearch]=useState("");
   const [data,setData]=useState({items:[],summary:{totalInCents:0,count:0,averageInCents:0,largestCategory:null,byCategory:[]}});

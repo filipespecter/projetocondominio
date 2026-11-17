@@ -8,28 +8,7 @@ import {
   useLocation
 } from "react-router-dom";
 
-import {
-  FaChartPie,
-  FaChartLine,
-  FaUsers,
-  FaUserShield,
-  FaBox,
-  FaBell,
-  FaCalendarAlt,
-  FaDoorOpen,
-  FaClipboardList,
-  FaBuilding,
-  FaCog,
-  FaSignOutAlt,
-  FaHardHat,
-  FaWallet,
-  FaHeadset,
-  FaFileAlt,
-  FaTools,
-  FaHandshake,
-  FaFileContract,
-  FaLandmark
-} from "react-icons/fa";
+import { FiPieChart, FiTrendingUp, FiUsers, FiShield, FiPackage, FiBell, FiCalendar, FiLogIn, FiClipboard, FiGrid, FiSettings, FiLogOut, FiTool, FiCreditCard, FiHeadphones, FiFileText, FiLink2, FiHome } from "react-icons/fi";
 
 import { contarNaoLidas } from "../Services/notificacaoService";
 import authApi from "../Services/authApi.js";
@@ -252,7 +231,7 @@ function DashboardLayout() {
 
           {notificacoesNaoLidas > 0 && (
             <div style={styles.notificationBox}>
-              <FaBell />
+              <FiBell />
 
               <span>
                 {notificacoesNaoLidas} notificação
@@ -289,7 +268,7 @@ function DashboardLayout() {
             <MenuItem
               to="/dashboard/sindico"
               active={itemAtivo("/dashboard/sindico")}
-              icon={<FaChartPie />}
+              icon={<FiPieChart />}
               label="Dashboard"
             />
           </MenuGroup>
@@ -298,28 +277,28 @@ function DashboardLayout() {
             <MenuItem
               to="/dashboard/apartamentos"
               active={itemAtivo("/dashboard/apartamentos")}
-              icon={<FaBuilding />}
+              icon={<FiGrid />}
               label="Apartamentos"
             />
 
             <MenuItem
               to="/dashboard/moradores"
               active={itemAtivo("/dashboard/moradores")}
-              icon={<FaUsers />}
+              icon={<FiUsers />}
               label="Moradores"
             />
 
             <MenuItem
               to="/dashboard/porteiros"
               active={itemAtivo("/dashboard/porteiros")}
-              icon={<FaUserShield />}
+              icon={<FiShield />}
               label="Porteiros"
             />
 
             <MenuItem
               to="/dashboard/prestadores"
               active={itemAtivo("/dashboard/prestadores")}
-              icon={<FaHardHat />}
+              icon={<FiTool />}
               label="Prestadores"
             />
           </MenuGroup>
@@ -328,28 +307,28 @@ function DashboardLayout() {
             <MenuItem
               to="/dashboard/encomendas"
               active={itemAtivo("/dashboard/encomendas")}
-              icon={<FaBox />}
+              icon={<FiPackage />}
               label="Encomendas"
             />
 
             <MenuItem
               to="/dashboard/visitantes"
               active={itemAtivo("/dashboard/visitantes")}
-              icon={<FaClipboardList />}
+              icon={<FiClipboard />}
               label="Visitantes"
             />
 
             <MenuItem
               to="/dashboard/reservas"
               active={itemAtivo("/dashboard/reservas")}
-              icon={<FaCalendarAlt />}
+              icon={<FiCalendar />}
               label="Reservas"
             />
 
             <MenuItem
               to="/dashboard/areas-comuns"
               active={itemAtivo("/dashboard/areas-comuns")}
-              icon={<FaDoorOpen />}
+              icon={<FiLogIn />}
               label="Áreas comuns"
             />
           </MenuGroup>
@@ -358,7 +337,7 @@ function DashboardLayout() {
             <MenuItem
               to="/dashboard/avisos"
               active={itemAtivo("/dashboard/avisos")}
-              icon={<FaBell />}
+              icon={<FiBell />}
               label={
                 notificacoesNaoLidas > 0
                   ? `Avisos (${notificacoesNaoLidas})`
@@ -369,77 +348,77 @@ function DashboardLayout() {
             <MenuItem
               to="/dashboard/documentos"
               active={itemAtivo("/dashboard/documentos")}
-              icon={<FaFileAlt />}
+              icon={<FiFileText />}
               label="Documentos"
             />
 
             <MenuItem
               to="/dashboard/assembleias"
               active={itemAtivo("/dashboard/assembleias")}
-              icon={<FaLandmark />}
+              icon={<FiHome />}
               label="Assembleias"
             />
 
             <MenuItem
               to="/dashboard/ativos"
               active={itemAtivo("/dashboard/ativos")}
-              icon={<FaTools />}
+              icon={<FiTool />}
               label="Ativos / Equipamentos"
             />
 
             <MenuItem
               to="/dashboard/fornecedores"
               active={itemAtivo("/dashboard/fornecedores")}
-              icon={<FaHandshake />}
+              icon={<FiLink2 />}
               label="Fornecedores"
             />
 
             <MenuItem
               to="/dashboard/contratos"
               active={itemAtivo("/dashboard/contratos")}
-              icon={<FaFileContract />}
+              icon={<FiFileText />}
               label="Contratos"
             />
 
             <MenuItem
               to="/dashboard/relatorios"
               active={itemAtivo("/dashboard/relatorios")}
-              icon={<FaChartPie />}
+              icon={<FiPieChart />}
               label="Relatórios"
             />
 
             <MenuItem
               to="/dashboard/financeiro"
               active={itemAtivo("/dashboard/financeiro")}
-              icon={<FaWallet />}
+              icon={<FiCreditCard />}
               label="Financeiro"
             />
 
             <MenuItem
               to="/dashboard/bi-analytics"
               active={itemAtivo("/dashboard/bi-analytics")}
-              icon={<FaChartLine />}
+              icon={<FiTrendingUp />}
               label="BI Analytics"
             />
 
             <MenuItem
               to="/dashboard/bi-monitor"
               active={itemAtivo("/dashboard/bi-monitor")}
-              icon={<FaChartLine />}
+              icon={<FiTrendingUp />}
               label="BI Monitor"
             />
 
             <MenuItem
               to="/dashboard/suporte"
               active={itemAtivo("/dashboard/suporte")}
-              icon={<FaHeadset />}
+              icon={<FiHeadphones />}
               label="Suporte"
             />
 
             <MenuItem
               to="/dashboard/configuracoes"
               active={itemAtivo("/dashboard/configuracoes")}
-              icon={<FaCog />}
+              icon={<FiSettings />}
               label="Configurações"
             />
           </MenuGroup>
@@ -457,7 +436,7 @@ function DashboardLayout() {
           </div>
 
           <button style={styles.logoutButton} onClick={sair}>
-            <FaSignOutAlt />
+            <FiLogOut />
             Encerrar sessão
           </button>
         </div>

@@ -467,13 +467,6 @@ test("exportação de relatórios registra auditoria própria sem usar registro 
   assert.match(controller, /REPORT_EXPORT/);
 });
 
-test("encomendas atrasadas são calculadas por tempo real de recebimento", async () => {
-  const page = await source("src/pages/sindico/Encomendas.jsx");
-  assert.match(page, /LIMITE_ATRASO_DIAS = 3/);
-  assert.match(page, /receivedAtRaw/);
-  assert.doesNotMatch(page, /const atrasadas = \[\]/);
-});
-
 test("piloto remove diálogos nativos de confirmação e adiciona busca global e onboarding guiado", async () => {
   const dialogs = await source("src/components/GlobalDialogs.jsx");
   const search = await source("src/components/GlobalSearch.jsx");

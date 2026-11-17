@@ -1,3 +1,6 @@
+import {FiBell,FiPlus,FiCalendar,FiSearch,FiMoreHorizontal} from "react-icons/fi";
+import residentApi from "../../Services/residentApi.js";
+import "./GestaoVisual.css";
 import { confirmDialog, promptDialog } from "../../components/GlobalDialogs.jsx";
 import {
   useEffect,
@@ -13,7 +16,7 @@ function Avisos() {
     titulo: "",
     descricao: "",
     prioridade: "Média",
-    publico: "Todos",
+    publico: "Todo o condomínio",
     apartamentoId: "",
     statusPublicacao: "Publicado",
     data:
@@ -23,6 +26,7 @@ function Avisos() {
         ),
   };
 
+  const [received,setReceived]=useState(false);
   const [avisos, setAvisos] =
     useState([]);
 
@@ -72,7 +76,9 @@ function Avisos() {
     Baixa: "LOW",
   };
 
+  const [destinatarios,setDestinatarios]=useState([]);
   const audienceFront = {
+    INDIVIDUAL:"Um morador",
     ALL: "Todos",
     RESIDENTS: "Moradores",
     DOORMEN: "Porteiros",
@@ -81,6 +87,8 @@ function Avisos() {
   };
 
   const audienceBack = {
+    "Um morador":"INDIVIDUAL",
+    "Todo o condomínio":"RESIDENTS",
     Todos: "ALL",
     Moradores: "RESIDENTS",
     Porteiros: "DOORMEN",
@@ -134,6 +142,7 @@ function Avisos() {
           item.audience
         ] ??
         "Todos",
+      recipientUserId:item.recipientUserId??"",
       apartamentoId:
         item.apartmentId ??
         "",
@@ -202,12 +211,15 @@ function Avisos() {
         noticeData,
         occurrenceData,
         apartmentData,
+        residents,
       ] = await Promise.all([
         noticeApi.list(),
         occurrenceApi.list(),
         apartmentApi.list(),
+        residentApi.directory(),
       ]);
 
+      setDestinatarios(residents??[]);
       setApartamentos(
         apartmentData ?? []
       );
@@ -298,31 +310,6 @@ function Avisos() {
       }
     );
 
-  const alta =
-    avisos.filter(
-      (a) =>
-        [
-          "Alta",
-          "Urgente",
-        ].includes(
-          a.prioridade
-        )
-    ).length;
-
-  const media =
-    avisos.filter(
-      (a) =>
-        a.prioridade ===
-        "Média"
-    ).length;
-
-  const baixa =
-    avisos.filter(
-      (a) =>
-        a.prioridade ===
-        "Baixa"
-    ).length;
-
   async function salvarAviso() {
     if (
       !novoAviso.titulo.trim() ||
@@ -341,8 +328,7 @@ function Avisos() {
       "ALL";
 
     if (
-      audience ===
-        "APARTMENT" &&
+      ["APARTMENT","INDIVIDUAL"].includes(audience) &&
       !novoAviso.apartamentoId
     ) {
       alert(
@@ -351,7 +337,12 @@ function Avisos() {
       return;
     }
 
+    const person=destinatarios.find(r=>r.user?.id===novoAviso.recipientUserId&&r.apartmentId===novoAviso.apartamentoId);
+    if(audience==="INDIVIDUAL"&&!person)return alert("Selecione o morador destinatário.");
+    const apt=apartamentos.find(a=>a.id===novoAviso.apartamentoId);
+    if(novoAviso.statusPublicacao!=="Rascunho"&&!await confirmDialog(`Publicar para ${person?.user?.name??(apt?`Bloco ${apt.block??""}, apartamento ${apt.number}`:novoAviso.publico)}?`))return;
     const payload = {
+      recipientUserId:audience==="INDIVIDUAL"?novoAviso.recipientUserId:null,
       title:
         novoAviso.titulo.trim(),
       message:
@@ -365,8 +356,7 @@ function Avisos() {
         "NORMAL",
       audience,
       apartmentId:
-        audience ===
-        "APARTMENT"
+        ["APARTMENT","INDIVIDUAL"].includes(audience)
           ? novoAviso.apartamentoId
           : null,
       status:
@@ -595,288 +585,22 @@ function Avisos() {
     }
   }
 
-  function iconeCategoria(categoria) {
-    switch (categoria) {
-      case "Aviso":
-        return "📢";
-      case "Reclamação":
-        return "⚠️";
-      case "Sugestão":
-        return "💡";
-      case "Solicitação":
-        return "📝";
-      default:
-        return "📋";
-    }
-  }
-
-  return (
-    <div style={styles.container}>
-      <section style={styles.hero}>
-        <div>
-          <span style={styles.heroBadge}>
-            📢 Central de comunicação
-          </span>
-
-          <h1 style={styles.title}>Avisos</h1>
-
-          <p style={styles.subtitle}>
-            Publique comunicados e acompanhe ocorrências,
-            sugestões e reclamações em uma única central.
-            Encomendas, visitantes e demais eventos aparecem
-            na Central de Notificações.
-          </p>
-        </div>
-
-        <div style={styles.heroRight}>
-          <div style={styles.noticeBoard}>
-            <div style={styles.noticeItem}>
-              <span>🚨</span>
-              <strong>{alta}</strong>
-              <small>alta</small>
-            </div>
-
-            <div style={styles.noticeItem}>
-              <span>⚠️</span>
-              <strong>{media}</strong>
-              <small>média</small>
-            </div>
-
-            <div style={styles.noticeItem}>
-              <span>✅</span>
-              <strong>{baixa}</strong>
-              <small>baixa</small>
-            </div>
-          </div>
-
-          <button
-            style={styles.heroButton}
-            onClick={() => {
-              setEditId(null);
-              setNovoAviso(
-                estadoInicialAviso
-              );
-              setMostrarModal(true);
-            }}
-          >
-            + Novo aviso
-          </button>
-        </div>
-      </section>
-
-      <section style={styles.controlStrip}>
-        <div style={styles.searchWrap}>
-          <span style={styles.searchIcon}>⌕</span>
-
-          <input
-            placeholder="Buscar por título, descrição, data, status, categoria ou prioridade..."
-            value={busca}
-            onChange={(e) =>
-              setBusca(
-                e.target.value
-              )
-            }
-            style={styles.search}
-          />
-        </div>
-
-        <select
-          value={filtroPrioridade}
-          onChange={(e) =>
-            setFiltroPrioridade(
-              e.target.value
-            )
-          }
-          style={styles.filter}
-        >
-          <option>Todas</option>
-          <option>Alta</option>
-          <option>Média</option>
-          <option>Baixa</option>
-          <option>Urgente</option>
-        </select>
-
-        <select
-          value={filtroCategoria}
-          onChange={(e) =>
-            setFiltroCategoria(
-              e.target.value
-            )
-          }
-          style={styles.filter}
-        >
-          <option>Todas</option>
-          <option>Aviso</option>
-          <option>Ocorrência</option>
-          <option>Reclamação</option>
-          <option>Sugestão</option>
-          <option>Solicitação</option>
-        </select>
-
-        <div style={styles.compactStats}>
-          <span>
-            <b>{avisos.length}</b> registros
-          </span>
-
-          <span>
-            <b>{avisosFiltrados.length}</b> resultado(s)
-          </span>
-        </div>
-      </section>
-
-      <section style={styles.communicationPanel}>
-        <div style={styles.panelHeader}>
-          <div>
-            <span style={styles.panelLabel}>Central operacional</span>
-
-            <h2 style={styles.panelTitle}>Comunicações recebidas</h2>
-          </div>
-
-          <span style={styles.resultBadge}>
-            {avisosFiltrados.length} resultado(s)
-          </span>
-        </div>
-
-        {avisosFiltrados.length === 0 ? (
-          <div style={styles.empty}>
-            <div style={styles.emptyIcon}>📢</div>
-
-            <h3 style={styles.emptyTitle}>Nenhum registro encontrado</h3>
-
-            <p style={styles.emptyText}>
-              Avisos, ocorrências, reclamações e sugestões aparecerão aqui.
-            </p>
-
-            <button
-              style={styles.emptyButton}
-              onClick={() => {
-                setEditId(null);
-                setNovoAviso(estadoInicialAviso);
-                setMostrarModal(true);
-              }}
-            >
-              Publicar aviso
-            </button>
-          </div>
-        ) : (
-          <div style={styles.noticeGrid}>
-            {avisosFiltrados.map((aviso) => {
-              const prioridade = corPrioridade(aviso.prioridade);
-
-              return (
-                <article
-                  key={`${aviso.categoria}-${aviso.id}`}
-                  style={{
-                    ...styles.noticeCard,
-                    borderColor: prioridade.border
-                  }}
-                >
-                  <div style={styles.cardTop}>
-                    <div style={styles.noticeIcon}>
-                      {iconeCategoria(aviso.categoria)}
-                    </div>
-
-                    <span
-                      style={{
-                        ...styles.priorityBadge,
-                        background: prioridade.background,
-                        color: prioridade.color
-                      }}
-                    >
-                      {prioridade.label}
-                    </span>
-                  </div>
-
-                  <div style={styles.badges}>
-                    <span style={styles.categoryBadge}>{aviso.categoria}</span>
-                    <span style={styles.originBadge}>{aviso.origem}</span>
-                    <span style={styles.statusBadge}>{aviso.status}</span>
-                  </div>
-
-                  <h3 style={styles.noticeTitle}>{aviso.titulo}</h3>
-
-                  <p style={styles.description}>{aviso.descricao}</p>
-
-                  <div style={styles.meta}>
-                    <span>Registrado em</span>
-                    <strong>{aviso.data}</strong>
-                  </div>
-
-                  {(aviso.categoria === "Sugestão" ||
-                    aviso.categoria === "Reclamação" ||
-                    aviso.categoria === "Solicitação" ||
-                    aviso.categoria === "Ocorrência") && (
-                    <div style={styles.responseArea}>
-                      <textarea
-                        placeholder="Resposta ou resolução da administração..."
-                        value={respostaTexto}
-                        onChange={(e) => setRespostaTexto(e.target.value)}
-                        style={styles.responseInput}
-                      />
-
-                      <button
-                        style={styles.editButton}
-                        onClick={() => responderItem(aviso)}
-                      >
-                        Responder
-                      </button>
-                    </div>
-                  )}
-
-                  <div style={styles.actions}>
-                    {aviso.categoria === "Aviso" ? (
-                      <>
-                        <button
-                          style={styles.editButton}
-                          onClick={() => editarAviso(aviso)}
-                        >
-                          Editar
-                        </button>
-
-                        <button
-                          style={styles.deleteButton}
-                          onClick={() => excluirAviso(aviso.id)}
-                        >
-                          Excluir
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          style={styles.editButton}
-                          onClick={() => atualizarStatus(aviso, "Ciente")}
-                        >
-                          Ciente
-                        </button>
-
-                        <button
-                          style={styles.editButton}
-                          onClick={() =>
-                            atualizarStatus(aviso, "Em Tratamento")
-                          }
-                        >
-                          Em tratamento
-                        </button>
-
-                        <button
-                          style={styles.editButton}
-                          onClick={() => atualizarStatus(aviso, "Resolvido")}
-                        >
-                          Resolver
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
+  const rows=avisosFiltrados.filter(a=>received?a.categoria!=="Aviso":a.categoria==="Aviso");
+  return (<div className="ic-pkg-reference ic-gestao-visual">
+    <header className="ic-pkg-hero"><div className="ic-pkg-heading"><span className="ic-pkg-icon"><FiBell/></span><div><h1>Avisos</h1><p>Publique comunicados e acompanhe as mensagens do condomínio.</p></div></div><div className="ic-pkg-actions"><button type="button" onClick={()=>{setEditId(null);setNovoAviso(estadoInicialAviso);setMostrarModal(true);}}><FiPlus/> Novo aviso</button></div></header>
+    <div className={mostrarModal?"ic-nov-notice-layout":"ic-nov-notice-layout closed"}>
+    <section className="ic-nov-card">
+      <div className="ic-pkg-tabs">{[[false,"Avisos publicados"],[true,"Comunicações recebidas"]].map(([value,label])=><button key={label} type="button" aria-pressed={received===value} onClick={()=>{setReceived(value);setFiltroCategoria("Todas");}}>{label} ({avisos.filter(a=>value?a.categoria!=="Aviso":a.categoria==="Aviso"&&a.status!=="Rascunho").length})</button>)}</div>
+      <div className="ic-pkg-filters"><label className="ic-pkg-search"><FiSearch/><input aria-label="Buscar avisos" placeholder="Buscar por título ou mensagem..." value={busca} onChange={e=>setBusca(e.target.value)}/></label><select aria-label="Categoria" value={filtroCategoria} onChange={e=>setFiltroCategoria(e.target.value)}><option value="Todas">Todas as categorias</option>{[...new Set(avisos.filter(a=>received?a.categoria!=="Aviso":a.categoria==="Aviso").map(a=>a.categoria))].map(v=><option key={v}>{v}</option>)}</select><select aria-label="Prioridade" value={filtroPrioridade} onChange={e=>setFiltroPrioridade(e.target.value)}><option value="Todas">Todas as prioridades</option>{["Alta","Média","Baixa","Urgente"].map(v=><option key={v}>{v}</option>)}</select></div>
+      <div className="ic-pkg-table-wrap"><table className="ic-pkg-table"><thead><tr><th>Título</th><th>{received?"Origem":"Destinatário"}</th><th>Prioridade</th><th>Data</th><th>Ações</th></tr></thead><tbody>{rows.map(aviso=>{
+        const priority=corPrioridade(aviso.prioridade),apt=apartamentos.find(a=>a.id===aviso.apartamentoId);
+        const target=aviso.publico==="Um morador"?destinatarios.find(r=>r.user?.id===aviso.recipientUserId)?.user?.name||"Um morador":aviso.publico==="Apartamento"&&apt?`Bloco ${apt.block??"—"} · Apartamento ${apt.number}`:aviso.publico;
+        return <tr key={aviso.id}><td data-label="Título"><span className="ic-pkg-description"><FiCalendar/><strong>{aviso.titulo}</strong></span><small>{aviso.descricao}</small></td><td data-label="Destinatário / origem">{received?aviso.origem:target}</td><td data-label="Prioridade"><span className="ic-pkg-tag" style={{background:priority.background,color:priority.color}}>{priority.label}</span></td><td data-label="Data">{aviso.data}<small>{aviso.status}</small></td><td data-label="Ações"><details className="ic-pkg-action-menu"><summary aria-label="Mais ações"><FiMoreHorizontal/></summary>{received?<div><textarea aria-label="Resposta" value={respostaTexto} onChange={e=>setRespostaTexto(e.target.value)}/><button onClick={()=>responderItem(aviso)}>Responder</button><button onClick={()=>atualizarStatus(aviso,"Ciente")}>Ciente</button><button onClick={()=>atualizarStatus(aviso,"Em Tratamento")}>Em tratamento</button><button onClick={()=>atualizarStatus(aviso,"Resolvido")}>Resolver</button></div>:<div><button onClick={()=>editarAviso(aviso)}>Editar</button><button onClick={()=>excluirAviso(aviso.id)}>Excluir</button></div>}</details></td></tr>;
+      })}</tbody></table>{!rows.length&&<p className="ic-pkg-empty">Nenhum registro encontrado.</p>}</div>
+    </section>
       {mostrarModal && (
-        <div style={styles.modalBackground}>
-          <div style={styles.modal}>
+        <div className="ic-nov-card ic-nov-notice-editor">
+          <div>
             <div style={styles.modalTop}>
               <div>
                 <span style={styles.modalBadge}>
@@ -952,29 +676,11 @@ function Avisos() {
                 <div style={styles.groupFull}>
                   <label style={styles.label}>Público</label>
 
-                  <select
-                    value={novoAviso.publico}
-                    onChange={(e) =>
-                      setNovoAviso({
-                        ...novoAviso,
-                        publico: e.target.value,
-                        apartamentoId:
-                          e.target.value === "Apartamento"
-                            ? novoAviso.apartamentoId
-                            : ""
-                      })
-                    }
-                    style={styles.input}
-                  >
-                    <option>Todos</option>
-                    <option>Moradores</option>
-                    <option>Porteiros</option>
-                    <option>Gestão</option>
-                    <option>Apartamento</option>
-                  </select>
+                  <div className="ic-nov-targets">{[["Todo o condomínio","Todo o condomínio"],["Apartamento","Um apartamento"],["Um morador","Um morador"]].map(([id,label])=><button key={id} type="button" className={novoAviso.publico===id?"ic-pkg-primary":"ic-pkg-outline"} aria-pressed={novoAviso.publico===id} onClick={()=>setNovoAviso({...novoAviso,publico:id,apartamentoId:"",recipientUserId:""})}>{label}</button>)}</div>
+                  {["Todos","Moradores","Porteiros","Gestão"].includes(novoAviso.publico)&&<small>Público original: {novoAviso.publico}</small>}
                 </div>
 
-                {novoAviso.publico === "Apartamento" && (
+                {["Apartamento","Um morador"].includes(novoAviso.publico) && (
                   <div style={styles.groupFull}>
                     <label style={styles.label}>Apartamento</label>
 
@@ -983,7 +689,7 @@ function Avisos() {
                       onChange={(e) =>
                         setNovoAviso({
                           ...novoAviso,
-                          apartamentoId: e.target.value
+                          apartamentoId: e.target.value,recipientUserId:""
                         })
                       }
                       style={styles.input}
@@ -1007,6 +713,10 @@ function Avisos() {
                   </div>
                 )}
 
+                {novoAviso.publico==="Um morador"&&<label style={styles.groupFull}>Morador
+                 <select style={styles.input} value={novoAviso.recipientUserId??""} onChange={e=>setNovoAviso({...novoAviso,recipientUserId:e.target.value})}>
+                  <option value="">Selecione</option>{destinatarios.filter(r=>r.apartmentId===novoAviso.apartamentoId&&r.user?.id).map(r=><option key={r.id} value={r.user.id}>{r.user.name}</option>)}
+                 </select></label>}
                 <div style={styles.groupFull}>
                   <label style={styles.label}>Publicação</label>
 
@@ -1029,7 +739,7 @@ function Avisos() {
 
             <div style={styles.modalButtons}>
               <button style={styles.saveButton} onClick={salvarAviso}>
-                Salvar aviso
+                Publicar aviso
               </button>
 
               <button style={styles.cancelButton} onClick={fecharModal}>
@@ -1039,6 +749,7 @@ function Avisos() {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }

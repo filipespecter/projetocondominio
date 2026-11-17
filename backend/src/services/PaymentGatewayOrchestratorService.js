@@ -1,3 +1,6 @@
+import { cardCheckoutEnabled, checkoutUrl } from "../utils/mercadoPagoCardOrder.js";
+import { persistPixOrder } from "./PixOrderSettlementService.js";
+import { isOrderId } from "../utils/mercadoPagoOrder.js";
 import { reservePaymentAttempt, releaseRejectedAttempt } from "../utils/paymentAttempt.js";
 import { assertPaymentMatches } from "../utils/paymentConsistency.js";
 import crypto from "node:crypto";
@@ -51,9 +54,8 @@ class PaymentGatewayOrchestratorService {
       phone,
 
       identificationType:
-        paymentData
-          ?.identificationType ??
-        null,
+        paymentData?.identificationType ??
+        ({11:"CPF",14:"CNPJ"})[String(paymentData?.identificationNumber ?? condominium?.document ?? "").replace(/\D/g,"").length] ?? null,
 
       identificationNumber:
         paymentData
@@ -115,13 +117,15 @@ class PaymentGatewayOrchestratorService {
   }
 
   async getChargeContext(
-    chargeId
+    chargeId, portalPayment, platformMethod
   ) {
     const charge =
       await ChargeService
         .findById(
           chargeId
         );
+
+    if (portalPayment && charge.condominiumId !== portalPayment.condominiumId) throw new ApiError("Cobrança não encontrada.",404);
 
     if (
       charge.status ===
@@ -162,6 +166,18 @@ class PaymentGatewayOrchestratorService {
         "Condomínio da cobrança não encontrado.",
         404
       );
+    }
+
+    if (portalPayment || platformMethod !== undefined) {
+      const type=portalPayment?.type ?? platformMethod;
+      if (!["PIX","BOLETO"].includes(type)) throw new ApiError("Escolha Pix ou boleto.",422);
+      if (charge.metadata?.gatewayAttemptPending) throw new ApiError("Pagamento em verificação. Aguarde a conferência.",409);
+      if (charge.providerChargeId || charge.pixCopyPaste || charge.paymentUrl || charge.boletoBarcode || charge.metadata?.pixQrCodeBase64) {
+        throw new ApiError("A cobrança já tem um meio emitido. Abra o existente; se venceu, peça a conferência da Central.",409);
+      }
+      const linked = charge.paymentMethodId ? await paymentMethodRepository.findById(charge.paymentMethodId) : null;
+      const matches=linked?.condominiumId===charge.condominiumId&&linked.type===type&&linked.status==="ACTIVE"&&linked.provider==="MERCADO_PAGO";
+      return {charge,condominium,paymentMethod:{id:matches?linked.id:null,type,provider:"MERCADO_PAGO",status:"ACTIVE"}};
     }
 
     const paymentMethodId =
@@ -205,11 +221,112 @@ class PaymentGatewayOrchestratorService {
     };
   }
 
+  async openCardCheckout(id,user,requestContext,db=prisma,gateway=PaymentGatewayService.getProvider("MERCADO_PAGO"),preparedCardBody=null) {
+    if(!cardCheckoutEnabled())throw new ApiError("Pagamento com cartão ainda não habilitado.",503);
+    const charge=await ChargeService.findById(id);
+    if(!user?.condominiumId||charge.condominiumId!==user.condominiumId)throw new ApiError("Cobrança não encontrada.",404);
+    if(!["PENDING","OVERDUE","FAILED"].includes(charge.status)||charge.metadata?.gatewayAttemptPending)
+      throw new ApiError("A cobrança está fechada ou o pagamento está em verificação.",409);
+    gateway.ensureConfigured();
+    gateway.ensureWebhookConfigured();
+    if(charge.providerChargeId && charge.provider==="MERCADO_PAGO" && charge.metadata?.gatewayAttemptKind==="CARD_ORDERS"){
+      const current=await gateway.getOrderPayment(charge.providerChargeId);
+      if(current.kind!=="CARD_ORDERS")throw new ApiError("Ordem de cartão divergente.",409);
+      assertPaymentMatches(charge,current,charge.providerChargeId);
+      const result=await this.applyPixOrder(id,current,{requestContext});
+      if(result?.charge&&["PENDING","OVERDUE","FAILED"].includes(result.charge.status)&&!result.charge.metadata?.gatewayAttemptPending&&current.status==="pending"&&checkoutUrl(current.paymentUrl,current.providerPaymentId))return {url:current.paymentUrl};
+      throw new ApiError("O checkout não está mais aberto. Atualize a cobrança para ver o resultado ou solicite conferência à Central.",409);
+    }
+    if(charge.providerChargeId||charge.paymentUrl||charge.pixCopyPaste||charge.boletoBarcode||charge.metadata?.pixQrCodeBase64)
+      throw new ApiError("Já existe um meio emitido para esta cobrança.",409);
+    const body=preparedCardBody?.total_amount===(charge.amountInCents/100).toFixed(2) ? preparedCardBody : await gateway.cardOrderBody(charge);
+    const key=crypto.createHash("sha256").update(`InfinityCondo:card:${id}:${Number(charge.metadata?.gatewayAttemptSequence)||0}`).digest("hex");
+    await reservePaymentAttempt(db,charge,key,"CARD_ORDERS");
+    let payment;
+    try {payment=await gateway.createCardOrder({charge,idempotencyKey:key,body});}
+    catch(error){
+      if([400,401,403,404,422].includes(error.details?.statusCode))await releaseRejectedAttempt(db,id,key);
+      throw error;
+    }
+    assertPaymentMatches(charge,payment);
+    const result=await this.applyPixOrder(id,payment,{paymentMethodId:null,attemptKey:key,authenticatedUser:user,requestContext});
+    if(!result?.charge||!["PENDING","OVERDUE","FAILED"].includes(result.charge.status)||payment.status!=="pending"||!checkoutUrl(payment.paymentUrl,payment.providerPaymentId))
+      throw new ApiError("Checkout não disponível. Atualize a cobrança para conferir o estado.",409);
+    return {url:payment.paymentUrl};
+  }
+
+  async switchPixToBoleto(id, user, requestContext, db=prisma, gateway=PaymentGatewayService.getProvider("MERCADO_PAGO")) {
+    return this.switchOrderPayment(id,user,requestContext,"BOLETO",db,gateway);
+  }
+
+  async switchBoletoToCard(id,user,requestContext,db=prisma,gateway=PaymentGatewayService.getProvider("MERCADO_PAGO")) {
+    if(!cardCheckoutEnabled())throw new ApiError("Pagamento com cartão ainda não habilitado.",503);
+    return this.switchOrderPayment(id,user,requestContext,"CARD",db,gateway);
+  }
+
+  async switchOrderPayment(id,user,requestContext,target,db,gateway) {
+    const fromBoleto=target==="CARD";
+    const previousLabel=fromBoleto?"boleto":"Pix";
+    const charge=await ChargeService.findById(id);
+    if (!user?.condominiumId || charge.condominiumId!==user.condominiumId) throw new ApiError("Cobrança não encontrada.",404);
+    if (!["PENDING","OVERDUE","FAILED"].includes(charge.status) || charge.metadata?.gatewayAttemptPending ||
+      (fromBoleto ? charge.metadata?.gatewayAttemptKind!=="BOLETO_ORDERS" : ["CARD_ORDERS","BOLETO_ORDERS"].includes(charge.metadata?.gatewayAttemptKind)) || charge.provider!=="MERCADO_PAGO" || !isOrderId(charge.providerChargeId)) {
+      throw new ApiError("Não é possível trocar o meio desta cobrança.",409);
+    }
+    gateway.ensureConfigured();
+    gateway.ensureWebhookConfigured();
+    const cardBody=fromBoleto?await gateway.cardOrderBody(charge):null;
+    if(!fromBoleto) {
+      const condominium=await db.condominium.findUnique({where:{id:charge.condominiumId}});
+      if(!condominium)throw new ApiError("Condomínio não encontrado.",404);
+      gateway.buildBoletoOrder(charge,this.buildCustomer(condominium,charge.subscription));
+    }
+    const previous=charge.providerChargeId;
+    const check=async()=>{
+      const payment=await (fromBoleto?gateway.getOrderPayment(previous):gateway.getPixOrder(previous));
+      if(fromBoleto&&payment.kind!=="BOLETO_ORDERS")throw new ApiError("Ordem de boleto divergente.",409);
+      assertPaymentMatches(charge,payment,previous);
+      return payment;
+    };
+    let payment=await check();
+    if(payment.status==="pending" && (!fromBoleto || payment.statusDetail==="waiting_payment")){
+      const key=crypto.createHash("sha256").update(`InfinityCondo:switch-${previousLabel}:${id}:${previous}`).digest("hex");
+      try { if(fromBoleto)await gateway.cancelOrder(previous,key);else await gateway.cancelPixOrder(previous,key); } catch { /* Resolve uncertainty by reading the same order. */ }
+      payment=await check();
+    }
+    if(payment.status==="approved"){
+      await this.applyPixOrder(id,payment,{requestContext});
+      throw new ApiError(`O ${previousLabel} já foi pago. Nenhuma nova cobrança foi emitida.`,409);
+    }
+    if(payment.status!=="cancelled")throw new ApiError(`O Mercado Pago ainda não confirmou o cancelamento do ${previousLabel}. Nenhum novo meio foi emitido; atualize e tente novamente.`,409);
+    await db.$transaction(async tx=>{
+      await tx.$queryRaw`SELECT id FROM "Charge" WHERE id=${id}::uuid FOR UPDATE`;
+      const current=await tx.charge.findUnique({where:{id}});
+      if(!current || current.condominiumId!==charge.condominiumId || current.providerChargeId!==previous || (fromBoleto && current.amountInCents!==charge.amountInCents) ||
+        !["PENDING","OVERDUE","FAILED"].includes(current.status) || current.metadata?.gatewayAttemptPending) {
+        throw new ApiError("A cobrança mudou durante a troca. Atualize a página.",409);
+      }
+      await tx.paymentTransaction.updateMany({where:{chargeId:id,provider:"MERCADO_PAGO",providerPaymentId:previous,status:"PENDING"},data:{status:"CANCELED"}});
+      await tx.charge.update({where:{id},data:{
+        providerChargeId:null,paymentMethodId:null,pixCopyPaste:null,paymentUrl:null,boletoBarcode:null,expiresAt:null,
+        ...(current.status==="FAILED"?{status:"PENDING",failedAt:null,failureReason:null}:{}),
+        metadata:{...current.metadata,pixQrCodeBase64:null,gatewayAttemptKind:null,providerStatus:null,providerStatusDetail:null,
+          retiredPixOrderId:previous,gatewayAttemptSequence:(Number(current.metadata?.gatewayAttemptSequence)||0)+1},
+      }});
+      await tx.auditLog.create({data:{condominiumId:current.condominiumId,userId:user.id,userName:user.name,userRole:user.role,
+        module:"PAYMENT",action:"GATEWAY_PROCESS",referenceId:id,requestId:requestContext?.requestId,
+        details:`Cancelamento do ${previousLabel} confirmado para troca do meio de pagamento.`,afterData:{priorOrderId:previous,target}}});
+    });
+    if(fromBoleto)return this.openCardCheckout(id,user,requestContext,db,gateway,cardBody);
+    return this.processCharge(id,{},user,requestContext,{portalPayment:{condominiumId:charge.condominiumId,type:"BOLETO"}});
+  }
+
   async processCharge(
     chargeId,
     paymentData,
     authenticatedUser = null,
-    requestContext = null
+    requestContext = null,
+    constraints = {}
   ) {
     const {
       charge,
@@ -217,13 +334,19 @@ class PaymentGatewayOrchestratorService {
       paymentMethod,
     } =
       await this.getChargeContext(
-        chargeId
+        chargeId, constraints.portalPayment, constraints.platformMethod
       );
 
     const provider =
       paymentMethod
         .provider ??
       "MERCADO_PAGO";
+
+    if (constraints.boletoForCondominium &&
+        (charge.condominiumId !== constraints.boletoForCondominium || charge.status !== "PENDING" ||
+         charge.paymentUrl || isOrderId(charge.providerChargeId) || paymentMethod.type !== "BOLETO" || provider !== "MERCADO_PAGO")) {
+      throw new ApiError("Esta cobrança não está disponível para emissão de boleto.",409);
+    }
 
     const customer =
       this.buildCustomer(
@@ -232,6 +355,29 @@ class PaymentGatewayOrchestratorService {
         paymentData
       );
 
+    const gateway = PaymentGatewayService.getProvider(provider);
+    gateway.ensureConfigured();
+    gateway.ensureWebhookConfigured();
+    if(paymentMethod.type==="BOLETO" && (!charge.providerChargeId || charge.metadata?.gatewayAttemptKind==="BOLETO_ORDERS")){
+      if(charge.providerChargeId) {
+        const existing=await gateway.getOrderPayment(charge.providerChargeId);
+        assertPaymentMatches(charge,existing,charge.providerChargeId);
+        return this.applyPixOrder(charge.id,existing,{requestContext});
+      }
+      gateway.buildBoletoOrder(charge,customer);
+      const key=crypto.createHash("sha256").update(`InfinityCondo:boleto-orders:${charge.id}:${Number(charge.metadata?.gatewayAttemptSequence)||0}`).digest("hex");
+      await reservePaymentAttempt(prisma,charge,key,"BOLETO_ORDERS");
+      let payment;
+      try{payment=await gateway.createBoletoOrder({charge,customer,idempotencyKey:key});}
+      catch(error){
+        if([400,401,403,404,422].includes(error.details?.statusCode))await releaseRejectedAttempt(prisma,charge.id,key);
+        throw error;
+      }
+      return this.applyPixOrder(charge.id,payment,{paymentMethodId:paymentMethod.id,attemptKey:key,authenticatedUser,requestContext});
+    }
+    if (paymentMethod.type === "PIX" || isOrderId(charge.providerChargeId)) {
+      return this.processPixOrder({ charge, paymentMethod, customer, gateway, authenticatedUser, requestContext });
+    }
     let previousAttempt = "initial";
     if (charge.providerChargeId) {
       const previous=await PaymentGatewayService.getPayment({provider,providerPaymentId:charge.providerChargeId});
@@ -244,7 +390,7 @@ class PaymentGatewayOrchestratorService {
     const idempotencyKey = crypto.createHash("sha256")
       .update(`InfinityCondo:charge:${charge.id}:${previousAttempt}:${Number(charge.metadata?.gatewayAttemptSequence)||0}`).digest("hex");
 
-    await reservePaymentAttempt(prisma,charge,idempotencyKey);
+    await reservePaymentAttempt(prisma,charge,idempotencyKey,"BOLETO_OR_LEGACY");
     let providerPayment;
     try {
       providerPayment =
@@ -260,7 +406,7 @@ class PaymentGatewayOrchestratorService {
 
     } catch (error) {
       // Only a definitive refusal unlocks a new attempt. Uncertain outcomes stay blocked.
-      if (error.statusCode >= 400 && error.statusCode < 500) await releaseRejectedAttempt(prisma,charge.id,idempotencyKey);
+      if (!error.details?.statusCode ? error.statusCode === 400 : [400,401,403,404,422].includes(error.details.statusCode)) await releaseRejectedAttempt(prisma,charge.id,idempotencyKey);
       throw error;
     }
 
@@ -357,8 +503,7 @@ class PaymentGatewayOrchestratorService {
               providerPayment
                 .pixCopyPaste,
 
-            expiresAt:
-              null,
+            expiresAt: providerPayment.expiresAt ? new Date(providerPayment.expiresAt) : null,
 
             metadata: {
               ...(charge.metadata ??
@@ -541,6 +686,53 @@ class PaymentGatewayOrchestratorService {
     };
   }
 
+  async processPixOrder({ charge, paymentMethod, customer, gateway, authenticatedUser, requestContext }) {
+    if (charge.providerChargeId) {
+      if (!isOrderId(charge.providerChargeId)) {
+        throw new ApiError("Esta cobrança já tem um pagamento no fluxo anterior. Confira-o antes de gerar outro.", 409);
+      }
+      const existing = await gateway.getPixOrder(charge.providerChargeId);
+      assertPaymentMatches(charge, existing, charge.providerChargeId);
+      if (!["rejected", "cancelled"].includes(existing.status)) {
+        return this.applyPixOrder(charge.id, existing, { requestContext });
+      }
+    }
+
+    if (paymentMethod.type !== "PIX") throw new ApiError("O método vinculado à cobrança não é Pix.", 409);
+    gateway.buildPixOrder(charge, customer);
+    const key = crypto.createHash("sha256")
+      .update(`InfinityCondo:pix-orders:${charge.id}:${charge.providerChargeId ?? "initial"}:${Number(charge.metadata?.gatewayAttemptSequence) || 0}`).digest("hex");
+    await reservePaymentAttempt(prisma, charge, key, "PIX_ORDERS");
+    let payment;
+    try {
+      payment = await gateway.createPixOrder({ charge, customer, idempotencyKey: key });
+    } catch (error) {
+      // Only a definitive HTTP rejection clears the reservation; an inconsistent
+      // success response or a timeout can still represent a created order.
+      if ([400, 401, 403, 404, 422].includes(error.details?.statusCode)) {
+        await releaseRejectedAttempt(prisma, charge.id, key);
+      }
+      throw error;
+    }
+    return this.applyPixOrder(charge.id, payment, { paymentMethodId: paymentMethod.id, attemptKey: key, authenticatedUser, requestContext });
+  }
+
+  async applyPixOrder(id, payment, { paymentMethodId, attemptKey, authenticatedUser, requestContext } = {}) {
+    const result = await persistPixOrder({ id, payment, paymentMethodId, attemptKey, user: authenticatedUser, requestId: requestContext?.requestId });
+    if (result.newlyPaid) {
+      await DelinquencyService.handlePaymentConfirmed(result.charge, result.charge.paidAt, requestContext);
+    }
+    return result;
+  }
+
+  async synchronizePixOrder({ providerOrderId, requestContext }) {
+    providerOrderId = String(providerOrderId ?? "").toUpperCase();
+    if (!isOrderId(providerOrderId)) throw new ApiError("Identificador de ordem inválido.", 400);
+    const payment = await PaymentGatewayService.getProvider("MERCADO_PAGO").getOrderPayment(providerOrderId);
+    if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(payment.externalReference ?? "")) return { ignored: true };
+    return this.applyPixOrder(payment.externalReference, payment, { requestContext });
+  }
+
   async refundCharge(
     chargeId,
     amountInCents = null,
@@ -571,6 +763,10 @@ class PaymentGatewayOrchestratorService {
         "A cobrança não possui pagamento externo associado.",
         409
       );
+    }
+
+    if (isOrderId(charge.providerChargeId)) {
+      throw new ApiError("Para este Pix, solicite o estorno no painel do Mercado Pago.", 409);
     }
 
     const refund =
@@ -688,7 +884,7 @@ class PaymentGatewayOrchestratorService {
     let recoveryFromUncertainAttempt = false;
     if (!charge && providerPayment.externalReference) {
       const candidate=await chargeRepository.findById(providerPayment.externalReference);
-      if (candidate?.metadata?.gatewayAttemptPending &&
+      if (candidate?.metadata?.gatewayAttemptPending && !["PIX_ORDERS","CARD_ORDERS","BOLETO_ORDERS"].includes(candidate.metadata.gatewayAttemptKind) &&
           (candidate.providerChargeId ?? null) === (candidate.metadata.gatewayAttemptPriorPaymentId ?? null)) {
         charge=candidate;
         recoveryFromUncertainAttempt=true;

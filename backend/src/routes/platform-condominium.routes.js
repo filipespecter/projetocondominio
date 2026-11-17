@@ -1,3 +1,4 @@
+import wahaProvisioning from "../services/WahaProvisioningService.js";
 import prisma from "../config/prisma.js";
 import { readClientProfile, updateClientProfile } from "../services/ClientProfileService.js";
 import { Router } from "express";
@@ -45,6 +46,15 @@ platformCondominiumRoutes.use(
   authMiddleware,
   platformAdminMiddleware
 );
+
+platformCondominiumRoutes.get("/:id/whatsapp/provisioning", async (req, res, next) => {
+  res.set("Cache-Control", "no-store");
+  try { res.json({ data: await wahaProvisioning.status(req.user, req.params.id) }); } catch (error) { next(error); }
+});
+platformCondominiumRoutes.post("/:id/whatsapp/provisioning", platformManagementMiddleware, requireTrustedOrigin, resetLimiter, async (req, res, next) => {
+  res.set("Cache-Control", "no-store");
+  try { res.json({ data: await wahaProvisioning.prepare(req.user, req.params.id, req.body) }); } catch (error) { next(error); }
+});
 
 /**
  * Lista geral.

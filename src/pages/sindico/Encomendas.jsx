@@ -1,3 +1,9 @@
+import PackagePickupModal from "../../components/Porteiro/PackagePickupModal.jsx";
+import { FiPackage, FiCalendar, FiPlus, FiCheckCircle, FiSearch, FiClock, FiArrowRight, FiArrowLeft, FiSend, FiMail, FiAlertTriangle } from "react-icons/fi";
+import { FaWhatsapp } from "react-icons/fa";
+import { HiOutlineOfficeBuilding } from "react-icons/hi";
+import MonthlyClosure from "../../components/MonthlyClosure.jsx";
+import "./EncomendasReferencia.css";
 import api from "../../Services/api.js";
 import OperationalHistoryTools from "../../components/OperationalHistoryTools.jsx";
 import PackageNoticeButton from "../../components/PackageNoticeButton.jsx";
@@ -19,11 +25,18 @@ function Encomendas() {
     tipo: "Encomenda",
   };
 
+  const [pickup,setPickup]=useState(null);
+  const [closureOpen,setClosureOpen]=useState(false);
+  const [overviewFilters,setOverviewFilters]=useState(null);
+  const [block,setBlock]=useState("");
+  const [unitPage,setUnitPage]=useState(1);
+  const [activeUnit,setActiveUnit]=useState(null);
+  const [unitOverview,setUnitOverview]=useState(null);
   const [encomendas, setEncomendas] = useState([]);
   const [moradores, setMoradores] = useState([]);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [busca, setBusca] = useState("");
-  const [filtroStatus, setFiltroStatus] = useState("Todos");
+  const [filtroStatus, setFiltroStatus] = useState("Pendentes");
   const [novaEncomenda, setNovaEncomenda] = useState(estadoInicialEncomenda);
   const [editId, setEditId] = useState(null);
   const [historyMonth,setHistoryMonth]=useState("");
@@ -193,11 +206,12 @@ function Encomendas() {
         packageData,
         residentData,
       ] = await Promise.all([
-        api.get(`/v1/dashboard/operations/packages?`+new URLSearchParams({page:historyPage,...(historyMonth?{history:historyMonth}:{}),q:busca,...({"Aguardando": "EXPECTED", "Recebido": "RECEIVED", "Entregue": "DELIVERED", "Cancelado": "CANCELED"}[filtroStatus]?{status:{"Aguardando": "EXPECTED", "Recebido": "RECEIVED", "Entregue": "DELIVERED", "Cancelado": "CANCELED"}[filtroStatus]}:{})})),
+        api.get(`/v1/dashboard/operations/packages?`+new URLSearchParams({page:historyPage,...(activeUnit?{apartmentId:activeUnit.id,noticeSummary:"true"}:{view:"units",overviewMetrics:"true"}),...(filtroStatus==="Atrasado"?{overdue:"true"}:{}),...(filtroStatus==="Pendentes"?{pending:"true"}:{}),...(activeUnit&&historyMonth?{completed:"true"}:{}),...(historyMonth?{history:historyMonth}:{}),q:busca,...({"Aguardando": "EXPECTED", "Recebido": "RECEIVED", "Entregue": "DELIVERED", "Cancelado": "CANCELED"}[filtroStatus]?{status:{"Aguardando": "EXPECTED", "Recebido": "RECEIVED", "Entregue": "DELIVERED", "Cancelado": "CANCELED"}[filtroStatus]}:{})})),
         moradores.length ? Promise.resolve(moradores) : packageApi.residentsDirectory(),
       ]);
 
       if(request!==liveRequest.current)return;
+      setUnitOverview(activeUnit?null:packageData.data);
       setHistoryTotal(packageData.data.total);setHistoryUpdated(packageData.data.refreshedAt);setLiveError("");
       const mappedResidents =
         (residentData ?? []).map(
@@ -229,48 +243,9 @@ function Encomendas() {
     const debounce=setTimeout(refresh,300),timer=setInterval(refresh,10000);
     document.addEventListener("visibilitychange",refresh);
     return ()=>{active=false;liveRequest.current++;clearTimeout(debounce);clearInterval(timer);document.removeEventListener("visibilitychange",refresh);};
-  }, [historyPage,historyMonth,busca,filtroStatus]);
+  }, [historyPage,historyMonth,busca,filtroStatus,activeUnit]);
 
-  const encomendasFiltradas =
-    encomendas.filter((e) => {
-      const texto =
-        busca.toLowerCase();
-
-      const corresponde =
-        e.morador?.toLowerCase().includes(texto) ||
-        e.apartamento?.toLowerCase().includes(texto) ||
-        e.codigoInterno?.toLowerCase().includes(texto) ||
-        e.codigoRastreio?.toLowerCase().includes(texto) ||
-        e.transportadora?.toLowerCase().includes(texto) ||
-        e.status?.toLowerCase().includes(texto);
-
-      return (
-        corresponde &&
-        (
-          filtroStatus === "Todos" ||
-          e.status === filtroStatus
-        )
-      );
-    });
-
-  const recebidas =
-    encomendas.filter(
-      (e) => e.status === "Recebido"
-    );
-
-  const entregues =
-    encomendas.filter(
-      (e) => e.status === "Entregue"
-    );
-
-  const LIMITE_ATRASO_DIAS = 3;
-  const agora = Date.now();
-  const atrasadas = encomendas.filter((e) => {
-    if (e.status !== "Recebido" || !e.receivedAtRaw) return false;
-    const recebidoEm = new Date(e.receivedAtRaw).getTime();
-    if (Number.isNaN(recebidoEm)) return false;
-    return agora - recebidoEm >= LIMITE_ATRASO_DIAS * 24 * 60 * 60 * 1000;
-  });
+  const encomendasFiltradas = encomendas.filter(e=>e.apartamentoId===activeUnit?.id);
 
   function limparCodigo(valor) {
     return normalizarCodigo(valor);
@@ -366,29 +341,6 @@ function Encomendas() {
     }
   }
 
-  async function alterarStatus(
-    id,
-    status
-  ) {
-    try {
-      if (status === "Entregue") {
-        alert("A retirada deve ser confirmada pela portaria com QR Code ou código de retirada.");
-        return;
-      }
-
-      if (status === "Atrasado") {
-        alert(
-          "Encomendas recebidas há 3 dias ou mais são sinalizadas automaticamente como atrasadas até a retirada."
-        );
-      }
-    } catch (error) {
-      alert(
-        error?.message ??
-        "Não foi possível atualizar a encomenda."
-      );
-    }
-  }
-
   function editarEncomenda(e) {
     setEditId(e.id);
     setNovaEncomenda({
@@ -428,308 +380,87 @@ function Encomendas() {
     );
   }
 
-  function corStatus(status) {
-    if (status === "Entregue") {
-      return {
-        label: "Entregue",
-        background: "#dcfce7",
-        color: "#166534",
-        border: "#bbf7d0",
-      };
-    }
-
-    if (status === "Aguardando") {
-      return {
-        label: "Aguardando",
-        background: "#dbeafe",
-        color: "#1d4ed8",
-        border: "#bfdbfe",
-      };
-    }
-
-    if (status === "Cancelado") {
-      return {
-        label: "Cancelado",
-        background: "#fee2e2",
-        color: "#b91c1c",
-        border: "#fecaca",
-      };
-    }
-
-    return {
-      label: "Recebido",
-      background: "#fef3c7",
-      color: "#92400e",
-      border: "#fde68a",
-    };
-  }
-
-  function iconeTransportadora(
-    transportadora
-  ) {
-    const texto =
-      String(
-        transportadora || ""
-      ).toLowerCase();
-
-    if (texto.includes("correio")) return "📮";
-    if (texto.includes("amazon")) return "🟧";
-    if (texto.includes("mercado")) return "🛒";
-    if (texto.includes("shopee")) return "🛍️";
-    if (texto.includes("jadlog")) return "🚚";
-    if (texto.includes("loggi")) return "⚡";
-    return "📦";
-  }
-
-
+  const units=unitOverview?.units||[];
+  const blocks=[...new Set(units.map(u=>u.block).filter(Boolean))].sort();
+  const filteredUnits=units.filter(u=>!block||u.block===block).sort((a,b)=>[a.block,a.number].join(" ").localeCompare([b.block,b.number].join(" "),"pt-BR",{numeric:true}));
+  const pages=Math.max(1,Math.ceil(filteredUnits.length/9));
+  const current=Math.min(unitPage,pages);
+  const pageNumbers=[...new Set([1,current-1,current,current+1,pages].filter(n=>n>=1&&n<=pages))].sort((a,b)=>a-b);
+  const blockName=value=>value?(/^bloco\b/i.test(value)?value:"Bloco "+value):"Sem bloco";
+  const date=value=>{
+    if(!value)return "—";
+    const instant=new Date(value),today=new Date(),yesterday=new Date();
+    yesterday.setDate(today.getDate()-1);
+    const day=instant.toDateString(),time=instant.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+    return day===today.toDateString()?`Hoje, ${time}`:day===yesterday.toDateString()?`Ontem, ${time}`:instant.toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"});
+  };
+  const newPackage=()=>{setEditId(null);setNovaEncomenda(estadoInicialEncomenda);setMostrarModal(true);};
+  const closePanel=()=>{setClosureOpen(true);requestAnimationFrame(()=>document.getElementById("encomendas-fechamento")?.scrollIntoView({block:"start"}));};
+  const returnToUnits=()=>{
+    setActiveUnit(null);setEncomendas([]);setHistoryMonth(overviewFilters?.month||"");
+    setFiltroStatus(overviewFilters?.status||"Pendentes");setBusca(overviewFilters?.q||"");setHistoryPage(1);
+  };
+  const openUnit=unit=>{
+    setOverviewFilters({month:historyMonth,status:filtroStatus,q:busca});
+    const showHistory=Boolean(historyMonth)||filtroStatus==="Entregue";
+    setActiveUnit(unit);setHistoryTotal(unit.pending||0);
+    setHistoryMonth(showHistory?(historyMonth||new Date().toLocaleDateString("sv-SE").slice(0,7)):"");
+    setFiltroStatus(showHistory?"Todos":"Pendentes");setBusca("");setHistoryPage(1);
+  };
+  const chooseHistory=()=>{setHistoryMonth(historyMonth||new Date().toLocaleDateString("sv-SE").slice(0,7));setFiltroStatus("Todos");setHistoryPage(1);};
+  const noticeLabels={DELIVERED:"entregue",SENT:"aceito pelo provedor",PENDING:"pendente",FAILED:"com falha",CANCELED:"cancelado"};
   return (
-    <div style={styles.container}>
-      <OperationalHistoryTools kind="packages" month={historyMonth} onMonth={setHistoryMonth} page={historyPage} onPage={setHistoryPage} total={historyTotal} error={liveError} updatedAt={historyUpdated}/>
-      <section style={styles.hero}>
-        <div style={styles.heroLeft}>
-          <span style={styles.heroBadge}>
-            📦 Central logística
-          </span>
-
-          <h1 style={styles.title}>
-            Encomendas
-          </h1>
-
-          <p style={styles.subtitle}>
-            Controle de recebimento, retirada e histórico de encomendas do condomínio.
-          </p>
-        </div>
-
-        <div style={styles.heroRight}>
-          <div style={styles.packageBoard}>
-            <div style={styles.packageItem}>
-              <span>📥</span>
-              <strong>{recebidas.length}</strong>
-              <small>recebidas</small>
-            </div>
-
-            <div style={styles.packageItem}>
-              <span>✅</span>
-              <strong>{entregues.length}</strong>
-              <small>entregues</small>
-            </div>
-
-            <div style={styles.packageItem}>
-              <span>⚠️</span>
-              <strong>{atrasadas.length}</strong>
-              <small>atrasadas</small>
-            </div>
+    <div className="ic-pkg-reference">
+      {!activeUnit ? <section className="ic-pkg-panel">
+        <header className="ic-pkg-hero">
+          <div className="ic-pkg-heading"><span className="ic-pkg-icon"><FiPackage/></span><div><h1>Encomendas</h1><p>Acompanhe as encomendas por unidade.</p></div></div>
+          <div className="ic-pkg-actions"><button type="button" onClick={newPackage}><FiPlus/> Nova encomenda</button><button type="button" onClick={closePanel}><FiCalendar/> Histórico e fechamento</button></div>
+        </header>
+        <div className="ic-pkg-content">
+          <div className="ic-pkg-metrics"><span><FiPackage/><strong>{unitOverview?.metrics?.pending??"—"}</strong> pendentes</span><span><FiCheckCircle/><strong>{unitOverview?.metrics?.deliveredToday??"—"}</strong> retiradas hoje</span></div>
+          <div className="ic-pkg-filters">
+            <label className="ic-pkg-search"><FiSearch aria-hidden="true"/><input aria-label="Buscar unidade, morador ou encomenda" placeholder="Buscar unidade, morador ou encomenda..." value={busca} onChange={e=>{setBusca(e.target.value);setUnitPage(1);setBlock("");}}/></label>
+            <select aria-label="Bloco" value={block} onChange={e=>{setBlock(e.target.value);setUnitPage(1);}}><option value="">Todos os blocos</option>{blocks.map(b=><option key={b} value={b}>{blockName(b)}</option>)}</select>
+            <select aria-label="Situação" value={filtroStatus} onChange={e=>{setFiltroStatus(e.target.value);setBlock("");setUnitPage(1);}}><option value="Pendentes">Com pendências</option><option value="Todos">Todas as situações</option><option value="Recebido">Recebidas</option><option value="Entregue">Retiradas</option><option value="Atrasado">Atrasadas</option></select>
           </div>
-
-          <button
-            style={styles.heroButton}
-            onClick={() => {
-              setEditId(null);
-              setNovaEncomenda(estadoInicialEncomenda);
-              setMostrarModal(true);
-            }}
-          >
-            + Nova encomenda
-          </button>
+          <h2 className="ic-pkg-section-title"><HiOutlineOfficeBuilding/> Unidades com encomendas</h2>
+          <div className="ic-pkg-unit-grid">{filteredUnits.slice((current-1)*9,current*9).map(unit=><article key={unit.id} className="ic-pkg-unit">
+            <div className="ic-pkg-unit-head"><span className="ic-pkg-icon"><HiOutlineOfficeBuilding/></span><div><h3>Apartamento {unit.number}</h3><p>{blockName(unit.block)}</p></div><span className="ic-pkg-tag">{unit.pending??0} {(unit.pending??0)===1?"pendente":"pendentes"}</span></div>
+            <p className="ic-pkg-received"><FiClock/> Último recebimento: {date(unit.lastReceivedAt)}</p>
+            <button type="button" className="ic-pkg-primary" onClick={()=>openUnit(unit)}>Ver encomendas <FiArrowRight/></button>
+          </article>)}</div>
+          {!filteredUnits.length&&<p className="ic-pkg-empty">{unitOverview?"Nenhuma unidade corresponde aos filtros.":"Carregando unidades…"}</p>}
+          {pages>1&&<nav className="ic-pkg-pagination" aria-label="Páginas de unidades"><button type="button" disabled={current===1} onClick={()=>setUnitPage(current-1)}>‹ Anterior</button>{pageNumbers.map((n,i)=><span key={n}>{i>0&&n-pageNumbers[i-1]>1&&<span aria-hidden="true"> … </span>}<button type="button" aria-current={n===current?"page":undefined} aria-label={`Página ${n}`} onClick={()=>setUnitPage(n)}>{n}</button></span>)}<button type="button" disabled={current===pages} onClick={()=>setUnitPage(current+1)}>Próxima ›</button></nav>}
         </div>
-      </section>
-
-      <section style={styles.controlStrip}>
-        <div style={styles.searchWrap}>
-          <span style={styles.searchIcon}>⌕</span>
-
-          <input
-            placeholder="Buscar por morador, apartamento, código, transportadora ou status..."
-            value={busca}
-            onChange={(e) => {setBusca(e.target.value);setHistoryPage(1);}}
-            style={styles.search}
-          />
+      </section> : <section className="ic-pkg-panel">
+        <header className="ic-pkg-breadcrumb">Encomendas / {blockName(activeUnit.block)} / Apartamento {activeUnit.number}</header>
+        <div className="ic-pkg-content">
+          <button type="button" className="ic-pkg-outline" onClick={returnToUnits}><FiArrowLeft/> Voltar às unidades</button>
+          <div className="ic-pkg-heading ic-pkg-detail-title"><span className="ic-pkg-icon"><HiOutlineOfficeBuilding/></span><div><h1>Apartamento {activeUnit.number}</h1><p>{blockName(activeUnit.block)}</p></div></div>
+          <div className="ic-pkg-tabs" aria-label="Visão da unidade"><button type="button" aria-pressed={!historyMonth} onClick={()=>{setHistoryMonth("");setFiltroStatus("Pendentes");setHistoryPage(1);}}>Pendentes ({!historyMonth?historyTotal:activeUnit.pending??0})</button><button type="button" aria-pressed={Boolean(historyMonth)} onClick={chooseHistory}>Histórico</button></div>
+          {historyMonth&&<label className="ic-pkg-history-month">Mês do histórico <input type="month" value={historyMonth} onChange={e=>{if(e.target.value){setHistoryMonth(e.target.value);setHistoryPage(1);}}}/></label>}
+          <div className="ic-pkg-table-wrap"><table className="ic-pkg-table"><thead><tr><th>Encomenda</th><th>Morador</th><th>Recebida em</th><th>Aviso</th><th>Ações</th></tr></thead>
+          <tbody>{encomendasFiltradas.map(e=><tr key={e.id}>
+            <td data-label="Encomenda"><span className="ic-pkg-description"><FiPackage/><strong>{e.descricao}</strong></span><small>{e.status}{e.codigoRastreio?` · ${e.codigoRastreio}`:""}</small></td>
+            <td data-label="Morador">{e.morador}</td>
+            <td data-label="Recebida em">{date(e.receivedAt)}</td>
+            <td data-label="Aviso">{e.notices?.length?e.notices.map(n=><div key={n.channel} className={n.status==="FAILED"?"ic-pkg-failed":undefined}>{n.status==="FAILED"?<FiAlertTriangle/>:n.channel==="EMAIL"?<FiMail/>:<FaWhatsapp/>} {n.channel==="EMAIL"?"E-mail":"WhatsApp"} {n.uncertain?"com resultado incerto":noticeLabels[n.status]}</div>):e.status==="Recebido"?<span><FiClock/> Aguardando envio</span>:"—"}</td>
+            <td data-label="Ações"><div className="ic-pkg-row-actions">
+              {e.status==="Recebido"&&<><PackageNoticeButton id={e.id} compact icon={<FiSend aria-hidden="true"/>}/><details className="ic-pkg-action-menu"><summary>✓ Validar retirada</summary><div><button type="button" onClick={()=>setPickup({id:e.id,method:"CODE"})}>Usar código</button><button type="button" onClick={()=>setPickup({id:e.id,method:"QR"})}>Escanear QR</button></div></details></>}
+              <details className="ic-pkg-action-menu"><summary aria-label="Mais ações">•••</summary><div><small>Transportadora: {e.transportadora||"Não informada"} · Retirada: {e.retiradaEm||"Pendente"}</small><button type="button" onClick={()=>editarEncomenda(e)}>Editar</button><button type="button" onClick={()=>excluirEncomenda(e.id)}>Excluir</button></div></details>
+            </div></td>
+          </tr>)}</tbody></table>{!encomendasFiltradas.length&&<p className="ic-pkg-empty">Nenhuma encomenda nesta visão.</p>}</div>
+          {historyTotal>50&&<nav className="ic-pkg-pagination" aria-label="Páginas de encomendas"><button type="button" disabled={historyPage<=1} onClick={()=>setHistoryPage(historyPage-1)}>‹ Anterior</button><span>Página {historyPage} de {Math.ceil(historyTotal/50)}</span><button type="button" disabled={historyPage*50>=historyTotal} onClick={()=>setHistoryPage(historyPage+1)}>Próxima ›</button></nav>}
+          <button type="button" className="ic-pkg-outline ic-pkg-closure-button" onClick={closePanel}><FiCalendar/> Histórico e fechamento</button>
         </div>
-
-        <select
-          value={filtroStatus}
-          onChange={(e) => {setFiltroStatus(e.target.value);setHistoryPage(1);}}
-          style={styles.filter}
-        >
-          <option>Todos</option>
-          <option>Recebido</option>
-          <option>Entregue</option>
-          <option>Atrasado</option>
-        </select>
-
-        <div style={styles.compactStats}>
-          <span>
-            <b>{encomendas.length}</b> total
-          </span>
-
-          <span>
-            <b>{recebidas.length}</b> pendentes
-          </span>
-
-          <span>
-            <b>{entregues.length}</b> retiradas
-          </span>
-        </div>
-      </section>
-
-      <section style={styles.logisticPanel}>
-        <div style={styles.panelHeader}>
-          <div>
-            <span style={styles.panelLabel}>
-              Recebimento
-            </span>
-
-            <h2 style={styles.panelTitle}>
-              Fluxo de encomendas
-            </h2>
-          </div>
-
-          <span style={styles.resultBadge}>
-            {encomendasFiltradas.length} resultado(s)
-          </span>
-        </div>
-
-        {encomendasFiltradas.length === 0 ? (
-          <div style={styles.empty}>
-            <div style={styles.emptyIcon}>
-              📦
-            </div>
-
-            <h3 style={styles.emptyTitle}>
-              Nenhuma encomenda encontrada
-            </h3>
-
-            <p style={styles.emptyText}>
-              Registre uma encomenda para acompanhar recebimento e retirada.
-            </p>
-
-            <button
-              style={styles.emptyButton}
-              onClick={() => {
-                setEditId(null);
-                setNovaEncomenda(estadoInicialEncomenda);
-                setMostrarModal(true);
-              }}
-            >
-              Registrar encomenda
-            </button>
-          </div>
-        ) : (
-          <div style={styles.packageGrid}>
-            {encomendasFiltradas.map((e) => {
-              const status = corStatus(e.status);
-
-              return (
-                <article
-                  key={e.id}
-                  style={{
-                    ...styles.packageCard,
-                    borderColor: status.border
-                  }}
-                >
-                  <div style={styles.cardHeader}>
-                    <div style={styles.packageIdentity}>
-                      <div style={styles.packageIcon}>
-                        {iconeTransportadora(e.transportadora)}
-                      </div>
-
-                      <div>
-                        <h3 style={styles.packageTitle}>
-                          {e.descricao}
-                        </h3>
-
-                        <p style={styles.packageCode}>
-                          Código: {e.codigoInterno || "Sem código interno"}{" "}
-                          {obterCodigoRastreio(e)
-                            ? `• Rastreio: ${obterCodigoRastreio(e)}`
-                            : ""}
-                        </p>
-                      </div>
-                    </div>
-
-                    <span
-                      style={{
-                        ...styles.statusBadge,
-                        background: status.background,
-                        color: status.color
-                      }}
-                    >
-                      {status.label}
-                    </span>
-                  </div>
-
-                  {e.status === "Recebido" && <PackageNoticeButton id={e.id} />}
-                  <div style={styles.receiverBox}>
-                    <span style={styles.receiverIcon}>
-                      🏠
-                    </span>
-
-                    <div>
-                      <strong>{e.morador}</strong>
-                      <p>Apartamento {e.apartamento || "-"}</p>
-                    </div>
-                  </div>
-
-                  <div style={styles.infoGrid}>
-                    <div style={styles.infoItem}>
-                      <span>Recebida em</span>
-                      <strong>{e.data || "-"}</strong>
-                    </div>
-
-                    <div style={styles.infoItem}>
-                      <span>Transportadora</span>
-                      <strong>{e.transportadora || "Não informada"}</strong>
-                    </div>
-
-                    <div style={styles.infoItem}>
-                      <span>Retirada</span>
-                      <strong>{e.retiradaEm || "Pendente"}</strong>
-                    </div>
-                  </div>
-
-                  <div style={styles.actionRow}>
-                    {e.status !== "Entregue" && (
-                      <button
-                        style={styles.successButton}
-                        onClick={() => alterarStatus(e.id, "Entregue")}
-                      >
-                        Entregar
-                      </button>
-                    )}
-
-                    {e.status !== "Atrasado" && e.status !== "Entregue" && (
-                      <button
-                        style={styles.warningButton}
-                        onClick={() => alterarStatus(e.id, "Atrasado")}
-                      >
-                        Atrasar
-                      </button>
-                    )}
-
-                    <button
-                      style={styles.editButton}
-                      onClick={() => editarEncomenda(e)}
-                    >
-                      Editar
-                    </button>
-
-                    <button
-                      style={styles.deleteButton}
-                      onClick={() => excluirEncomenda(e.id)}
-                    >
-                      Excluir
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
+      </section>}
+      {(closureOpen||activeUnit)&&<div id="encomendas-fechamento" className="ic-pkg-closure"><MonthlyClosure embedded/></div>}
+      <details className="ic-pkg-operator"><summary>Acompanhamento dos operadores</summary><OperationalHistoryTools kind="packages" month={historyMonth} onMonth={value=>{setHistoryMonth(value);setFiltroStatus(value?"Todos":"Pendentes");}} page={historyPage} onPage={setHistoryPage} total={historyTotal} updatedAt={historyUpdated} showPagination={false}/></details>
+      {liveError&&<p role="alert" className="ic-pkg-failed">{liveError} Os dados podem estar desatualizados.</p>}
+      {pickup&&<PackagePickupModal method={pickup.method} expectedPackageId={pickup.id} onClose={()=>setPickup(null)} onCompleted={carregar}/>}
       {mostrarModal && (
         <div style={styles.modalBackground}>
-          <div style={styles.modal}>
+          <div style={styles.modal} className="ic-apartment-modal">
             <div style={styles.modalTop}>
               <div>
                 <span style={styles.modalBadge}>
@@ -756,7 +487,7 @@ function Encomendas() {
                 Destinatário
               </h3>
 
-              <div style={styles.formGrid}>
+              <div style={styles.formGrid} className="ic-apartment-form">
                 <div style={styles.formRow}>
                   <label style={styles.label}>
                     Morador
@@ -831,7 +562,7 @@ function Encomendas() {
                 Dados da encomenda
               </h3>
 
-              <div style={styles.formGrid}>
+              <div style={styles.formGrid} className="ic-apartment-form">
                 <div style={styles.formRowFull}>
                   <label style={styles.label}>
                     Descrição
@@ -934,369 +665,6 @@ function Encomendas() {
 }
 
 const styles = {
-  container: {
-    width: "100%",
-    minWidth: 0,
-    overflowX: "hidden",
-    fontFamily: "Arial",
-    color: "#111827",
-    position: "relative"
-  },
-
-  hero: {
-    background:
-      "linear-gradient(135deg,#1c1205,var(--ic-primary-dark) 45%,#15803d)",
-    borderRadius: "36px",
-    padding: "34px",
-    color: "white",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: "28px",
-    boxShadow: "0 26px 70px rgba(6,78,59,0.28)",
-    marginBottom: "24px"
-  },
-
-  heroLeft: {
-    width: "100%",
-    maxWidth: "680px"
-  },
-
-  heroBadge: {
-    display: "inline-block",
-    background: "rgba(255,255,255,0.13)",
-    border: "1px solid rgba(255,255,255,0.14)",
-    color: "var(--ic-primary-soft)",
-    padding: "9px 13px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: "900",
-    marginBottom: "15px"
-  },
-
-  title: {
-    margin: 0,
-    fontSize: "44px",
-    letterSpacing: "-1px"
-  },
-
-  subtitle: {
-    margin: "10px 0 0",
-    color: "rgba(255,255,255,0.76)",
-    lineHeight: "1.55"
-  },
-
-  heroRight: {
-    display: "flex",
-    alignItems: "center",
-    gap: "14px"
-  },
-
-  packageBoard: {
-    display: "flex",
-    gap: "10px",
-    background: "rgba(255,255,255,0.10)",
-    border: "1px solid rgba(255,255,255,0.14)",
-    padding: "12px",
-    borderRadius: "24px"
-  },
-
-  packageItem: {
-    width: "84px",
-    height: "76px",
-    borderRadius: "18px",
-    background: "rgba(255,255,255,0.11)",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "3px"
-  },
-
-  heroButton: {
-    background: "var(--ic-primary-soft)",
-    color: "var(--ic-primary)",
-    border: "none",
-    padding: "15px 20px",
-    borderRadius: "17px",
-    cursor: "pointer",
-    fontWeight: "900",
-    whiteSpace: "nowrap"
-  },
-
-  controlStrip: {
-    minWidth: 0,
-    background:
-      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), white",
-    border: "1px solid var(--ic-primary-border-soft)",
-    borderRadius: "28px",
-    padding: "18px",
-    marginBottom: "24px",
-    display: "flex",
-    alignItems: "center",
-    gap: "14px",
-    boxShadow: "0 14px 35px rgba(88,28,135,0.07)"
-  },
-
-  searchWrap: {
-    flex: 1,
-    background: "#fbfaff",
-    border: "1px solid var(--ic-primary-border)",
-    borderRadius: "18px",
-    display: "flex",
-    alignItems: "center",
-    padding: "0 14px"
-  },
-
-  searchIcon: {
-    color: "var(--ic-primary)",
-    fontSize: "20px",
-    marginRight: "8px"
-  },
-
-  search: {
-    flex: 1,
-    padding: "15px 0",
-    border: "none",
-    outline: "none",
-    background: "transparent",
-    fontSize: "14px"
-  },
-
-  filter: {
-    width: "160px",
-    padding: "15px",
-    borderRadius: "18px",
-    border: "1px solid var(--ic-primary-border)",
-    outline: "none",
-    background: "#fbfaff"
-  },
-
-  compactStats: {
-    display: "flex",
-    gap: "10px",
-    flexWrap: "wrap",
-    fontSize: "12px",
-    color: "#374151"
-  },
-
-  logisticPanel: {
-    background:
-      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), white",
-    border: "1px solid var(--ic-primary-border-soft)",
-    borderRadius: "34px",
-    padding: "28px",
-    boxShadow: "0 18px 55px rgba(88,28,135,0.09)"
-  },
-
-  panelHeader: {
-    minWidth: 0,
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: "24px"
-  },
-
-  panelLabel: {
-    background: "var(--ic-primary-soft)",
-    color: "var(--ic-primary)",
-    padding: "7px 11px",
-    borderRadius: "999px",
-    fontSize: "11px",
-    fontWeight: "900"
-  },
-
-  panelTitle: {
-    margin: "12px 0 0",
-    color: "var(--ic-primary-deep)",
-    fontSize: "28px"
-  },
-
-  resultBadge: {
-    background: "var(--ic-primary-soft-3)",
-    color: "var(--ic-primary)",
-    border: "1px solid var(--ic-primary-border-soft)",
-    padding: "9px 13px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: "900"
-  },
-
-  packageGrid: {
-    minWidth: 0,
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(340px,1fr))",
-    gap: "18px"
-  },
-
-  packageCard: {
-    background: "linear-gradient(180deg,#ffffff,#fbfaff)",
-    borderRadius: "30px",
-    padding: "22px",
-    boxShadow: "0 15px 38px rgba(88,28,135,0.07)",
-    border: "1px solid var(--ic-primary-border-soft)"
-  },
-
-  cardHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: "12px",
-    marginBottom: "18px"
-  },
-
-  packageIdentity: {
-    display: "flex",
-    alignItems: "center",
-    gap: "14px"
-  },
-
-  packageIcon: {
-    width: "64px",
-    height: "64px",
-    borderRadius: "24px",
-    background:
-      "linear-gradient(135deg,#78350f,var(--ic-primary-light))",
-    color: "white",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "26px",
-    fontWeight: "900",
-    boxShadow: "0 14px 26px rgb(var(--ic-primary-rgb) / 0.18)"
-  },
-
-  packageTitle: {
-    margin: 0,
-    color: "#111827",
-    fontSize: "20px"
-  },
-
-  packageCode: {
-    margin: "5px 0 0",
-    color: "#6b7280",
-    fontSize: "13px"
-  },
-
-  statusBadge: {
-    padding: "7px 11px",
-    borderRadius: "999px",
-    fontWeight: "900",
-    fontSize: "12px",
-    whiteSpace: "nowrap"
-  },
-
-  receiverBox: {
-    background: "var(--ic-primary-soft-3)",
-    border: "1px solid var(--ic-primary-border-soft)",
-    borderRadius: "18px",
-    padding: "13px",
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    color: "var(--ic-primary)",
-    marginBottom: "14px"
-  },
-
-  receiverIcon: {
-    fontSize: "22px"
-  },
-
-  infoGrid: {
-    display: "grid",
-    gridTemplateColumns: "1fr",
-    gap: "10px"
-  },
-
-  infoItem: {
-    background:
-      "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.10),transparent 34%), white",
-    border: "1px solid var(--ic-primary-border-soft)",
-    borderRadius: "17px",
-    padding: "13px"
-  },
-
-  actionRow: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))",
-    gap: "8px",
-    marginTop: "18px"
-  },
-
-  successButton: {
-    background: "var(--ic-primary-soft)",
-    color: "var(--ic-primary)",
-    border: "none",
-    padding: "11px",
-    borderRadius: "13px",
-    cursor: "pointer",
-    fontWeight: "900"
-  },
-
-  warningButton: {
-    background: "#fef3c7",
-    color: "#92400e",
-    border: "none",
-    padding: "11px",
-    borderRadius: "13px",
-    cursor: "pointer",
-    fontWeight: "900"
-  },
-
-  editButton: {
-    background: "var(--ic-primary-soft-2)",
-    color: "var(--ic-primary-strong)",
-    border: "none",
-    padding: "11px",
-    borderRadius: "13px",
-    cursor: "pointer",
-    fontWeight: "900"
-  },
-
-  deleteButton: {
-    background: "#fee2e2",
-    color: "#dc2626",
-    border: "none",
-    padding: "11px",
-    borderRadius: "13px",
-    cursor: "pointer",
-    fontWeight: "900"
-  },
-
-  empty: {
-    background: "#fbfaff",
-    border: "1px dashed var(--ic-primary-border)",
-    borderRadius: "26px",
-    padding: "48px",
-    textAlign: "center"
-  },
-
-  emptyIcon: {
-    fontSize: "44px",
-    marginBottom: "12px"
-  },
-
-  emptyTitle: {
-    margin: 0,
-    color: "#111827"
-  },
-
-  emptyText: {
-    margin: "8px 0 18px",
-    color: "#6b7280"
-  },
-
-  emptyButton: {
-    background:
-      "linear-gradient(135deg,var(--ic-primary-dark),var(--ic-primary-light))",
-    color: "white",
-    border: "none",
-    padding: "13px 18px",
-    borderRadius: "15px",
-    cursor: "pointer",
-    fontWeight: "900"
-  },
-
   modalBackground: {
     position: "fixed",
     inset: 0,

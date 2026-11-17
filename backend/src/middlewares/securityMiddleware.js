@@ -8,6 +8,7 @@ export const loginLimiter=limiter(5*60*1000,10,{skipSuccessfulRequests:true,hand
   next(new ApiError("Muitas tentativas de login. Aguarde até 5 minutos para tentar novamente.",429,{lockedUntil}));
 }});
 export const resetLimiter=limiter(15*60*1000,5);
+export const whatsappConnectionLimiter=limiter(5*60*1000,5);
 export const onboardingLimiter=limiter(60*60*1000,10);
 export const webhookLimiter=limiter(60*1000,120);
 export const apiLimiter=limiter(60*1000,300);

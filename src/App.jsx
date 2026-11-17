@@ -327,7 +327,6 @@ function App() {
           <Route path="sugestoes" element={<SugestoesMorador />} />
           <Route path="visitantes" element={<VisitantesMorador />} />
           <Route path="servicos-apartamento" element={<ServicosApartamentoMorador />} />
-          <Route path="documentos" element={<DocumentosCondominio />} />
           <Route path="assembleias" element={<Assembleias />} />
         </Route>
 

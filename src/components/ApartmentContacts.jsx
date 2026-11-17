@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import api from "../Services/api.js";
 
 const empty = () => ({name:"",email:"",phone:"",relationship:"",receiveNotices:true,whatsappOptIn:false,canPickup:false});
 const unwrap = r => r.data?.data ?? r.data;
-export default function ApartmentContacts({ apartments, residents = [] }) {
+export default function ApartmentContacts({ apartments, residents = [], fixedApartmentId }) {
   const [apartmentId,setApartmentId]=useState("");
   const [contacts,setContacts]=useState([]);
   const [message,setMessage]=useState("");
@@ -23,6 +23,7 @@ export default function ApartmentContacts({ apartments, residents = [] }) {
     } catch(e) {setMessage(e.message||"Não foi possível carregar os contatos.");}
     finally {setBusy(false);}
   }
+  useEffect(()=>{if(fixedApartmentId)load(fixedApartmentId);},[fixedApartmentId]);
   function change(index,key,value) {setContacts(list=>list.map((c,i)=>i===index?{...c,[key]:value}:c));}
   async function save(event) {
     event.preventDefault();setBusy(true);setMessage("");
@@ -33,10 +34,10 @@ export default function ApartmentContacts({ apartments, residents = [] }) {
     } catch(e) {setMessage(e.message||"Não foi possível salvar os contatos.");}
     finally {setBusy(false);}
   }
-  return <details style={{background:"white",padding:20,borderRadius:16,marginBottom:20}}>
+  return <details open={fixedApartmentId?true:undefined} style={{background:"white",padding:20,borderRadius:16,marginBottom:20}}>
     <summary style={{cursor:"pointer",fontWeight:700}}>Contatos autorizados dos apartamentos — mínimo de duas pessoas</summary>
     <p>Cadastre familiares ou responsáveis com e-mail e celular, sem criar login. Conceder retirada permite receber o código da encomenda.</p>
-    <label>Apartamento <select value={apartmentId} disabled={busy} onChange={e=>load(e.target.value)}><option value="">Selecione</option>{apartments.map(a=><option key={a.id} value={a.id}>Bloco {a.block??a.bloco} — {a.number??a.numero}</option>)}</select></label>
+    {!fixedApartmentId&&<label>Apartamento <select value={apartmentId} disabled={busy} onChange={e=>load(e.target.value)}><option value="">Selecione</option>{apartments.map(a=><option key={a.id} value={a.id}>Bloco {a.block??a.bloco} — {a.number??a.numero}</option>)}</select></label>}
     <p role="status">{message}</p>
     {loaded&&<form onSubmit={save}>
       {contacts.map((c,i)=><fieldset key={c.id??i} disabled={busy} style={{marginBottom:12,border:"1px solid #ddd",borderRadius:12,padding:12}}>

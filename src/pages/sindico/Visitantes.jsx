@@ -1,3 +1,5 @@
+import { FiUsers, FiPlus } from "react-icons/fi";
+import "./EncomendasReferencia.css";
 import api from "../../Services/api.js";
 import OperationalHistoryTools from "../../components/OperationalHistoryTools.jsx";
 import { confirmDialog } from "../../components/GlobalDialogs.jsx";
@@ -161,45 +163,15 @@ function Visitantes() {
 
   const visitantesNormalizados = visitantes;
 
-  const visitantesFiltrados =
-    visitantesNormalizados.filter((v) => {
-      const texto = busca.toLowerCase();
+  const visitantesFiltrados = visitantesNormalizados;
 
-      const correspondeBusca =
-        v.nome?.toLowerCase().includes(texto) ||
-        v.documento?.toLowerCase().includes(texto) ||
-        v.telefone?.toLowerCase().includes(texto) ||
-        v.apartamento?.toLowerCase().includes(texto) ||
-        v.morador?.toLowerCase().includes(texto) ||
-        v.tipo?.toLowerCase().includes(texto) ||
-        v.status?.toLowerCase().includes(texto);
 
-      return (
-        correspondeBusca &&
-        (filtroStatus === "Todos" ||
-          v.status === filtroStatus)
-      );
-    });
-
-  const pendentes =
-    visitantesNormalizados.filter(
-      (v) => v.status === "Aguardando"
-    );
-
-  const emVisita =
-    visitantesNormalizados.filter(
-      (v) => v.status === "Em Visita"
-    );
 
   const autorizados =
     visitantesNormalizados.filter(
       (v) => v.status === "Autorizado"
     );
 
-  const bloqueados =
-    visitantesNormalizados.filter(
-      (v) => v.status === "Bloqueado"
-    );
 
   const encerrados =
     visitantesNormalizados.filter(
@@ -518,59 +490,27 @@ function Visitantes() {
 
 
   return (
-    <div style={styles.container}>
-      <OperationalHistoryTools kind="visitors" month={historyMonth} onMonth={setHistoryMonth} page={historyPage} onPage={setHistoryPage} total={historyTotal} error={liveError} updatedAt={historyUpdated}/>
-      <section style={styles.hero}>
-        <div style={styles.heroLeft}>
-          <span style={styles.heroBadge}>🛂 Controle de acesso</span>
-
-          <h1 style={styles.title}>Visitantes</h1>
-
-          <p style={styles.subtitle}>
-            Monitore entradas, autorizações, bloqueios e saídas do condomínio.
-          </p>
+    <div className="ic-pkg-reference" style={styles.container}>
+      <header className="ic-pkg-hero">
+        <div className="ic-pkg-heading">
+          <span className="ic-pkg-icon"><FiUsers aria-hidden="true"/></span>
+          <div><h1>Visitantes</h1><p>Acompanhe entradas, autorizações e saídas do condomínio.</p></div>
         </div>
-
-        <div style={styles.heroRight}>
-          <div style={styles.accessBoard}>
-            <div style={styles.accessItem}>
-              <span>🟡</span>
-              <strong>{pendentes.length}</strong>
-              <small>pendentes</small>
-            </div>
-
-            <div style={styles.accessItem}>
-              <span>🟢</span>
-              <strong>{emVisita.length}</strong>
-              <small>em visita</small>
-            </div>
-
-            <div style={styles.accessItem}>
-              <span>🔴</span>
-              <strong>{bloqueados.length}</strong>
-              <small>bloqueados</small>
-            </div>
-          </div>
-
-          <button
-            style={styles.heroButton}
-            onClick={() => {
-              setEditId(null);
-              setNovoVisitante(estadoInicialVisitante);
-              setMostrarModal(true);
-            }}
-          >
-            + Novo visitante
-          </button>
+        <div className="ic-pkg-actions">
+          <button type="button" onClick={() => {
+            setEditId(null);
+            setNovoVisitante(estadoInicialVisitante);
+            setMostrarModal(true);
+          }}><FiPlus aria-hidden="true"/> Novo visitante</button>
         </div>
-      </section>
+      </header>
 
       <section style={styles.controlStrip}>
         <div style={styles.searchWrap}>
           <span style={styles.searchIcon}>⌕</span>
 
           <input
-            placeholder="Buscar visitante, documento, morador, apartamento ou tipo..."
+            placeholder="Buscar visitante, documento, apartamento ou tipo..."
             value={busca}
             onChange={(e) => {setBusca(e.target.value);setHistoryPage(1);}}
             style={styles.search}
@@ -605,6 +545,18 @@ function Visitantes() {
         </div>
       </section>
 
+      <details>
+        <summary className="ic-pkg-outline" style={{width:"fit-content",cursor:"pointer"}}>Histórico e acompanhamento</summary>
+        <OperationalHistoryTools kind="visitors" month={historyMonth} onMonth={setHistoryMonth} page={historyPage} onPage={setHistoryPage} total={historyTotal} updatedAt={historyUpdated} showPagination={false}/>
+      </details>
+      {liveError && <p role="alert">{liveError} Os dados exibidos podem estar desatualizados.</p>}
+      {historyMonth && <p>Histórico: {historyMonth.split("-").reverse().join("/")}</p>}
+      {historyTotal > 50 && <nav aria-label="Paginação de visitantes">
+        <button type="button" className="ic-pkg-outline" disabled={historyPage <= 1} onClick={()=>setHistoryPage(historyPage-1)}>Anterior</button>
+        {" "}Página {historyPage} · {historyTotal} registros{" "}
+        <button type="button" className="ic-pkg-outline" disabled={historyPage*50 >= historyTotal} onClick={()=>setHistoryPage(historyPage+1)}>Próxima</button>
+      </nav>}
+
       <section style={styles.accessPanel}>
         <div style={styles.panelHeader}>
           <div>
@@ -614,15 +566,15 @@ function Visitantes() {
           </div>
 
           <span style={styles.resultBadge}>
-            {visitantesFiltrados.length} resultado(s)
+            {historyTotal} resultado(s)
           </span>
         </div>
 
         {visitantesFiltrados.length === 0 ? (
           <div style={styles.empty}>
-            <div style={styles.emptyIcon}>🛂</div>
+            <div style={styles.emptyIcon}><FiUsers aria-hidden="true"/></div>
 
-            <h3 style={styles.emptyTitle}>Nenhum visitante encontrado</h3>
+            <h3 style={styles.emptyTitle}>{liveError ? "Não foi possível carregar os visitantes" : "Nenhum visitante encontrado"}</h3>
 
             <p style={styles.emptyText}>
               Registre visitantes para acompanhar entrada, autorização e saída.

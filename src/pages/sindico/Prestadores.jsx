@@ -1,3 +1,5 @@
+import { FiTool, FiPlus, FiUsers, FiDroplet, FiHome, FiCalendar, FiSearch, FiMapPin, FiCheck, FiClock, FiEdit2, FiMoreHorizontal } from "react-icons/fi";
+import "./GestaoVisual.css";
 import { confirmDialog, promptDialog } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useState } from "react";
 import serviceProviderApi from "../../Services/serviceProviderApi.js";
@@ -73,141 +75,20 @@ function Prestadores() {
     finally{setProcessandoSolicitacao(null);}
   }
   function statusSolicitacao(status){return {PENDING:"Em análise",APPROVED:"Aprovada",REJECTED:"Não aprovada",CANCELED:"Cancelada"}[status]??status;}
-  function corStatus(status){switch(status){case"Pendente":return{background:"#fef3c7",color:"#92400e",border:"#fde68a",label:"Pendente"};case"Em execução":return{background:"var(--ic-primary-soft-2)",color:"var(--ic-primary-strong)",border:"var(--ic-primary-border-soft)",label:"Em execução"};case"Finalizado":return{background:"var(--ic-primary-soft)",color:"var(--ic-primary)",border:"var(--ic-primary-border-soft)",label:"Finalizado"};case"Cancelado":return{background:"#fee2e2",color:"#b91c1c",border:"#fecaca",label:"Cancelado"};default:return{background:"var(--ic-primary-soft-4)",color:"#374151",border:"var(--ic-primary-border-soft)",label:status||"Sem status"};}}
-  function iconeServico(servico){const t=servico?.toLowerCase()||""; if(t.includes("elétr")||t.includes("eletr"))return"⚡";if(t.includes("hidrá")||t.includes("agua")||t.includes("água"))return"💧";if(t.includes("limpeza"))return"🧹";if(t.includes("pintura"))return"🎨";if(t.includes("jardin"))return"🌿";if(t.includes("internet")||t.includes("rede"))return"🌐";return"🧰";}
   function formatarData(data){if(!data)return"-";const p=data.split("-");return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:data;}
   const ultimoRegistroOperacional=operacional[0];
 
   return (
-    <div style={styles.container}>
-      <section style={styles.hero}>
-        <div style={styles.heroLeft}>
-          <span style={styles.heroBadge}>
-            🛠️ Central operacional
-          </span>
-
-          <h1 style={styles.title}>
-            Prestadores e Operações
-          </h1>
-
-          <p style={styles.subtitle}>
-            Controle serviços do condomínio, atendimentos particulares e registros técnicos de operação.
-          </p>
-        </div>
-
-        <div style={styles.heroRight}>
-          <div style={styles.operationBoard}>
-            <div style={styles.operationItem}>
-              <span>🏢</span>
-              <strong>{prestadores.length}</strong>
-              <small>condomínio</small>
-            </div>
-
-            <div style={styles.operationItem}>
-              <span>🏠</span>
-              <strong>{particulares.length}</strong>
-              <small>particulares</small>
-            </div>
-
-            <div style={styles.operationItem}>
-              <span>💧</span>
-              <strong>{operacional.length}</strong>
-              <small>operações</small>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section style={styles.tabs}>
-        <button
-          style={{
-            ...styles.tab,
-            ...(abaAtiva === "condominio" ? styles.activeTab : {})
-          }}
-          onClick={() => {
-            setAbaAtiva("condominio");
-            setBusca("");
-          }}
-        >
-          🏢 Serviços Condomínio
-        </button>
-
-        <button
-          style={{
-            ...styles.tab,
-            ...(abaAtiva === "particular" ? styles.activeTab : {})
-          }}
-          onClick={() => {
-            setAbaAtiva("particular");
-            setBusca("");
-          }}
-        >
-          🏠 Serviços Particulares
-        </button>
-
-        <button
-          style={{
-            ...styles.tab,
-            ...(abaAtiva === "solicitacoes" ? styles.activeTab : {})
-          }}
-          onClick={() => {
-            setAbaAtiva("solicitacoes");
-            setBusca("");
-          }}
-        >
-          📥 Solicitações de moradores {solicitacoes.filter((item)=>item.status==="PENDING").length>0?`(${solicitacoes.filter((item)=>item.status==="PENDING").length})`:""}
-        </button>
-
-        <button
-          style={{
-            ...styles.tab,
-            ...(abaAtiva === "operacional" ? styles.activeTab : {})
-          }}
-          onClick={() => {
-            setAbaAtiva("operacional");
-            setBusca("");
-          }}
-        >
-          💧 Operacional / COMPESA
-        </button>
-      </section>
-
-      {["condominio","particular"].includes(abaAtiva) && (
-        <section style={styles.controlStrip}>
-          <div style={styles.searchWrap}>
-            <span style={styles.searchIcon}>⌕</span>
-
-            <input
-              placeholder="Buscar por nome, empresa, serviço, área, apartamento ou status..."
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              style={styles.search}
-            />
-          </div>
-
-          <div style={styles.compactStats}>
-            <span>
-              <b>{listaAtual.length}</b> cadastros
-            </span>
-
-            <span>
-              <b>{ativos}</b> ativos
-            </span>
-
-            <span>
-              <b>{finalizados}</b> finalizados
-            </span>
-          </div>
-
-          <button
-            style={styles.heroButton}
-            onClick={abrirNovoCadastro}
-          >
-            + Novo cadastro
-          </button>
-        </section>
-      )}
-
+    <div className="ic-pkg-reference ic-gestao-visual">
+      <header className="ic-pkg-hero"><div className="ic-pkg-heading"><span className="ic-pkg-icon"><FiTool/></span><div><h1>Prestadores e Operações</h1><p>Acompanhe os serviços e registros operacionais do condomínio.</p></div></div><div className="ic-pkg-actions">{["condominio","particular"].includes(abaAtiva)&&<button type="button" onClick={abrirNovoCadastro}><FiPlus/> Novo cadastro</button>}</div></header>
+      <div className="ic-gestao-metrics"><div><span className="ic-pkg-icon"><FiTool/></span><div><strong>{prestadores.length}</strong><span>Serviços do condomínio</span></div></div><div><span className="ic-pkg-icon"><FiUsers/></span><div><strong>{particulares.length}</strong><span>Serviços particulares</span></div></div><div><span className="ic-pkg-icon"><FiDroplet/></span><div><strong>{operacional.length}</strong><span>Operações</span></div></div></div>
+      <div className="ic-gestao-tabs" aria-label="Categorias de prestadores">
+        {[["condominio","Serviços do condomínio",FiHome],["particular","Serviços particulares",FiUsers],["solicitacoes","Solicitações de moradores",FiCalendar],["operacional","Operacional / COMPESA",FiDroplet]].map(([id,label,Icon])=><button key={id} type="button" className={abaAtiva===id?"ic-pkg-primary":"ic-pkg-outline"} aria-pressed={abaAtiva===id} onClick={()=>{setAbaAtiva(id);setBusca("");}}><Icon/> {label}</button>)}
+      </div>
+      {["condominio","particular"].includes(abaAtiva)&&<div className="ic-gestao-searchbar">
+        <label className="ic-pkg-search"><FiSearch/><input aria-label="Buscar" placeholder="Buscar por nome, empresa ou serviço..." value={busca} onChange={e=>setBusca(e.target.value)}/></label>
+        <span>{listaAtual.length} cadastros · {ativos} ativos · {finalizados} finalizados</span>
+      </div>}
       {abaAtiva === "solicitacoes" ? (
         <section style={styles.servicePanel}>
           <div style={styles.panelHeader}>
@@ -491,186 +372,22 @@ function Prestadores() {
           </div>
         </section>
       ) : (
-        <section style={styles.servicePanel}>
-          <div style={styles.panelHeader}>
-            <div>
-              <span style={styles.panelLabel}>
-                {abaAtiva === "condominio"
-                  ? "Serviços do condomínio"
-                  : "Serviços particulares"}
-              </span>
-
-              <h2 style={styles.panelTitle}>
-                Cadastros operacionais
-              </h2>
-            </div>
-
-            <span style={styles.resultBadge}>
-              {listaFiltrada.length} resultado(s)
-            </span>
-          </div>
-
-          {listaFiltrada.length === 0 ? (
-            <div style={styles.empty}>
-              <div style={styles.emptyIcon}>🧰</div>
-
-              <h3 style={styles.emptyTitle}>
-                Nenhum cadastro encontrado
-              </h3>
-
-              <p style={styles.emptyText}>
-                Cadastre prestadores para controlar serviços, entradas e status de execução.
-              </p>
-
-              <button
-                style={styles.emptyButton}
-                onClick={abrirNovoCadastro}
-              >
-                Novo cadastro
-              </button>
-            </div>
-          ) : (
-            <div style={styles.serviceGrid}>
-              {listaFiltrada.map((p) => {
-                const status = corStatus(p.status);
-
-                return (
-                  <article
-                    key={p.id}
-                    style={{
-                      ...styles.serviceCard,
-                      borderColor: status.border
-                    }}
-                  >
-                    <div style={styles.cardTop}>
-                      <div style={styles.serviceIdentity}>
-                        <div style={styles.serviceIcon}>
-                          {iconeServico(p.servico)}
-                        </div>
-
-                        <div>
-                          <h3 style={styles.serviceName}>
-                            {p.nome}
-                          </h3>
-
-                          <p style={styles.company}>
-                            {p.empresa || "Sem empresa informada"}
-                          </p>
-                        </div>
-                      </div>
-
-                      <span
-                        style={{
-                          ...styles.statusBadge,
-                          background: status.background,
-                          color: status.color
-                        }}
-                      >
-                        {status.label}
-                      </span>
-                    </div>
-
-                    <div style={styles.serviceType}>
-                      <span>🧰</span>
-                      <strong>{p.servico}</strong>
-                    </div>
-
-                    <div style={styles.infoGrid}>
-                      <div style={styles.infoItem}>
-                        <span>Telefone</span>
-                        <strong>{p.telefone || "-"}</strong>
-                      </div>
-
-                      <div style={styles.infoItem}>
-                        <span>CPF</span>
-                        <strong>{p.cpf || "-"}</strong>
-                      </div>
-
-                      <div style={styles.infoItem}>
-                        <span>Tipo</span>
-                        <strong>{p.tipoServico || "-"}</strong>
-                      </div>
-
-                      <div style={styles.infoItem}>
-                        <span>Área</span>
-                        <strong>{p.areaRelacionada || "-"}</strong>
-                      </div>
-
-                      {abaAtiva === "particular" && (
-                        <>
-                          <div style={styles.infoItem}>
-                            <span>Apartamento</span>
-                            <strong>{p.apartamento || "-"}</strong>
-                          </div>
-
-                          <div style={styles.infoItem}>
-                            <span>Responsável</span>
-                            <strong>{p.responsavel || "-"}</strong>
-                          </div>
-                        </>
-                      )}
-                    </div>
-
-                    <div style={styles.timeBox}>
-                      <div>
-                        <span>Entrada</span>
-                        <strong>
-                          {formatarData(p.dataEntrada)} {p.horaEntrada || ""}
-                        </strong>
-                      </div>
-
-                      <div>
-                        <span>Saída</span>
-                        <strong>
-                          {formatarData(p.dataSaida)} {p.horaSaida || ""}
-                        </strong>
-                      </div>
-                    </div>
-
-                    {p.observacao && (
-                      <div style={styles.noteBox}>
-                        {p.observacao}
-                      </div>
-                    )}
-
-                    <div style={styles.actionRow}>
-                      {p.status !== "Em execução" && (
-                        <button
-                          style={styles.runningButton}
-                          onClick={() => alterarStatusPrestador(p.id, "Em execução")}
-                        >
-                          Iniciar
-                        </button>
-                      )}
-
-                      {p.status !== "Finalizado" && (
-                        <button
-                          style={styles.doneButton}
-                          onClick={() => alterarStatusPrestador(p.id, "Finalizado")}
-                        >
-                          Finalizar
-                        </button>
-                      )}
-
-                      <button
-                        style={styles.editButton}
-                        onClick={() => editarPrestador(p)}
-                      >
-                        Editar
-                      </button>
-
-                      <button
-                        style={styles.deleteButton}
-                        onClick={() => excluirPrestador(p.id)}
-                      >
-                        Excluir
-                      </button>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          )}
+        <section className="ic-gestao-list">
+          <h2 className="ic-pkg-section-title"><FiCalendar/> Cadastros operacionais</h2>
+          <div className="ic-pkg-table-wrap"><table className="ic-pkg-table"><thead><tr><th>Prestador / empresa</th><th>Serviço</th><th>Local</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody>{listaFiltrada.map(p=><tr key={p.id}>
+            <td data-label="Prestador / empresa"><span className="ic-pkg-description"><span className="ic-gestao-avatar"><FiTool/></span><strong>{p.nome}</strong></span>{p.empresa&&<small>{p.empresa}</small>}</td>
+            <td data-label="Serviço">{p.servico}</td>
+            <td data-label="Local"><span className="ic-pkg-description"><FiMapPin/> {p.apartamento?`Apto ${p.apartamento}`:p.areaRelacionada||p.tipoServico||"—"}</span></td>
+            <td data-label="Status"><span className="ic-pkg-tag" data-tone={p.status==="Finalizado"?"green":p.status==="Cancelado"?"red":undefined}>{p.status==="Finalizado"?<FiCheck/>:<FiClock/>} {p.status==="Em execução"?"Em andamento":p.status||"Sem status"}</span></td>
+            <td data-label="Ações"><div className="ic-pkg-row-actions"><button type="button" className="ic-pkg-outline" onClick={()=>editarPrestador(p)}><FiEdit2/> Editar</button>
+            <details className="ic-pkg-action-menu"><summary aria-label="Mais ações"><FiMoreHorizontal/></summary><div>
+              <small>Entrada: {formatarData(p.dataEntrada)} {p.horaEntrada} · Saída: {formatarData(p.dataSaida)} {p.horaSaida}{p.observacao&&` · ${p.observacao}`}</small>
+              {p.status!=="Em execução"&&<button type="button" onClick={()=>alterarStatusPrestador(p.id,"Em execução")}>Iniciar</button>}
+              {p.status!=="Finalizado"&&<button type="button" onClick={()=>alterarStatusPrestador(p.id,"Finalizado")}>Finalizar</button>}
+              <button type="button" onClick={()=>excluirPrestador(p.id)}>Excluir</button>
+            </div></details></div></td>
+          </tr>)}</tbody></table>{!listaFiltrada.length&&<p className="ic-pkg-empty">Nenhum cadastro encontrado.</p>}</div>
         </section>
       )}
 

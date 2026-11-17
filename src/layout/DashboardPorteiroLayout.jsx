@@ -7,16 +7,7 @@ import {
   useLocation
 } from "react-router-dom";
 
-import {
-  FaBox,
-  FaClipboardList,
-  FaUsers,
-  FaSignOutAlt,
-  FaBook,
-  FaChartPie,
-  FaFileAlt,
-  FaLandmark
-} from "react-icons/fa";
+import { FiPackage, FiClipboard, FiUsers, FiLogOut, FiBook, FiPieChart, FiFileText, FiHome } from "react-icons/fi";
 
 import { useEffect, useState } from "react";
 import logoStar from "../assets/images/logo-star-infinity.png";
@@ -225,7 +216,7 @@ function DashboardPorteiroLayout() {
               }}
             >
               <span style={styles.menuIcon}>
-                <FaChartPie />
+                <FiPieChart />
               </span>
 
               <span>
@@ -243,7 +234,7 @@ function DashboardPorteiroLayout() {
               }}
             >
               <span style={styles.menuIcon}>
-                <FaBox />
+                <FiPackage />
               </span>
 
               <span>
@@ -261,7 +252,7 @@ function DashboardPorteiroLayout() {
               }}
             >
               <span style={styles.menuIcon}>
-                <FaClipboardList />
+                <FiClipboard />
               </span>
 
               <span>
@@ -279,7 +270,7 @@ function DashboardPorteiroLayout() {
               }}
             >
               <span style={styles.menuIcon}>
-                <FaFileAlt />
+                <FiFileText />
               </span>
 
               <span>
@@ -297,7 +288,7 @@ function DashboardPorteiroLayout() {
               }}
             >
               <span style={styles.menuIcon}>
-                <FaLandmark />
+                <FiHome />
               </span>
 
               <span>
@@ -315,7 +306,7 @@ function DashboardPorteiroLayout() {
               }}
             >
               <span style={styles.menuIcon}>
-                <FaUsers />
+                <FiUsers />
               </span>
 
               <span>
@@ -333,7 +324,7 @@ function DashboardPorteiroLayout() {
               }}
             >
               <span style={styles.menuIcon}>
-                <FaBook />
+                <FiBook />
               </span>
 
               <span>
@@ -366,7 +357,7 @@ function DashboardPorteiroLayout() {
             onClick={sair}
           >
 
-            <FaSignOutAlt />
+            <FiLogOut />
 
             Encerrar sessão
 

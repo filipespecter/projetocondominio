@@ -282,6 +282,7 @@ class ResidentRepository extends BaseRepository {
           data.residentType ?? "OWNER",
         isPrimary:
           data.isPrimary ?? false,
+        isSecondary: data.isSecondary===true,
         canReserve:
           data.canReserve ?? true,
         canOpenOccurrence:
@@ -322,6 +323,7 @@ class ResidentRepository extends BaseRepository {
         data.residentType;
     }
 
+    if(data.isSecondary!==undefined) updateData.isSecondary=data.isSecondary;
     if (
       data.isPrimary !== undefined
     ) {
@@ -391,6 +393,7 @@ class ResidentRepository extends BaseRepository {
         },
         {
           apartmentId,
+          isSecondary:false,
         }
       );
 

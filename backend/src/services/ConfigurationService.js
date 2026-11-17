@@ -1,3 +1,4 @@
+import prisma from "../config/prisma.js";
 import TenantMessagingService from "./TenantMessagingService.js";
 import CondominiumService from "./CondominiumService.js";
 import UserService from "./UserService.js";
@@ -104,6 +105,7 @@ class ConfigurationService {
     if (Object.hasOwn(payload, "plano") || Object.hasOwn(payload, "statusComercial")) throw new ApiError("Plano e status comercial são controlados pela Central Star.", 403);
     if (payload.settings || payload.whatsapp) throw new ApiError("Use a configuração específica de comunicação.",422);
 
+    if(payload.cnpj!==undefined&&String(payload.cnpj||"")!==String(current.document||""))throw new ApiError("Solicite a alteração do CNPJ à Central.",422);
     const settings = {
       ...currentSettings,
       theme: {
@@ -119,7 +121,7 @@ class ConfigurationService {
       commercial: current.settings?.commercial || {},
     };
 
-    return CondominiumService.update(condominiumId, {
+    const updated=await CondominiumService.update(condominiumId, {
       name: payload.nomeCondominio,
       document: payload.cnpj,
       email: payload.email,
@@ -129,6 +131,10 @@ class ConfigurationService {
       logoUrl: payload.logoUrl,
       settings,
     }, authenticatedUser);
+    const labels={name:"Nome",email:"E-mail",phone:"Telefone",contactName:"Síndico",addressLine:"Endereço"};
+    const changed=Object.keys(labels).filter(k=>String(current[k]??"")!==String(updated[k]??""));
+    if(changed.length)await prisma.supportTicket.create({data:{condominiumId,openedByUserId:authenticatedUser.id,category:"DADOS_CADASTRAIS",title:"Dados cadastrais atualizados",description:changed.map(k=>labels[k]).join(", ")}});
+    return updated;
   }
 
   async updateSettingsGroup(authenticatedUser, group, payload) {

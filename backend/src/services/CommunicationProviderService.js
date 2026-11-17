@@ -1,3 +1,4 @@
+import { WahaProvider } from "./providers/WahaProvider.js";
 import TenantMessagingService from "./TenantMessagingService.js";
 import WhatsAppProvider from "./providers/WhatsAppProvider.js";
 import EmailProvider from "./providers/EmailProvider.js";
@@ -83,9 +84,14 @@ class CommunicationProviderService {
     templateCode = null,
     content,
     html = undefined,
+    attachments = undefined,
     metadata = null,
   }) {
     const selectedProvider = channel === "WHATSAPP" ? await TenantMessagingService.provider(condominiumId) : this.getProvider(channel, provider);
+
+    if (metadata?.dualChannelV1 && channel === "WHATSAPP" && !(selectedProvider instanceof WahaProvider)) throw new ApiError("Conecte o WhatsApp deste condomínio pelo novo fluxo antes de enviar. O e-mail permanece independente.", 503);
+
+    if (selectedProvider instanceof WahaProvider && !metadata?.dualChannelV1) throw new ApiError("WAHA habilitado somente para avisos de encomenda conferidos no novo fluxo.", 409);
 
     return selectedProvider.send({
       recipient,
@@ -93,6 +99,7 @@ class CommunicationProviderService {
       templateCode,
       content,
       html,
+      attachments,
       metadata,
     });
   }
