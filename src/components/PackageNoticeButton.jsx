@@ -49,6 +49,18 @@ export default function PackageNoticeButton({ id, compact = false, icon = null }
   const previews = preview ? (mode === "BOTH" ? ["EMAIL", "WHATSAPP"] : [mode]).flatMap(channel => {
     const recipient = selected.find(r => r.key === (channel === "EMAIL" ? emailRecipient : whatsappRecipient));
     if (!recipient) return [];
+    if (channel === "WHATSAPP") {
+      const field = (label, value) => value ? `${label}: ${String(value).replace(/[\r\n]+/g, " ").trim()}` : null;
+      return [{ channel, text: [
+        "📦 Encomenda recebida na portaria",
+        [field("Condomínio", preview.condominiumName), field("Unidade", preview.apartment),
+          field("Destinatário", recipient.name), field("Tipo", preview.type), field("Descrição", preview.description),
+          field("Remetente / transportadora", preview.carrier)].filter(Boolean).join("\n"),
+        field("Recado da portaria", observation.trim()),
+        recipient.canPickup ? "🔑 Código de retirada: [incluído no envio]\nApresente o QR ou o código na portaria. Não compartilhe o QR nem o código."
+          : "Avise o responsável autorizado pela retirada. Este aviso não autoriza retirar a encomenda.",
+      ].filter(Boolean).join("\n\n") }];
+    }
     const received = new Date(preview.receivedAt).toLocaleString("pt-BR", { timeZone: "America/Recife" });
     const lines = [
       preview.condominiumName, `Olá, ${recipient.name}.`, "Encomenda recebida na portaria",
@@ -68,7 +80,7 @@ export default function PackageNoticeButton({ id, compact = false, icon = null }
       {mode !== "WHATSAPP" && <label>Destinatário do e-mail<select disabled={busy} value={emailRecipient} onChange={e => setEmailRecipient(e.target.value)}><option value="">Nenhum e-mail selecionado</option>{selected.filter(r => r.email).map(r => <option key={r.key} value={r.key}>{r.name} · {r.email}{r.canPickup ? "" : " · somente aviso"}</option>)}</select></label>}
       {mode !== "EMAIL" && <label>Contato autorizado no WhatsApp<select disabled={busy} value={whatsappRecipient} onChange={e => setWhatsappRecipient(e.target.value)}><option value="">Nenhum telefone autorizado selecionado</option>{selected.filter(r => r.phone).map(r => <option key={r.key} value={r.key}>{r.name} · {r.phone}{r.canPickup ? "" : " · somente aviso"}</option>)}</select></label>}
       {((mode !== "WHATSAPP" && !emailRecipient) || (mode !== "EMAIL" && !whatsappRecipient)) && <p role="alert">Falta destinatário em um canal. Ao confirmar, esse canal terá falha registrada; o outro será tentado independentemente.</p>}
-      <label>Observação da portaria (opcional)<textarea rows={3} maxLength={400} value={observation} disabled={busy} onChange={e => setObservation(e.target.value)} /></label>
+      <label>Recado da portaria (opcional)<textarea placeholder="Ex.: Sua encomenda está no armário 3 da portaria." rows={3} maxLength={400} value={observation} disabled={busy} onChange={e => setObservation(e.target.value)} /></label>
       <small>{observation.length}/400 caracteres</small>
       {previews.map(({channel, text}) => <div className="ic-message-preview" key={channel}>
         <strong>Prévia · {channel === "EMAIL" ? "E-mail" : "WhatsApp"}</strong>

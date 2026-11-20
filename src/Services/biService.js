@@ -48,13 +48,16 @@ export function registrarMudancaBI(origem = "sistema") { return emitirAtualizaca
 
 function unwrap(response) { return response?.data?.data ?? response?.data ?? []; }
 
-export async function carregarDadosBI() {
+export async function carregarDadosBI({ exigirMovimentacoes = false } = {}) {
   const resultados = await Promise.allSettled([
     residentApi.list(), apartmentApi.list(), doormanApi.list(), visitorApi.list(),
     packageApi.list(), reservationApi.list(), serviceProviderApi.list(), commonAreaApi.list(),
     noticeApi.list(), listarMinhasNotificacoes(), occurrenceApi.list(), operationalRecordApi.list(),
     api.get("/v1/audit")
   ]);
+  if (exigirMovimentacoes && [3, 4, 5, 8].some(i => resultados[i].status !== "fulfilled" || !Array.isArray(resultados[i].value))) {
+    throw new Error("Não foi possível consultar todas as movimentações.");
+  }
   const valor = (i, fallback = []) => resultados[i].status === "fulfilled" ? resultados[i].value : fallback;
   cacheDados.moradores = valor(0);
   cacheDados.apartamentos = valor(1);

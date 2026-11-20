@@ -100,7 +100,10 @@ export class WahaConnectionService {
     seal({ provider: "WAHA" }, `whatsapp:${id}`); // Validate encryption before any external mutation.
     const session = await this.session(id);
     if (!session) await this.request(id, "/api/sessions", { method: "POST", body: { name: "default", start: true, config: { metadata: { condominiumId: id } } } });
-    else if (session.status === "STOPPED" || session.status === "FAILED") await this.request(id, "/api/sessions/default/start", { method: "POST" });
+    else if (session.status === "FAILED") {
+      await this.request(id, "/api/sessions/default/logout", { method: "POST" });
+      await this.request(id, "/api/sessions/default/start", { method: "POST" });
+    } else if (session.status === "STOPPED") await this.request(id, "/api/sessions/default/start", { method: "POST" });
     await this.audit(user, "Preparação de conexão WhatsApp solicitada pelo síndico; sem disparo de mensagens.");
     return this.status(user, true);
   }

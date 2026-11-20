@@ -47,6 +47,8 @@ app.use(
   })
 );
 
+app.use("/api", apiLimiter);
+
 /**
  * =====================================================
  * BODY PARSERS
@@ -95,7 +97,7 @@ app.get("/api/health", (_req,res)=>res.status(200).json({status:"ok"}));
 /**
  * Rotas da API
  */
-app.use("/api",apiLimiter,router);
+app.use("/api",router);
 
 /**
  * Tratamento de erros

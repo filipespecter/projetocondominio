@@ -9,11 +9,11 @@ class FinancialCommunicationService {
     }).format(Number(amountInCents ?? 0) / 100);
   }
 
-  formatDate(value) {
+  formatDate(value, options) {
     if (!value) return null;
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return null;
-    return new Intl.DateTimeFormat("pt-BR").format(date);
+    return new Intl.DateTimeFormat("pt-BR", options).format(date);
   }
 
   async getFinancialRecipients(condominiumId) {
@@ -80,7 +80,7 @@ class FinancialCommunicationService {
 
   async notifyChargeCreated({ charge, requestId = null }) {
     const amount = this.formatCurrency(charge.amountInCents);
-    const dueDate = this.formatDate(charge.dueDate);
+    const dueDate = this.formatDate(charge.dueDate, { timeZone: "UTC" });
 
     return this.sendToFinancialUsers({
       condominiumId: charge.condominiumId,
@@ -116,7 +116,7 @@ class FinancialCommunicationService {
 
   async notifyChargeOverdue({ charge, requestId = null }) {
     const amount = this.formatCurrency(charge.amountInCents);
-    const dueDate = this.formatDate(charge.dueDate);
+    const dueDate = this.formatDate(charge.dueDate, { timeZone: "UTC" });
 
     return this.sendToFinancialUsers({
       condominiumId: charge.condominiumId,

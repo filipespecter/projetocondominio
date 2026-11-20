@@ -33,7 +33,7 @@ export default function PlatformClientWhatsApp({ client }) {
     {pending && <p role="status">{data.message || "A preparação está em andamento. O estado será atualizado automaticamente."}</p>}
     {data && !data.infrastructureReady && <p>Serviço de preparação indisponível. A equipe deve verificar a infraestrutura antes de continuar.</p>}
     {data?.state === "FAILED" && <p>{data.message}</p>}
-    {data?.canPrepare && !pending && data.state !== "READY" && !confirm && <button type="button" onClick={() => setConfirm(true)}>Habilitar e preparar conexão</button>}
+    {data?.canPrepare && !pending && !confirm && <button type="button" onClick={() => setConfirm(true)}>{data.state === "READY" ? "Conferir e preparar novamente" : "Habilitar e preparar conexão"}</button>}
     {confirm && <div className="ic-wa-provision-confirm"><strong>Preparar para {client.name}?</strong><p>Será reservada uma instância exclusiva para este condomínio. O número será escolhido pelo síndico no pareamento.</p><div><button type="button" disabled={busy} onClick={prepare}>{busy ? "Solicitando…" : "Confirmar preparação"}</button><button type="button" className="ic-wa-provision-secondary" disabled={busy} onClick={() => setConfirm(false)}>Cancelar</button></div></div>}
     {error && <p className="ic-wa-provision-error" role="alert">{error}</p>}
   </section>;

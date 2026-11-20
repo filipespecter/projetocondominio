@@ -41,9 +41,7 @@ export async function listHandovers(db, user, page = 1) {
     where: {
       condominiumId
     },
-    orderBy: {
-      createdAt: "desc"
-    },
+    orderBy: [{ resolvedAt: { sort: "desc", nulls: "first" } }, { createdAt: "desc" }, { id: "desc" }],
     take: 30,
     skip: (page - 1) * 30,
     include

@@ -47,7 +47,7 @@ if ($containers -contains $agentName) {
     $agent = (& docker inspect $agentName | Out-String | ConvertFrom-Json)[0]; Check 'preparador existente'
     if ($agent.Config.Labels.'tech.infinitycondo.waha.agent' -ne '1') { throw 'Preparador existente divergente. Nada removido.' }
 }
-$wahaImage = 'devlikeapro/waha@sha256:2fc1787ddbd343ed2e7d59482846d1b22aa5ca134e29aa8d42d0e88c54e24779'
+$wahaImage = 'devlikeapro/waha:gows@sha256:1f7faeb0227ad5edb5711f7058bfce807ea65e5f92234af0778e4db140f6eb46'
 & docker pull $wahaImage; Check 'imagem WAHA fixada'
 $buildDir = Join-Path $privateDir ('build-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $buildDir | Out-Null

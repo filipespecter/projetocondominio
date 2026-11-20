@@ -134,8 +134,8 @@ test('envio real do serviço anexa o mesmo QR nos dois canais sem alterar a cred
  await communication.send('email',user);await communication.send('whatsapp',user);
  assert.equal(sent.length,2);assert.equal(ensures,2);
  for (const message of sent) {
-   assert.match(message.content, /Unidade: A 101/);
-   assert.match(message.content, /Observação da portaria: Retirar no balcão\n\nCódigo de retirada:/);
+   assert.match(message.content, message.channel === "WHATSAPP" ? /\*Unidade:\* A 101/ : /Unidade: A 101/);
+   assert.match(message.content, message.channel === "WHATSAPP" ? /\*Recado da portaria:\* Retirar no balcão\n\n🔑 \*Código de retirada:\*/ : /Observação da portaria: Retirar no balcão\n\nCódigo de retirada:/);
  }
  assert.match(sent[0].html, /Retirar no balcão/);assert.equal(sent[0].attachments[0].content,sent[1].attachments[0].content);
  const expected=await QRCode.toBuffer('same-secure-existing-pickup-token',{type:'png',width:420,margin:4,errorCorrectionLevel:'M'});

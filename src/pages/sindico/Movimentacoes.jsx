@@ -23,6 +23,9 @@ import autoTable from "jspdf-autotable";
 import { useEffect, useState } from "react";
 import { carregarDadosBI } from "../../Services/biService.js";
 
+const meses = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+const dataMovimento = item => item.createdAt || item.criadoEm || item.data || item.dataReserva || item.recebidoEm;
+
 function Movimentacoes() {
 
   const [dadosLine, setDadosLine] =
@@ -38,7 +41,10 @@ function Movimentacoes() {
     useState("linha");
 
   const [mesSelecionado, setMesSelecionado] =
-    useState("Maio");
+    useState(() => meses[new Date().getMonth()]);
+  const ano = new Date().getFullYear();
+  const [erroDados, setErroDados] = useState("");
+  const [carregando, setCarregando] = useState(true);
 
   const [totais, setTotais] =
     useState({
@@ -50,17 +56,29 @@ function Movimentacoes() {
 
   useEffect(() => {
 
-    carregarDados();
+    let ativo = true;
+    carregarDados(() => ativo);
+    return () => { ativo = false; };
 
   }, [mesSelecionado]);
 
-  async function carregarDados() {
+  async function carregarDados(ativo) {
+    setCarregando(true);
+    setErroDados("");
     try {
-      const base = await carregarDadosBI();
-      const visitantes = Array.isArray(base.visitantes) ? base.visitantes : [];
-      const encomendas = Array.isArray(base.encomendas) ? base.encomendas : [];
-      const reservas = Array.isArray(base.reservas) ? base.reservas : [];
-      const avisos = Array.isArray(base.avisos) ? base.avisos : [];
+      const base = await carregarDadosBI({ exigirMovimentacoes: true });
+      if (!ativo()) return;
+      const mes = meses.indexOf(mesSelecionado);
+      const filtrar = rows => rows.filter(item => {
+        const raw = dataMovimento(item);
+        if (!raw) return false;
+        const d = new Date(raw);
+        return d.getFullYear() === ano && d.getMonth() === mes;
+      });
+      const visitantes = filtrar([...base.visitantes, ...base.visitantes_historico]);
+      const encomendas = filtrar([...base.encomendas, ...base.encomendas_historico].filter(item => String(item.status).toUpperCase() !== "EXPECTED"));
+      const reservas = filtrar(base.reservas);
+      const avisos = filtrar(base.avisos);
 
       setTotais({ visitantes: visitantes.length, encomendas: encomendas.length, reservas: reservas.length, avisos: avisos.length });
       const tipos = [
@@ -81,15 +99,18 @@ function Movimentacoes() {
       const dias = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
       const contagem = Object.fromEntries(dias.map((d) => [d, 0]));
       movimentos.forEach((item) => {
-        const raw = item.createdAt || item.criadoEm || item.data || item.dataReserva || item.recebidoEm;
+        const raw = dataMovimento(item);
         const d = raw ? new Date(raw) : null;
         if (d && !Number.isNaN(d.getTime())) contagem[dias[d.getDay()]] += 1;
       });
       setDadosLine(["Seg","Ter","Qua","Qui","Sex","Sab","Dom"].map((dia) => ({ dia, valor: contagem[dia] || 0 })));
     } catch (error) {
-      console.error("Erro ao carregar movimentações:", error);
+      if (!ativo()) return;
+      setErroDados(error.message || "Não foi possível carregar movimentações.");
       setTotais({ visitantes: 0, encomendas: 0, reservas: 0, avisos: 0 });
       setDadosLine([]); setDadosBar([]); setDadosPie([]);
+    } finally {
+      if (ativo()) setCarregando(false);
     }
   }
 
@@ -319,6 +340,7 @@ function Movimentacoes() {
           <p style={styles.subtitle}>
             Analytics completo do condomínio
           </p>
+          {erroDados && <p role="alert">{erroDados}</p>}
 
         </div>
 
@@ -334,12 +356,7 @@ function Movimentacoes() {
             style={styles.select}
           >
 
-            <option>Janeiro</option>
-            <option>Fevereiro</option>
-            <option>Março</option>
-            <option>Abril</option>
-            <option>Maio</option>
-            <option>Junho</option>
+            {meses.map(mes => <option key={mes} value={mes}>{mes} / {ano}</option>)}
 
           </select>
 
@@ -373,7 +390,7 @@ function Movimentacoes() {
 
           <button
             style={styles.pdfButton}
-            onClick={exportarPDF}
+            onClick={exportarPDF} disabled={carregando || Boolean(erroDados)}
           >
 
             Exportar PDF
@@ -401,7 +418,7 @@ function Movimentacoes() {
             </p>
 
             <h1 style={styles.cardNumber}>
-              {totalGeral}
+              {carregando || erroDados ? "—" : totalGeral}
             </h1>
 
           </div>
@@ -441,7 +458,7 @@ function Movimentacoes() {
             </p>
 
             <h1 style={styles.cardNumber}>
-              {Math.round(totalGeral / 7)}
+              {carregando || erroDados ? "—" : Math.round(totalGeral * 7 / new Date(ano, meses.indexOf(mesSelecionado) + 1, 0).getDate())}
             </h1>
 
           </div>

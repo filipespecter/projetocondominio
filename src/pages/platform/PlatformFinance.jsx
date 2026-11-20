@@ -60,7 +60,7 @@ function dateLabel(value) {
   }
 
   return date.toLocaleDateString(
-    "pt-BR"
+    "pt-BR", { timeZone: "UTC" }
   );
 }
 

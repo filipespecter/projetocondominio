@@ -348,7 +348,18 @@ class CommunicationService {
         const credential=canPickup?await PackageCredentialService.ensure(before.referenceId,before.condominiumId):null;
         const instructions=canPickup?`Código de retirada: ${credential.code}. Apresente à portaria. Não compartilhe a credencial.`:"Avise o responsável autorizado pela retirada. Este aviso não autoriza retirar a encomenda.";
         content+=` Destinatário: ${metadata.recipientName || "Contato autorizado"}. ${metadata.packageDetails || ""}. ${instructions}`;
-        if (before.channel === "EMAIL" || (before.channel === "WHATSAPP" && metadata.dualChannelV1)) {
+        if (before.channel === "WHATSAPP" && metadata.dualChannelV1) {
+          const field = (label, value) => value ? `*${label}:* ${String(value).replace(/[\r\n]+/g, " ").trim()}` : null;
+          content = [
+            "📦 *Encomenda recebida na portaria*",
+            [field("Condomínio", metadata.condominiumName), field("Unidade", metadata.emailApartmentLabel || metadata.apartmentLabel),
+              field("Destinatário", metadata.recipientName), field("Tipo", pkg.type),
+              field("Descrição", pkg.description), field("Remetente / transportadora", pkg.carrier)].filter(Boolean).join("\n"),
+            field("Recado da portaria", metadata.observation),
+            credential ? `🔑 *Código de retirada:* ${credential.code}\nApresente o QR ou o código na portaria. Não compartilhe o QR nem o código.` : instructions,
+          ].filter(Boolean).join("\n\n");
+        }
+        if (before.channel === "EMAIL") {
           const formatted=packageEmail({condominiumName:metadata.condominiumName,recipientName:metadata.recipientName,
             apartmentLabel:metadata.emailApartmentLabel || metadata.apartmentLabel,packageRecord:pkg,instructions,observation:metadata.dualChannelV1 ? metadata.observation : null});
           content=formatted.content;

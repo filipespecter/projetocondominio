@@ -14,6 +14,8 @@ test("pedido de reinício recusa outro usuário sem gravar solicitação",async(
  await assert.rejects(configurationRequest(user,{kind:"RESET",username:"outro",password:"senha",confirmation:"REINICIAR Teste"},{user:{findFirst:async({where})=>{assert.equal(where.condominiumId,"condo");return {username:"síndico"};}}}),/Credenciais não confirmadas/);
 });
 test("expiração na consulta restringe o condomínio e só afeta pendências",async()=>{
- const db={$executeRaw:async(parts,...values)=>{assert.deepEqual(values,["condo","condo"]);assert.match(parts.join("?"),/status='PENDING'/);return 1;}};
- assert.equal(await expirePendingReservations("condo",db),1);
+ const db={$transaction:fn=>fn({
+  $queryRaw:async(parts,...values)=>{assert.deepEqual(values.slice(1),["condo","condo"]);assert.match(parts.join("?"),/status='PENDING'/);return [];},
+ })};
+ assert.equal(await expirePendingReservations("condo",db),0);
 });

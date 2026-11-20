@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import crypto from "node:crypto";
 import { pathToFileURL } from "node:url";
 
-export const IMAGE = "devlikeapro/waha@sha256:2fc1787ddbd343ed2e7d59482846d1b22aa5ca134e29aa8d42d0e88c54e24779";
+export const IMAGE = "devlikeapro/waha:gows@sha256:1f7faeb0227ad5edb5711f7058bfce807ea65e5f92234af0778e4db140f6eb46";
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const managed = "tech.infinitycondo.waha.managed";
 const tenantLabel = "tech.infinitycondo.waha.condominium";
@@ -91,7 +91,7 @@ export class Provisioner {
     }
     if (existing.status === 404) await this.call("POST", `/containers/create?name=${enc(name)}`, {
       Image: IMAGE, Labels: labels,
-      Env: [`WAHA_API_KEY=${entry.apiKey}`, `WAHA_API_KEY_PLAIN=${entry.apiKey}`, "WAHA_DASHBOARD_ENABLED=false", "WHATSAPP_SWAGGER_ENABLED=false", "WHATSAPP_DEFAULT_ENGINE=WEBJS", "WAHA_LOG_LEVEL=error", "WAHA_PRINT_QR=false"],
+      Env: [`WAHA_API_KEY=${entry.apiKey}`, `WAHA_API_KEY_PLAIN=${entry.apiKey}`, "WAHA_DASHBOARD_ENABLED=false", "WHATSAPP_SWAGGER_ENABLED=false", "WHATSAPP_DEFAULT_ENGINE=GOWS", "WAHA_LOG_LEVEL=error", "WAHA_PRINT_QR=false"],
       HostConfig: { NetworkMode: network, RestartPolicy: { Name: "unless-stopped" }, Memory: 1073741824, NanoCpus: 1000000000, PidsLimit: 512, ShmSize: 268435456,
         SecurityOpt: ["no-new-privileges:true"], Mounts: [{ Type: "volume", Source: volume, Target: "/app/.sessions" }], LogConfig: { Type: "json-file", Config: { "max-size": "5m", "max-file": "2" } } },
       NetworkingConfig: { EndpointsConfig: { [network]: { Aliases: [name] } } },

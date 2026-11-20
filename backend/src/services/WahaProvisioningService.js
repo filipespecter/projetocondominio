@@ -39,7 +39,7 @@ export class WahaProvisioningService {
       const client = await this.client(id, tx);
       if (!active.includes(client.status)) throw new ApiError("Habilite o acesso do condomínio antes de preparar o WhatsApp.", 409);
       const previous = await tx.wahaProvisioning.findUnique({ where: { condominiumId: id } });
-      if (previous?.enabled && ["QUEUED", "PREPARING", "READY", "WAITING_CAPACITY"].includes(previous.state)) return;
+      if (previous?.enabled && ["QUEUED", "PREPARING", "WAITING_CAPACITY"].includes(previous.state)) return;
       const values = { enabled: true, state: "QUEUED", operationId: crypto.randomUUID(), requestedBy: user.id,
         leaseId: null, leaseExpiresAt: null, attemptCount: 0, nextAttemptAt: new Date(), errorCode: null };
       await tx.wahaProvisioning.upsert({ where: { condominiumId: id }, create: { condominiumId: id, ...values }, update: values });
