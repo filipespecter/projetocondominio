@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../Services/api.js";
+import { mascaraTelefone } from "../utils/mascaras.js";
 
 const empty = () => ({name:"",email:"",phone:"",relationship:"",receiveNotices:true,whatsappOptIn:false,canPickup:false});
 const unwrap = r => r.data?.data ?? r.data;
@@ -43,7 +44,7 @@ export default function ApartmentContacts({ apartments, residents = [], fixedApa
       {contacts.map((c,i)=><fieldset key={c.id??i} disabled={busy} style={{marginBottom:12,border:"1px solid #ddd",borderRadius:12,padding:12}}>
         <legend>Pessoa {i+1}</legend>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,220px),1fr))",gap:12}}>
-          {[["name","Nome","text"],["email","E-mail","email"],["phone","Celular com DDD/DDI","tel"],["relationship","Vínculo: familiar, responsável…","text"]].map(([key,label,type])=><label key={key} style={{display:"grid",gap:4}}>{label}<input required type={type} value={c[key]} maxLength={key==="phone"?25:key==="email"?254:key==="relationship"?80:150} onChange={e=>change(i,key,e.target.value)}/></label>)}
+          {[["name","Nome","text"],["email","E-mail","email"],["phone","Celular com DDD/DDI","tel"],["relationship","Vínculo: familiar, responsável…","text"]].map(([key,label,type])=><label key={key} style={{display:"grid",gap:4}}>{label}<input required type={type} value={key==="phone"?mascaraTelefone(c[key]):c[key]} maxLength={key==="phone"?25:key==="email"?254:key==="relationship"?80:150} placeholder={key==="phone"?"(85) 99999-9999 ou +DDI":undefined} onChange={e=>change(i,key,key==="phone"?mascaraTelefone(e.target.value):e.target.value)}/></label>)}
         </div>
         {[["receiveNotices","Receber avisos de encomendas"],["whatsappOptIn","Esta pessoa autorizou receber avisos por WhatsApp"],["canPickup","Autorizar retirada e envio do código de retirada"]].map(([key,label])=><label key={key} style={{display:"block",marginTop:10}}><input type="checkbox" checked={c[key]} onChange={e=>change(i,key,e.target.checked)}/>{label}</label>)}
         {contacts.length>2&&<button type="button" onClick={()=>setContacts(list=>list.filter((_,index)=>index!==i))}>Remover contato</button>}

@@ -1,8 +1,9 @@
 import { FiUser, FiPlus, FiUsers, FiCheckCircle, FiXCircle, FiSearch, FiMoon, FiSun, FiCheck, FiX, FiEye, FiEdit2, FiMoreHorizontal } from "react-icons/fi";
 import "./GestaoVisual.css";
-import { confirmDialog } from "../../components/GlobalDialogs.jsx";
+import { confirmDialog, notify } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useState } from "react";
 import doormanApi from "../../Services/doormanApi";
+import { mascaraTelefone } from "../../utils/mascaras.js";
 import "../../styles/infinityModules.css";
 
 function limparTelefone(valor) {
@@ -56,7 +57,7 @@ function Porteiros() {
       const data = await doormanApi.list();
       setPorteiros((data ?? []).map(mapDoorman));
     } catch (error) {
-      alert(error?.message ?? "Não foi possível carregar porteiros.");
+      notify(error?.message ?? "Não foi possível carregar porteiros.", "error");
     }
   }
 
@@ -90,11 +91,11 @@ function Porteiros() {
 
   function validarPorteiro() {
     if (!novoPorteiro.nome.trim() || !novoPorteiro.usuario.trim() || !novoPorteiro.turno) {
-      alert("Preencha nome, usuário e turno.");
+      notify("Preencha nome, usuário e turno.", "error");
       return false;
     }
     if ((!editId || novoPorteiro.senha) && String(novoPorteiro.senha || "").length < 12) {
-      alert("A senha inicial deve possuir pelo menos 12 caracteres.");
+      notify("A senha inicial deve possuir pelo menos 12 caracteres.", "error");
       return false;
     }
     return true;
@@ -127,7 +128,7 @@ function Porteiros() {
       await carregar();
       fecharModal();
     } catch (error) {
-      alert(error?.message ?? "Erro ao salvar porteiro.");
+      notify(error?.message ?? "Erro ao salvar porteiro.", "error");
     }
   }
 
@@ -140,7 +141,7 @@ function Porteiros() {
   async function excluirPorteiro(id) {
     if (!await confirmDialog("Deseja realmente excluir este porteiro?")) return;
     try { await doormanApi.remove(id); await carregar(); }
-    catch (error) { alert(error?.message ?? "Não foi possível excluir o porteiro."); }
+    catch (error) { notify(error?.message ?? "Não foi possível excluir o porteiro.", "error"); }
   }
 
   function fecharModal() {
@@ -167,7 +168,7 @@ function Porteiros() {
     try {
       setSupervisao(await doormanApi.supervision(porteiro.id, 30));
     } catch (error) {
-      alert(error?.message ?? "Não foi possível carregar a supervisão deste porteiro.");
+      notify(error?.message ?? "Não foi possível carregar a supervisão deste porteiro.", "error");
       setPorteiroSupervisionado(null);
     } finally {
       setCarregandoSupervisao(false);
@@ -212,7 +213,7 @@ function Porteiros() {
           <td data-label="Ações"><div className="ic-pkg-row-actions">
             <button type="button" className="ic-pkg-primary" onClick={()=>abrirSupervisao(p)}><FiEye/> Supervisão</button>
             <button type="button" className="ic-pkg-outline" onClick={()=>editarPorteiro(p)}><FiEdit2/> Editar</button>
-            <details className="ic-pkg-action-menu"><summary aria-label="Mais ações"><FiMoreHorizontal/></summary><div><small>Telefone: {p.telefone||"—"} · Código: {p.codigoPorteiro||"—"}</small><button type="button" onClick={()=>excluirPorteiro(p.id)}>Excluir</button></div></details>
+            <details className="ic-pkg-action-menu"><summary aria-label="Mais ações"><FiMoreHorizontal/></summary><div><small>Telefone: {mascaraTelefone(p.telefone)||"—"} · Código: {p.codigoPorteiro||"—"}</small><button type="button" onClick={()=>excluirPorteiro(p.id)}>Excluir</button></div></details>
           </div></td>
         </tr>)}</tbody></table>{!porteirosFiltrados.length&&<p className="ic-pkg-empty">Nenhum porteiro encontrado.</p>}</div>
       </section>
@@ -338,10 +339,10 @@ function Porteiros() {
                   </label>
 
                   <input
-                    inputMode="numeric"
-                    maxLength="11"
-                    placeholder="Ex: 81999999999"
-                    value={novoPorteiro.telefone}
+                    inputMode="tel"
+                    maxLength="15"
+                    placeholder="(81) 99999-9999"
+                    value={mascaraTelefone(novoPorteiro.telefone)}
                     onChange={(e) =>
                       setNovoPorteiro({
                         ...novoPorteiro,

@@ -1,5 +1,5 @@
 import { useSearchParams } from "react-router-dom";
-import { confirmDialog, promptDialog } from "../../components/GlobalDialogs.jsx";
+import { confirmDialog, promptDialog, notify } from "../../components/GlobalDialogs.jsx";
 import {
   useEffect,
   useState,
@@ -226,9 +226,9 @@ function Reservas() {
           })
       );
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível carregar as reservas."
+        "Não foi possível carregar as reservas.", "error"
       );
     }
   }
@@ -360,8 +360,8 @@ function Reservas() {
       !novaReserva.horario ||
       !novaReserva.horarioFim
     ) {
-      alert(
-        "Preencha área, morador, data, horário inicial e horário final."
+      notify(
+        "Preencha área, morador, data, horário inicial e horário final.", "error"
       );
       return;
     }
@@ -410,9 +410,9 @@ function Reservas() {
       await carregar();
       fecharModal();
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível salvar a reserva."
+        "Não foi possível salvar a reserva.", "error"
       );
     }
   }
@@ -437,11 +437,11 @@ function Reservas() {
 
         if (motivo === null) return;
         if (!motivo?.trim()) {
-          alert("O motivo da rejeição é obrigatório.");
+          notify("O motivo da rejeição é obrigatório.", "error");
           return;
         }
         if (motivo.trim().length < 2) {
-          alert("O motivo da rejeição deve ter pelo menos 2 caracteres.");
+          notify("O motivo da rejeição deve ter pelo menos 2 caracteres.", "error");
           return;
         }
 
@@ -459,9 +459,9 @@ function Reservas() {
 
       await carregar();
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível alterar o status da reserva."
+        "Não foi possível alterar o status da reserva.", "error"
       );
     }
   }
@@ -496,9 +496,9 @@ function Reservas() {
 
       await carregar();
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível excluir a reserva."
+        "Não foi possível excluir a reserva.", "error"
       );
     }
   }
@@ -815,29 +815,29 @@ function Reservas() {
 
                   <div style={styles.scheduleBox}>
                     <div>
-                      <span>Data</span>
+                      <span>Data: </span>
                       <strong>{formatarData(r.data)}</strong>
                     </div>
 
                     <div>
-                      <span>Horário</span>
+                      <span>Horário: </span>
                       <strong>{r.horario || "-"}</strong>
                     </div>
                   </div>
 
                   <div style={styles.infoGrid}>
                     <div style={styles.infoItem}>
-                      <span>Morador</span>
+                      <span>Morador: </span>
                       <strong>{r.morador || "-"}</strong>
                     </div>
 
                     <div style={styles.infoItem}>
-                      <span>Apartamento</span>
+                      <span>Apartamento: </span>
                       <strong>{r.apartamento || "-"}</strong>
                     </div>
 
                     <div style={styles.infoItem}>
-                      <span>Perfil</span>
+                      <span>Perfil: </span>
                       <strong>
                         {r.moradorPrincipal ? "Principal" : r.tipoMorador || "Morador"}
                       </strong>

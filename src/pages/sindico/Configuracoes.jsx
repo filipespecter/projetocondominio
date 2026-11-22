@@ -2,10 +2,11 @@ import {FiSettings,FiCreditCard,FiAlertTriangle} from "react-icons/fi";
 import CondominiumRequests from "../../components/CondominiumRequests.jsx";
 import "./GestaoVisual.css";
 import WhatsAppConnection from "../../components/WhatsAppConnection.jsx";
-import { confirmDialog } from "../../components/GlobalDialogs.jsx";
+import { confirmDialog, notify } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useState } from "react";
 import configurationApi from "../../Services/configurationApi.js";
 import { applyCondominiumTheme } from "../../utils/condominiumTheme.js";
+import { mascaraCNPJ, mascaraTelefone } from "../../utils/mascaras.js";
 
 function Configuracoes() {
   const [abaAtiva, setAbaAtiva] = useState("dados");
@@ -48,7 +49,7 @@ function Configuracoes() {
 
   async function executar(acao, sucesso) {
     try { await acao(); if (sucesso) feedback(sucesso); }
-    catch (error) { console.error(error); alert(error?.message || "Não foi possível concluir a operação."); }
+    catch (error) { console.error(error); notify(error?.message || "Não foi possível concluir a operação.", "error"); }
   }
 
   async function carregarTudo() {
@@ -65,7 +66,7 @@ function Configuracoes() {
       const master = (data?.users || []).find((u) => u.perfil === "mestre");
       setCredenciaisMestre({ usuario: master?.usuario || data?.currentUser?.usuario || "", senha: "", confirmarSenha: "" });
     } catch (error) {
-      console.error(error); alert(error?.message || "Não foi possível carregar as configurações.");
+      console.error(error); notify(error?.message || "Não foi possível carregar as configurações.", "error");
     } finally { setCarregando(false); }
   }
 
@@ -103,7 +104,7 @@ function Configuracoes() {
 
   const [messagingHistory,setMessagingHistory]=useState([]);
   async function carregarHistorico() { await executar(async()=>setMessagingHistory(await configurationApi.messagingHistory()), "Histórico atualizado."); }
-  async function conferirEntrega(id) { await executar(async()=>{const result=await configurationApi.checkMessageDelivery(id);alert(result.message);setMessagingHistory(await configurationApi.messagingHistory());}, "Consulta de entrega concluída."); }
+  async function conferirEntrega(id) { await executar(async()=>{const result=await configurationApi.checkMessageDelivery(id);notify(result.message, "info");setMessagingHistory(await configurationApi.messagingHistory());}, "Consulta de entrega concluída."); }
   async function reenviarAviso(id) {if(!await confirmDialog("Você conferiu os dados? Deseja confirmar uma nova tentativa de envio?"))return;await executar(async()=>{await configurationApi.retryMessage(id, true); setMessagingHistory(await configurationApi.messagingHistory());}, "Nova tentativa registrada.");}
 
 
@@ -112,9 +113,9 @@ function Configuracoes() {
 
 
   async function salvarUsuarioAdministrativo() {
-    if (!isMestre) return alert("Apenas o Síndico Mestre pode gerenciar usuários.");
-    if (!novoUsuario.nome || !novoUsuario.usuario || (!editId && !novoUsuario.senha)) return alert("Preencha nome, usuário e senha.");
-    if (novoUsuario.senha && novoUsuario.senha.length < 12) return alert("A senha deve possuir pelo menos 12 caracteres.");
+    if (!isMestre) return notify("Apenas o Síndico Mestre pode gerenciar usuários.", "error");
+    if (!novoUsuario.nome || !novoUsuario.usuario || (!editId && !novoUsuario.senha)) return notify("Preencha nome, usuário e senha.", "error");
+    if (novoUsuario.senha && novoUsuario.senha.length < 12) return notify("A senha deve possuir pelo menos 12 caracteres.", "error");
 
     await executar(async () => {
       if (editId) await configurationApi.updateUser(editId, novoUsuario);
@@ -130,23 +131,23 @@ function Configuracoes() {
   }
 
   async function excluirUsuario(id) {
-    if (!isMestre) return alert("Apenas o Síndico Mestre pode excluir usuários.");
+    if (!isMestre) return notify("Apenas o Síndico Mestre pode excluir usuários.", "error");
     const usuario = usuariosSindico.find((u) => u.id === id);
-    if (usuario?.perfil === "mestre") return alert("O usuário mestre não pode ser excluído.");
+    if (usuario?.perfil === "mestre") return notify("O usuário mestre não pode ser excluído.", "error");
     if (!await confirmDialog("Deseja excluir este usuário administrativo?")) return;
     await executar(async () => { await configurationApi.removeUser(id); await carregarTudo(); }, "Usuário excluído com sucesso.");
   }
 
   async function alterarStatusUsuario(id) {
-    if (!isMestre) return alert("Apenas o Síndico Mestre pode alterar status.");
+    if (!isMestre) return notify("Apenas o Síndico Mestre pode alterar status.", "error");
     await executar(async () => { await configurationApi.toggleUser(id); await carregarTudo(); }, "Status atualizado com sucesso.");
   }
 
   async function alterarCredenciaisMestre() {
-    if (!isMestre) return alert("Apenas o Síndico Mestre pode alterar estas credenciais.");
-    if (!credenciaisMestre.usuario) return alert("Informe o novo usuário.");
-    if (credenciaisMestre.senha && credenciaisMestre.senha.length < 12) return alert("A senha deve possuir pelo menos 12 caracteres.");
-    if (credenciaisMestre.senha && credenciaisMestre.senha !== credenciaisMestre.confirmarSenha) return alert("As senhas não conferem.");
+    if (!isMestre) return notify("Apenas o Síndico Mestre pode alterar estas credenciais.", "error");
+    if (!credenciaisMestre.usuario) return notify("Informe o novo usuário.", "error");
+    if (credenciaisMestre.senha && credenciaisMestre.senha.length < 12) return notify("A senha deve possuir pelo menos 12 caracteres.", "error");
+    if (credenciaisMestre.senha && credenciaisMestre.senha !== credenciaisMestre.confirmarSenha) return notify("As senhas não conferem.", "error");
 
     await executar(async () => {
       await configurationApi.updateMasterCredentials({ usuario: credenciaisMestre.usuario, senha: credenciaisMestre.senha || undefined });
@@ -156,7 +157,7 @@ function Configuracoes() {
   }
 
   function gerarBackup() {
-    if (!isMestre) return alert("Apenas o Síndico Mestre pode exportar configurações.");
+    if (!isMestre) return notify("Apenas o Síndico Mestre pode exportar configurações.", "error");
     const exportacao = { sistema: "InfinityCondo", tipo: "exportacao-configuracoes", geradoEm: new Date().toISOString(), config, preferencias, whatsappConfig: { ...whatsappConfig, token: whatsappConfig.token ? "[PROTEGIDO]" : "" }, biConfig, segurancaConfig: { tempoSessao: segurancaConfig.tempoSessao } };
     const blob = new Blob([JSON.stringify(exportacao, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `infinitycondo-config-${Date.now()}.json`; link.click(); URL.revokeObjectURL(url);
@@ -175,7 +176,7 @@ function Configuracoes() {
       <nav className="ic-nov-nav" aria-label="Configurações">{[["dados","Dados cadastrais"],["aparencia","Aparência"],["plano","Plano e acesso"],["usuarios","Usuários"],["seguranca","Segurança"],["backup","Backup"],["whatsapp","WhatsApp"],["preferencias","Preferências"],...(isMestre?[["risco","Área de risco"]]:[])].map(([id,label])=><button type="button" key={id} className={abaAtiva===id?"ic-pkg-primary":"ic-pkg-outline"} aria-pressed={abaAtiva===id} onClick={()=>setAbaAtiva(id)}>{label}</button>)}</nav>
       <div className="ic-nov-content">
       {abaAtiva==="dados"&&<div className="ic-nov-overview"><section className="ic-nov-card"><h2>Dados cadastrais</h2><p>Informações principais do condomínio.</p><form className="ic-nov-fields" onSubmit={e=>{e.preventDefault();void salvarDadosCondominio("dados");}}>
-      {[["nomeCondominio","Nome do condomínio"],["cnpj","CNPJ"],["sindico","Nome do síndico"],["telefone","Telefone"],["email","E-mail"],["endereco","Endereço"]].map(([id,label])=><div key={id} className={["email","endereco"].includes(id)?"ic-nov-full":undefined}><label>{label}<input value={config[id]??""} readOnly={!isMestre||id==="cnpj"} required={id==="nomeCondominio"} type={id==="email"?"email":"text"} onChange={e=>setConfig({...config,[id]:e.target.value})}/></label>{isMestre&&id==="cnpj"&&<button type="button" className="ic-pkg-outline" onClick={()=>setAbaAtiva("cnpj")}>Solicitar alteração</button>}</div>)}
+      {[["nomeCondominio","Nome do condomínio"],["cnpj","CNPJ"],["sindico","Nome do síndico"],["telefone","Telefone"],["email","E-mail"],["endereco","Endereço"]].map(([id,label])=><div key={id} className={["email","endereco"].includes(id)?"ic-nov-full":undefined}><label>{label}<input value={id==="cnpj"?mascaraCNPJ(config[id]??""):id==="telefone"?mascaraTelefone(config[id]??""):config[id]??""} readOnly={!isMestre||id==="cnpj"} required={id==="nomeCondominio"} type={id==="email"?"email":"text"} inputMode={id==="telefone"?"tel":undefined} maxLength={id==="telefone"?20:undefined} placeholder={id==="telefone"?"(85) 3333-4444":undefined} onChange={e=>setConfig({...config,[id]:id==="telefone"?mascaraTelefone(e.target.value):e.target.value})}/></label>{isMestre&&id==="cnpj"&&<button type="button" className="ic-pkg-outline" onClick={()=>setAbaAtiva("cnpj")}>Solicitar alteração</button>}</div>)}
       {isMestre&&<div className="ic-nov-full"><button className="ic-pkg-primary">Salvar alterações</button> <small>A Central será avisada quando os dados forem atualizados.</small></div>}</form></section>
       <aside className="ic-nov-aside"><section className="ic-nov-card"><h2>Plano e acesso</h2><strong>{config.plano}</strong>{isMestre&&<p><a className="ic-pkg-primary" href="/dashboard/financeiro#assinatura"><FiCreditCard/> Pagar assinatura</a></p>}</section>{isMestre&&<section className="ic-nov-card"><h2><FiAlertTriangle/> Área de risco</h2><button type="button" className="ic-pkg-outline" onClick={()=>setAbaAtiva("risco")}>Reiniciar cadastros</button></section>}</aside></div>}
       {abaAtiva==="plano"&&<section className="ic-nov-card"><h2>Plano e acesso</h2><p>{config.plano}</p>{isMestre&&<a className="ic-pkg-primary" href="/dashboard/financeiro#assinatura">Ver assinatura e pagamento</a>}</section>}

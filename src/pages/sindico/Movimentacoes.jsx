@@ -22,6 +22,7 @@ import autoTable from "jspdf-autotable";
 
 import { useEffect, useState } from "react";
 import { carregarDadosBI } from "../../Services/biService.js";
+import { notify } from "../../components/GlobalDialogs.jsx";
 
 const meses = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 const dataMovimento = item => item.createdAt || item.criadoEm || item.data || item.dataReserva || item.recebidoEm;
@@ -115,7 +116,7 @@ function Movimentacoes() {
   }
 
   async function exportarPDF() {
-    let identity;try{identity=await currentReportIdentity();}catch(e){window.alert(e.message);return;}
+    let identity;try{identity=await currentReportIdentity();}catch(e){notify(e.message, "error");return;}
     const doc = new jsPDF();
 
     doc.setFontSize(22);

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import supplierApi from "../../Services/supplierApi.js";
+import { mascaraCNPJ, mascaraDocumento, mascaraTelefone } from "../../utils/mascaras.js";
 import "../../styles/infinityModules.css";
 
 const initial={entityType:"COMPANY",legalName:"",tradeName:"",document:"",contactName:"",phone:"",whatsapp:"",email:"",address:"",serviceType:"",notes:"",status:"ACTIVE"};
@@ -25,10 +26,10 @@ export default function Fornecedores(){
    <F label="Tipo de cadastro *"><select className="icm-select" value={form.entityType} onChange={e=>setForm({...form,entityType:e.target.value})}><option value="COMPANY">Empresa</option><option value="INDIVIDUAL">Pessoa física</option><option value="FREELANCER">Autônomo / freelancer</option></select></F>
    <F label={company?"Razão social / nome *":"Nome completo *"}><input className="icm-input" required minLength={2} value={form.legalName} onChange={e=>setForm({...form,legalName:e.target.value})}/></F>
    <F label={company?"Nome fantasia":"Nome profissional / apelido comercial"}><input className="icm-input" value={form.tradeName} onChange={e=>setForm({...form,tradeName:e.target.value})}/></F>
-   <F label={company?"CNPJ / documento":"CPF / documento"}><input className="icm-input" value={form.document} onChange={e=>setForm({...form,document:e.target.value})}/></F>
+   <F label={company?"CNPJ / documento":"CPF / documento"}><input className="icm-input" maxLength={company?18:30} placeholder={company?"00.000.000/0000-00":"000.000.000-00 ou RG"} value={form.document} onChange={e=>setForm({...form,document:company?mascaraCNPJ(e.target.value):mascaraDocumento(e.target.value)})}/></F>
    <F label="Tipo de serviço"><input className="icm-input" placeholder="Ex.: Elétrica, hidráulica, elevadores" value={form.serviceType} onChange={e=>setForm({...form,serviceType:e.target.value})}/></F>
    <F label={company?"Contato responsável":"Contato / responsável alternativo"}><input className="icm-input" value={form.contactName} onChange={e=>setForm({...form,contactName:e.target.value})}/></F>
-   <F label="Telefone"><input className="icm-input" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})}/></F><F label="WhatsApp"><input className="icm-input" value={form.whatsapp} onChange={e=>setForm({...form,whatsapp:e.target.value})}/></F>
+   <F label="Telefone"><input className="icm-input" inputMode="tel" maxLength={20} placeholder="(85) 3333-4444" value={form.phone} onChange={e=>setForm({...form,phone:mascaraTelefone(e.target.value)})}/></F><F label="WhatsApp"><input className="icm-input" inputMode="tel" maxLength={20} placeholder="(85) 99999-8888" value={form.whatsapp} onChange={e=>setForm({...form,whatsapp:mascaraTelefone(e.target.value)})}/></F>
    <F label="E-mail"><input className="icm-input" type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/></F><F label="Status"><select className="icm-select" value={form.status} onChange={e=>setForm({...form,status:e.target.value})}><option value="ACTIVE">Ativo</option><option value="INACTIVE">Inativo</option></select></F>
    <F label="Endereço" full><input className="icm-input" value={form.address} onChange={e=>setForm({...form,address:e.target.value})}/></F><F label="Observações" full><textarea className="icm-textarea" value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})}/></F>
   </div><div className="icm-actions"><button className="icm-btn icm-btn-primary" disabled={saving}>{saving?"Salvando...":editingId?"Salvar alterações":"Cadastrar"}</button>{editingId&&<button type="button" className="icm-btn icm-btn-neutral" onClick={reset}>Cancelar edição</button>}</div></form>

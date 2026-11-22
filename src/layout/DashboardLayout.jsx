@@ -14,6 +14,7 @@ import { contarNaoLidas } from "../Services/notificacaoService";
 import authApi from "../Services/authApi.js";
 import configurationApi from "../Services/configurationApi.js";
 import { buildCondominiumThemeVariables } from "../utils/condominiumTheme.js";
+import { useValidacaoEstilizada } from "../utils/validacaoEstilizada.js";
 import NotificationCenter from "../components/NotificationCenter.jsx";
 import GlobalSearch from "../components/GlobalSearch.jsx";
 
@@ -40,6 +41,9 @@ function DashboardLayout() {
   ] = useState(null);
 
   const [themeVariables, setThemeVariables] = useState(() => buildCondominiumThemeVariables());
+
+  // Avisos de campos obrigatórios no padrão visual do sistema (sem balão nativo do navegador).
+  useValidacaoEstilizada();
 
   // Sincroniza o tema salvo sem recriar o layout ou recarregar a página.
   useEffect(() => {

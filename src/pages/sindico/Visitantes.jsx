@@ -2,9 +2,10 @@ import { FiUsers, FiPlus } from "react-icons/fi";
 import "./EncomendasReferencia.css";
 import api from "../../Services/api.js";
 import OperationalHistoryTools from "../../components/OperationalHistoryTools.jsx";
-import { confirmDialog } from "../../components/GlobalDialogs.jsx";
+import { confirmDialog, notify } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useRef, useState } from "react";
 import visitorApi from "../../Services/visitorApi";
+import { mascaraTelefone, mascaraDocumento } from "../../utils/mascaras.js";
 
 function Visitantes() {
   const estadoInicialVisitante = {
@@ -212,8 +213,8 @@ function Visitantes() {
       novoVisitante.nome.trim().length < 2 ||
       !novoVisitante.apartamentoId
     ) {
-      alert(
-        "Informe o nome do visitante e o morador/apartamento responsável."
+      notify(
+        "Informe o nome do visitante e o morador/apartamento responsável.", "error"
       );
       return false;
     }
@@ -224,7 +225,7 @@ function Visitantes() {
         novoVisitante.documento
       )
     ) {
-      alert("Documento inválido.");
+      notify("Documento inválido.", "error");
       return false;
     }
 
@@ -234,7 +235,7 @@ function Visitantes() {
         novoVisitante.entrada
       )
     ) {
-      alert("Hora inválida. Use HH:mm.");
+      notify("Hora inválida. Use HH:mm.", "error");
       return false;
     }
 
@@ -354,9 +355,9 @@ function Visitantes() {
       await carregar();
       fecharModal();
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível salvar o visitante."
+        "Não foi possível salvar o visitante.", "error"
       );
     }
   }
@@ -374,9 +375,9 @@ function Visitantes() {
       await visitorApi.remove(id);
       await carregar();
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível excluir o visitante."
+        "Não foi possível excluir o visitante.", "error"
       );
     }
   }
@@ -402,9 +403,9 @@ function Visitantes() {
 
       await carregar();
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível alterar o status."
+        "Não foi possível alterar o status.", "error"
       );
     }
   }
@@ -636,29 +637,29 @@ function Visitantes() {
 
                   <div style={styles.infoGrid}>
                     <div style={styles.infoItem}>
-                      <span>Morador responsável</span>
+                      <span>Morador responsável: </span>
                       <strong>{v.morador || "N/A"}</strong>
                     </div>
 
                     <div style={styles.infoItem}>
-                      <span>Apartamento</span>
+                      <span>Apartamento: </span>
                       <strong>{v.apartamento || "-"}</strong>
                     </div>
 
                     <div style={styles.infoItem}>
-                      <span>Telefone</span>
-                      <strong>{v.telefone || "-"}</strong>
+                      <span>Telefone: </span>
+                      <strong>{mascaraTelefone(v.telefone) || "-"}</strong>
                     </div>
 
                     <div style={styles.infoItem}>
-                      <span>Entrada</span>
+                      <span>Entrada: </span>
                       <strong>
                         {v.entrada || v.horarioEntrada || v.hora || "-"}
                       </strong>
                     </div>
 
                     <div style={styles.infoItem}>
-                      <span>Data</span>
+                      <span>Data: </span>
                       <strong>{v.data || "-"}</strong><small>Registrado por: {v.registeredBy?.name || "Não identificado"}</small><small>Entrada: {v.enteredAt ? new Date(v.enteredAt).toLocaleString("pt-BR") : "Não registrada"} · Saída: {v.exitedAt ? new Date(v.exitedAt).toLocaleString("pt-BR") : "Em aberto"}</small>
                     </div>
                   </div>
@@ -752,7 +753,7 @@ function Visitantes() {
                     onChange={(e) =>
                       setNovoVisitante({
                         ...novoVisitante,
-                        documento: limparDocumento(e.target.value)
+                        documento: mascaraDocumento(limparDocumento(e.target.value))
                       })
                     }
                     style={styles.input}
@@ -763,14 +764,14 @@ function Visitantes() {
                   <label style={styles.label}>Telefone</label>
 
                   <input
-                    inputMode="numeric"
-                    maxLength="11"
-                    placeholder="Ex: 81999999999"
-                    value={novoVisitante.telefone}
+                    inputMode="tel"
+                    maxLength="15"
+                    placeholder="(81) 99999-9999"
+                    value={mascaraTelefone(novoVisitante.telefone)}
                     onChange={(e) =>
                       setNovoVisitante({
                         ...novoVisitante,
-                        telefone: limparTelefone(e.target.value)
+                        telefone: limparTelefone(e.target.value).slice(0, 11)
                       })
                     }
                     style={styles.input}

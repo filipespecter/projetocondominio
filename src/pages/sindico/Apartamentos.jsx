@@ -4,7 +4,7 @@ import "./EncomendasReferencia.css";
 import "../../components/UnitDirectory.css";
 import CondominiumStructure from "../../components/CondominiumStructure.jsx";
 import api from "../../Services/api.js";
-import { confirmDialog } from "../../components/GlobalDialogs.jsx";
+import { confirmDialog, notify } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useState } from "react";
 import apartmentApi from "../../Services/apartmentApi";
 import { Link } from "react-router-dom";
@@ -70,7 +70,7 @@ function Apartamentos() {
     };
   }
 
-  async function carregar() { try {setApartamentos((await apartmentApi.list()??[]).map(mapApartment));} catch(error){alert(error.message);} }
+  async function carregar() { try {setApartamentos((await apartmentApi.list()??[]).map(mapApartment));} catch(error){notify(error.message, "error");} }
   useEffect(() => { carregar(); }, []);
 
   const apartamentosFiltrados = apartamentos.filter((ap) => {
@@ -87,7 +87,7 @@ function Apartamentos() {
 
   function validarApartamento() {
     if (!novoAp.bloco.trim() || !novoAp.numero.trim() || String(novoAp.andar).trim() === "") {
-      alert("Preencha bloco, número e andar.");
+      notify("Preencha bloco, número e andar.", "error");
       return false;
     }
     return true;
@@ -108,7 +108,7 @@ function Apartamentos() {
       await carregar();
       fecharModal();
     } catch (error) {
-      alert(error?.message ?? "Erro ao salvar apartamento.");
+      notify(error?.message ?? "Erro ao salvar apartamento.", "error");
     }
   }
 
@@ -124,7 +124,7 @@ function Apartamentos() {
       await apartmentApi.remove(id);
       await carregar();
     } catch (error) {
-      alert(error?.message ?? "Não foi possível excluir o apartamento.");
+      notify(error?.message ?? "Não foi possível excluir o apartamento.", "error");
     }
   }
 
@@ -150,7 +150,7 @@ function Apartamentos() {
 
   return (
     <div className="ic-pkg-reference ic-gestao-visual">
-      <header className="ic-pkg-hero"><div className="ic-pkg-heading"><span className="ic-pkg-icon"><FiHome/></span><div><h1>Apartamentos</h1><p>Gerencie as unidades e a ocupação do condomínio.</p></div></div><div className="ic-pkg-actions"><button type="button" onClick={()=>setAbrirEstrutura(v=>v+1)}><FiSettings/> Configurar estrutura</button><button type="button" onClick={()=>{if(!capacidade)return alert("Configure primeiro a estrutura do condomínio.");setEditId(null);setNovoAp(estadoInicialApartamento);setMostrarModal(true);}}><FiPlus/> Novo apartamento</button></div></header>
+      <header className="ic-pkg-hero"><div className="ic-pkg-heading"><span className="ic-pkg-icon"><FiHome/></span><div><h1>Apartamentos</h1><p>Gerencie as unidades e a ocupação do condomínio.</p></div></div><div className="ic-pkg-actions"><button type="button" onClick={()=>setAbrirEstrutura(v=>v+1)}><FiSettings/> Configurar estrutura</button><button type="button" onClick={()=>{if(!capacidade)return notify("Configure primeiro a estrutura do condomínio.", "error");setEditId(null);setNovoAp(estadoInicialApartamento);setMostrarModal(true);}}><FiPlus/> Novo apartamento</button></div></header>
       <CondominiumStructure requestOpen={abrirEstrutura} onChange={d=>{setCapacidade(d.metrics.total);carregar();}}/>
       <div className="ic-gestao-metrics ic-gestao-metrics-four"><div><span className="ic-pkg-icon"><FiHome/></span><div><strong>{apartamentos.length}</strong><span>Total de unidades</span></div></div><div><span className="ic-pkg-icon"><FiCheckCircle/></span><div><strong>{totalDisponiveis}</strong><span>Disponíveis</span></div></div><div><span className="ic-pkg-icon"><FiUsers/></span><div><strong>{totalOcupados}</strong><span>Ocupadas</span></div></div><div><span className="ic-pkg-icon"><FiTool/></span><div><strong>{totalManutencao}</strong><span>Em manutenção</span></div></div></div>
       <div className="ic-gestao-searchbar">

@@ -2,10 +2,11 @@ import { useSearchParams } from "react-router-dom";
 import UnitDirectory, {unitLabel} from "../../components/UnitDirectory.jsx";
 import ResidentAccess from "../../components/ResidentAccess.jsx";
 import ApartmentContacts from "../../components/ApartmentContacts.jsx";
-import { confirmDialog } from "../../components/GlobalDialogs.jsx";
+import { confirmDialog, notify } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useState } from "react";
 import apartmentApi from "../../Services/apartmentApi";
 import residentApi from "../../Services/residentApi";
+import { mascaraTelefone, mascaraDocumento } from "../../utils/mascaras.js";
 
 function limparTelefone(valor) {
   return String(valor ?? "")
@@ -78,7 +79,7 @@ function Moradores() {
       setMoradores((residents ?? []).map(mapResident));
       setApartamentos((aps ?? []).map(mapApartment));
     } catch (error) {
-      alert(error?.message ?? "Não foi possível carregar moradores.");
+      notify(error?.message ?? "Não foi possível carregar moradores.", "error");
     }
   }
 
@@ -124,11 +125,11 @@ function Moradores() {
 
   function validarMorador() {
     if (!novoMorador.nome.trim() || !novoMorador.usuario.trim() || !novoMorador.apartamentoId) {
-      alert("Preencha nome, usuário e apartamento.");
+      notify("Preencha nome, usuário e apartamento.", "error");
       return false;
     }
     if (!editId && createAccess && String(novoMorador.senha || "").length < 12) {
-      alert("A senha inicial deve possuir pelo menos 12 caracteres.");
+      notify("A senha inicial deve possuir pelo menos 12 caracteres.", "error");
       return false;
     }
     return true;
@@ -160,14 +161,14 @@ function Moradores() {
       await carregar();
       fecharModal(true);
     } catch (error) {
-      alert(error?.message ?? "Erro ao salvar morador.");
+      notify(error?.message ?? "Erro ao salvar morador.", "error");
     } finally { setSaving(false); }
   }
 
   async function excluirMorador(id) {
     if (!await confirmDialog("Deseja realmente excluir este morador?")) return;
     try { await residentApi.remove(id); await carregar(); }
-    catch (error) { alert(error?.message ?? "Não foi possível excluir o morador."); }
+    catch (error) { notify(error?.message ?? "Não foi possível excluir o morador.", "error"); }
   }
 
   function editarMorador(morador) {
@@ -176,8 +177,8 @@ function Moradores() {
     setMostrarModal(true);
   }
 
-  function fecharModal(force=false) {
-    if (force !== true && mostrarModal && !window.confirm("Fechar a ficha? Alterações ainda não salvas serão descartadas.")) return;
+  async function fecharModal(force=false) {
+    if (force !== true && mostrarModal && !await confirmDialog("Alterações ainda não salvas serão descartadas.", { title: "Fechar a ficha?" })) return;
     setMostrarModal(false);
     setEditId(null);
     setNovoMorador(estadoInicialMorador);
@@ -209,7 +210,7 @@ function Moradores() {
 
   return (
     <div style={styles.container}>
-      {accessReceipt && <section className="ic-feature-panel" role="status"><h2>Acesso do morador criado</h2><p>Usuário: {accessReceipt.username}</p><p>Senha temporária: {accessReceipt.password}</p><p>Portal: {location.origin}/login/morador. Troca obrigatória no primeiro acesso.</p><button onClick={()=>navigator.clipboard.writeText(`Usuário: ${accessReceipt.username}\nSenha temporária: ${accessReceipt.password}\nPortal: ${location.origin}/login/morador`).catch(()=>alert("Selecione e copie os dados manualmente."))}>Copiar dados</button><button onClick={()=>setAccessReceipt(null)}>Fechar e ocultar senha</button></section>}
+      {accessReceipt && <section className="ic-feature-panel" role="status"><h2>Acesso do morador criado</h2><p>Usuário: {accessReceipt.username}</p><p>Senha temporária: {accessReceipt.password}</p><p>Portal: {location.origin}/login/morador. Troca obrigatória no primeiro acesso.</p><button onClick={()=>navigator.clipboard.writeText(`Usuário: ${accessReceipt.username}\nSenha temporária: ${accessReceipt.password}\nPortal: ${location.origin}/login/morador`).catch(()=>notify("Selecione e copie os dados manualmente.", "info"))}>Copiar dados</button><button onClick={()=>setAccessReceipt(null)}>Fechar e ocultar senha</button></section>}
       
       <section style={styles.hero}>
         <div style={styles.heroLeft}>
@@ -385,33 +386,33 @@ function Moradores() {
 
                   <div style={styles.residentData}>
                     <div style={styles.dataPill}>
-                      <span>Apto</span>
+                      <span>Apto: </span>
                       <strong>
                         {morador.apto || morador.apartamento || "-"}
                       </strong>
                     </div>
 
                     <div style={styles.dataPill}>
-                      <span>Tipo</span>
+                      <span>Tipo: </span>
                       <strong>
                         {morador.tipoMorador || "Proprietário"}
                       </strong>
                     </div>
 
                     <div style={styles.dataPill}>
-                      <span>Perfil</span>
+                      <span>Perfil: </span>
                       <strong>
                         {morador.moradorPrincipal ? "1º responsável" : morador.moradorSecundario ? "2º responsável" : "Sem ordem de responsabilidade"}
                       </strong>
                     </div>
 
                     <div style={styles.dataPill}>
-                      <span>Telefone</span>
-                      <strong>{morador.telefone || "-"}</strong>
+                      <span>Telefone: </span>
+                      <strong>{mascaraTelefone(morador.telefone) || "-"}</strong>
                     </div>
 
                     <div style={styles.dataPill}>
-                      <span>Login</span>
+                      <span>Login: </span>
                       <strong>{morador.usuario || "-"}</strong>
                     </div>
                   </div>
@@ -568,10 +569,10 @@ function Moradores() {
                 </label>
 
                 <input
-                  inputMode="numeric"
-                  maxLength="15"
-                  placeholder="DDD + número, ou DDI + DDD + número"
-                  value={novoMorador.telefone}
+                  inputMode="tel"
+                  maxLength="20"
+                  placeholder="(85) 99999-9999 ou +DDI"
+                  value={mascaraTelefone(novoMorador.telefone)}
                   onChange={(e) =>
                     setNovoMorador({
                       ...novoMorador,
@@ -594,7 +595,7 @@ function Moradores() {
                   onChange={(e) =>
                     setNovoMorador({
                       ...novoMorador,
-                      documento: e.target.value
+                      documento: mascaraDocumento(e.target.value)
                     })
                   }
                   style={styles.input}

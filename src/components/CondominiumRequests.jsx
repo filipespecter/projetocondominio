@@ -1,6 +1,8 @@
 import {useEffect,useState} from "react";
 import QRCode from "qrcode";
 import api from "../Services/api.js";
+import {confirmDialog} from "./GlobalDialogs.jsx";
+import {mascaraCNPJ} from "../utils/mascaras.js";
 
 const brl=cents=>(cents/100).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 const endpoint="/v1/configuration/requests";
@@ -34,8 +36,8 @@ export default function CondominiumRequests({mode,condominium}){
  }
  async function issue(id,method,switchFromPix=false,switchFromBoleto=false){
   if(busy)return;
-  if(switchFromPix&&!window.confirm("O Pix anterior será cancelado antes da emissão do boleto. Deseja continuar?"))return;
-  if(switchFromBoleto&&!window.confirm("O boleto será cancelado antes de abrir o cartão. Não prossiga se você já pagou o boleto, mesmo se ainda estiver pendente no sistema. Deseja continuar?"))return;
+  if(switchFromPix&&!await confirmDialog("O Pix anterior será cancelado antes da emissão do boleto. Deseja continuar?",{title:"Trocar para boleto?",danger:true}))return;
+  if(switchFromBoleto&&!await confirmDialog("O boleto será cancelado antes de abrir o cartão. Não prossiga se você já pagou o boleto, mesmo se ainda estiver pendente no sistema. Deseja continuar?",{title:"Trocar para cartão?",danger:true}))return;
   setBusy(true);setMessage("");
   try{
    const response=await api.post(`/v1/configuration/subscription-charges/${id}/issue`,{method,switchFromPix,switchFromBoleto});
@@ -51,6 +53,7 @@ export default function CondominiumRequests({mode,condominium}){
  async function send(e){
   e.preventDefault();if(busy)return;setBusy(true);setMessage("");
   const form=e.currentTarget,fields=Object.fromEntries(new FormData(form));
+  if(fields.cnpj)fields.cnpj=String(fields.cnpj).replace(/\D/g,"");
   try{const r=await api.post(endpoint,{kind:mode,...fields});setMessage(`Solicitação #${r.data.ticketNumber} enviada. Aguardando a Central.`);form.reset();}
   catch(error){setMessage(error.message);}finally{if(form.elements.password)form.elements.password.value="";setBusy(false);}
  }
@@ -86,7 +89,7 @@ export default function CondominiumRequests({mode,condominium}){
    <h3>Pagamento antecipado</h3><p>Antes do ciclo normal, solicite a liberação da próxima mensalidade à Central.</p>
   </>}
   <form onSubmit={send}>
-   {mode==="PAY"?<label>Próxima mensalidade<select name="method"><option value="PIX">Pix</option><option value="BOLETO">Boleto</option><option value="CARD">Cartão de crédito</option></select></label>:mode==="CNPJ"?<label>Novo CNPJ<input name="cnpj" inputMode="numeric" pattern="[0-9]{14}" maxLength={14} required/></label>:<>
+   {mode==="PAY"?<label>Próxima mensalidade<select name="method"><option value="PIX">Pix</option><option value="BOLETO">Boleto</option><option value="CARD">Cartão de crédito</option></select></label>:mode==="CNPJ"?<label>Novo CNPJ<input name="cnpj" inputMode="numeric" pattern="[0-9]{2}\.[0-9]{3}\.[0-9]{3}/[0-9]{4}-[0-9]{2}" title="Informe os 14 dígitos do CNPJ." placeholder="00.000.000/0000-00" maxLength={18} onChange={e=>{e.target.value=mascaraCNPJ(e.target.value.replace(/\D/g,""));}} required/></label>:<>
    <p>O pedido vai para revisão da Central. Nenhum dado é apagado nesta etapa.</p>
    <label>Digite REINICIAR {condominium}<input name="confirmation" required/></label>
    <label>Seu usuário<input name="username" autoComplete="username" required/></label>

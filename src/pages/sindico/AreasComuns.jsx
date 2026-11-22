@@ -1,7 +1,7 @@
 import { FiGrid,FiPlus,FiCheckCircle,FiTool,FiSearch,FiUsers,FiClock,FiEdit2,FiCalendar,FiMoreHorizontal } from "react-icons/fi";
 import { Link } from "react-router-dom";
 import "./GestaoVisual.css";
-import { confirmDialog } from "../../components/GlobalDialogs.jsx";
+import { confirmDialog, notify } from "../../components/GlobalDialogs.jsx";
 import {
   useEffect,
   useState,
@@ -9,6 +9,7 @@ import {
 
 import commonAreaApi from "../../Services/commonAreaApi.js";
 import reservationApi from "../../Services/reservationApi.js";
+import { mascaraIntervaloHoras } from "../../utils/mascaras.js";
 
 function AreasComuns() {
   const estadoInicialArea = {
@@ -156,9 +157,9 @@ function AreasComuns() {
         )
       );
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível carregar as áreas comuns."
+        "Não foi possível carregar as áreas comuns.", "error"
       );
     }
   }
@@ -222,8 +223,8 @@ function AreasComuns() {
         ""
       ).trim().length < 3
     ) {
-      alert(
-        "Informe um nome válido para a área comum."
+      notify(
+        "Informe um nome válido para a área comum.", "error"
       );
       return false;
     }
@@ -234,8 +235,8 @@ function AreasComuns() {
       );
 
     if (!horarios) {
-      alert(
-        "Informe o funcionamento com horário inicial e final. Ex: 08:00 às 22:00."
+      notify(
+        "Informe o funcionamento com horário inicial e final. Ex: 08:00 às 22:00.", "error"
       );
       return false;
     }
@@ -244,8 +245,8 @@ function AreasComuns() {
       horarios.openingTime >=
       horarios.closingTime
     ) {
-      alert(
-        "O horário final deve ser posterior ao inicial."
+      notify(
+        "O horário final deve ser posterior ao inicial.", "error"
       );
       return false;
     }
@@ -306,9 +307,9 @@ function AreasComuns() {
       await carregar();
       fecharModal();
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível salvar a área comum."
+        "Não foi possível salvar a área comum.", "error"
       );
     }
   }
@@ -348,9 +349,9 @@ function AreasComuns() {
 
       await carregar();
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível excluir a área. Verifique se existem reservas ativas."
+        "Não foi possível excluir a área. Verifique se existem reservas ativas.", "error"
       );
     }
   }
@@ -360,8 +361,8 @@ function AreasComuns() {
     status
   ) {
     if (status === "Ocupado") {
-      alert(
-        "O status Ocupado é calculado automaticamente a partir das reservas aprovadas em andamento."
+      notify(
+        "O status Ocupado é calculado automaticamente a partir das reservas aprovadas em andamento.", "info"
       );
       return;
     }
@@ -380,9 +381,9 @@ function AreasComuns() {
 
       await carregar();
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível alterar o status da área."
+        "Não foi possível alterar o status da área.", "error"
       );
     }
   }
@@ -496,12 +497,14 @@ function AreasComuns() {
                   </label>
 
                   <input
+                    inputMode="numeric"
+                    maxLength={14}
                     placeholder="Ex: 08:00 às 22:00"
                     value={novaArea.horario}
                     onChange={(e) =>
                       setNovaArea({
                         ...novaArea,
-                        horario: e.target.value
+                        horario: mascaraIntervaloHoras(e.target.value)
                       })
                     }
                     style={styles.input}

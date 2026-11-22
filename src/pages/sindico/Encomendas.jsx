@@ -8,7 +8,7 @@ import api from "../../Services/api.js";
 import OperationalHistoryTools from "../../components/OperationalHistoryTools.jsx";
 import PackageNoticeButton from "../../components/PackageNoticeButton.jsx";
 import {packageNotificationWarning} from "../../utils/packageNotificationStatus.js";
-import { confirmDialog } from "../../components/GlobalDialogs.jsx";
+import { confirmDialog, notify } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useRef, useState } from "react";
 import packageApi from "../../Services/packageApi.js";
 
@@ -292,8 +292,8 @@ function Encomendas() {
       !novaEncomenda.apartamentoId ||
       novaEncomenda.descricao.trim().length < 2
     ) {
-      alert(
-        "Selecione o morador/apartamento e informe a descrição."
+      notify(
+        "Selecione o morador/apartamento e informe a descrição.", "error"
       );
       return;
     }
@@ -328,15 +328,15 @@ function Encomendas() {
         );
       } else {
         const received = await packageApi.createReceived(payload);
-        const warning=packageNotificationWarning(received); if(warning) alert(warning);
+        const warning=packageNotificationWarning(received); if(warning) notify(warning, "info");
       }
 
       await carregar();
       fecharModal();
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível salvar a encomenda."
+        "Não foi possível salvar a encomenda.", "error"
       );
     }
   }
@@ -365,9 +365,9 @@ function Encomendas() {
       await packageApi.remove(id);
       await carregar();
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível excluir a encomenda."
+        "Não foi possível excluir a encomenda.", "error"
       );
     }
   }

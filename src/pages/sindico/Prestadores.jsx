@@ -1,6 +1,6 @@
 import { FiTool, FiPlus, FiUsers, FiDroplet, FiHome, FiCalendar, FiSearch, FiMapPin, FiCheck, FiClock, FiEdit2, FiMoreHorizontal } from "react-icons/fi";
 import "./GestaoVisual.css";
-import { confirmDialog, promptDialog } from "../../components/GlobalDialogs.jsx";
+import { confirmDialog, promptDialog, notify } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useState } from "react";
 import serviceProviderApi from "../../Services/serviceProviderApi.js";
 import providerAccessApi from "../../Services/providerAccessApi.js";
@@ -9,6 +9,7 @@ import residentApi from "../../Services/residentApi.js";
 import apartmentApi from "../../Services/apartmentApi.js";
 import commonAreaApi from "../../Services/commonAreaApi.js";
 import privateServiceRequestApi from "../../Services/privateServiceRequestApi.js";
+import { mascaraCPF, mascaraTelefone } from "../../utils/mascaras.js";
 
 function Prestadores() {
   const estadoInicialPrestador={nome:"",empresa:"",telefone:"",cpf:"",servico:"",tipoServico:"Condomínio",areaRelacionada:"",apartamento:"",responsavel:"",dataEntrada:"",horaEntrada:"",dataSaida:"",horaSaida:"",observacao:"",status:"Pendente",moradorId:null,apartamentoId:null,tipoMoradorResponsavel:"",moradorPrincipalResponsavel:false,serviceProviderId:null};
@@ -32,7 +33,7 @@ function Prestadores() {
   function mapResident(r){return {...r,nome:r.user?.name??r.name??"",apartamento:r.apartment?.number??"",apto:r.apartment?.number??"",apartamentoId:r.apartmentId??r.apartment?.id??null,tipoMorador:r.residentType??"Morador",moradorPrincipal:Boolean(r.isPrimary)};}
   function mapAccess(a){const p=a.serviceProvider??{}; return {id:a.id,serviceProviderId:p.id??a.serviceProviderId,nome:p.name??"",empresa:p.companyName??"",telefone:p.phone??"",cpf:p.document??"",servico:a.serviceDescription??p.serviceType??"",tipoServico:a.apartmentId?"Apartamento":"Condomínio",areaRelacionada:"",apartamento:a.apartment?.number??"",apartamentoId:a.apartmentId??a.apartment?.id??null,responsavel:"",dataEntrada:String(a.scheduledDate??"").slice(0,10),horaEntrada:a.scheduledStartTime??"",dataSaida:a.exitedAt?new Date(a.exitedAt).toISOString().slice(0,10):"",horaSaida:a.exitedAt?new Date(a.exitedAt).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}):"",observacao:a.notes??"",status:statusFront[a.status]??a.status};}
   function mapOperational(o){return {id:o.id,data:String(o.recordDate??"").slice(0,10),horario:o.recordTime??"",porteiro:o.responsibleName??"",leituraAnterior:o.previousReading??"",leituraAtual:o.currentReading??"",consumo:o.consumption??"",poco:o.wellStatus??"Desligado",observacao:o.notes??""};}
-  async function carregar(){try{const [accesses,ops,residents,aps,areas,requests]=await Promise.all([providerAccessApi.list(),operationalRecordApi.list(),residentApi.list(),apartmentApi.list(),commonAreaApi.list(),privateServiceRequestApi.list()]); const mapped=(accesses??[]).map(mapAccess); setPrestadores(mapped.filter(i=>!i.apartamentoId)); setParticulares(mapped.filter(i=>i.apartamentoId)); setOperacional((ops??[]).map(mapOperational)); setMoradores((residents??[]).map(mapResident)); setApartamentos((aps??[]).map(a=>({...a,numero:a.number??a.numero??""}))); setAreasComuns((areas??[]).map(a=>({...a,nome:a.name??a.nome??""}))); setSolicitacoes(requests??[]);}catch(e){alert(e?.message??"Não foi possível carregar prestadores e operações.");}}
+  async function carregar(){try{const [accesses,ops,residents,aps,areas,requests]=await Promise.all([providerAccessApi.list(),operationalRecordApi.list(),residentApi.list(),apartmentApi.list(),commonAreaApi.list(),privateServiceRequestApi.list()]); const mapped=(accesses??[]).map(mapAccess); setPrestadores(mapped.filter(i=>!i.apartamentoId)); setParticulares(mapped.filter(i=>i.apartamentoId)); setOperacional((ops??[]).map(mapOperational)); setMoradores((residents??[]).map(mapResident)); setApartamentos((aps??[]).map(a=>({...a,numero:a.number??a.numero??""}))); setAreasComuns((areas??[]).map(a=>({...a,nome:a.name??a.nome??""}))); setSolicitacoes(requests??[]);}catch(e){notify(e?.message??"Não foi possível carregar prestadores e operações.", "error");}}
   useEffect(()=>{carregar();},[]);
 
   const listaAtual=abaAtiva==="condominio"?prestadores:particulares;
@@ -41,29 +42,29 @@ function Prestadores() {
   const finalizados=[...prestadores,...particulares].filter(p=>p.status==="Finalizado").length;
   function limparNumeros(v){return String(v||"").replace(/\D/g,"");}
   function validarCPF(cpf){const n=limparNumeros(cpf); if(!n)return true; if(n.length!==11||/^(\d)\1+$/.test(n))return false; let s=0; for(let i=0;i<9;i++)s+=Number(n[i])*(10-i); let d=11-(s%11); if(d>=10)d=0; if(d!==Number(n[9]))return false; s=0; for(let i=0;i<10;i++)s+=Number(n[i])*(11-i); d=11-(s%11); if(d>=10)d=0; return d===Number(n[10]);}
-  function validarPrestador(){if(String(novoPrestador.nome).trim().length<3){alert("Informe o nome do prestador.");return false;} if(limparNumeros(novoPrestador.telefone).length<10){alert("Informe telefone com DDD.");return false;} if(novoPrestador.cpf&&!validarCPF(novoPrestador.cpf)){alert("CPF inválido.");return false;} if(String(novoPrestador.servico).trim().length<3){alert("Informe o serviço.");return false;} if(!novoPrestador.dataEntrada||!novoPrestador.horaEntrada){alert("Informe data e hora.");return false;} if(abaAtiva==="particular"&&!novoPrestador.apartamentoId){alert("Selecione o apartamento.");return false;} return true;}
+  function validarPrestador(){if(String(novoPrestador.nome).trim().length<3){notify("Informe o nome do prestador.", "error");return false;} if(limparNumeros(novoPrestador.telefone).length<10){notify("Informe telefone com DDD.", "error");return false;} if(novoPrestador.cpf&&!validarCPF(novoPrestador.cpf)){notify("CPF inválido.", "error");return false;} if(String(novoPrestador.servico).trim().length<3){notify("Informe o serviço.", "error");return false;} if(!novoPrestador.dataEntrada||!novoPrestador.horaEntrada){notify("Informe data e hora.", "error");return false;} if(abaAtiva==="particular"&&!novoPrestador.apartamentoId){notify("Selecione o apartamento.", "error");return false;} return true;}
   function selecionarMoradorResponsavel(id){const m=moradores.find(x=>String(x.id)===String(id)); if(!m)return; setNovoPrestador(p=>({...p,moradorId:m.id,responsavel:m.nome,apartamento:m.apartamento,apartamentoId:m.apartamentoId,tipoMoradorResponsavel:m.tipoMorador,moradorPrincipalResponsavel:m.moradorPrincipal}));}
   function selecionarApartamento(valor){const a=apartamentos.find(x=>String(x.numero)===String(valor)); setNovoPrestador(p=>({...p,apartamento:valor,apartamentoId:a?.id??null,responsavel:"",moradorId:null,tipoMoradorResponsavel:"",moradorPrincipalResponsavel:false}));}
   const moradoresDoApartamento=moradores.filter(m=>String(m.apartamento)===String(novoPrestador.apartamento));
-  function formatarTelefone(v){v=v.replace(/\D/g,"").slice(0,11); return v.length<=10?v.replace(/(\d{2})(\d{4})(\d{0,4})/,"($1) $2-$3"):v.replace(/(\d{2})(\d{5})(\d{0,4})/,"($1) $2-$3");}
-  function formatarCPF(v){return v.replace(/\D/g,"").slice(0,11).replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/,"$1.$2.$3-$4");}
+  function formatarTelefone(v){return mascaraTelefone(String(v??"").replace(/\D/g,"").slice(0,11));}
+  function formatarCPF(v){return mascaraCPF(v);}
   function abrirNovoCadastro(){setEditId(null);setNovoPrestador({...estadoInicialPrestador,tipoServico:abaAtiva==="condominio"?"Condomínio":"Apartamento"});setMostrarModal(true);}
   function editarPrestador(item){setEditId(item.id);setNovoPrestador({...estadoInicialPrestador,...item});setMostrarModal(true);}
   function fecharModal(){setMostrarModal(false);setEditId(null);setNovoPrestador(estadoInicialPrestador);}
-  async function salvarPrestador(){if(!validarPrestador())return; try{let providerId=novoPrestador.serviceProviderId; const providerPayload={name:novoPrestador.nome.trim(),companyName:novoPrestador.empresa?.trim()||null,document:novoPrestador.cpf?.trim()||null,phone:novoPrestador.telefone?.trim()||null,email:null,serviceType:novoPrestador.servico.trim(),notes:novoPrestador.observacao?.trim()||null,status:"ACTIVE"}; if(providerId){await serviceProviderApi.update(providerId,providerPayload);}else{const p=await serviceProviderApi.create(providerPayload);providerId=p.id;} const accessPayload={serviceProviderId:providerId,apartmentId:abaAtiva==="particular"?novoPrestador.apartamentoId:null,serviceDescription:novoPrestador.areaRelacionada?`${novoPrestador.servico} • ${novoPrestador.areaRelacionada}`:novoPrestador.servico,scheduledDate:novoPrestador.dataEntrada,scheduledStartTime:novoPrestador.horaEntrada,scheduledEndTime:novoPrestador.horaSaida||null,notes:novoPrestador.observacao?.trim()||null}; if(editId)await providerAccessApi.update(editId,accessPayload); else await providerAccessApi.create(accessPayload); await carregar();fecharModal();}catch(e){alert(e?.message??"Não foi possível salvar o prestador.");}}
-  async function alterarStatusPrestador(id,status){try{if(status==="Em execução")await providerAccessApi.entry(id); else if(status==="Finalizado")await providerAccessApi.exit(id); else if(status==="Cancelado")await providerAccessApi.cancel(id); await carregar();}catch(e){alert(e?.message??"Não foi possível alterar o status.");}}
-  async function excluirPrestador(id){if(!await confirmDialog("Deseja excluir este cadastro?"))return; try{await providerAccessApi.remove(id); await carregar();}catch(e){alert(e?.message??"Só acessos finalizados/cancelados podem ser excluídos.");}}
+  async function salvarPrestador(){if(!validarPrestador())return; try{let providerId=novoPrestador.serviceProviderId; const providerPayload={name:novoPrestador.nome.trim(),companyName:novoPrestador.empresa?.trim()||null,document:novoPrestador.cpf?.trim()||null,phone:novoPrestador.telefone?.trim()||null,email:null,serviceType:novoPrestador.servico.trim(),notes:novoPrestador.observacao?.trim()||null,status:"ACTIVE"}; if(providerId){await serviceProviderApi.update(providerId,providerPayload);}else{const p=await serviceProviderApi.create(providerPayload);providerId=p.id;} const accessPayload={serviceProviderId:providerId,apartmentId:abaAtiva==="particular"?novoPrestador.apartamentoId:null,serviceDescription:novoPrestador.areaRelacionada?`${novoPrestador.servico} • ${novoPrestador.areaRelacionada}`:novoPrestador.servico,scheduledDate:novoPrestador.dataEntrada,scheduledStartTime:novoPrestador.horaEntrada,scheduledEndTime:novoPrestador.horaSaida||null,notes:novoPrestador.observacao?.trim()||null}; if(editId)await providerAccessApi.update(editId,accessPayload); else await providerAccessApi.create(accessPayload); await carregar();fecharModal();}catch(e){notify(e?.message??"Não foi possível salvar o prestador.", "error");}}
+  async function alterarStatusPrestador(id,status){try{if(status==="Em execução")await providerAccessApi.entry(id); else if(status==="Finalizado")await providerAccessApi.exit(id); else if(status==="Cancelado")await providerAccessApi.cancel(id); await carregar();}catch(e){notify(e?.message??"Não foi possível alterar o status.", "error");}}
+  async function excluirPrestador(id){if(!await confirmDialog("Deseja excluir este cadastro?"))return; try{await providerAccessApi.remove(id); await carregar();}catch(e){notify(e?.message??"Só acessos finalizados/cancelados podem ser excluídos.", "error");}}
   function calcularConsumoManual(a,b){if(a===""||b==="")return ""; const x=Number(a),y=Number(b); if(!Number.isFinite(x)||!Number.isFinite(y)||y<x)return ""; return String(y-x);}
   function atualizarOperacional(campo,valor){setNovoOperacional(prev=>{const next={...prev,[campo]:valor}; const c=calcularConsumoManual(campo==="leituraAnterior"?valor:next.leituraAnterior,campo==="leituraAtual"?valor:next.leituraAtual); next.consumo=c; return next;});}
-  async function salvarOperacional(){if(!novoOperacional.data||!novoOperacional.horario||!novoOperacional.porteiro){alert("Preencha data, horário e porteiro responsável.");return;} try{await operationalRecordApi.create({recordDate:novoOperacional.data,recordTime:novoOperacional.horario,responsibleName:novoOperacional.porteiro,previousReading:novoOperacional.leituraAnterior===""?null:Number(novoOperacional.leituraAnterior),currentReading:novoOperacional.leituraAtual===""?null:Number(novoOperacional.leituraAtual),consumption:novoOperacional.consumo===""?null:Number(novoOperacional.consumo),wellStatus:novoOperacional.poco,notes:novoOperacional.observacao||null});setNovoOperacional(estadoInicialOperacional);await carregar();}catch(e){alert(e?.message??"Não foi possível salvar o registro operacional.");}}
-  async function excluirOperacional(id){if(!await confirmDialog("Deseja excluir este registro operacional?"))return; try{await operationalRecordApi.remove(id);await carregar();}catch(e){alert(e?.message??"Não foi possível excluir o registro.");}}
+  async function salvarOperacional(){if(!novoOperacional.data||!novoOperacional.horario||!novoOperacional.porteiro){notify("Preencha data, horário e porteiro responsável.", "error");return;} try{await operationalRecordApi.create({recordDate:novoOperacional.data,recordTime:novoOperacional.horario,responsibleName:novoOperacional.porteiro,previousReading:novoOperacional.leituraAnterior===""?null:Number(novoOperacional.leituraAnterior),currentReading:novoOperacional.leituraAtual===""?null:Number(novoOperacional.leituraAtual),consumption:novoOperacional.consumo===""?null:Number(novoOperacional.consumo),wellStatus:novoOperacional.poco,notes:novoOperacional.observacao||null});setNovoOperacional(estadoInicialOperacional);await carregar();}catch(e){notify(e?.message??"Não foi possível salvar o registro operacional.", "error");}}
+  async function excluirOperacional(id){if(!await confirmDialog("Deseja excluir este registro operacional?"))return; try{await operationalRecordApi.remove(id);await carregar();}catch(e){notify(e?.message??"Não foi possível excluir o registro.", "error");}}
   async function aprovarSolicitacao(item){
     setProcessandoSolicitacao(item.id);
     try{
       await privateServiceRequestApi.approve(item.id,{});
       await carregar();
       setAbaAtiva("particular");
-    }catch(e){alert(e?.message??"Não foi possível aprovar a solicitação.");}
+    }catch(e){notify(e?.message??"Não foi possível aprovar a solicitação.", "error");}
     finally{setProcessandoSolicitacao(null);}
   }
   async function rejeitarSolicitacao(item){
@@ -71,7 +72,7 @@ function Prestadores() {
     if(!motivo||String(motivo).trim().length<3)return;
     setProcessandoSolicitacao(item.id);
     try{await privateServiceRequestApi.reject(item.id,{reviewNotes:String(motivo).trim()});await carregar();}
-    catch(e){alert(e?.message??"Não foi possível rejeitar a solicitação.");}
+    catch(e){notify(e?.message??"Não foi possível rejeitar a solicitação.", "error");}
     finally{setProcessandoSolicitacao(null);}
   }
   function statusSolicitacao(status){return {PENDING:"Em análise",APPROVED:"Aprovada",REJECTED:"Não aprovada",CANCELED:"Cancelada"}[status]??status;}
@@ -104,11 +105,11 @@ function Prestadores() {
                 <div style={styles.serviceType}><span>🧰</span><strong>{item.serviceType}</strong></div>
                 <p style={styles.observation}>{item.description}</p>
                 <div style={styles.infoGrid}>
-                  <div style={styles.infoItem}><span>Data</span><strong>{formatarData(String(item.scheduledDate||"").slice(0,10))}</strong></div>
-                  <div style={styles.infoItem}><span>Horário</span><strong>{item.scheduledStartTime}{item.scheduledEndTime?`–${item.scheduledEndTime}`:""}</strong></div>
-                  <div style={styles.infoItem}><span>Telefone</span><strong>{item.providerPhone||"-"}</strong></div>
-                  <div style={styles.infoItem}><span>Documento</span><strong>{item.providerDocument||"-"}</strong></div>
-                  <div style={styles.infoItem}><span>Empresa</span><strong>{item.providerCompany||"Freelancer / pessoa física"}</strong></div>
+                  <div style={styles.infoItem}><span>Data: </span><strong>{formatarData(String(item.scheduledDate||"").slice(0,10))}</strong></div>
+                  <div style={styles.infoItem}><span>Horário: </span><strong>{item.scheduledStartTime}{item.scheduledEndTime?`–${item.scheduledEndTime}`:""}</strong></div>
+                  <div style={styles.infoItem}><span>Telefone: </span><strong>{mascaraTelefone(item.providerPhone)||"-"}</strong></div>
+                  <div style={styles.infoItem}><span>Documento: </span><strong>{item.providerDocument||"-"}</strong></div>
+                  <div style={styles.infoItem}><span>Empresa: </span><strong>{item.providerCompany||"Freelancer / pessoa física"}</strong></div>
                 </div>
                 {item.notes&&<div style={styles.noteBox}>{item.notes}</div>}
                 {item.reviewNotes&&<div style={styles.noteBox}><strong>Retorno:</strong> {item.reviewNotes}</div>}
@@ -133,19 +134,19 @@ function Prestadores() {
 
             <div style={styles.operationalResume}>
               <div style={styles.yellowMetric}>
-                <span>Registros</span>
+                <span>Registros: </span>
                 <strong>{operacional.length}</strong>
               </div>
 
               <div style={styles.yellowMetric}>
-                <span>Último consumo</span>
+                <span>Último consumo: </span>
                 <strong>
                   {ultimoRegistroOperacional?.consumo || "0"} m³
                 </strong>
               </div>
 
               <div style={styles.yellowMetric}>
-                <span>Poço</span>
+                <span>Poço: </span>
                 <strong>
                   {ultimoRegistroOperacional?.poco || "Sem registro"}
                 </strong>
@@ -164,6 +165,7 @@ function Prestadores() {
                 <label style={styles.label}>Data</label>
 
                 <input
+                  type="date"
                   value={novoOperacional.data}
                   onChange={(e) =>
                     atualizarOperacional("data", e.target.value)
@@ -176,6 +178,7 @@ function Prestadores() {
                 <label style={styles.label}>Horário</label>
 
                 <input
+                  type="time"
                   value={novoOperacional.horario}
                   onChange={(e) =>
                     atualizarOperacional("horario", e.target.value)
@@ -337,17 +340,17 @@ function Prestadores() {
 
                       <div style={styles.meterGrid}>
                         <div style={styles.meterItem}>
-                          <span>Anterior</span>
+                          <span>Anterior: </span>
                           <strong>{o.leituraAnterior || "-"}</strong>
                         </div>
 
                         <div style={styles.meterItem}>
-                          <span>Atual</span>
+                          <span>Atual: </span>
                           <strong>{o.leituraAtual || "-"}</strong>
                         </div>
 
                         <div style={styles.meterItemYellow}>
-                          <span>Consumo</span>
+                          <span>Consumo: </span>
                           <strong>{o.consumo || "0"} m³</strong>
                         </div>
                       </div>
@@ -691,6 +694,7 @@ function Prestadores() {
                   <label style={styles.label}>Data entrada</label>
 
                   <input
+                    type="date"
                     value={novoPrestador.dataEntrada}
                     onChange={(e) =>
                       setNovoPrestador({
@@ -706,6 +710,7 @@ function Prestadores() {
                   <label style={styles.label}>Hora entrada</label>
 
                   <input
+                    type="time"
                     value={novoPrestador.horaEntrada}
                     onChange={(e) =>
                       setNovoPrestador({
@@ -721,6 +726,7 @@ function Prestadores() {
                   <label style={styles.label}>Data saída</label>
 
                   <input
+                    type="date"
                     value={novoPrestador.dataSaida}
                     onChange={(e) =>
                       setNovoPrestador({
@@ -736,6 +742,7 @@ function Prestadores() {
                   <label style={styles.label}>Hora saída</label>
 
                   <input
+                    type="time"
                     value={novoPrestador.horaSaida}
                     onChange={(e) =>
                       setNovoPrestador({

@@ -1,7 +1,7 @@
 import {FiBell,FiPlus,FiCalendar,FiSearch,FiMoreHorizontal} from "react-icons/fi";
 import residentApi from "../../Services/residentApi.js";
 import "./GestaoVisual.css";
-import { confirmDialog, promptDialog } from "../../components/GlobalDialogs.jsx";
+import { confirmDialog, promptDialog, notify } from "../../components/GlobalDialogs.jsx";
 import {
   useEffect,
   useState,
@@ -247,9 +247,9 @@ function Avisos() {
         )
       );
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível carregar a central de avisos."
+        "Não foi possível carregar a central de avisos.", "error"
       );
     }
   }
@@ -315,8 +315,8 @@ function Avisos() {
       !novoAviso.titulo.trim() ||
       !novoAviso.descricao.trim()
     ) {
-      alert(
-        "Preencha título e descrição."
+      notify(
+        "Preencha título e descrição.", "error"
       );
       return;
     }
@@ -331,14 +331,14 @@ function Avisos() {
       ["APARTMENT","INDIVIDUAL"].includes(audience) &&
       !novoAviso.apartamentoId
     ) {
-      alert(
-        "Selecione o apartamento destinatário."
+      notify(
+        "Selecione o apartamento destinatário.", "error"
       );
       return;
     }
 
     const person=destinatarios.find(r=>r.user?.id===novoAviso.recipientUserId&&r.apartmentId===novoAviso.apartamentoId);
-    if(audience==="INDIVIDUAL"&&!person)return alert("Selecione o morador destinatário.");
+    if(audience==="INDIVIDUAL"&&!person)return notify("Selecione o morador destinatário.", "error");
     const apt=apartamentos.find(a=>a.id===novoAviso.apartamentoId);
     if(novoAviso.statusPublicacao!=="Rascunho"&&!await confirmDialog(`Publicar para ${person?.user?.name??(apt?`Bloco ${apt.block??""}, apartamento ${apt.number}`:novoAviso.publico)}?`))return;
     const payload = {
@@ -383,9 +383,9 @@ function Avisos() {
       fecharModal();
       await carregarCentral();
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível salvar o aviso."
+        "Não foi possível salvar o aviso.", "error"
       );
     }
   }
@@ -441,9 +441,9 @@ function Avisos() {
       await noticeApi.remove(id);
       await carregarCentral();
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível excluir o aviso."
+        "Não foi possível excluir o aviso.", "error"
       );
     }
   }
@@ -505,9 +505,9 @@ function Avisos() {
 
       await carregarCentral();
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível atualizar a ocorrência."
+        "Não foi possível atualizar a ocorrência.", "error"
       );
     }
   }
@@ -518,8 +518,8 @@ function Avisos() {
     if (
       !respostaTexto.trim()
     ) {
-      alert(
-        "Digite a resposta ou resolução."
+      notify(
+        "Digite a resposta ou resolução.", "error"
       );
       return;
     }
@@ -534,9 +534,9 @@ function Avisos() {
       setRespostaTexto("");
       await carregarCentral();
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível responder a solicitação."
+        "Não foi possível responder a solicitação.", "error"
       );
     }
   }
