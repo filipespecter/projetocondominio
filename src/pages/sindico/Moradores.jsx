@@ -229,8 +229,8 @@ function Moradores() {
 
         <div style={styles.heroRight}>
           <div style={styles.heroCounter}>
-            <strong>{moradores.length}</strong>
-            <span>moradores</span>
+            <strong style={styles.heroCounterNumber}>{moradores.length}</strong>
+            <span style={styles.heroCounterLabel}>{moradores.length === 1 ? "morador" : "moradores"}</span>
           </div>
 
           <button
@@ -270,27 +270,27 @@ function Moradores() {
         </select>
 
         <div style={styles.inlineNumbers}>
-          <span>
+          <span style={styles.inlineChip}>
             <b>{totalAtivos}</b> ativos
           </span>
 
-          <span>
+          <span style={styles.inlineChip}>
             <b>{totalInativos}</b> inativos
           </span>
 
-          <span>
+          <span style={styles.inlineChip}>
             <b>{totalBloqueados}</b> bloqueados
           </span>
 
-          <span>
+          <span style={styles.inlineChip}>
             <b>{apartamentosVinculados}</b> aptos
           </span>
 
-          <span>
+          <span style={styles.inlineChip}>
             <b>{totalPrincipais}</b> principais
           </span>
 
-          <span>
+          <span style={styles.inlineChip}>
             <b>{totalDependentes}</b> dependentes
           </span>
         </div>
@@ -779,9 +779,31 @@ const styles = {
     background: "rgba(255,255,255,0.13)",
     border: "1px solid rgba(255,255,255,0.18)",
     borderRadius: "26px",
-    padding: "19px 24px",
+    padding: "14px 24px",
     textAlign: "center",
-    boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)"
+    boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "4px",
+    minWidth: "110px",
+    color: "#ffffff",
+    userSelect: "none"
+  },
+
+  heroCounterNumber: {
+    fontSize: "30px",
+    lineHeight: 1,
+    fontWeight: "900",
+    color: "#ffffff"
+  },
+
+  heroCounterLabel: {
+    fontSize: "12px",
+    fontWeight: "700",
+    letterSpacing: "0.04em",
+    textTransform: "uppercase",
+    color: "rgba(255,255,255,0.82)"
   },
 
   heroButton: {
@@ -848,10 +870,19 @@ const styles = {
 
   inlineNumbers: {
     display: "flex",
-    gap: "10px",
+    gap: "8px",
     flexWrap: "wrap",
+    alignItems: "center",
     fontSize: "12px",
     color: "#4b5563"
+  },
+
+  inlineChip: {
+    background: "var(--ic-primary-soft-3, #f6f1ff)",
+    border: "1px solid var(--ic-primary-soft-2, #ece3fb)",
+    borderRadius: "999px",
+    padding: "6px 11px",
+    whiteSpace: "nowrap"
   },
 
   registry: {

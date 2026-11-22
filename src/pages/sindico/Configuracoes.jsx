@@ -176,7 +176,7 @@ function Configuracoes() {
       <nav className="ic-nov-nav" aria-label="Configurações">{[["dados","Dados cadastrais"],["aparencia","Aparência"],["plano","Plano e acesso"],["usuarios","Usuários"],["seguranca","Segurança"],["backup","Backup"],["whatsapp","WhatsApp"],["preferencias","Preferências"],...(isMestre?[["risco","Área de risco"]]:[])].map(([id,label])=><button type="button" key={id} className={abaAtiva===id?"ic-pkg-primary":"ic-pkg-outline"} aria-pressed={abaAtiva===id} onClick={()=>setAbaAtiva(id)}>{label}</button>)}</nav>
       <div className="ic-nov-content">
       {abaAtiva==="dados"&&<div className="ic-nov-overview"><section className="ic-nov-card"><h2>Dados cadastrais</h2><p>Informações principais do condomínio.</p><form className="ic-nov-fields" onSubmit={e=>{e.preventDefault();void salvarDadosCondominio("dados");}}>
-      {[["nomeCondominio","Nome do condomínio"],["cnpj","CNPJ"],["sindico","Nome do síndico"],["telefone","Telefone"],["email","E-mail"],["endereco","Endereço"]].map(([id,label])=><div key={id} className={["email","endereco"].includes(id)?"ic-nov-full":undefined}><label>{label}<input value={id==="cnpj"?mascaraCNPJ(config[id]??""):id==="telefone"?mascaraTelefone(config[id]??""):config[id]??""} readOnly={!isMestre||id==="cnpj"} required={id==="nomeCondominio"} type={id==="email"?"email":"text"} inputMode={id==="telefone"?"tel":undefined} maxLength={id==="telefone"?20:undefined} placeholder={id==="telefone"?"(85) 3333-4444":undefined} onChange={e=>setConfig({...config,[id]:id==="telefone"?mascaraTelefone(e.target.value):e.target.value})}/></label>{isMestre&&id==="cnpj"&&<button type="button" className="ic-pkg-outline" onClick={()=>setAbaAtiva("cnpj")}>Solicitar alteração</button>}</div>)}
+      {[["nomeCondominio","Nome do condomínio"],["cnpj","CNPJ"],["sindico","Nome do síndico"],["telefone","Telefone"],["email","E-mail"],["endereco","Endereço"]].map(([id,label])=><div key={id} className={["email","endereco"].includes(id)?"ic-nov-full":undefined}><label>{label}<input value={id==="cnpj"?mascaraCNPJ(config[id]??""):id==="telefone"?mascaraTelefone(config[id]??""):config[id]??""} readOnly={!isMestre||id==="cnpj"} required={id==="nomeCondominio"} type={id==="email"?"email":"text"} inputMode={id==="telefone"?"tel":undefined} maxLength={id==="telefone"?20:undefined} placeholder={id==="telefone"?"(85) 3333-4444":undefined} onChange={e=>setConfig({...config,[id]:id==="telefone"?mascaraTelefone(e.target.value):e.target.value})}/></label>{isMestre&&id==="cnpj"&&<button type="button" className="ic-pkg-outline" style={{marginTop:8}} onClick={()=>setAbaAtiva("cnpj")}>Solicitar alteração</button>}</div>)}
       {isMestre&&<div className="ic-nov-full"><button className="ic-pkg-primary">Salvar alterações</button> <small>A Central será avisada quando os dados forem atualizados.</small></div>}</form></section>
       <aside className="ic-nov-aside"><section className="ic-nov-card"><h2>Plano e acesso</h2><strong>{config.plano}</strong>{isMestre&&<p><a className="ic-pkg-primary" href="/dashboard/financeiro#assinatura"><FiCreditCard/> Pagar assinatura</a></p>}</section>{isMestre&&<section className="ic-nov-card"><h2><FiAlertTriangle/> Área de risco</h2><button type="button" className="ic-pkg-outline" onClick={()=>setAbaAtiva("risco")}>Reiniciar cadastros</button></section>}</aside></div>}
       {abaAtiva==="plano"&&<section className="ic-nov-card"><h2>Plano e acesso</h2><p>{config.plano}</p>{isMestre&&<a className="ic-pkg-primary" href="/dashboard/financeiro#assinatura">Ver assinatura e pagamento</a>}</section>}
@@ -282,7 +282,7 @@ function Configuracoes() {
               />
             </Campo>
 
-</div>{isMestre&&<button type="button" className="ic-pkg-primary" onClick={()=>salvarDadosCondominio("aparencia")}>Salvar aparência</button>}</section>}
+</div>{isMestre&&<button type="button" className="ic-pkg-primary" style={{marginTop:18}} onClick={()=>salvarDadosCondominio("aparencia")}>Salvar aparência</button>}</section>}
       {abaAtiva === "usuarios" && (
         <section style={styles.panel}>
           <div style={styles.panelHeader}>
@@ -412,7 +412,7 @@ function Configuracoes() {
             </div>
 
             <button
-              style={styles.primaryButton}
+              style={{...styles.primaryButton, marginTop: 20}}
               onClick={salvarUsuarioAdministrativo}
               disabled={!isMestre}
             >

@@ -15,6 +15,7 @@ import authApi from "../Services/authApi.js";
 import configurationApi from "../Services/configurationApi.js";
 import { buildCondominiumThemeVariables } from "../utils/condominiumTheme.js";
 import { useValidacaoEstilizada } from "../utils/validacaoEstilizada.js";
+import "../styles/sindicoAjustes.css";
 import NotificationCenter from "../components/NotificationCenter.jsx";
 import GlobalSearch from "../components/GlobalSearch.jsx";
 
@@ -197,7 +198,7 @@ function DashboardLayout() {
   }
 
   return (
-    <div className="app-dashboard-shell" style={{ ...styles.container, ...themeVariables }}>
+    <div className="app-dashboard-shell ic-sindico-shell" style={{ ...styles.container, ...themeVariables }}>
       
       <NotificationCenter />
 <ResponsiveNavigation><aside ref={sidebarRef} className="app-dashboard-sidebar" style={styles.sidebar}>

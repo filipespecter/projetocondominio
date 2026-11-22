@@ -1,0 +1,180 @@
+/* Ajustes visuais exclusivos do painel do Síndico.
+   Tudo fica sob .ic-sindico-shell (classe aplicada apenas no DashboardLayout do Síndico),
+   então Porteiro, Morador e Plataforma não são afetados. */
+
+/* ---------- Acesso do morador (ficha do morador) ---------- */
+.ic-sindico-shell .ic-resident-access{
+  margin:18px 0;
+  padding:18px 20px;
+  border:1px solid var(--ic-primary-soft-2,#ece3fb);
+  border-radius:18px;
+  background:radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb,139 92 246) / .08),transparent 40%),#fff;
+  box-shadow:0 8px 20px rgb(var(--ic-primary-deep-rgb,76 29 149) / .05);
+}
+.ic-sindico-shell .ic-resident-access h3{
+  margin:0 0 12px;
+  font-size:16px;
+  font-weight:900;
+  color:var(--ic-primary-strong,#5b21b6);
+}
+.ic-sindico-shell .ic-resident-access p{
+  margin:0 0 8px;
+  font-size:13px;
+  line-height:1.6;
+  color:#5d4a6e;
+}
+.ic-sindico-shell .ic-resident-access p strong{color:#2f1d3a}
+.ic-sindico-shell .ic-resident-access a{color:var(--ic-primary,#7c3aed);font-weight:800}
+.ic-sindico-shell .ic-resident-access p[role=status]:empty{display:none}
+.ic-sindico-shell .ic-resident-access p[role=status]{
+  margin-top:12px;
+  padding:10px 12px;
+  border-radius:12px;
+  background:var(--ic-primary-soft-3,#f6f1ff);
+  color:var(--ic-primary-strong,#5b21b6);
+  font-weight:700;
+}
+.ic-sindico-shell .ic-resident-access label{
+  display:grid;
+  gap:7px;
+  margin-top:14px;
+  font-size:12px;
+  font-weight:800;
+  color:#3b2a4a;
+}
+.ic-sindico-shell .ic-resident-access input{
+  min-height:46px;
+  padding:0 14px;
+  border:1px solid var(--ic-primary-border-soft,#ddd0f0);
+  border-radius:14px;
+  background:#fff;
+  font-size:14px;
+  font-weight:500;
+  outline:none;
+  transition:border-color .15s ease,box-shadow .15s ease;
+}
+.ic-sindico-shell .ic-resident-access input:focus{
+  border-color:var(--ic-primary,#7c3aed);
+  box-shadow:0 0 0 3px rgb(var(--ic-primary-rgb,124 58 237) / .15);
+}
+.ic-sindico-shell .ic-resident-access .ic-report-shortcuts{margin-top:14px;gap:10px}
+.ic-sindico-shell .ic-resident-access .ic-report-shortcuts button{
+  min-height:44px;
+  padding:10px 16px;
+  border:1px solid var(--ic-primary-border-soft,#ddd0f0);
+  border-radius:14px;
+  background:#fff;
+  color:var(--ic-primary-strong,#5b21b6);
+  font:inherit;
+  font-size:13px;
+  font-weight:800;
+  cursor:pointer;
+  transition:transform .15s ease,box-shadow .15s ease,background .15s ease;
+}
+.ic-sindico-shell .ic-resident-access .ic-report-shortcuts button:nth-child(2){
+  border-color:transparent;
+  background:linear-gradient(135deg,var(--ic-primary-dark,#6d28d9),var(--ic-primary,#7c3aed));
+  color:#fff;
+}
+.ic-sindico-shell .ic-resident-access .ic-report-shortcuts button:not(:disabled):hover{
+  transform:translateY(-1px);
+  box-shadow:0 8px 18px rgb(var(--ic-primary-rgb,124 58 237) / .18);
+}
+.ic-sindico-shell .ic-resident-access .ic-report-shortcuts button:disabled{opacity:.45;cursor:not-allowed}
+
+/* ---------- Histórico e fechamento (Encomendas / Relatórios) ---------- */
+.ic-sindico-shell .ic-monthly .ic-monthly-actions{gap:12px;margin:14px 0}
+.ic-sindico-shell .ic-monthly .ic-monthly-actions label{
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  padding:6px 6px 6px 14px;
+  border:1px solid var(--ic-primary-soft-2,#ece3fb);
+  border-radius:14px;
+  background:#fff;
+  font-size:13px;
+  font-weight:800;
+  color:#3b2a4a;
+}
+.ic-sindico-shell .ic-monthly .ic-monthly-actions select,
+.ic-sindico-shell .ic-monthly .ic-monthly-actions input[type=date]{
+  min-height:38px;
+  padding:0 12px;
+  border:1px solid var(--ic-primary-border-soft,#ddd0f0);
+  border-radius:10px;
+  background:var(--ic-primary-soft-3,#f8f4ff);
+  color:var(--ic-primary-strong,#5b21b6);
+  font:inherit;
+  font-size:14px;
+  font-weight:700;
+  cursor:pointer;
+  outline:none;
+}
+.ic-sindico-shell .ic-monthly .ic-monthly-actions select:focus,
+.ic-sindico-shell .ic-monthly .ic-monthly-actions input[type=date]:focus{
+  border-color:var(--ic-primary,#7c3aed);
+  box-shadow:0 0 0 3px rgb(var(--ic-primary-rgb,124 58 237) / .15);
+}
+.ic-sindico-shell .ic-monthly-grid{gap:14px}
+.ic-sindico-shell .ic-monthly-grid>div>span{display:block;margin-top:6px}
+.ic-sindico-shell .ic-monthly-grid>div>p{margin-top:8px}
+
+/* ---------- Campos de arquivo / foto ---------- */
+.ic-sindico-shell main input[type=file]{
+  width:100%;
+  box-sizing:border-box;
+  min-height:56px;
+  padding:9px 12px;
+  border:1.5px dashed var(--ic-primary-border-soft,#d8c8f0);
+  border-radius:14px;
+  background:var(--ic-primary-soft-3,#faf7ff);
+  color:#5d4a6e;
+  font-size:13px;
+  cursor:pointer;
+  transition:border-color .15s ease,background .15s ease;
+}
+.ic-sindico-shell main input[type=file]:hover,
+.ic-sindico-shell main input[type=file]:focus-visible{
+  border-color:var(--ic-primary,#7c3aed);
+  background:#fff;
+  outline:none;
+}
+.ic-sindico-shell main input[type=file]::file-selector-button{
+  margin-right:14px;
+  padding:9px 16px;
+  border:0;
+  border-radius:10px;
+  background:linear-gradient(135deg,var(--ic-primary-dark,#6d28d9),var(--ic-primary,#7c3aed));
+  color:#fff;
+  font:inherit;
+  font-weight:800;
+  cursor:pointer;
+  transition:filter .15s ease;
+}
+.ic-sindico-shell main input[type=file]:hover::file-selector-button{filter:brightness(1.08)}
+.ic-sindico-shell main input[type=file]:disabled{opacity:.55;cursor:not-allowed}
+
+/* ---------- Menu de Configurações (animado) ---------- */
+.ic-sindico-shell .ic-nov-nav{gap:10px}
+.ic-sindico-shell .ic-nov-nav button{
+  transform-origin:left center;
+  transition:transform .2s cubic-bezier(.2,.8,.3,1.2),box-shadow .2s ease,background .2s ease,color .2s ease;
+}
+.ic-sindico-shell .ic-nov-nav button:hover{transform:translateX(3px)}
+.ic-sindico-shell .ic-nov-nav button:active{transform:scale(.97)}
+.ic-sindico-shell .ic-nov-nav button[aria-pressed=true]{
+  transform:scale(1.06);
+  box-shadow:0 10px 22px rgb(var(--ic-primary-rgb,124 58 237) / .28);
+  position:relative;
+  z-index:1;
+}
+@media (max-width:900px){
+  .ic-sindico-shell .ic-nov-nav button{transform-origin:center}
+  .ic-sindico-shell .ic-nov-nav button:hover{transform:none}
+  .ic-sindico-shell .ic-nov-nav button[aria-pressed=true]{transform:scale(1.04)}
+}
+@media (prefers-reduced-motion:reduce){
+  .ic-sindico-shell .ic-nov-nav button{transition:none}
+}
+.ic-sindico-shell .ic-nov-nav button,
+.ic-sindico-shell .ic-nov-nav button + button{margin:0}
