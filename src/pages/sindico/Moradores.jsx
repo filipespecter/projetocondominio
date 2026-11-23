@@ -378,7 +378,7 @@ function Moradores() {
                         </span>
                       </div>
 
-                      <p style={styles.residentEmail}>
+                      <p style={styles.residentEmail} title={morador.email || undefined}>
                         {morador.email || "Sem e-mail cadastrado"}
                       </p>
                     </div>
@@ -562,7 +562,7 @@ function Moradores() {
                 </select>
               </div>
 
-              <div style={styles.formRow}><label style={styles.label}><input type="checkbox" checked={Boolean(novoMorador.whatsappOptIn)} onChange={e=>setNovoMorador({...novoMorador,whatsappOptIn:e.target.checked})} /> Morador autorizou receber avisos de encomendas por WhatsApp neste número</label></div>
+              <div style={styles.formRow}><label style={styles.checkRow}><input type="checkbox" style={styles.checkInput} checked={Boolean(novoMorador.whatsappOptIn)} onChange={e=>setNovoMorador({...novoMorador,whatsappOptIn:e.target.checked})} /><span style={styles.checkText}>Morador autorizou receber avisos de encomendas por WhatsApp neste número</span></label></div>
               <div style={styles.formRow}>
                 <label style={styles.label}>
                   Telefone
@@ -663,7 +663,7 @@ function Moradores() {
                 />
               </div>
 
-              {!editId && <label style={styles.formRowFull}><input type="checkbox" checked={createAccess} onChange={e=>setCreateAccess(e.target.checked)}/> Criar acesso agora. Desmarcado: salvar somente o cadastro, sem liberar login.</label>}
+              {!editId && <label style={{...styles.checkRow, gridColumn: "1 / -1"}}><input type="checkbox" style={styles.checkInput} checked={createAccess} onChange={e=>setCreateAccess(e.target.checked)}/><span style={styles.checkText}><strong>Criar acesso agora.</strong> Desmarcado: salvar somente o cadastro, sem liberar login.</span></label>}
               {editId && <div style={styles.formRowFull}><ResidentAccess key={editId} resident={novoMorador} onChanged={carregar}/></div>}
               <div style={styles.formRowFull}>
                 <label style={styles.label}>
@@ -995,7 +995,12 @@ const styles = {
   residentEmail: {
     margin: "5px 0 0",
     color: "#6b7280",
-    fontSize: "13px"
+    fontSize: "13px",
+    maxWidth: "100%",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    overflowWrap: "normal"
   },
 
   status: {
@@ -1158,6 +1163,37 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     gap: "7px"
+  },
+
+  checkRow: {
+    display: "flex",
+    alignItems: "flex-start",
+    flexWrap: "nowrap",
+    gap: "10px",
+    padding: "12px 14px",
+    border: "1px solid var(--ic-primary-soft-2, #ece3fb)",
+    borderRadius: "14px",
+    background: "var(--ic-primary-soft-3, #faf7ff)",
+    color: "#374151",
+    fontSize: "13px",
+    lineHeight: 1.45,
+    cursor: "pointer"
+  },
+
+  checkText: {
+    flex: "1 1 auto",
+    minWidth: 0,
+    width: "auto",
+    display: "block"
+  },
+
+  checkInput: {
+    width: "18px",
+    height: "18px",
+    margin: "1px 0 0",
+    flex: "0 0 auto",
+    accentColor: "var(--ic-primary, #7c3aed)",
+    cursor: "pointer"
   },
 
   formRowFull: {

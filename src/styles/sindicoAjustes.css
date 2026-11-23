@@ -171,10 +171,83 @@
 @media (max-width:900px){
   .ic-sindico-shell .ic-nov-nav button{transform-origin:center}
   .ic-sindico-shell .ic-nov-nav button:hover{transform:none}
-  .ic-sindico-shell .ic-nov-nav button[aria-pressed=true]{transform:scale(1.04)}
+  .ic-sindico-shell .ic-nov-nav button[aria-pressed=true]{transform:translateY(-2px) scale(1.02)}
 }
 @media (prefers-reduced-motion:reduce){
   .ic-sindico-shell .ic-nov-nav button{transition:none}
 }
 .ic-sindico-shell .ic-nov-nav button,
 .ic-sindico-shell .ic-nov-nav button + button{margin:0}
+
+/* ---------- Responsividade (celular / tablet) ---------- */
+
+/* Sino de notificações fixo não pode cobrir o nome "InfinityCondo" na barra do celular */
+.ic-sindico-shell .ic-mobile-bar{padding-right:78px}
+.ic-sindico-shell .ic-mobile-bar>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+
+/* Busca dentro de cartões (ex.: Avisos): ícone ao lado do texto, não em cima */
+.ic-sindico-shell .ic-nov-card label.ic-pkg-search,
+.ic-sindico-shell label.ic-pkg-search{display:flex;align-items:center;gap:9px}
+
+/* Dashboard: cartões de indicadores sem quebrar palavras no meio ("Apartament-os") */
+.ic-sindico-shell .ic-dr-metric h3{overflow-wrap:normal;hyphens:auto}
+@media (max-width:480px){
+  .ic-sindico-shell .ic-dash-reference .ic-dr-metric{flex-direction:column;align-items:flex-start;gap:8px}
+  .ic-sindico-shell .ic-dash-reference .ic-dr-metric>span{width:34px;height:34px}
+  .ic-sindico-shell .ic-dash-reference .ic-dr-metric strong{font-size:24px}
+}
+
+/* Financeiro: filtros empilhados no celular */
+@media (max-width:640px){
+  .ic-sindico-shell .ic-fin-filtros{display:grid!important;grid-template-columns:1fr 1fr;align-items:end}
+  .ic-sindico-shell .ic-fin-filtros>label{display:grid;gap:6px;min-width:0}
+  .ic-sindico-shell .ic-fin-filtros>label:nth-of-type(3),
+  .ic-sindico-shell .ic-fin-filtros>div{grid-column:1/-1}
+  .ic-sindico-shell .ic-fin-filtros input,
+  .ic-sindico-shell .ic-fin-filtros select{width:100%;min-width:0;margin-top:0!important}
+  .ic-sindico-shell .ic-fin-filtros>label>div{display:flex;gap:8px;margin-top:0}
+  .ic-sindico-shell .ic-fin-filtros>label>div>input{flex:1}
+  .ic-sindico-shell .ic-fin-filtros>div{display:flex;gap:8px}
+  .ic-sindico-shell .ic-fin-filtros>div>button{flex:1}
+}
+
+/* Tablet (761–1024px): menu lateral vira gaveta (igual ao celular) para o conteúdo
+   usar a largura toda. Antes o menu fixo de ~244px espremia formulários e cartões. */
+@media (min-width:761px) and (max-width:1024px){
+  .app-dashboard-shell.ic-sindico-shell{flex-direction:column!important;align-items:stretch!important}
+  .ic-sindico-shell .ic-navigation{display:block;width:100%}
+  .ic-sindico-shell .ic-mobile-bar{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    position:sticky;top:0;z-index:1100;width:100%;box-sizing:border-box;
+    padding:10px 78px 10px 20px;background:var(--ic-primary-deep);color:#fff;
+  }
+  .ic-sindico-shell .ic-mobile-bar button{min-height:44px;padding:8px 14px;border:1px solid #ffffff66;background:transparent;color:#fff;border-radius:10px;cursor:pointer}
+  .ic-sindico-shell .ic-navigation .app-dashboard-sidebar{
+    position:fixed!important;inset:0 auto 0 0!important;
+    width:min(86vw,320px)!important;min-width:0!important;
+    height:100dvh!important;max-height:100dvh!important;min-height:0!important;
+    overflow-y:auto;z-index:1250;
+    transform:translateX(-105%);visibility:hidden;transition:transform .2s ease;
+  }
+  .ic-sindico-shell .ic-navigation .app-dashboard-sidebar.is-open{transform:translateX(0);visibility:visible}
+  .ic-sindico-shell .ic-navigation-backdrop{display:block;position:fixed;inset:0;z-index:1240;width:100%;height:100%;border:0;background:#10082088}
+  .ic-sindico-shell .app-dashboard-content{width:100%!important;margin:0!important;padding:24px!important}
+}
+
+/* Financeiro: filtros com rótulo em cima e busca sem espremer (todas as larguras) */
+.ic-sindico-shell .ic-fin-filtros>label{display:grid;gap:6px;font-size:13px;font-weight:700;color:#3b2a4a}
+.ic-sindico-shell .ic-fin-filtros>label input,
+.ic-sindico-shell .ic-fin-filtros>label select{margin-top:0!important}
+.ic-sindico-shell .ic-fin-filtros>label:nth-of-type(3){flex:1 1 280px!important;min-width:240px}
+.ic-sindico-shell .ic-fin-filtros>label>div{flex-wrap:nowrap!important}
+.ic-sindico-shell .ic-fin-filtros>label>div>input{flex:1 1 auto;min-width:0}
+.ic-sindico-shell .ic-fin-filtros>label>div>button{flex:0 0 auto}
+@media (max-width:640px){
+  .ic-sindico-shell .ic-fin-filtros>label:nth-of-type(3){min-width:0}
+}
+
+/* Dashboard: com o menu lateral aberto, 4 indicadores por painel ficavam estreitos
+   e quebravam as palavras ("Apar-ta-men-tos"). Até 1600px usa 2 por linha. */
+@media (min-width:481px) and (max-width:1600px){
+  .ic-sindico-shell .ic-dash-reference .ic-dr-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
