@@ -251,3 +251,89 @@
 @media (min-width:481px) and (max-width:1600px){
   .ic-sindico-shell .ic-dash-reference .ic-dr-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+/* ---------- Financeiro ---------- */
+.ic-sindico-shell .ic-fin-abas a{
+  text-decoration:none!important;display:inline-flex;align-items:center;justify-content:center;
+  min-height:40px;padding:8px 18px;border-radius:12px;font-weight:800;font-size:14px;
+  transition:transform .15s ease,box-shadow .15s ease;
+}
+.ic-sindico-shell .ic-fin-abas a:hover{transform:translateY(-1px)}
+.ic-sindico-shell .ic-fin-abas a[aria-current=page]{box-shadow:0 8px 18px rgb(var(--ic-primary-rgb,124 58 237) / .22)}
+
+/* Tabela de lançamentos */
+.ic-sindico-shell .ic-fin-tabela-wrap{overflow-x:auto;margin-top:6px}
+.ic-sindico-shell .ic-fin-tabela{border-collapse:separate!important;border-spacing:0}
+.ic-sindico-shell .ic-fin-tabela th{
+  text-align:left;padding:11px 14px;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
+  color:#7c6b8f;background:var(--ic-primary-soft-3,#f8f4ff);border-bottom:1px solid var(--ic-primary-soft-2,#ece3fb);white-space:nowrap;
+}
+.ic-sindico-shell .ic-fin-tabela th:first-child{border-radius:12px 0 0 12px}
+.ic-sindico-shell .ic-fin-tabela th:last-child{border-radius:0 12px 12px 0}
+.ic-sindico-shell .ic-fin-tabela td{padding:14px;border-bottom:1px solid #f1ecf8;vertical-align:middle;color:#3b2a4a}
+.ic-sindico-shell .ic-fin-tabela tbody tr{transition:background .15s ease}
+.ic-sindico-shell .ic-fin-tabela tbody tr:hover{background:#fcfaff}
+.ic-sindico-shell .ic-fin-tabela tbody tr:last-child td{border-bottom:0}
+.ic-sindico-shell .ic-fin-tabela .ic-fin-num{text-align:right;white-space:nowrap}
+.ic-sindico-shell .ic-fin-tabela .ic-fin-acoes{text-align:right;width:1%;white-space:nowrap}
+.ic-sindico-shell .ic-fin-botoes{display:inline-flex;gap:6px;justify-content:flex-end}
+.ic-sindico-shell .ic-fin-btn{
+  margin:0!important;border:1px solid var(--ic-primary-soft-2,#ece3fb);background:#fff;color:var(--ic-primary-strong,#5b21b6);
+  padding:7px 12px;border-radius:10px;font:inherit;font-size:12px;font-weight:800;cursor:pointer;
+  transition:background .15s ease,border-color .15s ease;
+}
+.ic-sindico-shell .ic-fin-btn:hover{background:var(--ic-primary-soft-3,#f8f4ff);border-color:var(--ic-primary-border-soft,#ddd0f0)}
+.ic-sindico-shell .ic-fin-btn-perigo{color:#b91c1c;border-color:#fecaca;background:#fff5f5}
+.ic-sindico-shell .ic-fin-btn-perigo:hover{background:#fee2e2;border-color:#fca5a5}
+
+/* No celular a tabela vira cartões, um por lançamento */
+@media (max-width:760px){
+  .ic-sindico-shell .ic-fin-tabela,
+  .ic-sindico-shell .ic-fin-tabela tbody{display:block!important;width:100%}
+  .ic-sindico-shell .ic-fin-tabela thead{display:none}
+  .ic-sindico-shell .ic-fin-tabela tr{
+    display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;padding:14px;margin-bottom:10px;
+    border:1px solid var(--ic-primary-soft-2,#ece3fb);border-radius:16px;background:#fff;
+  }
+  .ic-sindico-shell .ic-fin-tabela td{display:block;padding:0!important;border:0!important;max-width:none!important;text-align:left!important;width:auto!important}
+  .ic-sindico-shell .ic-fin-tabela td::before{
+    content:attr(data-label);display:block;margin-bottom:3px;font-size:10px;font-weight:800;
+    letter-spacing:.05em;text-transform:uppercase;color:#9a89ad;
+  }
+  .ic-sindico-shell .ic-fin-tabela td[data-label="Descrição"]{grid-column:1/-1;order:-1;font-size:15px}
+  .ic-sindico-shell .ic-fin-tabela td[data-label="Descrição"]::before{display:none}
+  .ic-sindico-shell .ic-fin-tabela td.ic-fin-acoes{grid-column:1/-1;padding-top:10px!important;border-top:1px solid #f1ecf8!important}
+  .ic-sindico-shell .ic-fin-tabela td.ic-fin-acoes::before{display:none}
+  .ic-sindico-shell .ic-fin-botoes{display:flex;width:100%}
+  .ic-sindico-shell .ic-fin-btn{flex:1;padding:10px 12px}
+}
+
+/* ---------- BI Analytics / BI Monitor ---------- */
+/* Com o menu lateral aberto (1025–1599px), 6 indicadores por linha ficavam estreitos
+   e quebravam as palavras ("Morador-es cadastra-dos"). Passa a 3 por linha. */
+@media (min-width:1025px) and (max-width:1599px){
+  .ic-sindico-shell .ic-v2-kpis{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  .ic-sindico-shell .ic-monitor-cards{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+}
+.ic-sindico-shell .ic-v2-kpis h2,
+.ic-sindico-shell .ic-monitor-cards h2{overflow-wrap:normal;hyphens:auto}
+/* Celular: títulos dos cartões do Monitor estavam com 18px e quebravam ("Encomenda-s") */
+@media (max-width:600px){
+  .ic-sindico-shell .ic-monitor-command .ic-monitor-metric h2{font-size:12px!important;line-height:1.35}
+}
+@media (max-width:1024px){
+  .ic-sindico-shell .ic-monitor-command .ic-monitor-chart{height:300px}
+}
+.ic-sindico-shell .ic-fin-overlay{z-index:1300!important}
+.ic-sindico-shell .ic-fin-modal-erro,
+.ic-sindico-shell .ic-fin-cat-form{flex-wrap:nowrap!important}
+.ic-sindico-shell .ic-fin-modal-erro>button{flex:0 0 auto}
+.ic-sindico-shell .ic-fin-cat-form>input{min-width:0}
+.ic-sindico-shell .ic-fin-cat-form>button{flex:0 0 auto;white-space:nowrap}
+.ic-sindico-shell .ic-fin-tabela .ic-fin-desc{min-width:180px}
+.ic-sindico-shell .ic-fin-btn{white-space:nowrap}
+@media (max-width:760px){
+  .ic-sindico-shell .ic-fin-tabela .ic-fin-desc{min-width:0}
+  .ic-sindico-shell .ic-fin-botoes{flex-wrap:wrap}
+  .ic-sindico-shell .ic-fin-btn{flex:1 1 auto}
+}
