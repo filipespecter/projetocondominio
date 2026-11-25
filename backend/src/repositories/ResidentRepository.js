@@ -23,6 +23,7 @@ class ResidentRepository extends BaseRepository {
       document: true,
       role: true,
       status: true,
+      loginEnabled: true,
       mustChangePassword: true,
       lastLoginAt: true,
       lastLogoutAt: true,

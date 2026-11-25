@@ -10,7 +10,7 @@ export function notify(message, type = "info") {
 export function confirmDialog(message, options = {}) {
   return new Promise((resolve) => {
     confirmResolver = resolve;
-    window.dispatchEvent(new CustomEvent("infinity:confirm", { detail: { message: String(message ?? ""), title: options.title ?? "Confirmação", danger: Boolean(options.danger) } }));
+    window.dispatchEvent(new CustomEvent("infinity:confirm", { detail: { message: String(message ?? ""), title: options.title ?? "Confirmação", danger: Boolean(options.danger), confirmText: options.confirmText ?? "Confirmar", cancelText: options.cancelText ?? "Cancelar" } }));
   });
 }
 
@@ -59,7 +59,7 @@ export default function GlobalDialogs() {
 
   return <>
     {toast && <div style={{...styles.toast, ...(toast.type === "error" ? styles.toastError : toast.type === "success" ? styles.toastSuccess : {})}}>{toast.message}</div>}
-    {confirmState && <div className="ic-modal-overlay" style={styles.overlay} onMouseDown={(e)=>e.target===e.currentTarget&&answerConfirm(false)}><div style={styles.modal}><div style={styles.icon}>{confirmState.danger?"!":"?"}</div><h2 style={styles.title}>{confirmState.title}</h2><p style={styles.text}>{confirmState.message}</p><div style={styles.actions}><button style={styles.cancel} onClick={()=>answerConfirm(false)}>Cancelar</button><button style={confirmState.danger?styles.danger:styles.primary} onClick={()=>answerConfirm(true)}>Confirmar</button></div></div></div>}
+    {confirmState && <div className="ic-modal-overlay" style={styles.overlay} onMouseDown={(e)=>e.target===e.currentTarget&&answerConfirm(false)}><div style={styles.modal}><div style={styles.icon}>{confirmState.danger?"!":"?"}</div><h2 style={styles.title}>{confirmState.title}</h2><p style={{...styles.text, whiteSpace: "pre-line"}}>{confirmState.message}</p><div style={styles.actions}><button style={styles.cancel} onClick={()=>answerConfirm(false)}>{confirmState.cancelText ?? "Cancelar"}</button><button style={confirmState.danger?styles.danger:styles.primary} onClick={()=>answerConfirm(true)}>{confirmState.confirmText ?? "Confirmar"}</button></div></div></div>}
     {promptState && <div className="ic-modal-overlay" style={styles.overlay} onMouseDown={(e)=>e.target===e.currentTarget&&answerPrompt(null)}><div style={styles.modal}><h2 style={styles.title}>{promptState.title}</h2><p style={styles.text}>{promptState.message}</p><input autoFocus style={styles.input} placeholder={promptState.placeholder} value={promptValue} onChange={(e)=>setPromptValue(e.target.value)} onKeyDown={(e)=>{if(e.key==="Enter")answerPrompt(promptValue);}}/><div style={styles.actions}><button style={styles.cancel} onClick={()=>answerPrompt(null)}>Cancelar</button><button style={styles.primary} onClick={()=>answerPrompt(promptValue)}>Continuar</button></div></div></div>}
   </>;
 }

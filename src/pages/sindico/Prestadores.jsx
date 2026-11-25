@@ -10,6 +10,10 @@ import apartmentApi from "../../Services/apartmentApi.js";
 import commonAreaApi from "../../Services/commonAreaApi.js";
 import privateServiceRequestApi from "../../Services/privateServiceRequestApi.js";
 import { mascaraCPF, mascaraTelefone } from "../../utils/mascaras.js";
+import { rotuloUnidade } from "../../utils/unidade.js";
+
+// Data (AAAA-MM-DD) no fuso do navegador; toISOString() usa UTC e vira o dia depois das 21h.
+function dataLocalISO(valor){const d=new Date(valor);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;}
 
 function Prestadores() {
   const estadoInicialPrestador={nome:"",empresa:"",telefone:"",cpf:"",servico:"",tipoServico:"Condomínio",areaRelacionada:"",apartamento:"",responsavel:"",dataEntrada:"",horaEntrada:"",dataSaida:"",horaSaida:"",observacao:"",status:"Pendente",moradorId:null,apartamentoId:null,tipoMoradorResponsavel:"",moradorPrincipalResponsavel:false,serviceProviderId:null};
@@ -30,28 +34,28 @@ function Prestadores() {
   const [processandoSolicitacao,setProcessandoSolicitacao]=useState(null);
 
   const statusFront={SCHEDULED:"Pendente",INSIDE:"Em execução",EXITED:"Finalizado",CANCELED:"Cancelado"};
-  function mapResident(r){return {...r,nome:r.user?.name??r.name??"",apartamento:r.apartment?.number??"",apto:r.apartment?.number??"",apartamentoId:r.apartmentId??r.apartment?.id??null,tipoMorador:r.residentType??"Morador",moradorPrincipal:Boolean(r.isPrimary)};}
-  function mapAccess(a){const p=a.serviceProvider??{}; return {id:a.id,serviceProviderId:p.id??a.serviceProviderId,nome:p.name??"",empresa:p.companyName??"",telefone:p.phone??"",cpf:p.document??"",servico:a.serviceDescription??p.serviceType??"",tipoServico:a.apartmentId?"Apartamento":"Condomínio",areaRelacionada:"",apartamento:a.apartment?.number??"",apartamentoId:a.apartmentId??a.apartment?.id??null,responsavel:"",dataEntrada:String(a.scheduledDate??"").slice(0,10),horaEntrada:a.scheduledStartTime??"",dataSaida:a.exitedAt?new Date(a.exitedAt).toISOString().slice(0,10):"",horaSaida:a.exitedAt?new Date(a.exitedAt).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}):"",observacao:a.notes??"",status:statusFront[a.status]??a.status};}
+  function mapResident(r){return {...r,nome:r.user?.name??r.name??"",apartamento:r.apartment?.number??"",unidade:rotuloUnidade(r.apartment),apto:r.apartment?.number??"",apartamentoId:r.apartmentId??r.apartment?.id??null,tipoMorador:({OWNER:"Proprietário",TENANT:"Inquilino",DEPENDENT:"Dependente",OTHER:"Outro"})[r.residentType]??r.residentType??"Morador",moradorPrincipal:Boolean(r.isPrimary)};}
+  function mapAccess(a){const p=a.serviceProvider??{}; return {id:a.id,serviceProviderId:p.id??a.serviceProviderId,nome:p.name??"",empresa:p.companyName??"",telefone:p.phone??"",cpf:p.document??"",servico:a.serviceDescription??p.serviceType??"",tipoServico:a.apartmentId?"Apartamento":"Condomínio",areaRelacionada:"",apartamento:a.apartment?.number??"",unidade:rotuloUnidade(a.apartment),apartamentoId:a.apartmentId??a.apartment?.id??null,responsavel:"",dataEntrada:String(a.scheduledDate??"").slice(0,10),horaEntrada:a.scheduledStartTime??"",dataSaida:a.exitedAt?dataLocalISO(a.exitedAt):"",horaSaida:a.exitedAt?new Date(a.exitedAt).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}):"",observacao:a.notes??"",status:statusFront[a.status]??a.status};}
   function mapOperational(o){return {id:o.id,data:String(o.recordDate??"").slice(0,10),horario:o.recordTime??"",porteiro:o.responsibleName??"",leituraAnterior:o.previousReading??"",leituraAtual:o.currentReading??"",consumo:o.consumption??"",poco:o.wellStatus??"Desligado",observacao:o.notes??""};}
   async function carregar(){try{const [accesses,ops,residents,aps,areas,requests]=await Promise.all([providerAccessApi.list(),operationalRecordApi.list(),residentApi.list(),apartmentApi.list(),commonAreaApi.list(),privateServiceRequestApi.list()]); const mapped=(accesses??[]).map(mapAccess); setPrestadores(mapped.filter(i=>!i.apartamentoId)); setParticulares(mapped.filter(i=>i.apartamentoId)); setOperacional((ops??[]).map(mapOperational)); setMoradores((residents??[]).map(mapResident)); setApartamentos((aps??[]).map(a=>({...a,numero:a.number??a.numero??""}))); setAreasComuns((areas??[]).map(a=>({...a,nome:a.name??a.nome??""}))); setSolicitacoes(requests??[]);}catch(e){notify(e?.message??"Não foi possível carregar prestadores e operações.", "error");}}
   useEffect(()=>{carregar();},[]);
 
   const listaAtual=abaAtiva==="condominio"?prestadores:particulares;
-  const listaFiltrada=listaAtual.filter(item=>{const t=busca.toLowerCase(); return item.nome?.toLowerCase().includes(t)||item.empresa?.toLowerCase().includes(t)||item.servico?.toLowerCase().includes(t)||item.tipoServico?.toLowerCase().includes(t)||item.areaRelacionada?.toLowerCase().includes(t)||item.apartamento?.toLowerCase().includes(t)||item.responsavel?.toLowerCase().includes(t)||item.status?.toLowerCase().includes(t);});
+  const listaFiltrada=listaAtual.filter(item=>{const t=busca.toLowerCase(); return item.nome?.toLowerCase().includes(t)||item.empresa?.toLowerCase().includes(t)||item.servico?.toLowerCase().includes(t)||item.tipoServico?.toLowerCase().includes(t)||item.areaRelacionada?.toLowerCase().includes(t)||item.apartamento?.toLowerCase().includes(t)||item.unidade?.toLowerCase().includes(t)||item.responsavel?.toLowerCase().includes(t)||item.status?.toLowerCase().includes(t);});
   const ativos=[...prestadores,...particulares].filter(p=>p.status==="Em execução"||p.status==="Pendente").length;
   const finalizados=[...prestadores,...particulares].filter(p=>p.status==="Finalizado").length;
   function limparNumeros(v){return String(v||"").replace(/\D/g,"");}
   function validarCPF(cpf){const n=limparNumeros(cpf); if(!n)return true; if(n.length!==11||/^(\d)\1+$/.test(n))return false; let s=0; for(let i=0;i<9;i++)s+=Number(n[i])*(10-i); let d=11-(s%11); if(d>=10)d=0; if(d!==Number(n[9]))return false; s=0; for(let i=0;i<10;i++)s+=Number(n[i])*(11-i); d=11-(s%11); if(d>=10)d=0; return d===Number(n[10]);}
   function validarPrestador(){if(String(novoPrestador.nome).trim().length<3){notify("Informe o nome do prestador.", "error");return false;} if(limparNumeros(novoPrestador.telefone).length<10){notify("Informe telefone com DDD.", "error");return false;} if(novoPrestador.cpf&&!validarCPF(novoPrestador.cpf)){notify("CPF inválido.", "error");return false;} if(String(novoPrestador.servico).trim().length<3){notify("Informe o serviço.", "error");return false;} if(!novoPrestador.dataEntrada||!novoPrestador.horaEntrada){notify("Informe data e hora.", "error");return false;} if(abaAtiva==="particular"&&!novoPrestador.apartamentoId){notify("Selecione o apartamento.", "error");return false;} return true;}
-  function selecionarMoradorResponsavel(id){const m=moradores.find(x=>String(x.id)===String(id)); if(!m)return; setNovoPrestador(p=>({...p,moradorId:m.id,responsavel:m.nome,apartamento:m.apartamento,apartamentoId:m.apartamentoId,tipoMoradorResponsavel:m.tipoMorador,moradorPrincipalResponsavel:m.moradorPrincipal}));}
-  function selecionarApartamento(valor){const a=apartamentos.find(x=>String(x.numero)===String(valor)); setNovoPrestador(p=>({...p,apartamento:valor,apartamentoId:a?.id??null,responsavel:"",moradorId:null,tipoMoradorResponsavel:"",moradorPrincipalResponsavel:false}));}
-  const moradoresDoApartamento=moradores.filter(m=>String(m.apartamento)===String(novoPrestador.apartamento));
+  function selecionarMoradorResponsavel(id){const m=moradores.find(x=>String(x.id)===String(id)); if(!m)return; setNovoPrestador(p=>({...p,moradorId:m.id,responsavel:m.nome,apartamento:m.apartamento,unidade:m.unidade,apartamentoId:m.apartamentoId,tipoMoradorResponsavel:m.tipoMorador,moradorPrincipalResponsavel:m.moradorPrincipal}));}
+  function selecionarApartamento(valor){const a=apartamentos.find(x=>String(x.id)===String(valor)); setNovoPrestador(p=>({...p,apartamento:a?(a.numero??a.number??""):"",unidade:a?rotuloUnidade(a):"",apartamentoId:a?.id??null,responsavel:"",moradorId:null,tipoMoradorResponsavel:"",moradorPrincipalResponsavel:false}));}
+  const moradoresDoApartamento=moradores.filter(m=>novoPrestador.apartamentoId?String(m.apartamentoId)===String(novoPrestador.apartamentoId):String(m.apartamento)===String(novoPrestador.apartamento));
   function formatarTelefone(v){return mascaraTelefone(String(v??"").replace(/\D/g,"").slice(0,11));}
   function formatarCPF(v){return mascaraCPF(v);}
   function abrirNovoCadastro(){setEditId(null);setNovoPrestador({...estadoInicialPrestador,tipoServico:abaAtiva==="condominio"?"Condomínio":"Apartamento"});setMostrarModal(true);}
   function editarPrestador(item){setEditId(item.id);setNovoPrestador({...estadoInicialPrestador,...item});setMostrarModal(true);}
   function fecharModal(){setMostrarModal(false);setEditId(null);setNovoPrestador(estadoInicialPrestador);}
-  async function salvarPrestador(){if(!validarPrestador())return; try{let providerId=novoPrestador.serviceProviderId; const providerPayload={name:novoPrestador.nome.trim(),companyName:novoPrestador.empresa?.trim()||null,document:novoPrestador.cpf?.trim()||null,phone:novoPrestador.telefone?.trim()||null,email:null,serviceType:novoPrestador.servico.trim(),notes:novoPrestador.observacao?.trim()||null,status:"ACTIVE"}; if(providerId){await serviceProviderApi.update(providerId,providerPayload);}else{const p=await serviceProviderApi.create(providerPayload);providerId=p.id;} const accessPayload={serviceProviderId:providerId,apartmentId:abaAtiva==="particular"?novoPrestador.apartamentoId:null,serviceDescription:novoPrestador.areaRelacionada?`${novoPrestador.servico} • ${novoPrestador.areaRelacionada}`:novoPrestador.servico,scheduledDate:novoPrestador.dataEntrada,scheduledStartTime:novoPrestador.horaEntrada,scheduledEndTime:novoPrestador.horaSaida||null,notes:novoPrestador.observacao?.trim()||null}; if(editId)await providerAccessApi.update(editId,accessPayload); else await providerAccessApi.create(accessPayload); await carregar();fecharModal();}catch(e){notify(e?.message??"Não foi possível salvar o prestador.", "error");}}
+  async function salvarPrestador(){if(!validarPrestador())return; try{let providerId=novoPrestador.serviceProviderId; const providerPayload={name:novoPrestador.nome.trim(),companyName:novoPrestador.empresa?.trim()||null,document:novoPrestador.cpf?.trim()||null,phone:novoPrestador.telefone?.trim()||null,email:null,serviceType:novoPrestador.servico.trim(),notes:novoPrestador.observacao?.trim()||null,status:"ACTIVE"}; if(providerId){await serviceProviderApi.update(providerId,providerPayload);}else{const p=await serviceProviderApi.create(providerPayload);providerId=p.id;} const accessPayload={serviceProviderId:providerId,apartmentId:abaAtiva==="particular"?novoPrestador.apartamentoId:null,serviceDescription:novoPrestador.areaRelacionada?`${novoPrestador.servico} • ${novoPrestador.areaRelacionada}`:novoPrestador.servico,scheduledDate:novoPrestador.dataEntrada,scheduledStartTime:novoPrestador.horaEntrada,scheduledEndTime:novoPrestador.horaSaida||null,notes:novoPrestador.observacao?.trim()||null}; if(editId)await providerAccessApi.update(editId,accessPayload); else await providerAccessApi.create(accessPayload); await carregar();fecharModal();}catch(e){const det=Array.isArray(e?.details)?e.details.map(d=>d?.message).filter(Boolean).join(" "):"";notify(det||e?.message||"Não foi possível salvar o prestador.", "error");}}
   async function alterarStatusPrestador(id,status){try{if(status==="Em execução")await providerAccessApi.entry(id); else if(status==="Finalizado")await providerAccessApi.exit(id); else if(status==="Cancelado")await providerAccessApi.cancel(id); await carregar();}catch(e){notify(e?.message??"Não foi possível alterar o status.", "error");}}
   async function excluirPrestador(id){if(!await confirmDialog("Deseja excluir este cadastro?"))return; try{await providerAccessApi.remove(id); await carregar();}catch(e){notify(e?.message??"Só acessos finalizados/cancelados podem ser excluídos.", "error");}}
   function calcularConsumoManual(a,b){if(a===""||b==="")return ""; const x=Number(a),y=Number(b); if(!Number.isFinite(x)||!Number.isFinite(y)||y<x)return ""; return String(y-x);}
@@ -101,7 +105,7 @@ function Prestadores() {
           ) : (
             <div style={styles.serviceGrid}>
               {solicitacoes.map((item)=><article key={item.id} style={styles.serviceCard}>
-                <div style={styles.cardTop}><div style={styles.serviceIdentity}><div style={styles.serviceIcon}>🏠</div><div><h3 style={styles.serviceName}>{item.providerName}</h3><p style={styles.company}>Apto {item.apartment?.number||"-"} · solicitado por {item.requester?.name||item.resident?.user?.name||"morador"}</p></div></div><span style={styles.statusBadge}>{statusSolicitacao(item.status)}</span></div>
+                <div style={styles.cardTop}><div style={styles.serviceIdentity}><div style={styles.serviceIcon}>🏠</div><div><h3 style={styles.serviceName}>{item.providerName}</h3><p style={styles.company}>{rotuloUnidade(item.apartment)||"Apto -"} · solicitado por {item.requester?.name||item.resident?.user?.name||"morador"}</p></div></div><span style={styles.statusBadge}>{statusSolicitacao(item.status)}</span></div>
                 <div style={styles.serviceType}><span>🧰</span><strong>{item.serviceType}</strong></div>
                 <p style={styles.observation}>{item.description}</p>
                 <div style={styles.infoGrid}>
@@ -381,7 +385,7 @@ function Prestadores() {
           <tbody>{listaFiltrada.map(p=><tr key={p.id}>
             <td data-label="Prestador / empresa"><span className="ic-pkg-description"><span className="ic-gestao-avatar"><FiTool/></span><strong>{p.nome}</strong></span>{p.empresa&&<small>{p.empresa}</small>}</td>
             <td data-label="Serviço">{p.servico}</td>
-            <td data-label="Local"><span className="ic-pkg-description"><FiMapPin/> {p.apartamento?`Apto ${p.apartamento}`:p.areaRelacionada||p.tipoServico||"—"}</span></td>
+            <td data-label="Local"><span className="ic-pkg-description"><FiMapPin/> {p.unidade||(p.apartamento?`Apto ${p.apartamento}`:p.areaRelacionada||p.tipoServico||"—")}</span></td>
             <td data-label="Status"><span className="ic-pkg-tag" data-tone={p.status==="Finalizado"?"green":p.status==="Cancelado"?"red":undefined}>{p.status==="Finalizado"?<FiCheck/>:<FiClock/>} {p.status==="Em execução"?"Em andamento":p.status||"Sem status"}</span></td>
             <td data-label="Ações"><div className="ic-pkg-row-actions"><button type="button" className="ic-pkg-outline" onClick={()=>editarPrestador(p)}><FiEdit2/> Editar</button>
             <details className="ic-pkg-action-menu"><summary aria-label="Mais ações"><FiMoreHorizontal/></summary><div>
@@ -609,7 +613,7 @@ function Prestadores() {
 
                     {apartamentos.length > 0 ? (
                       <select
-                        value={novoPrestador.apartamento}
+                        value={novoPrestador.apartamentoId || ""}
                         onChange={(e) => selecionarApartamento(e.target.value)}
                         style={styles.input}
                       >
@@ -624,8 +628,8 @@ function Prestadores() {
                             "";
 
                           return (
-                            <option key={ap.id || numeroApartamento} value={numeroApartamento}>
-                              Bloco {ap.bloco || "-"} - Apto {numeroApartamento}
+                            <option key={ap.id || numeroApartamento} value={ap.id}>
+                              {rotuloUnidade({ block: ap.block ?? ap.bloco, numero: numeroApartamento })}
                             </option>
                           );
                         })}

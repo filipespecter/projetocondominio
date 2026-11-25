@@ -387,6 +387,8 @@ function Configuracoes() {
 
               <Campo label="Senha">
                 <input
+                  type="password"
+                  autoComplete="new-password"
                   value={novoUsuario.senha}
                   onChange={(e) =>
                     setNovoUsuario({ ...novoUsuario, senha: e.target.value })

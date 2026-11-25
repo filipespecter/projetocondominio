@@ -2,6 +2,7 @@ import BaseService from "./BaseService.js";
 import notificationRepository from "../repositories/NotificationRepository.js";
 import userRepository from "../repositories/UserRepository.js";
 import { ApiError } from "../utils/ApiError.js";
+import { Logger } from "../utils/logger.js";
 
 class NotificationService extends BaseService {
   constructor() {
@@ -859,23 +860,41 @@ class NotificationService extends BaseService {
       messages[status] ??
       "O status da sua reserva foi atualizado.";
 
-    return this.createForUser(
-      condominiumId,
-      recipientUserId,
-      {
-        title:
-          "Atualização de reserva",
-        message,
-        type: "RESERVATION_STATUS",
-        origin: "MANAGER",
-        module: "RESERVATION",
-        referenceId: reservationId,
-        priority:
-          status === "REJECTED"
-            ? "HIGH"
-            : "NORMAL",
+    try {
+      return await this.createForUser(
+        condominiumId,
+        recipientUserId,
+        {
+          title:
+            "Atualização de reserva",
+          message,
+          type: "RESERVATION_STATUS",
+          origin: "MANAGER",
+          module: "RESERVATION",
+          referenceId: reservationId,
+          priority:
+            status === "REJECTED"
+              ? "HIGH"
+              : "NORMAL",
+        }
+      );
+    } catch (error) {
+      // O aviso é complementar: a reserva já foi atualizada no banco.
+      // Se o morador foi excluído/inativado (ou não existe mais), apenas
+      // registra no log em vez de devolver erro para uma operação que deu certo.
+      if (
+        error instanceof ApiError &&
+        [400, 404].includes(error.statusCode ?? error.status)
+      ) {
+        Logger.warn(
+          "Aviso de reserva não enviado: destinatário indisponível.",
+          { condominiumId, recipientUserId, reservationId, status, motivo: error.message }
+        );
+        return null;
       }
-    );
+
+      throw error;
+    }
   }
 
   /**

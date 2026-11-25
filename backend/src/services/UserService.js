@@ -299,6 +299,10 @@ class UserService extends BaseService {
               ),
             phone:
               data.phone ?? null,
+            document:
+              data.document
+                ? String(data.document).trim()
+                : null,
             passwordHash,
             role: data.role,
             loginEnabled: data.loginEnabled !== false,

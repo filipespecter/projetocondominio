@@ -12,7 +12,8 @@ import { mascaraMoeda } from "../../utils/mascaras.js";
 import { imageFileToDataUrl } from "../../utils/imageCompression.js";
 
 const money=c=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format((c||0)/100);
-const today=()=>new Date().toISOString().slice(0,10);
+// Datas no fuso do navegador (toISOString usa UTC e, depois das 21h, devolvia o dia seguinte).
+const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;};
 const initialForm=()=>({expenseDate:today(),categoryId:"",description:"",supplier:"",paymentMethod:"PIX",amount:"",notes:"",receiptImageDataUrl:null});
 
 export default function Financeiro(){
@@ -24,7 +25,7 @@ export default function Financeiro(){
   </nav>{assinatura?<div className="ic-pkg-reference"><CondominiumRequests mode="PAY"/></div>:<Despesas/>}</>;
 }
 function Despesas(){
-  const [month,setMonth]=useState(new Date().toISOString().slice(0,7));
+  const [month,setMonth]=useState(today().slice(0,7));
   const [categoryFilter,setCategoryFilter]=useState(""); const [search,setSearch]=useState("");
   const [data,setData]=useState({items:[],summary:{totalInCents:0,count:0,averageInCents:0,largestCategory:null,byCategory:[]}});
   const [categories,setCategories]=useState([]); const [loading,setLoading]=useState(true); const [locked,setLocked]=useState(false);

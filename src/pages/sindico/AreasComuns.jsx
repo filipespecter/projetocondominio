@@ -99,10 +99,9 @@ function AreasComuns() {
             const agora =
               new Date();
 
+            // Data local (toISOString usa UTC e virava o dia seguinte após as 21h).
             const hoje =
-              agora
-                .toISOString()
-                .slice(0, 10);
+              `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, "0")}-${String(agora.getDate()).padStart(2, "0")}`;
 
             const hora =
               agora

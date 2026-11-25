@@ -6,6 +6,7 @@ import { confirmDialog, notify } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useRef, useState } from "react";
 import visitorApi from "../../Services/visitorApi";
 import { mascaraTelefone, mascaraDocumento } from "../../utils/mascaras.js";
+import { rotuloUnidade } from "../../utils/unidade.js";
 
 function Visitantes() {
   const estadoInicialVisitante = {
@@ -52,6 +53,7 @@ function Visitantes() {
       ...r,
       nome: r.user?.name ?? r.name ?? "",
       apartamento: r.apartment?.number ?? "",
+      unidade: rotuloUnidade(r.apartment),
       apto: r.apartment?.number ?? "",
       apartamentoId: r.apartmentId ?? r.apartment?.id ?? null,
       moradorPrincipal: Boolean(r.isPrimary),
@@ -85,6 +87,10 @@ function Visitantes() {
       apartamento:
         v.apartment?.number ??
         resident?.apartamento ??
+        "",
+      unidade:
+        rotuloUnidade(v.apartment) ||
+        resident?.unidade ||
         "",
       apartamentoId:
         v.apartmentId ??
@@ -280,6 +286,7 @@ function Visitantes() {
       morador: morador.nome,
       moradorId: morador.id,
       apartamento: morador.apartamento,
+      unidade: morador.unidade,
       apartamentoId: morador.apartamentoId,
     }));
   }
@@ -643,7 +650,7 @@ function Visitantes() {
 
                     <div style={styles.infoItem}>
                       <span>Apartamento: </span>
-                      <strong>{v.apartamento || "-"}</strong>
+                      <strong>{v.unidade || v.apartamento || "-"}</strong>
                     </div>
 
                     <div style={styles.infoItem}>
@@ -841,8 +848,7 @@ function Visitantes() {
 
                     {moradores.map((morador) => (
                       <option key={morador.id} value={morador.id}>
-                        {morador.nome} - Apto{" "}
-                        {morador.apartamento || morador.apto}
+                        {morador.nome} - {morador.unidade || `Apto ${morador.apartamento || morador.apto}`}
                       </option>
                     ))}
                   </select>
@@ -853,7 +859,7 @@ function Visitantes() {
 
                   <input
                     placeholder="Apartamento"
-                    value={novoVisitante.apartamento}
+                    value={novoVisitante.unidade || novoVisitante.apartamento}
                     readOnly
                     style={styles.input}
                   />

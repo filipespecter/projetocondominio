@@ -685,11 +685,19 @@ class UserRepository extends BaseRepository {
         data.phone ??
         null,
 
+      document:
+        data.document ??
+        null,
+
       passwordHash:
         data.passwordHash,
 
       role:
         data.role,
+
+      loginEnabled:
+        data.loginEnabled ??
+        true,
 
       status:
         data.status ??
@@ -745,6 +753,13 @@ class UserRepository extends BaseRepository {
     ) {
       updateData.phone =
         data.phone;
+    }
+
+    if (
+      data.document !== undefined
+    ) {
+      updateData.document =
+        data.document;
     }
 
     if (

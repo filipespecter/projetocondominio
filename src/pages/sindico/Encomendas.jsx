@@ -11,6 +11,7 @@ import {packageNotificationWarning} from "../../utils/packageNotificationStatus.
 import { confirmDialog, notify } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useRef, useState } from "react";
 import packageApi from "../../Services/packageApi.js";
+import { rotuloUnidade } from "../../utils/unidade.js";
 
 function Encomendas() {
   const estadoInicialEncomenda = {
@@ -115,6 +116,10 @@ function Encomendas() {
         resident?.apartment?.number ??
         resident?.apartamento ??
         "",
+      unidade:
+        rotuloUnidade(item.apartment ?? resident?.apartment) ||
+        resident?.unidade ||
+        "",
       apartamentoId:
         item.apartmentId ??
         item.apartment?.id ??
@@ -188,6 +193,8 @@ function Encomendas() {
       apartamento:
         r.apartment?.number ??
         "",
+      unidade:
+        rotuloUnidade(r.apartment),
       apto:
         r.apartment?.number ??
         "",
@@ -281,6 +288,8 @@ function Encomendas() {
           morador.nome,
         apartamento:
           morador.apartamento,
+        unidade:
+          morador.unidade,
         apartamentoId:
           morador.apartamentoId,
       })
@@ -514,8 +523,7 @@ function Encomendas() {
                           key={morador.id}
                           value={morador.id}
                         >
-                          {morador.nome} - Apto{" "}
-                          {morador.apartamento || morador.apto}
+                          {morador.nome} - {morador.unidade || `Apto ${morador.apartamento || morador.apto}`}
                         </option>
                       ))}
                     </select>
@@ -543,11 +551,12 @@ function Encomendas() {
                     placeholder="Apartamento"
                     inputMode="numeric"
                                         maxLength="6"
-                    value={novaEncomenda.apartamento}
+                    value={moradores.length > 0 ? (novaEncomenda.unidade || novaEncomenda.apartamento) : novaEncomenda.apartamento}
                     onChange={(e) =>
                       setNovaEncomenda({
                         ...novaEncomenda,
-                        apartamento: e.target.value.replace(/\\D/g, "").slice(0, 6)
+                        apartamento: e.target.value.replace(/\D/g, "").slice(0, 6),
+                        unidade: ""
                       })
                     }
                     style={styles.input}

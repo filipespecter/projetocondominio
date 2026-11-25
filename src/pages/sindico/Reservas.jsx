@@ -70,6 +70,16 @@ function Reservas() {
       "concluida",
   };
 
+  // "Bloco A · Apto 302" quando o bloco existe; senão "Apto 302".
+  // Evita confundir o 302 do bloco A com o 302 do bloco B.
+  function rotuloUnidade(ap) {
+    if (!ap) return "";
+    const bloco = ap.block ?? ap.bloco;
+    const numero = ap.number ?? ap.numero;
+    if (!numero) return "";
+    return bloco ? `Bloco ${bloco} · Apto ${numero}` : `Apto ${numero}`;
+  }
+
   function mapResident(item) {
     return {
       ...item,
@@ -84,6 +94,8 @@ function Reservas() {
       apartamento:
         item.apartment?.number ??
         "",
+      unidade:
+        rotuloUnidade(item.apartment),
       apto:
         item.apartment?.number ??
         "",
@@ -92,6 +104,7 @@ function Reservas() {
         item.apartment?.id ??
         null,
       tipoMorador:
+        ({ OWNER: "Proprietário", TENANT: "Inquilino", DEPENDENT: "Dependente", OTHER: "Outro" })[item.residentType] ??
         item.residentType ??
         "Morador",
       moradorPrincipal:
@@ -135,6 +148,8 @@ function Reservas() {
       apartamento:
         item.apartment?.number ??
         "",
+      unidade:
+        rotuloUnidade(item.apartment),
       apartamentoId:
         item.apartmentId,
       data:
@@ -157,6 +172,11 @@ function Reservas() {
           item.status
         ] ??
         "pendente",
+      moradorInativo:
+        Boolean(
+          item.requestedBy?.status &&
+          item.requestedBy.status !== "ACTIVE"
+        ),
       criadoEm:
         item.createdAt
           ? new Date(
@@ -256,6 +276,9 @@ function Reservas() {
           reserva.apartamento
             ?.toLowerCase()
             .includes(texto) ||
+          reserva.unidade
+            ?.toLowerCase()
+            .includes(texto) ||
           reserva.data
             ?.toLowerCase()
             .includes(texto) ||
@@ -329,6 +352,8 @@ function Reservas() {
           morador.nome,
         apartamento:
           morador.apartamento,
+        unidade:
+          morador.unidade,
         apartamentoId:
           morador.apartamentoId,
         tipoMorador:
@@ -363,6 +388,11 @@ function Reservas() {
       notify(
         "Preencha área, morador, data, horário inicial e horário final.", "error"
       );
+      return;
+    }
+
+    if (String(novaReserva.horarioFim) <= String(novaReserva.horario)) {
+      notify("O horário final deve ser depois do horário inicial.", "error");
       return;
     }
 
@@ -410,8 +440,14 @@ function Reservas() {
       await carregar();
       fecharModal();
     } catch (error) {
+      // Mostra o motivo detalhado que o backend envia (ex.: horário final antes do inicial)
+      // em vez do genérico "Dados inválidos.".
+      const detalhe = Array.isArray(error?.details)
+        ? error.details.map((d) => d?.message).filter(Boolean).join(" ")
+        : "";
       notify(
-        error?.message ??
+        detalhe ||
+        error?.message ||
         "Não foi possível salvar a reserva.", "error"
       );
     }
@@ -482,15 +518,31 @@ function Reservas() {
   }
 
   async function excluirReserva(id) {
+    const reserva = reservas.find((r) => r.id === id);
+    // Reserva ainda ativa (pendente/confirmada): o backend só remove reservas
+    // canceladas, recusadas, concluídas ou passadas. Então cancela antes de excluir.
+    const ativa = ["PENDING", "APPROVED"].includes(reserva?.status ?? "") ||
+      ["pendente", "aprovada"].includes(reserva?.status ?? "");
+    const pergunta = ativa
+      ? `Esta reserva ainda está ${reserva?.status === "pendente" || reserva?.status === "PENDING" ? "pendente" : "confirmada"}. Para excluí-la, ela será cancelada primeiro e depois removida da agenda.${reserva?.moradorInativo ? "" : " O morador será avisado do cancelamento."}`
+      : "Deseja excluir esta reserva?";
     if (
       !await confirmDialog(
-        "Deseja excluir esta reserva?"
+        pergunta,
+        ativa
+          ? { title: "Excluir reserva ativa", danger: true, confirmText: "Cancelar e excluir", cancelText: "Voltar" }
+          : {}
       )
     ) {
       return;
     }
 
     try {
+      if (ativa) {
+        await reservationApi
+          .cancel(id);
+      }
+
       await reservationApi
         .remove(id);
 
@@ -829,11 +881,16 @@ function Reservas() {
                     <div style={styles.infoItem}>
                       <span>Morador: </span>
                       <strong>{r.morador || "-"}</strong>
+                      {r.moradorInativo && (
+                        <span style={{ marginLeft: 8, padding: "2px 8px", borderRadius: 999, background: "#fee2e2", color: "#991b1b", fontSize: 11, fontWeight: 800 }}>
+                          morador excluído/inativo
+                        </span>
+                      )}
                     </div>
 
                     <div style={styles.infoItem}>
                       <span>Apartamento: </span>
-                      <strong>{r.apartamento || "-"}</strong>
+                      <strong>{r.unidade || r.apartamento || "-"}</strong>
                     </div>
 
                     <div style={styles.infoItem}>
@@ -993,8 +1050,7 @@ function Reservas() {
                         key={morador.id}
                         value={morador.id}
                       >
-                        {morador.nome} - Apto{" "}
-                        {morador.apartamento || morador.apto} -{" "}
+                        {morador.nome} - {morador.unidade || `Apto ${morador.apartamento || morador.apto}`} -{" "}
                         {morador.tipoMorador || "Morador"}
                         {morador.moradorPrincipal ? " - Principal" : " - Dependente"}
                       </option>
@@ -1009,7 +1065,7 @@ function Reservas() {
 
                   <input
                     placeholder="Apartamento"
-                    value={novaReserva.apartamento}
+                    value={novaReserva.unidade || novaReserva.apartamento}
                     readOnly
                     style={styles.input}
                   />

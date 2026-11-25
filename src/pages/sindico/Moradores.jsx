@@ -6,6 +6,7 @@ import { confirmDialog, notify } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useState } from "react";
 import apartmentApi from "../../Services/apartmentApi";
 import residentApi from "../../Services/residentApi";
+import reservationApi from "../../Services/reservationApi";
 import { mascaraTelefone, mascaraDocumento } from "../../utils/mascaras.js";
 
 function limparTelefone(valor) {
@@ -44,6 +45,24 @@ function Moradores() {
 
   function mapApartment(ap) {
     return { ...ap, bloco: ap.block ?? "", numero: ap.number ?? "", andar: String(ap.floor ?? "") };
+  }
+
+  // Morador cadastrado sem acesso: o backend ainda exige um nome de usuário único,
+  // então geramos um interno (nome + unidade + sufixo). O login continua bloqueado
+  // até o síndico liberar em "Acesso do morador".
+  function usuarioAutomatico() {
+    const base = String(novoMorador.nome || "morador").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase().trim().split(/\s+/).filter(Boolean);
+    const nome = [base[0], base.length > 1 ? base[base.length - 1] : null].filter(Boolean).join(".").replace(/[^a-z0-9.]/g, "") || "morador";
+    const ap = apartamentos.find((a) => String(a.id) === String(novoMorador.apartamentoId));
+    const unidade = `${ap?.bloco ?? ""}${ap?.numero ?? ""}`.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const sufixo = Math.random().toString(36).slice(2, 6);
+    return [nome, unidade, sufixo].filter(Boolean).join(".").slice(0, 60);
+  }
+
+  function hojeLocalISO() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   }
 
   function mapResident(r) {
@@ -124,8 +143,9 @@ function Moradores() {
   }
 
   function validarMorador() {
-    if (!novoMorador.nome.trim() || !novoMorador.usuario.trim() || !novoMorador.apartamentoId) {
-      notify("Preencha nome, usuário e apartamento.", "error");
+    const precisaUsuario = Boolean(editId) || createAccess;
+    if (!novoMorador.nome.trim() || !novoMorador.apartamentoId || (precisaUsuario && !novoMorador.usuario.trim())) {
+      notify(precisaUsuario ? "Preencha nome, usuário e apartamento." : "Preencha nome e apartamento.", "error");
       return false;
     }
     if (!editId && createAccess && String(novoMorador.senha || "").length < 12) {
@@ -141,7 +161,7 @@ function Moradores() {
     const payload = {
       apartmentId: novoMorador.apartamentoId,
       name: novoMorador.nome.trim(),
-      username: novoMorador.usuario.trim(),
+      username: novoMorador.usuario.trim() || usuarioAutomatico(),
       email: novoMorador.email?.trim() || null,
       whatsappOptIn: novoMorador.whatsappOptIn === true,
       phone: novoMorador.telefone?.trim() || null,
@@ -165,10 +185,63 @@ function Moradores() {
     } finally { setSaving(false); }
   }
 
+  // Reservas pendentes/aprovadas de hoje em diante feitas no nome do morador.
+  async function reservasAtivasDoMorador(morador) {
+    const userId = morador?.userId ?? morador?.user?.id;
+    if (!userId) return [];
+    try {
+      const resposta = await reservationApi.list();
+      const lista = Array.isArray(resposta) ? resposta : resposta?.items ?? [];
+      const hoje = hojeLocalISO();
+      return lista.filter((r) =>
+        r.requestedByUserId === userId &&
+        ["PENDING", "APPROVED"].includes(r.status) &&
+        String(r.reservationDate ?? r.date ?? "").slice(0, 10) >= hoje
+      );
+    } catch {
+      return [];
+    }
+  }
+
   async function excluirMorador(id) {
-    if (!await confirmDialog("Deseja realmente excluir este morador?")) return;
-    try { await residentApi.remove(id); await carregar(); }
-    catch (error) { notify(error?.message ?? "Não foi possível excluir o morador.", "error"); }
+    const morador = moradores.find((m) => m.id === id);
+    if (!await confirmDialog("Deseja realmente excluir este morador?", { title: "Excluir morador", danger: true, confirmText: "Excluir" })) return;
+    const reservas = await reservasAtivasDoMorador(morador);
+    let cancelarReservas = false;
+    if (reservas.length) {
+      const lista = reservas.slice(0, 5).map((r) => {
+        const [a, m, d] = String(r.reservationDate ?? r.date ?? "").slice(0, 10).split("-");
+        return `• ${r.commonArea?.name ?? "Área comum"} em ${d}/${m}/${a}${r.startTime ? ` às ${r.startTime}` : ""}`;
+      }).join("\n");
+      const extra = reservas.length > 5 ? `\n• e mais ${reservas.length - 5}` : "";
+      cancelarReservas = await confirmDialog(
+        `${morador?.nome ?? "Este morador"} possui ${reservas.length} reserva(s) ativa(s):\n${lista}${extra}\n\nDeseja cancelar essas reservas também? Se escolher manter, elas continuam na agenda das áreas comuns.`,
+        { title: "Reservas do morador", confirmText: "Cancelar reservas", cancelText: "Manter reservas" }
+      );
+    }
+    // As reservas são canceladas ANTES de excluir: depois da exclusão o usuário fica
+    // inativo e o backend recusa o aviso de cancelamento ao morador.
+    const falhas = [];
+    if (cancelarReservas) {
+      for (const r of reservas) {
+        try { await reservationApi.cancel(r.id); } catch { falhas.push(r); }
+      }
+    }
+    try {
+      await residentApi.remove(id);
+    } catch (error) {
+      notify(error?.message ?? "Não foi possível excluir o morador.", "error");
+      await carregar();
+      return;
+    }
+    if (cancelarReservas) {
+      notify(falhas.length
+        ? `Morador excluído. ${reservas.length - falhas.length} reserva(s) cancelada(s); ${falhas.length} não puderam ser canceladas — verifique em Reservas.`
+        : `Morador excluído e ${reservas.length} reserva(s) cancelada(s).`, falhas.length ? "error" : "success");
+    } else if (reservas.length) {
+      notify(`Morador excluído. ${reservas.length} reserva(s) mantida(s) na agenda.`, "info");
+    }
+    await carregar();
   }
 
   function editarMorador(morador) {
@@ -624,13 +697,13 @@ function Moradores() {
 
               <div style={styles.formRow}>
                 <label style={styles.label}>
-                  Usuário de login
+                  Usuário de login{!editId && !createAccess ? " (opcional)" : ""}
                 </label>
 
                 <input
-                  minLength="12"
-                  disabled={!!editId || !createAccess}
-                  placeholder="Ex: joao101"
+                  
+                  disabled={!!editId}
+                  placeholder={!editId && !createAccess ? "Deixe em branco para gerar automaticamente" : "Ex: joao101"}
                   value={novoMorador.usuario}
                   onChange={(e) =>
                     setNovoMorador({
