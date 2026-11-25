@@ -4,6 +4,7 @@ import {
 } from "react";
 
 import noticeApi from "../../Services/noticeApi.js";
+import { notify } from "../../components/GlobalDialogs.jsx";
 
 import {
   listarMinhasNotificacoes,
@@ -121,9 +122,9 @@ function AvisosMorador() {
           )
       );
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível carregar os avisos."
+        "Não foi possível carregar os avisos.", "error"
       );
     }
   }
@@ -223,9 +224,9 @@ function AvisosMorador() {
 
       await carregarAvisos();
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível marcar o aviso como lido."
+        "Não foi possível marcar o aviso como lido.", "error"
       );
     }
   }
@@ -494,7 +495,7 @@ function AvisosMorador() {
 
                   <div style={styles.meta}>
                     <span>Publicado em</span>
-                    <strong>{item.data}</strong>
+                    <strong style={{ color: "#3b2a4a" }}>{item.data}</strong>
                   </div>
 
                   {!item.lido &&
@@ -521,6 +522,105 @@ function AvisosMorador() {
 }
 
 const styles = {
+  // Estilos que eram usados nos cartões de aviso mas não existiam
+  // (o cartão aparecia sem formatação: ícone, prioridade e "Publicado em" colados).
+  filterCard: {
+    minWidth: 0,
+    background: "radial-gradient(circle at top right,rgb(var(--ic-primary-bright-rgb) / 0.08),transparent 34%),#ffffff",
+    borderRadius: "28px",
+    padding: "26px",
+    boxShadow: "0 18px 45px rgba(88,28,135,0.09)",
+    border: "1px solid var(--ic-primary-soft-2)",
+    display: "flex",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    gap: "16px",
+    marginBottom: "18px",
+  },
+
+  cardIconOrange: {
+    width: "54px",
+    height: "54px",
+    borderRadius: "18px",
+    background: "#ffedd5",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "27px",
+  },
+
+  resumeNumberOrange: {
+    margin: "8px 0 0",
+    color: "#c2410c",
+    fontSize: "34px",
+  },
+
+  noticeCard: {
+    minWidth: 0,
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
+    background: "#ffffff",
+    border: "1px solid var(--ic-primary-soft-2)",
+    borderRadius: "22px",
+    padding: "20px",
+    boxShadow: "0 10px 26px rgba(88,28,135,0.07)",
+  },
+
+  priorityBadge: {
+    marginLeft: "auto",
+    padding: "6px 12px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "800",
+    whiteSpace: "nowrap",
+  },
+
+  categoryBadge: {
+    background: "var(--ic-primary-soft)",
+    color: "var(--ic-primary-strong)",
+    padding: "7px 11px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "800",
+  },
+
+  readBadge: {
+    background: "#fef3c7",
+    color: "#92400e",
+    padding: "7px 11px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "800",
+  },
+
+  readBadgeDone: {
+    background: "#f3f4f6",
+    color: "#6b7280",
+  },
+
+  noticeTitle: {
+    margin: 0,
+    color: "#1f1235",
+    fontSize: "18px",
+    fontWeight: "900",
+    lineHeight: 1.3,
+    overflowWrap: "break-word",
+  },
+
+  meta: {
+    display: "flex",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: "6px",
+    marginTop: "auto",
+    paddingTop: "10px",
+    borderTop: "1px solid #f1ecf8",
+    color: "#6b7280",
+    fontSize: "13px",
+  },
+
   container: {
     width: "100%",
     minWidth: 0,

@@ -9,6 +9,7 @@ import {
 
 import packageApi from "../../Services/packageApi.js";
 import PackagePickupQr from "../../components/Morador/PackagePickupQr.jsx";
+import { notify } from "../../components/GlobalDialogs.jsx";
 
 function EncomendasMorador() {
   const [morador, setMorador] =
@@ -120,9 +121,9 @@ function EncomendasMorador() {
           )
       );
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível carregar suas encomendas."
+        "Não foi possível carregar suas encomendas.", "error"
       );
     }
   }
@@ -148,9 +149,9 @@ function EncomendasMorador() {
         null
       );
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível gerar o QR/código de retirada."
+        "Não foi possível gerar o QR/código de retirada.", "error"
       );
     } finally {
       setLoadingCredential(
@@ -899,13 +900,17 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: "18px",
-    marginBottom: "20px"
+    marginBottom: "20px",
+    flexWrap: "wrap"
   },
 
   filters: {
     minWidth: 0,
     display: "flex",
-    gap: "10px"
+    gap: "10px",
+    flexWrap: "wrap",
+    flex: "1 1 280px",
+    justifyContent: "flex-end"
   },
 
   search: {
@@ -914,7 +919,8 @@ const styles = {
     border: "1px solid var(--ic-primary-border)",
     outline: "none",
     background: "#fbfaff",
-    minWidth: "210px"
+    minWidth: 0,
+    flex: "1 1 180px"
   },
 
   filter: {
@@ -922,7 +928,8 @@ const styles = {
     borderRadius: "15px",
     border: "1px solid var(--ic-primary-border)",
     outline: "none",
-    background: "#fbfaff"
+    background: "#fbfaff",
+    flex: "0 0 auto"
   },
 
   empty: {

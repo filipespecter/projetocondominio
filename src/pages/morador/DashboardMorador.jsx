@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import dashboardApi from "../../Services/dashboardApi.js";
+import { normalizarMorador } from "../../utils/perfilMorador.js";
+import { notify } from "../../components/GlobalDialogs.jsx";
 
 function DashboardMorador() {
   const navigate = useNavigate();
@@ -12,8 +14,9 @@ function DashboardMorador() {
 
   async function carregarDashboard() {
     try {
-      const { dashboard, occurrences, me } = await dashboardApi.resident();
-      setMorador(me || null);
+      const { dashboard, occurrences, me: meBruto } = await dashboardApi.resident();
+      const me = normalizarMorador(meBruto);
+      setMorador(me);
       const indicators = dashboard?.indicators || {};
       const listaOcorrencias = Array.isArray(occurrences) ? occurrences : [];
       const resolvidas = listaOcorrencias.filter((item) => ["RESOLVED", "resolvida", "resolvido"].includes(String(item.status || ""))).length;
@@ -130,7 +133,7 @@ function DashboardMorador() {
           }}
           onClick={() => {
             if (morador?.permissoesMorador?.podeReservar === false) {
-              window.alert("Seu perfil está como dependente. A permissão de reserva pode ser liberada pelo condomínio.");
+              notify("Seu perfil está como dependente. A permissão de reserva pode ser liberada pelo condomínio.", "info");
               return;
             }
 
@@ -317,7 +320,7 @@ function DashboardMorador() {
             </span>
 
             <strong>
-              {morador?.apartamento || "-"}
+              {morador?.unidade || morador?.apartamento || "-"}
             </strong>
           </div>
 
@@ -787,6 +790,7 @@ const styles = {
     color: "var(--ic-primary-strong)",
     display: "flex",
     justifyContent: "space-between",
+    gap: "12px",
     alignItems: "center",
     fontWeight: "800"
   }

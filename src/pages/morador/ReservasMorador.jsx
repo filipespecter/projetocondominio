@@ -1,5 +1,5 @@
 import api from "../../Services/api.js";
-import { confirmDialog } from "../../components/GlobalDialogs.jsx";
+import { confirmDialog, notify } from "../../components/GlobalDialogs.jsx";
 import {
   useEffect,
   useState,
@@ -164,9 +164,9 @@ function ReservasMorador() {
           .map(mapArea)
       );
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível carregar as reservas."
+        "Não foi possível carregar as reservas.", "error"
       );
     }
   }
@@ -203,17 +203,22 @@ function ReservasMorador() {
       !horario ||
       !horarioFim
     ) {
-      alert(
-        "Preencha área, data, horário inicial e horário final."
+      notify(
+        "Preencha área, data, horário inicial e horário final.", "error"
       );
+      return;
+    }
+
+    if (String(horarioFim) <= String(horario)) {
+      notify("O horário final deve ser depois do horário inicial.", "error");
       return;
     }
 
     if (
       !possuiPermissaoReserva()
     ) {
-      alert(
-        "Seu perfil não possui permissão para realizar reservas."
+      notify(
+        "Seu perfil não possui permissão para realizar reservas.", "error"
       );
       return;
     }
@@ -242,13 +247,17 @@ function ReservasMorador() {
       limparFormulario();
       await carregar();
 
-      alert(
-        "Reserva enviada para análise da administração."
+      notify(
+        "Reserva enviada para análise da administração.", "success"
       );
     } catch (error) {
-      alert(
-        error?.message ??
-        "Não foi possível solicitar a reserva."
+      const detalhe = Array.isArray(error?.details)
+        ? error.details.map((d) => d?.message).filter(Boolean).join(" ")
+        : "";
+      notify(
+        detalhe ||
+        error?.message ||
+        "Não foi possível solicitar a reserva.", "error"
       );
     }
   }
@@ -268,9 +277,9 @@ function ReservasMorador() {
 
       await carregar();
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível cancelar a reserva."
+        "Não foi possível cancelar a reserva.", "error"
       );
     }
   }
@@ -737,7 +746,7 @@ function ReservasMorador() {
                           </span>
 
                           <span style={styles.dateBadge}>
-                            📅 {item.data}
+                            📅 {item.data ? item.data.split("-").reverse().join("/") : "-"}
                           </span>
 
                           <span style={styles.dateBadge}>
@@ -1153,13 +1162,17 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: "18px",
-    marginBottom: "20px"
+    marginBottom: "20px",
+    flexWrap: "wrap"
   },
 
   filters: {
     minWidth: 0,
     display: "flex",
-    gap: "10px"
+    gap: "10px",
+    flexWrap: "wrap",
+    flex: "1 1 280px",
+    justifyContent: "flex-end"
   },
 
   search: {
@@ -1168,7 +1181,8 @@ const styles = {
     border: "1px solid var(--ic-primary-border)",
     outline: "none",
     background: "#fbfaff",
-    minWidth: "210px"
+    minWidth: 0,
+    flex: "1 1 180px"
   },
 
   filter: {
@@ -1176,7 +1190,8 @@ const styles = {
     borderRadius: "15px",
     border: "1px solid var(--ic-primary-border)",
     outline: "none",
-    background: "#fbfaff"
+    background: "#fbfaff",
+    flex: "0 0 auto"
   },
 
   empty: {

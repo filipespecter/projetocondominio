@@ -14,6 +14,8 @@ import logoStar from "../assets/images/logo-star-infinity.png";
 import authApi from "../Services/authApi.js";
 import { buildCondominiumThemeVariables } from "../utils/condominiumTheme.js";
 import NotificationCenter from "../components/NotificationCenter.jsx";
+import { useValidacaoEstilizada } from "../utils/validacaoEstilizada.js";
+import "../styles/moradorAjustes.css";
 
 function DashboardMoradorLayout() {
 
@@ -29,6 +31,9 @@ function DashboardMoradorLayout() {
   ========================= */
 
   const [themeVariables, setThemeVariables] = useState(() => buildCondominiumThemeVariables());
+
+  // Avisos de campos obrigatórios no padrão visual do sistema (sem balão nativo do navegador).
+  useValidacaoEstilizada();
 
   useEffect(() => {
     let mounted = true;
@@ -116,7 +121,7 @@ function DashboardMoradorLayout() {
 
   return (
 
-    <div className="app-dashboard-shell" style={{ ...styles.container, ...themeVariables }}>
+    <div className="app-dashboard-shell ic-morador-shell" style={{ ...styles.container, ...themeVariables }}>
 
       
       <NotificationCenter />

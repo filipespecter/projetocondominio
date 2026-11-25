@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import privateServiceRequestApi from "../../Services/privateServiceRequestApi.js";
+import { mascaraDocumento, mascaraTelefone } from "../../utils/mascaras.js";
 import "../../styles/infinityModules.css";
 
 const initial = {
@@ -111,8 +112,8 @@ export default function ServicosApartamentoMorador() {
         </div>
         <div className="icm-form-grid">
           <Field label="Nome do profissional *"><input className="icm-input" required minLength={2} value={form.providerName} onChange={(e) => setForm({ ...form, providerName: e.target.value })} /></Field>
-          <Field label="Telefone"><input className="icm-input" value={form.providerPhone} onChange={(e) => setForm({ ...form, providerPhone: e.target.value })} placeholder="(81) 99999-9999" /></Field>
-          <Field label="CPF / documento"><input className="icm-input" value={form.providerDocument} onChange={(e) => setForm({ ...form, providerDocument: e.target.value })} /></Field>
+          <Field label="Telefone"><input className="icm-input" inputMode="tel" maxLength={20} value={form.providerPhone} onChange={(e) => setForm({ ...form, providerPhone: mascaraTelefone(e.target.value) })} placeholder="(81) 99999-9999" /></Field>
+          <Field label="CPF / documento"><input className="icm-input" maxLength={30} placeholder="CPF, CNPJ ou RG" value={form.providerDocument} onChange={(e) => setForm({ ...form, providerDocument: mascaraDocumento(e.target.value) })} /></Field>
           <Field label="Empresa / nome profissional"><input className="icm-input" value={form.providerCompany} onChange={(e) => setForm({ ...form, providerCompany: e.target.value })} placeholder="Opcional — pode ser freelancer" /></Field>
           <Field label="Tipo de serviço *"><input className="icm-input" required minLength={2} value={form.serviceType} onChange={(e) => setForm({ ...form, serviceType: e.target.value })} placeholder="Ex.: Elétrica, internet, montagem" /></Field>
           <Field label="Data prevista *"><input className="icm-input" type="date" required value={form.scheduledDate} onChange={(e) => setForm({ ...form, scheduledDate: e.target.value })} /></Field>

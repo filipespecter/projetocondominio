@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { me as getAuthenticatedUser } from "../../Services/authApi.js";
 import occurrenceApi from "../../Services/occurrenceApi.js";
+import { notify } from "../../components/GlobalDialogs.jsx";
+import { normalizarMorador } from "../../utils/perfilMorador.js";
 
 function SugestoesMorador() {
   const estadoInicial={tipo:"Reclamação",categoria:"",prioridade:"Média",titulo:"",descricao:""};
@@ -14,10 +16,10 @@ function SugestoesMorador() {
   const priorityBack={"Baixa":"LOW","Média":"MEDIUM","Alta":"HIGH","Urgente":"URGENT"};
   const statusFront={NEW:"Novo",FORWARDED:"Novo",IN_REVIEW:"Ciente",IN_PROGRESS:"Em Tratamento",RESOLVED:"Resolvido",CLOSED:"Resolvido",CANCELED:"Cancelado"};
   function mapItem(i){const replies=(i.replies??[]).filter(r=>!r.internal).map(r=>({texto:r.message,data:r.createdAt,autor:r.author?.name??"Síndico"}));return {...i,tipo:i.type==="SUGGESTION"?"Sugestão":"Reclamação",tipoRegistro:i.type,categoria:i.category??"",prioridade:i.priority==="LOW"?"Baixa":i.priority==="HIGH"?"Alta":i.priority==="URGENT"?"Urgente":"Média",titulo:i.title??"",descricao:i.description??"",status:statusFront[i.status]??i.status,apartamento:i.apartment?.number??"",moradorNome:i.createdBy?.name??"",data:i.createdAt?new Date(i.createdAt).toLocaleDateString("pt-BR"):"",hora:i.createdAt?new Date(i.createdAt).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}):"",respostasSindico:replies,respostaSindico:i.resolution??null};}
-  async function carregar(){try{const [u,data]=await Promise.all([getAuthenticatedUser(),occurrenceApi.my()]);setMorador(u);setOcorrencias((data??[]).map(mapItem));}catch(e){alert(e?.message??"Não foi possível carregar suas solicitações.");}}
+  async function carregar(){try{const [u,data]=await Promise.all([getAuthenticatedUser(),occurrenceApi.my()]);setMorador(normalizarMorador(u));setOcorrencias((data??[]).map(mapItem));}catch(e){notify(e?.message??"Não foi possível carregar suas solicitações.","error");}}
   useEffect(()=>{carregar();},[]);
   function limparFormulario(){setForm(estadoInicial);}
-  async function enviarSolicitacao(){if(enviando.current)return;if(!form.categoria||String(form.titulo).trim().length<3||String(form.descricao).trim().length<5){alert("Preencha categoria, título e descrição.");return;}enviando.current=true;try{await occurrenceApi.create({type:typeBack[form.tipo]??"COMPLAINT",category:form.categoria,priority:priorityBack[form.prioridade]??"MEDIUM",title:form.titulo.trim(),description:form.descricao.trim()});limparFormulario();await carregar();alert("Solicitação enviada ao síndico.");}catch(e){alert(e?.message??"Não foi possível enviar sua solicitação.");}finally{enviando.current=false;}}
+  async function enviarSolicitacao(){if(enviando.current)return;if(!form.categoria||String(form.titulo).trim().length<3||String(form.descricao).trim().length<5){notify("Preencha categoria, título e descrição.","error");return;}enviando.current=true;try{await occurrenceApi.create({type:typeBack[form.tipo]??"COMPLAINT",category:form.categoria,priority:priorityBack[form.prioridade]??"MEDIUM",title:form.titulo.trim(),description:form.descricao.trim()});limparFormulario();await carregar();notify("Solicitação enviada ao síndico.","success");}catch(e){notify(e?.message??"Não foi possível enviar sua solicitação.","error");}finally{enviando.current=false;}}
   function obterStatus(status){if(status==="Resolvido")return{texto:"Resolvido",fundo:"#dcfce7",cor:"#166534"};if(status==="Ciente")return{texto:"Ciente",fundo:"#dbeafe",cor:"#1d4ed8"};if(status==="Em Tratamento")return{texto:"Em Tratamento",fundo:"var(--ic-primary-soft-2)",cor:"var(--ic-primary-strong)"};if(status==="Cancelado")return{texto:"Cancelado",fundo:"#fee2e2",cor:"#b91c1c"};return{texto:"Novo",fundo:"#fef3c7",cor:"#92400e"};}
   const minhasSolicitacoes=ocorrencias.filter(i=>{const t=busca.toLowerCase();const ok=!t||i.titulo?.toLowerCase().includes(t)||i.descricao?.toLowerCase().includes(t)||i.categoria?.toLowerCase().includes(t);return ok&&(filtroStatus==="Todos"||obterStatus(i.status).texto===filtroStatus);});
   const pendentes=ocorrencias.filter(i=>!["Resolvido","Cancelado"].includes(i.status)).length;
@@ -52,7 +54,7 @@ function SugestoesMorador() {
               </span>
 
               <span style={styles.apBadge}>
-                Apto {morador.apartamento || morador.apto || "-"}
+                {morador.unidade || `Apto ${morador.apartamento || morador.apto || "-"}`}
               </span>
 
               <span style={styles.apBadge}>
