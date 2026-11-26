@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
+import { notify } from "../../components/GlobalDialogs.jsx";
 import authApi from "../../Services/authApi.js";
+import { mascaraDocumento, mascaraTelefone } from "../../utils/mascaras.js";
+import { rotuloUnidade } from "../../utils/unidade.js";
+import { dataHora } from "../../utils/porteiro.js";
 import visitorApi from "../../Services/visitorApi.js";
 import QrCameraScanner from "../../components/Porteiro/QrCameraScanner.jsx";
 
@@ -9,7 +13,8 @@ function VisitantesPorteiro() {
     apartamento: "",
     observacao: "",
     tipoVisitante: "Pessoa comum",
-    documento: ""
+    documento: "",
+    telefone: ""
   };
 
   const [visitantes, setVisitantes] = useState([]);
@@ -30,8 +35,8 @@ function VisitantesPorteiro() {
     AUTHORIZED: "Autorizado",
     INSIDE: "Em Visita",
     EXITED: "Saiu",
-    DENIED: "Bloqueado",
-    CANCELED: "Bloqueado",
+    DENIED: "Recusado",
+    CANCELED: "Cancelado",
   };
 
   function mapResident(r) {
@@ -71,6 +76,23 @@ function VisitantesPorteiro() {
         v.apartment?.number ??
         resident?.apartamento ??
         "",
+      unidade:
+        rotuloUnidade(v.apartment) ||
+        (v.apartment?.number ? `Apto ${v.apartment.number}` : "-"),
+      entrada:
+        v.enteredAt ? dataHora(v.enteredAt) : "",
+      saida:
+        v.exitedAt ? dataHora(v.exitedAt) : "",
+      convidadoPor:
+        v.invitedBy?.user?.name ??
+        v.invitedBy?.name ??
+        "",
+      autorizadoPor:
+        v.authorizedBy?.name ??
+        v.authorizedBy?.user?.name ??
+        "",
+      statusBackend:
+        v.status,
       apartamentoId:
         v.apartmentId ??
         v.apartment?.id ??
@@ -88,7 +110,7 @@ function VisitantesPorteiro() {
         "Aguardando",
       data:
         v.createdAt
-          ? new Date(v.createdAt).toLocaleString("pt-BR")
+          ? dataHora(v.createdAt)
           : "",
     };
   }
@@ -140,10 +162,9 @@ function VisitantesPorteiro() {
         )
       );
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível carregar a portaria."
-      );
+        "Não foi possível carregar a portaria.", "error");
     }
   }
 
@@ -197,7 +218,7 @@ function VisitantesPorteiro() {
     return (
       apartamentos.find(
         (ap) =>
-          String(ap.numero) ===
+          String(ap.id) ===
           String(apartamento)
       ) ?? {}
     );
@@ -208,9 +229,16 @@ function VisitantesPorteiro() {
       form.nome.trim().length < 2 ||
       !form.apartamento
     ) {
-      alert(
-        "Informe nome e apartamento."
-      );
+      notify(
+        "Informe nome e apartamento.", "error");
+      return;
+    }
+
+    if (
+      form.tipoVisitante === "Prestador de serviço" &&
+      !form.documento?.trim()
+    ) {
+      notify("Informe o documento do prestador de serviço.", "error");
       return;
     }
 
@@ -220,9 +248,8 @@ function VisitantesPorteiro() {
       );
 
     if (!apartment?.id) {
-      alert(
-        "Apartamento não encontrado."
-      );
+      notify(
+        "Apartamento não encontrado.", "error");
       return;
     }
 
@@ -235,7 +262,9 @@ function VisitantesPorteiro() {
         document:
           form.documento?.trim() ||
           null,
-        phone: null,
+        phone:
+          form.telefone?.trim() ||
+          null,
         visitType:
           form.tipoVisitante?.trim() ||
           null,
@@ -250,10 +279,9 @@ function VisitantesPorteiro() {
       limparFormulario();
       await carregarDados();
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível cadastrar o visitante."
-      );
+        "Não foi possível cadastrar o visitante.", "error");
     }
   }
 
@@ -282,18 +310,12 @@ function VisitantesPorteiro() {
 
       await carregarDados();
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível alterar o status."
-      );
+        "Não foi possível alterar o status.", "error");
     }
   }
 
-  function excluirVisitante() {
-    alert(
-      "A exclusão de visitante é restrita ao síndico/administrador."
-    );
-  }
 
   function obterStatus(status) {
     if (status === "Aguardando") {
@@ -328,9 +350,17 @@ function VisitantesPorteiro() {
       };
     }
 
-    if (status === "Bloqueado") {
+    if (status === "Cancelado") {
       return {
-        texto: "Bloqueado",
+        texto: "Cancelado",
+        fundo: "#f3f4f6",
+        cor: "#4b5563"
+      };
+    }
+
+    if (status === "Recusado" || status === "Bloqueado") {
+      return {
+        texto: "Recusado",
         fundo: "#fee2e2",
         cor: "#b91c1c"
       };
@@ -429,7 +459,7 @@ function VisitantesPorteiro() {
         </div>
       </div>
 
-      <div style={styles.cards}>
+      <div className="ic-por-stats" style={styles.cards}>
         <div style={styles.cardPrimary}>
           <div>
             <p style={styles.cardLabelLight}>
@@ -518,17 +548,18 @@ function VisitantesPorteiro() {
 
         <div style={styles.formGrid}>
           <input
-            placeholder="Credencial do QR"
+            placeholder="Cole ou digite a credencial do QR"
+            aria-label="Credencial do QR"
             value={qrToken}
             onChange={(e) => setQrToken(e.target.value)}
             style={styles.input}
             autoComplete="off"
           />
 
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: "10px", alignItems: "stretch" }}>
             <button
               type="button"
-              style={styles.button}
+              style={{ ...styles.button, marginTop: 0 }}
               disabled={qrValidando}
               onClick={() => validarConviteQr()}
             >
@@ -537,7 +568,7 @@ function VisitantesPorteiro() {
 
             <button
               type="button"
-              style={styles.gray}
+              style={{ ...styles.gray, padding: "15px", borderRadius: "16px", fontWeight: "800" }}
               onClick={() => {
                 setQrMensagem(null);
                 setQrCameraAtiva((value) => !value);
@@ -616,81 +647,82 @@ function VisitantesPorteiro() {
         </div>
 
         <div style={styles.formGrid}>
-          <input
-            placeholder="Nome do visitante"
-            value={form.nome}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                nome: e.target.value
-              })
-            }
-            style={styles.input}
-          />
+          <label style={styles.field}>
+            <span style={styles.fieldLabel}>Nome do visitante *</span>
+            <input
+              required
+              minLength={2}
+              placeholder="Ex.: Maria Souza"
+              value={form.nome}
+              onChange={(e) => setForm({ ...form, nome: e.target.value })}
+              style={styles.input}
+            />
+          </label>
 
-          <select
-            value={form.apartamento}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                apartamento: e.target.value
-              })
-            }
-            style={styles.input}
-          >
-            <option value="">
-              Selecione o apartamento
-            </option>
+          <label style={styles.field}>
+            <span style={styles.fieldLabel}>Apartamento *</span>
+            <select
+              required
+              value={form.apartamento}
+              onChange={(e) => setForm({ ...form, apartamento: e.target.value })}
+              style={styles.input}
+            >
+              <option value="">Selecione o apartamento</option>
+              {apartamentos.map((ap) => (
+                <option key={ap.id} value={ap.id}>
+                  {ap.bloco ? `Bloco ${ap.bloco} · ` : ""}Apto {ap.numero}
+                </option>
+              ))}
+            </select>
+          </label>
 
-            {apartamentos.map((ap) => (
-              <option key={ap.id} value={ap.numero}>
-                {ap.bloco ? `Bloco ${ap.bloco} · ` : ""}Apartamento {ap.numero}
-              </option>
-            ))}
-          </select>
+          <label style={styles.field}>
+            <span style={styles.fieldLabel}>Tipo de visita</span>
+            <select
+              value={form.tipoVisitante}
+              onChange={(e) => setForm({ ...form, tipoVisitante: e.target.value })}
+              style={styles.input}
+            >
+              <option>Pessoa comum</option>
+              <option>Prestador de serviço</option>
+            </select>
+          </label>
 
-          <select
-            value={form.tipoVisitante}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                tipoVisitante: e.target.value
-              })
-            }
-            style={styles.input}
-          >
-            <option>Pessoa comum</option>
-            <option>Prestador de serviço</option>
-          </select>
+          <label style={styles.field}>
+            <span style={styles.fieldLabel}>
+              Documento{form.tipoVisitante === "Prestador de serviço" ? " *" : " (opcional)"}
+            </span>
+            <input
+              maxLength={20}
+              placeholder="CPF ou RG"
+              value={form.documento}
+              onChange={(e) => setForm({ ...form, documento: mascaraDocumento(e.target.value) })}
+              style={styles.input}
+            />
+          </label>
 
-          <input
-            placeholder={
-              form.tipoVisitante === "Prestador de serviço"
-                ? "Documento obrigatório"
-                : "Documento opcional"
-            }
-            value={form.documento}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                documento: e.target.value
-              })
-            }
-            style={styles.input}
-          />
+          <label style={styles.field}>
+            <span style={styles.fieldLabel}>Telefone (opcional)</span>
+            <input
+              inputMode="tel"
+              maxLength={20}
+              placeholder="(85) 99999-9999"
+              value={form.telefone}
+              onChange={(e) => setForm({ ...form, telefone: mascaraTelefone(e.target.value) })}
+              style={styles.input}
+            />
+          </label>
         </div>
 
-        <textarea
-          placeholder="Observação sobre a visita"
-          value={form.observacao}
-          onChange={(e) =>
-            setForm({
-              ...form,
-              observacao: e.target.value
-            })
-          }
-          style={styles.textarea}
-        />
+        <label style={{ ...styles.field, marginTop: "14px" }}>
+          <span style={styles.fieldLabel}>Observação</span>
+          <textarea
+            placeholder="Ex.: Entrega de documentos, aguardar na recepção"
+            value={form.observacao}
+            onChange={(e) => setForm({ ...form, observacao: e.target.value })}
+            style={{ ...styles.textarea, marginTop: 0 }}
+          />
+        </label>
 
         <button
           style={styles.button}
@@ -734,7 +766,8 @@ function VisitantesPorteiro() {
               <option value="Autorizado">Autorizado</option>
               <option value="Em Visita">Em Visita</option>
               <option value="Saiu">Saiu</option>
-              <option value="Bloqueado">Bloqueado</option>
+              <option value="Recusado">Recusado</option>
+              <option value="Cancelado">Cancelado</option>
             </select>
           </div>
         </div>
@@ -787,54 +820,33 @@ function VisitantesPorteiro() {
 
                   <div style={styles.infoGrid}>
                     <div style={styles.infoItem}>
-                      <span style={styles.infoLabel}>
-                        Apartamento
-                      </span>
-
-                      <strong>
-                        {item.apartamento}
-                      </strong>
+                      <span style={styles.infoLabel}>Unidade</span>
+                      <strong>{item.unidade}</strong>
                     </div>
 
                     <div style={styles.infoItem}>
-                      <span style={styles.infoLabel}>
-                        Morador
-                      </span>
-
-                      <strong>
-                        {item.morador || "-"}
-                      </strong>
+                      <span style={styles.infoLabel}>Morador</span>
+                      <strong>{item.morador || "-"}</strong>
                     </div>
 
                     <div style={styles.infoItem}>
-                      <span style={styles.infoLabel}>
-                        Tipo
-                      </span>
-
-                      <strong>
-                        {item.tipoVisitante}
-                      </strong>
+                      <span style={styles.infoLabel}>Tipo</span>
+                      <strong>{item.tipoVisitante}</strong>
                     </div>
 
-                    <div style={styles.infoItem}>
-                      <span style={styles.infoLabel}>
-                        Entrada
-                      </span>
+                    {item.entrada && (
+                      <div style={styles.infoItem}>
+                        <span style={styles.infoLabel}>Entrada</span>
+                        <strong>{item.entrada}</strong>
+                      </div>
+                    )}
 
-                      <strong>
-                        {item.horarioEntrada}
-                      </strong>
-                    </div>
-
-                    <div style={styles.infoItem}>
-                      <span style={styles.infoLabel}>
-                        Saída
-                      </span>
-
-                      <strong>
-                        {item.horarioSaida || "-"}
-                      </strong>
-                    </div>
+                    {item.saida && (
+                      <div style={styles.infoItem}>
+                        <span style={styles.infoLabel}>Saída</span>
+                        <strong>{item.saida}</strong>
+                      </div>
+                    )}
                   </div>
 
                   {item.documento && (
@@ -850,50 +862,40 @@ function VisitantesPorteiro() {
                   )}
 
                   <p style={styles.porteiroInfo}>
-                    Registrado por{" "}
-                    <strong>
-                      {item.porteiro || "Porteiro"}
-                    </strong>{" "}
-                    • Turno {item.turno || "-"}
+                    {item.convidadoPor
+                      ? <>Convite de <strong>{item.convidadoPor}</strong></>
+                      : <>Registrado na portaria</>}
+                    {" • "}{item.data || "-"}
+                    {item.autorizadoPor && <> • Autorizado por <strong>{item.autorizadoPor}</strong></>}
                   </p>
 
-                  <div style={styles.actions}>
-                    <button
-                      style={styles.blue}
-                      onClick={() =>
-                        alterarStatus(item.id, "Autorizado")
-                      }
-                    >
-                      Autorizar
-                    </button>
+                  {/* Ações conforme a situação do visitante */}
+                  {["WAITING", "AUTHORIZED", "INSIDE"].includes(item.statusBackend) && (
+                    <div style={styles.actions}>
+                      {item.statusBackend === "WAITING" && (
+                        <>
+                          <button style={styles.blue} onClick={() => alterarStatus(item.id, "Autorizado")}>
+                            Autorizar
+                          </button>
+                          <button style={styles.red} onClick={() => alterarStatus(item.id, "Bloqueado")}>
+                            Recusar
+                          </button>
+                        </>
+                      )}
 
-                    <button
-                      style={styles.green}
-                      onClick={() =>
-                        alterarStatus(item.id, "Em Visita")
-                      }
-                    >
-                      Entrada
-                    </button>
+                      {item.statusBackend === "AUTHORIZED" && (
+                        <button style={{ ...styles.green, gridColumn: "1 / -1" }} onClick={() => alterarStatus(item.id, "Em Visita")}>
+                          Registrar entrada
+                        </button>
+                      )}
 
-                    <button
-                      style={styles.gray}
-                      onClick={() =>
-                        alterarStatus(item.id, "Saiu")
-                      }
-                    >
-                      Saída
-                    </button>
-
-                    <button
-                      style={styles.red}
-                      onClick={() =>
-                        excluirVisitante(item.id)
-                      }
-                    >
-                      Excluir
-                    </button>
-                  </div>
+                      {item.statusBackend === "INSIDE" && (
+                        <button style={{ ...styles.gray, gridColumn: "1 / -1" }} onClick={() => alterarStatus(item.id, "Saiu")}>
+                          Registrar saída
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -1160,6 +1162,19 @@ const styles = {
     fontSize: "12px",
     fontWeight: "800",
     whiteSpace: "nowrap"
+  },
+
+  field: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "6px",
+    minWidth: 0
+  },
+
+  fieldLabel: {
+    fontSize: "12px",
+    fontWeight: "800",
+    color: "#4b5563"
   },
 
   formGrid: {

@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
+import { notify } from "../GlobalDialogs.jsx";
 import packageApi from "../../Services/packageApi.js";
+import occurrenceApi from "../../Services/occurrenceApi.js";
+import { rotuloUnidade } from "../../utils/unidade.js";
 import PackageModal from "./PackageModal";
 
 export default function ApartmentGrid({ onRefresh }) {
   const [selectedAp, setSelectedAp] = useState(null);
   const [encomendas, setEncomendas] = useState([]);
   const [moradores, setMoradores] = useState([]);
+  const [ocorrencias, setOcorrencias] = useState([]);
   const [apartamentosData, setApartamentosData] = useState([]);
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState("todos");
@@ -21,6 +25,10 @@ export default function ApartmentGrid({ onRefresh }) {
         packageApi.apartmentsDirectory(),
         packageApi.residentsDirectory(),
       ]);
+
+      // Ocorrências em aberto por apartamento (falha aqui não impede o mapa).
+      const occurrenceData = await occurrenceApi.list().catch(() => []);
+      setOcorrencias(Array.isArray(occurrenceData) ? occurrenceData : []);
 
       const mappedResidents =
         (residentData ?? []).map(
@@ -67,17 +75,12 @@ export default function ApartmentGrid({ onRefresh }) {
       );
 
       setEncomendas(
-        mappedPackages.filter(
-          (item) =>
-            item.status !==
-            "aguardando"
-        )
+        mappedPackages
       );
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível carregar o mapa operacional."
-      );
+        "Não foi possível carregar o mapa operacional.", "error");
     }
   }
 
@@ -85,57 +88,55 @@ export default function ApartmentGrid({ onRefresh }) {
     carregarDados();
   }, []);
 
+  // Cada apartamento é identificado pelo id (o mesmo número pode existir
+  // em blocos diferentes, ex.: 101 do Bloco A e 101 do Bloco B).
   const apartamentos =
     apartamentosData
-      .map(
-        (item) =>
-          String(
-            item.number ?? ""
-          ).trim()
-      )
-      .filter(Boolean)
+      .map((item) => ({
+        id: item.id,
+        numero: String(item.number ?? "").trim(),
+        bloco: String(item.block ?? "").trim(),
+        rotulo: rotuloUnidade(item),
+      }))
+      .filter((ap) => ap.id && ap.numero)
       .sort((a, b) =>
-        String(a).localeCompare(
-          String(b),
-          "pt-BR",
-          { numeric: true }
-        )
+        a.bloco.localeCompare(b.bloco, "pt-BR", { numeric: true }) ||
+        a.numero.localeCompare(b.numero, "pt-BR", { numeric: true })
       );
 
+  const doApartamento = (item, ap) =>
+    String(item.apartmentId ?? item.apartment?.id ?? item.apartamentoId ?? "") ===
+    String(ap.id);
+
   function obterMorador(ap) {
-    return (
-      moradores.find(
-        (m) =>
-          String(m.apartamento) ===
-          String(ap)
-      ) ?? null
-    );
+    const daUnidade = moradores.filter((m) => doApartamento(m, ap));
+    return daUnidade.find((m) => m.isPrimary) ?? daUnidade[0] ?? null;
   }
 
   function contarPendentes(ap) {
     return encomendas.filter(
-      (e) =>
-        String(e.apartamento) ===
-          String(ap) &&
-        e.status === "recebido"
+      (e) => doApartamento(e, ap) && e.status === "recebido"
     ).length;
   }
 
   function contarRetiradas(ap) {
     return encomendas.filter(
-      (e) =>
-        String(e.apartamento) ===
-          String(ap) &&
-        e.status === "entregue"
+      (e) => doApartamento(e, ap) && e.status === "entregue"
     ).length;
   }
 
-  function contarEsperadas() {
-    return 0;
+  function contarEsperadas(ap) {
+    return encomendas.filter(
+      (e) => doApartamento(e, ap) && e.status === "aguardando"
+    ).length;
   }
 
-  function contarOcorrencias() {
-    return 0;
+  function contarOcorrencias(ap) {
+    return ocorrencias.filter(
+      (o) =>
+        doApartamento(o, ap) &&
+        !["RESOLVED", "CANCELED"].includes(String(o.status || "").toUpperCase())
+    ).length;
   }
 
   function definirStatus(ap) {
@@ -189,7 +190,10 @@ export default function ApartmentGrid({ onRefresh }) {
         busca.toLowerCase();
 
       const matchBusca =
-        ap.toLowerCase().includes(
+        ap.rotulo.toLowerCase().includes(
+          textoBusca
+        ) ||
+        ap.numero.toLowerCase().includes(
           textoBusca
         ) ||
         morador?.nome
@@ -218,7 +222,10 @@ export default function ApartmentGrid({ onRefresh }) {
       }
 
       if (filtro === "ocorrencias") {
-        return false;
+        return (
+          contarOcorrencias(ap) > 0 &&
+          matchBusca
+        );
       }
 
       return matchBusca;
@@ -240,7 +247,13 @@ export default function ApartmentGrid({ onRefresh }) {
       0
     );
 
-  const totalOcorrencias = 0;
+  const totalOcorrencias =
+    apartamentos.reduce(
+      (total, ap) =>
+        total +
+        contarOcorrencias(ap),
+      0
+    );
 
 
   return (
@@ -317,7 +330,7 @@ export default function ApartmentGrid({ onRefresh }) {
 
           return (
             <div
-              key={ap}
+              key={ap.id}
               style={{
                 ...styles.card,
                 border: `1px solid ${status.borda}`
@@ -333,8 +346,8 @@ export default function ApartmentGrid({ onRefresh }) {
 
               <div style={styles.cardHeader}>
                 <div>
-                  <p style={styles.apLabel}>Apartamento</p>
-                  <div style={styles.number}>{ap}</div>
+                  <p style={styles.apLabel}>{ap.bloco ? `Bloco ${ap.bloco}` : "Apartamento"}</p>
+                  <div style={styles.number}>{ap.numero}</div>
                 </div>
 
                 <div
@@ -359,8 +372,8 @@ export default function ApartmentGrid({ onRefresh }) {
                 </div>
               </div>
 
-              <div style={styles.metrics}>
-                <div style={styles.metric}>
+              <div className="ic-apt-metrics" style={styles.metrics}>
+                <div className="ic-apt-metric" style={styles.metric}>
                   <span style={styles.metricIconYellow}>📦</span>
 
                   <div>
@@ -369,7 +382,7 @@ export default function ApartmentGrid({ onRefresh }) {
                   </div>
                 </div>
 
-                <div style={styles.metric}>
+                <div className="ic-apt-metric" style={styles.metric}>
                   <span style={styles.metricIconBlue}>📬</span>
 
                   <div>
@@ -378,7 +391,7 @@ export default function ApartmentGrid({ onRefresh }) {
                   </div>
                 </div>
 
-                <div style={styles.metric}>
+                <div className="ic-apt-metric" style={styles.metric}>
                   <span style={styles.metricIconGreen}>✅</span>
 
                   <div>
@@ -387,7 +400,7 @@ export default function ApartmentGrid({ onRefresh }) {
                   </div>
                 </div>
 
-                <div style={styles.metric}>
+                <div className="ic-apt-metric" style={styles.metric}>
                   <span style={styles.metricIconRed}>📘</span>
 
                   <div>
@@ -421,7 +434,9 @@ export default function ApartmentGrid({ onRefresh }) {
 
       {selectedAp && (
         <PackageModal
-          apartamento={selectedAp}
+          apartamento={selectedAp.numero}
+          apartmentIdSelecionado={selectedAp.id}
+          rotulo={selectedAp.rotulo}
           onClose={() => {
             setSelectedAp(null);
             carregarDados();

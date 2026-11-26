@@ -65,3 +65,16 @@
   .ic-morador-shell .ic-feature-panel{padding:20px}
   .ic-morador-shell .ic-feature-panel h1{font-size:22px}
 }
+
+/* ---------- Barra lateral no padrão do síndico (computador) ----------
+   Antes ela crescia junto com a página e o "Sair"/rodapé mudava de lugar
+   conforme a tela. Agora: presa no topo, altura da tela, itens em
+   sequência e rolagem própria quando o menu não cabe. */
+@media (min-width:1025px){
+  .ic-morador-shell .app-dashboard-sidebar{
+    position:sticky!important;top:0;align-self:flex-start;
+    height:100vh!important;min-height:100vh!important;
+    justify-content:flex-start!important;
+    overflow-y:auto!important;overflow-x:hidden!important;
+  }
+}

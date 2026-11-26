@@ -7,13 +7,16 @@ import {
   useLocation
 } from "react-router-dom";
 
-import { FiPackage, FiClipboard, FiUsers, FiLogOut, FiBook, FiPieChart, FiFileText, FiHome } from "react-icons/fi";
+import { FiPackage, FiClipboard, FiUsers, FiLogOut, FiBook, FiPieChart, FiFileText, FiHome, FiRepeat } from "react-icons/fi";
 
 import { useEffect, useState } from "react";
 import logoStar from "../assets/images/logo-star-infinity.png";
 import authApi from "../Services/authApi.js";
 import { buildCondominiumThemeVariables } from "../utils/condominiumTheme.js";
 import NotificationCenter from "../components/NotificationCenter.jsx";
+import { useValidacaoEstilizada } from "../utils/validacaoEstilizada.js";
+import { rotuloTurno } from "../utils/porteiro.js";
+import "../styles/porteiroAjustes.css";
 
 function DashboardPorteiroLayout() {
 
@@ -29,6 +32,7 @@ function DashboardPorteiroLayout() {
   ========================= */
 
   const [themeVariables, setThemeVariables] = useState(() => buildCondominiumThemeVariables());
+  useValidacaoEstilizada();
 
   useEffect(() => {
     let mounted = true;
@@ -64,9 +68,10 @@ function DashboardPorteiroLayout() {
             user.name ??
             "Porteiro",
           turno:
-            user.doorman
-              ?.shift ??
-            "",
+            rotuloTurno(
+              user.doorman
+                ?.shift
+            ),
         });
       } catch {
         if (mounted) {
@@ -116,7 +121,7 @@ function DashboardPorteiroLayout() {
 
   return (
 
-    <div className="app-dashboard-shell" style={{ ...styles.container, ...themeVariables }}>
+    <div className="app-dashboard-shell ic-porteiro-shell" style={{ ...styles.container, ...themeVariables }}>
 
       
       <NotificationCenter />
@@ -371,8 +376,12 @@ function DashboardPorteiroLayout() {
 
       <main className="app-dashboard-content" style={styles.content}>
 
-        <a className="ic-handover-link" href="/dashboard/porteiro/passagem-servico">Passagem de serviço</a>
+        <div className="ic-por-topbar">
+          <a className="ic-handover-link" href="/dashboard/porteiro/passagem-servico">
+            <FiRepeat aria-hidden="true" /> Passagem de serviço
+          </a>
           <GlobalSearch />
+        </div>
           <Outlet />
 
       </main>

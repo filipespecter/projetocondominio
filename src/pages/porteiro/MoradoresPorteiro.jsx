@@ -2,6 +2,9 @@ import {useRouteFilters} from "../../utils/useRouteFilters.js";
 import {Link} from "react-router-dom";
 import { useEffect, useState } from "react";
 import residentApi from "../../Services/residentApi.js";
+import { mascaraTelefone } from "../../utils/mascaras.js";
+import { rotuloUnidade } from "../../utils/unidade.js";
+import { rotuloTipoMorador } from "../../utils/porteiro.js";
 
 function MoradoresPorteiro() {
 
@@ -29,7 +32,7 @@ function MoradoresPorteiro() {
     setCarregando(true); setErro("");
     try {
       const data = await residentApi.directory();
-      setMoradores(Array.isArray(data) ? data.map(r => ({...r, nome:r.user?.name || "", apartamento:r.apartment?.number || "", bloco:r.apartment?.block || "", telefone:r.user?.phone || "", email:r.user?.email || "", status:r.user?.status === "ACTIVE" ? "Ativo" : "Inativo", tipoMorador:r.residentType, perfilMorador:r.isPrimary ? "Principal" : "Morador"})) : []);
+      setMoradores(Array.isArray(data) ? data.map(r => ({...r, nome:r.user?.name || "", apartamento:r.apartment?.number || "", bloco:r.apartment?.block || "", telefone:r.user?.phone || "", email:r.user?.email || "", status:r.user?.status === "ACTIVE" ? "Ativo" : "Inativo", tipoMorador:rotuloTipoMorador(r.residentType), unidade:rotuloUnidade(r.apartment), perfilMorador:r.isPrimary ? "1º responsável" : r.isSecondary ? "2º responsável" : "Morador da unidade"})) : []);
     } catch (error) {
       console.error("Erro ao carregar moradores para a portaria:", error);
       setErro(error.message || "Não foi possível carregar moradores.");
@@ -152,7 +155,7 @@ function MoradoresPorteiro() {
 
       {/* CARDS */}
 
-      <div style={styles.cards}>
+      <div className="ic-por-stats ic-por-stats-3" style={styles.cards}>
 
         <div style={styles.cardPrimary}>
 
@@ -249,8 +252,8 @@ function MoradoresPorteiro() {
               }
               style={styles.search}
             />
-            <button type="button" className="ic-action" onClick={()=>setConsulta(busca)}>Pesquisar</button>
-            <button type="button" className="ic-action-secondary" onClick={()=>{setBusca("");setConsulta("");setFiltroStatus("Todos");}}>Limpar filtros</button>
+            <button type="button" className="ic-action" style={{whiteSpace:"nowrap"}} onClick={()=>setConsulta(busca)}>Pesquisar</button>
+            <button type="button" className="ic-action-secondary" style={{whiteSpace:"nowrap"}} onClick={()=>{setBusca("");setConsulta("");setFiltroStatus("Todos");}}>Limpar filtros</button>
 
             <select
               value={filtroStatus}
@@ -330,81 +333,28 @@ function MoradoresPorteiro() {
                   </div>
 
                   <h3 style={styles.nome}>
-                    <Link to={`?${new URLSearchParams({...Object.fromEntries(new URLSearchParams(location.search)),registro:item.id,tipo:"Morador"})}`}>{item.nome || "Morador"}</Link>
+                    <Link style={styles.nomeLink} to={`?${new URLSearchParams({...Object.fromEntries(new URLSearchParams(location.search)),registro:item.id,tipo:"Morador"})}`}>{item.nome || "Morador"}</Link>
                   </h3>
-
+                  <p style={styles.unidadeLinha}>
+                    🏠 {item.unidade || `Apto ${apartamento}`}
+                  </p>
                   <div style={styles.infoGrid}>
-
                     <div style={styles.infoItem}>
-                      <span style={styles.infoLabel}>
-                        Apartamento
-                      </span>
-
-                      <strong>
-                        {apartamento}
-                      </strong>
+                      <span style={styles.infoLabel}>Telefone</span>
+                      <strong>{item.telefone ? mascaraTelefone(item.telefone) : "-"}</strong>
                     </div>
-
                     <div style={styles.infoItem}>
-                      <span style={styles.infoLabel}>
-                        Bloco
-                      </span>
-
-                      <strong>
-                        {item.bloco || "-"}
-                      </strong>
+                      <span style={styles.infoLabel}>Tipo</span>
+                      <strong>{item.tipoMorador || "Morador"}</strong>
                     </div>
-
                     <div style={styles.infoItem}>
-                      <span style={styles.infoLabel}>
-                        Telefone
-                      </span>
-
-                      <strong>
-                        {item.telefone || "-"}
-                      </strong>
+                      <span style={styles.infoLabel}>Responsabilidade</span>
+                      <strong>{item.perfilMorador}</strong>
                     </div>
-
-                    <div style={styles.infoItem}>
-                      <span style={styles.infoLabel}>
-                        Tipo
-                      </span>
-
-                      <strong>
-                        {item.tipoMorador || "Morador"}
-                      </strong>
+                    <div style={{ ...styles.infoItem, minWidth: 0 }}>
+                      <span style={styles.infoLabel}>E-mail</span>
+                      <strong style={{ overflowWrap: "anywhere" }}>{item.email || "-"}</strong>
                     </div>
-
-                    <div style={styles.infoItem}>
-                      <span style={styles.infoLabel}>
-                        Perfil
-                      </span>
-
-                      <strong>
-                        {item.moradorPrincipal ? "Principal" : "Dependente"}
-                      </strong>
-                    </div>
-
-                    <div style={styles.infoItem}>
-                      <span style={styles.infoLabel}>
-                        E-mail
-                      </span>
-
-                      <strong>
-                        {item.email || "-"}
-                      </strong>
-                    </div>
-
-                  </div>
-
-                  <div style={styles.noticeBox}>
-                    <strong>
-                      Acesso somente consulta
-                    </strong>
-
-                    <p>
-                      Alterações cadastrais devem ser feitas no painel do síndico.
-                    </p>
                   </div>
 
                 </div>
@@ -618,6 +568,7 @@ const styles = {
 
   listHeader: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: "18px",
@@ -639,7 +590,12 @@ const styles = {
 
   filters: {
     display: "flex",
-    gap: "10px"
+    flexWrap: "wrap",
+    alignItems: "stretch",
+    justifyContent: "flex-end",
+    gap: "10px",
+    flex: "1 1 420px",
+    minWidth: 0
   },
 
   search: {
@@ -648,7 +604,8 @@ const styles = {
     border: "1px solid var(--ic-primary-border)",
     outline: "none",
     background: "#fbfaff",
-    minWidth: "300px"
+    minWidth: 0,
+    flex: "1 1 220px"
   },
 
   filter: {
@@ -727,9 +684,21 @@ const styles = {
   },
 
   nome: {
-    margin: "0 0 16px",
+    margin: "0 0 4px",
     color: "#111827",
-    fontSize: "22px"
+    fontSize: "21px"
+  },
+
+  nomeLink: {
+    color: "inherit",
+    textDecoration: "none"
+  },
+
+  unidadeLinha: {
+    margin: "0 0 14px",
+    color: "var(--ic-primary-strong)",
+    fontWeight: "800",
+    fontSize: "14px"
   },
 
   infoGrid: {

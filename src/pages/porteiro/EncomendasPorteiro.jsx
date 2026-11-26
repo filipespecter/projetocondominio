@@ -3,6 +3,9 @@ import PortariaMessaging from "../../components/PortariaMessaging.jsx";
 import { useEffect, useState } from "react";
 import { me as getAuthenticatedUser } from "../../Services/authApi.js";
 import packageApi from "../../Services/packageApi.js";
+import { notify } from "../../components/GlobalDialogs.jsx";
+import { rotuloUnidade } from "../../utils/unidade.js";
+import { dataHora } from "../../utils/porteiro.js";
 import PackagePickupModal from "../../components/Porteiro/PackagePickupModal.jsx";
 
 import ApartmentGrid from "../../components/Porteiro/ApartmentGrid";
@@ -11,6 +14,7 @@ function EncomendasPorteiro() {
   const [encomendas, setEncomendas] = useState([]);
   const [porteiro, setPorteiro] = useState(null);
   const [pickupMethod, setPickupMethod] = useState(null);
+  const [verTodosAvisos, setVerTodosAvisos] = useState(false);
 
   function mapPackage(item, residentList = []) {
     const resident =
@@ -62,6 +66,11 @@ function EncomendasPorteiro() {
         resident?.apartment?.number ??
         resident?.apartamento ??
         "",
+      unidade:
+        rotuloUnidade(
+          item.apartment ??
+          resident?.apartment
+        ),
       apartamentoId:
         item.apartmentId ??
         item.apartment?.id ??
@@ -140,9 +149,10 @@ function EncomendasPorteiro() {
 
       setEncomendas(mapped);
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível carregar encomendas."
+        "Não foi possível carregar encomendas.",
+        "error"
       );
     }
   }
@@ -238,7 +248,7 @@ function EncomendasPorteiro() {
         </div>
       </div>
 
-      <div style={styles.cardsGrid}>
+      <div className="ic-por-stats" style={styles.cardsGrid}>
         <div style={styles.cardPrimary}>
           <div>
             <p style={styles.cardLabelLight}>
@@ -261,16 +271,16 @@ function EncomendasPorteiro() {
 
         <div style={styles.card}>
           <div style={styles.cardIconBlue}>
-            🔐
+            📬
           </div>
 
           <div>
             <p style={styles.cardLabel}>
-              Retirada segura
+              Entregas esperadas
             </p>
 
             <h2 style={styles.cardNumberBlue}>
-              QR / Código
+              {encomendas.filter((e) => e.status === "Aguardando").length}
             </h2>
           </div>
         </div>
@@ -307,7 +317,42 @@ function EncomendasPorteiro() {
           </div>
         </div>
       </div>
-      <section className="ic-feature-panel"><h2>Avisos de encomendas pendentes</h2><p>O cadastro não envia mensagens. Confira os dados e confirme cada envio.</p>{encomendas.filter(e=>e.status==="Recebido").map(e=><article key={e.id}><strong>{e.descricao || e.tipo || "Encomenda"} · Apartamento {e.apartamento}</strong><PackageNoticeButton id={e.id}/></article>)}</section>
+      {(() => {
+        const aguardandoAviso = encomendas.filter((e) => e.status === "Recebido");
+        const visiveis = verTodosAvisos ? aguardandoAviso : aguardandoAviso.slice(0, 5);
+        return (
+          <section className="ic-por-notices">
+            <header>
+              <div>
+                <h2>Avisos de encomendas pendentes</h2>
+                <p>O cadastro não envia mensagens. Confira os dados e confirme cada envio.</p>
+              </div>
+              <span className="ic-por-count">{aguardandoAviso.length}</span>
+            </header>
+            {aguardandoAviso.length === 0 ? (
+              <p className="ic-por-empty">Nenhuma encomenda aguardando aviso.</p>
+            ) : (
+              <ul>
+                {visiveis.map((e) => (
+                  <li key={e.id}>
+                    <span className="ic-por-notice-icon" aria-hidden="true">📦</span>
+                    <div className="ic-por-notice-info">
+                      <strong>{e.descricao || e.description || e.tipo || "Encomenda"}</strong>
+                      <span>{e.unidade || `Apto ${e.apartamento || "-"}`} · recebida {dataHora(e.receivedAt ?? e.createdAt)}</span>
+                    </div>
+                    <PackageNoticeButton id={e.id} compact />
+                  </li>
+                ))}
+              </ul>
+            )}
+            {aguardandoAviso.length > 5 && (
+              <button type="button" className="ic-por-btn-secondary ic-por-more" onClick={() => setVerTodosAvisos((v) => !v)}>
+                {verTodosAvisos ? "Mostrar menos" : `Ver todas (${aguardandoAviso.length})`}
+              </button>
+            )}
+          </section>
+        );
+      })()}
       <div style={styles.expectedSection}>
         <div style={styles.sectionHeader}>
           <div>

@@ -4,6 +4,7 @@ import {
 } from "react";
 
 import packageApi from "../../Services/packageApi.js";
+import { notify } from "../GlobalDialogs.jsx";
 import QrCameraScanner from "./QrCameraScanner.jsx";
 import { imageFileToDataUrl } from "../../utils/imageCompression.js";
 
@@ -61,11 +62,10 @@ function PackagePickupModal({
         : String(value ?? "").trim();
 
     if (!normalized) {
-      alert(
+      notify(
         method === "CODE"
           ? "Informe o código do cliente."
-          : "Leia o QR Code do morador."
-      );
+          : "Leia o QR Code do morador.", "error");
       return;
     }
 
@@ -73,9 +73,8 @@ function PackagePickupModal({
       method === "CODE" &&
       normalized.length !== 6
     ) {
-      alert(
-        "O código do cliente deve possuir 6 dígitos."
-      );
+      notify(
+        "O código do cliente deve possuir 6 dígitos.", "error");
       return;
     }
 
@@ -90,7 +89,7 @@ function PackagePickupModal({
           );
 
       if (expectedPackageId && data.package?.id !== expectedPackageId) {
-        alert("A credencial não pertence à encomenda selecionada.");
+        notify("A credencial não pertence à encomenda selecionada.", "error");
         return;
       }
       setCredential(normalized);
@@ -101,10 +100,9 @@ function PackagePickupModal({
       );
       setPickupResidentId("");
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "QR/código inválido ou já utilizado."
-      );
+        "QR/código inválido ou já utilizado.", "error");
     } finally {
       setLoading(false);
     }
@@ -117,7 +115,7 @@ function PackagePickupModal({
       setDeliveryProofImageDataUrl(dataUrl);
       setDeliveryProofName(file.name);
     } catch (error) {
-      alert(error?.message ?? "Não foi possível preparar a foto.");
+      notify(error?.message ?? "Não foi possível preparar a foto.", "error");
     }
   }
 
@@ -144,9 +142,8 @@ function PackagePickupModal({
         "DEPENDENT"
       ) {
         if (!pickupResidentId) {
-          alert(
-            "Selecione o dependente que está retirando."
-          );
+          notify(
+            "Selecione o dependente que está retirando.", "error");
           return;
         }
 
@@ -165,9 +162,8 @@ function PackagePickupModal({
           !thirdParty.apartment
             .trim()
         ) {
-          alert(
-            "Informe nome completo, documento, bloco e apartamento de quem está retirando."
-          );
+          notify(
+            "Informe nome completo, documento, bloco e apartamento de quem está retirando.", "error");
           return;
         }
 
@@ -197,13 +193,12 @@ function PackagePickupModal({
             payload
           );
 
-      alert(
+      notify(
         `Retirada confirmada${
           updated?.withdrawnBy
             ? ` por ${updated.withdrawnBy}`
             : ""
-        }.`
-      );
+        }.`, "success");
 
       await onCompleted?.(
         updated
@@ -211,10 +206,9 @@ function PackagePickupModal({
 
       onClose?.();
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível confirmar a retirada."
-      );
+        "Não foi possível confirmar a retirada.", "error");
     } finally {
       setLoading(false);
     }

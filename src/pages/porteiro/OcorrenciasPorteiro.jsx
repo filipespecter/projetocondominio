@@ -1,9 +1,16 @@
-import { confirmDialog } from "../../components/GlobalDialogs.jsx";
+import { confirmDialog, notify } from "../../components/GlobalDialogs.jsx";
 import { useEffect, useState } from "react";
 import occurrenceApi from "../../Services/occurrenceApi.js";
+import packageApi from "../../Services/packageApi.js";
+import authApi from "../../Services/authApi.js";
+import { rotuloUnidade } from "../../utils/unidade.js";
+import { rotuloTurno } from "../../utils/porteiro.js";
 
 function OcorrenciasPorteiro() {
-  const estadoInicial={tipo:"Ocorrência",categoria:"",prioridade:"Média",titulo:"",descricao:"",apartamento:"",apartamentoId:null};
+  const estadoInicial={tipo:"Ocorrência",categoria:"",prioridade:"Média",titulo:"",descricao:"",apartamento:"",apartamentoId:"",turno:"",dataPlantao:""};
+  const ORIGENS={RESIDENT:"Morador",DOORMAN:"Portaria",MANAGER:"Síndico",SYSTEM:"Sistema"};
+  const [apartamentos,setApartamentos]=useState([]);
+  const [meuId,setMeuId]=useState(null);
   const [ocorrencias,setOcorrencias]=useState([]);
   const [novaOcorrencia,setNovaOcorrencia]=useState(estadoInicial);
   const [busca,setBusca]=useState("");
@@ -11,15 +18,18 @@ function OcorrenciasPorteiro() {
   const typeBack={"Ocorrência":"OCCURRENCE","Reclamação":"COMPLAINT","Sugestão":"SUGGESTION","Solicitação":"REQUEST"};
   const priorityBack={"Baixa":"LOW","Média":"MEDIUM","Alta":"HIGH","Urgente":"URGENT"};
   const statusFront={NEW:"Novo",FORWARDED:"Encaminhada",IN_REVIEW:"Ciente",IN_PROGRESS:"Em Tratamento",RESOLVED:"Resolvido",CLOSED:"Fechado",CANCELED:"Cancelado"};
-  function mapItem(i){return {...i,tipo:i.type==="COMPLAINT"?"Reclamação":i.type==="SUGGESTION"?"Sugestão":i.type==="REQUEST"?"Solicitação":"Ocorrência",tipoRegistro:i.type,categoria:i.category??"",prioridade:i.priority==="LOW"?"Baixa":i.priority==="HIGH"?"Alta":i.priority==="URGENT"?"Urgente":"Média",titulo:i.title??"",descricao:i.description??"",status:statusFront[i.status]??i.status,apartamento:i.apartment?.number??"",data:i.createdAt?new Date(i.createdAt).toLocaleDateString("pt-BR"):"",hora:i.createdAt?new Date(i.createdAt).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}):"",porteiroNome:i.createdBy?.name??"",turno:i.shift??"",resolucao:i.resolution??""};}
-  async function carregar(){try{const data=await occurrenceApi.list();setOcorrencias((data??[]).map(mapItem));}catch(e){alert(e?.message??"Não foi possível carregar ocorrências.");}}
+  function mapItem(i){return {...i,tipo:i.type==="COMPLAINT"?"Reclamação":i.type==="SUGGESTION"?"Sugestão":i.type==="REQUEST"?"Solicitação":"Ocorrência",tipoRegistro:i.type,categoria:i.category??"",prioridade:i.priority==="LOW"?"Baixa":i.priority==="HIGH"?"Alta":i.priority==="URGENT"?"Urgente":"Média",titulo:i.title??"",descricao:i.description??"",status:statusFront[i.status]??i.status,apartamento:rotuloUnidade(i.apartment)||(i.apartment?.number?`Apto ${i.apartment.number}`:""),origem:ORIGENS[i.origin]??"Registro",data:i.createdAt?new Date(i.createdAt).toLocaleDateString("pt-BR"):"",hora:i.createdAt?new Date(i.createdAt).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}):"",porteiroNome:i.createdBy?.name??"",turno:rotuloTurno(i.shift),plantao:i.dutyDate?new Date(String(i.dutyDate).slice(0,10)+"T12:00:00").toLocaleDateString("pt-BR"):"",resolucao:i.resolution??""};}
+  async function carregar(){try{const data=await occurrenceApi.list();setOcorrencias((data??[]).map(mapItem));}catch(e){notify(e?.message??"Não foi possível carregar ocorrências.","error");}}
+  useEffect(()=>{packageApi.apartmentsDirectory().then(a=>setApartamentos((a??[]).map(ap=>({id:ap.id,rotulo:rotuloUnidade(ap)||`Apto ${ap.number}`,bloco:String(ap.block??""),numero:String(ap.number??"")})).sort((x,y)=>x.bloco.localeCompare(y.bloco,"pt-BR",{numeric:true})||x.numero.localeCompare(y.numero,"pt-BR",{numeric:true})))).catch(()=>{});authApi.me().then(u=>setMeuId(u?.id??null)).catch(()=>{});},[]);
   useEffect(()=>{carregar();},[]);
   function turnoAtual(){const h=new Date().getHours();return h<12?"Manhã":h<18?"Tarde":"Noite";}
-  function validarOcorrencia(){if(!novaOcorrencia.categoria||String(novaOcorrencia.titulo).trim().length<3||String(novaOcorrencia.descricao).trim().length<5){alert("Preencha categoria, título e descrição.");return false;}return true;}
+  function validarOcorrencia(){if(!novaOcorrencia.categoria||String(novaOcorrencia.titulo).trim().length<3||String(novaOcorrencia.descricao).trim().length<5){notify("Preencha categoria, título e descrição.","error");return false;}return true;}
   function limparFormulario(){setNovaOcorrencia(estadoInicial);}
-  async function registrarOcorrencia(){if(!validarOcorrencia())return;try{await occurrenceApi.create({apartmentId:novaOcorrencia.apartamentoId||null,type:typeBack[novaOcorrencia.tipo]??"OCCURRENCE",category:novaOcorrencia.categoria,priority:priorityBack[novaOcorrencia.prioridade]??"MEDIUM",title:novaOcorrencia.titulo.trim(),description:novaOcorrencia.descricao.trim(),shift:turnoAtual(),dutyDate:new Date().toISOString().slice(0,10)});limparFormulario();await carregar();}catch(e){alert(e?.message??"Não foi possível registrar a ocorrência.");}}
-  async function excluirRegistro(id){if(!await confirmDialog("Deseja cancelar este registro?"))return;try{await occurrenceApi.cancel(id);await carregar();}catch(e){alert(e?.message??"Não foi possível cancelar a ocorrência.");}}
-  function correspondeBusca(item){const t=busca.toLowerCase();return item.titulo?.toLowerCase().includes(t)||item.descricao?.toLowerCase().includes(t)||item.categoria?.toLowerCase().includes(t)||item.apartamento?.toLowerCase().includes(t)||item.status?.toLowerCase().includes(t);}
+  // Data de hoje no horário local (toISOString usaria UTC e viraria o dia após 21h).
+  function hojeLocal(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;}
+  async function registrarOcorrencia(){if(!validarOcorrencia())return;try{await occurrenceApi.create({apartmentId:novaOcorrencia.apartamentoId||null,type:typeBack[novaOcorrencia.tipo]??"OCCURRENCE",category:novaOcorrencia.categoria,priority:priorityBack[novaOcorrencia.prioridade]??"MEDIUM",title:novaOcorrencia.titulo.trim(),description:novaOcorrencia.descricao.trim(),shift:novaOcorrencia.turno||turnoAtual(),dutyDate:novaOcorrencia.dataPlantao||hojeLocal()});limparFormulario();notify("Ocorrência registrada e encaminhada ao síndico.","success");await carregar();}catch(e){notify(e?.details?.[0]?.message??e?.message??"Não foi possível registrar a ocorrência.","error");}}
+  async function excluirRegistro(id){if(!await confirmDialog("Deseja cancelar este registro? Ele sai da lista de encaminhadas ao síndico.",{title:"Cancelar registro",danger:true,confirmText:"Cancelar registro",cancelText:"Voltar"}))return;try{await occurrenceApi.cancel(id);notify("Registro cancelado.","success");await carregar();}catch(e){notify(e?.message??"Não foi possível cancelar a ocorrência.","error");}}
+  function correspondeBusca(item){const t=busca.toLowerCase();return item.titulo?.toLowerCase().includes(t)||item.descricao?.toLowerCase().includes(t)||item.categoria?.toLowerCase().includes(t)||item.apartamento?.toLowerCase().includes(t)||item.origem?.toLowerCase().includes(t)||item.status?.toLowerCase().includes(t);}
   const encaminhadas=ocorrencias.filter(i=>i.status!=="Resolvido"&&i.status!=="Fechado"&&i.status!=="Cancelado"&&correspondeBusca(i));
   const historico=ocorrencias.filter(i=>(i.status==="Resolvido"||i.status==="Fechado"||i.status==="Cancelado")&&correspondeBusca(i));
   const listaExibida=abaAtiva==="encaminhadas"?encaminhadas:historico;
@@ -78,7 +88,7 @@ function OcorrenciasPorteiro() {
         </div>
       </div>
 
-      <div style={styles.cards}>
+      <div className="ic-por-stats" style={styles.cards}>
         <div style={styles.cardPrimary}>
           <div>
             <p style={styles.cardLabelLight}>
@@ -126,7 +136,7 @@ function OcorrenciasPorteiro() {
         </div>
       </div>
 
-      <div style={styles.mainGrid}>
+      <div className="ic-por-oco-grid" style={styles.mainGrid}>
         <div style={styles.formCard}>
           <div style={styles.sectionTop}>
             <div>
@@ -249,17 +259,21 @@ function OcorrenciasPorteiro() {
             Apartamento relacionado
           </label>
 
-          <input
+          <select
             style={styles.input}
-            placeholder="Ex: 101 ou deixe em branco"
-            value={novaOcorrencia.apartamento}
+            value={novaOcorrencia.apartamentoId}
             onChange={(e) =>
               setNovaOcorrencia({
                 ...novaOcorrencia,
-                apartamento: e.target.value
+                apartamentoId: e.target.value
               })
             }
-          />
+          >
+            <option value="">Nenhum (área comum / geral)</option>
+            {apartamentos.map((ap) => (
+              <option key={ap.id} value={ap.id}>{ap.rotulo}</option>
+            ))}
+          </select>
 
           <label style={styles.label}>
             Descrição detalhada
@@ -366,7 +380,7 @@ function OcorrenciasPorteiro() {
                       <div>
                         <div style={styles.badges}>
                           <span style={styles.originBadge}>
-                            Porteiro
+                            {item.origem}
                           </span>
 
                           <span style={styles.categoryBadge}>
@@ -417,16 +431,18 @@ function OcorrenciasPorteiro() {
                       </span>
 
                       <span>
-                        👤 {item.porteiroNome || "Porteiro"}
+                        👤 {item.porteiroNome || item.origem}
                       </span>
 
-                      <span>
-                        🕒 {item.turno || "Plantão não informado"}
-                      </span>
+                      {(item.turno || item.plantao) && (
+                        <span>
+                          🕒 Plantão {[item.turno, item.plantao].filter(Boolean).join(" · ")}
+                        </span>
+                      )}
 
                       {item.apartamento && (
                         <span>
-                          🏠 Apto {item.apartamento}
+                          🏠 {item.apartamento}
                         </span>
                       )}
                     </div>
@@ -460,8 +476,10 @@ function OcorrenciasPorteiro() {
                       </div>
                     )}
 
-                    {item.status !== "Resolvido" &&
-                      item.status !== "Resolvida" && (
+                    {/* Só quem registrou pode cancelar pela portaria */}
+                    {meuId &&
+                      item.createdByUserId === meuId &&
+                      !["Resolvido", "Fechado", "Cancelado"].includes(item.status) && (
                       <div style={styles.actions}>
                         <button
                           style={styles.deleteButton}
@@ -469,7 +487,7 @@ function OcorrenciasPorteiro() {
                             excluirRegistro(item.id)
                           }
                         >
-                          Excluir registro
+                          Cancelar registro
                         </button>
                       </div>
                     )}
@@ -554,6 +572,8 @@ const styles = {
   },
 
   heroStatus: {
+    display: "inline-block",
+    marginTop: "6px",
     background: "var(--ic-primary-soft)",
     color: "var(--ic-primary)",
     padding: "8px 12px",
@@ -639,7 +659,7 @@ const styles = {
 
   mainGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(380px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,380px),1fr))",
     gap: "24px",
     alignItems: "flex-start"
   },
@@ -752,6 +772,7 @@ const styles = {
 
   listHeader: {
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: "18px",
@@ -763,7 +784,8 @@ const styles = {
     borderRadius: "15px",
     border: "1px solid var(--ic-primary-border)",
     outline: "none",
-    minWidth: "260px",
+    minWidth: 0,
+    flex: "1 1 220px",
     maxWidth: "100%",
     background: "#fbfaff"
   },

@@ -1,0 +1,204 @@
+/* Ajustes visuais exclusivos do Portal do Porteiro.
+   Tudo fica sob .ic-porteiro-shell (classe aplicada apenas no DashboardPorteiroLayout),
+   então Síndico, Morador e Plataforma não são afetados. */
+
+/* ---------- Topo: "Passagem de serviço" + busca na mesma linha ---------- */
+.ic-porteiro-shell .ic-por-topbar{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  margin-bottom:18px;padding-right:64px; /* espaço do sino fixo */
+}
+.ic-porteiro-shell .ic-por-topbar>div{flex:1 1 320px;min-width:0;margin-bottom:0!important}
+.ic-porteiro-shell .ic-handover-link{
+  display:inline-flex;align-items:center;gap:8px;margin:0;
+  padding:12px 16px;border-radius:14px;white-space:nowrap;
+  background:#fff;color:var(--ic-primary-strong,#5b21b6);
+  border:1px solid var(--ic-primary-soft-2,#ece3fb);
+  box-shadow:0 8px 22px rgba(57,31,78,.06);
+  font-weight:800;font-size:14px;text-decoration:none;
+  transition:transform .15s ease,box-shadow .15s ease,background .15s ease;
+}
+.ic-porteiro-shell .ic-handover-link:hover{
+  transform:translateY(-1px);background:var(--ic-primary-soft-3,#faf7ff);
+  box-shadow:0 12px 26px rgba(91,33,182,.12);
+}
+
+/* ---------- Logo da barra lateral ocupando a caixa ---------- */
+.ic-porteiro-shell .app-dashboard-sidebar img[alt]{padding:4px!important}
+
+/* ---------- Barra do celular: o sino fixo não cobre o nome "InfinityCondo" ---------- */
+.ic-porteiro-shell .ic-mobile-bar{padding-right:78px}
+.ic-porteiro-shell .ic-mobile-bar>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+
+/* ---------- Tablet (761–1024px): menu lateral vira gaveta, conteúdo usa a largura toda ---------- */
+@media (min-width:761px) and (max-width:1024px){
+  .app-dashboard-shell.ic-porteiro-shell{flex-direction:column!important;align-items:stretch!important}
+  .ic-porteiro-shell .ic-navigation{display:block;width:100%}
+  .ic-porteiro-shell .ic-mobile-bar{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    position:sticky;top:0;z-index:1100;width:100%;box-sizing:border-box;
+    padding:10px 78px 10px 20px;background:var(--ic-primary-deep);color:#fff;
+  }
+  .ic-porteiro-shell .ic-mobile-bar button{min-height:44px;padding:8px 14px;border:1px solid #ffffff66;background:transparent;color:#fff;border-radius:10px;cursor:pointer}
+  .ic-porteiro-shell .ic-navigation .app-dashboard-sidebar{
+    position:fixed!important;inset:0 auto 0 0!important;
+    width:min(86vw,320px)!important;min-width:0!important;
+    height:100dvh!important;max-height:100dvh!important;min-height:0!important;
+    overflow-y:auto;z-index:1250;
+    transform:translateX(-105%);visibility:hidden;transition:transform .2s ease;
+  }
+  .ic-porteiro-shell .ic-navigation .app-dashboard-sidebar.is-open{transform:translateX(0);visibility:visible}
+  .ic-porteiro-shell .ic-navigation-backdrop{display:block;position:fixed;inset:0;z-index:1240;width:100%;height:100%;border:0;background:#10082088}
+  .ic-porteiro-shell .app-dashboard-content{width:100%!important;margin:0!important;padding:24px!important}
+  .ic-porteiro-shell .ic-por-topbar{padding-right:0}
+}
+
+/* ---------- Cartões de números: 4 por linha no computador, 2 no tablet/celular ---------- */
+.ic-porteiro-shell .ic-por-stats{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+.ic-porteiro-shell .ic-por-stats.ic-por-stats-3{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+@media (max-width:1180px){
+  .ic-porteiro-shell .ic-por-stats,
+  .ic-porteiro-shell .ic-por-stats.ic-por-stats-3{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media (max-width:420px){
+  .ic-porteiro-shell .ic-por-stats,
+  .ic-porteiro-shell .ic-por-stats.ic-por-stats-3{grid-template-columns:1fr!important}
+}
+.ic-porteiro-shell .ic-por-stats>*{min-width:0}
+
+/* ---------- Busca com ícone: ícone ao lado do texto ---------- */
+.ic-porteiro-shell label.ic-pkg-search{display:flex;align-items:center;gap:9px}
+
+/* ---------- Campos de arquivo ---------- */
+.ic-porteiro-shell main input[type=file]{
+  width:100%;box-sizing:border-box;min-height:56px;padding:9px 12px;
+  border:1.5px dashed var(--ic-primary-border-soft,#d8c8f0);border-radius:14px;
+  background:var(--ic-primary-soft-3,#faf7ff);color:#5d4a6e;font-size:13px;cursor:pointer;
+}
+.ic-porteiro-shell main input[type=file]::file-selector-button{
+  margin-right:14px;padding:9px 16px;border:0;border-radius:10px;
+  background:linear-gradient(135deg,var(--ic-primary-dark,#6d28d9),var(--ic-primary,#7c3aed));
+  color:#fff;font:inherit;font-weight:800;cursor:pointer;
+}
+
+/* ---------- Ajuda (tela compartilhada): visual de cartão ---------- */
+.ic-porteiro-shell .ic-feature-panel{
+  max-width:900px;padding:28px;border-radius:24px;background:#fff;
+  border:1px solid var(--ic-primary-soft-2,#ece3fb);
+  box-shadow:0 18px 45px rgba(88,28,135,.08);
+  color:#3b2a4a;line-height:1.6;
+}
+.ic-porteiro-shell .ic-feature-panel h1{margin:0 0 18px;font-size:26px;color:var(--ic-primary-strong,#5b21b6)}
+.ic-porteiro-shell .ic-feature-panel h2{margin:24px 0 8px;font-size:18px;color:#1f1235}
+.ic-porteiro-shell .ic-feature-panel details{
+  margin:0 0 10px;padding:12px 16px;border-radius:14px;
+  background:var(--ic-primary-soft-3,#faf7ff);border:1px solid var(--ic-primary-soft-2,#ece3fb);
+}
+.ic-porteiro-shell .ic-feature-panel summary{cursor:pointer;font-weight:800;color:#3b2a4a}
+.ic-porteiro-shell .ic-feature-panel details[open] summary{margin-bottom:8px}
+
+/* ---------- Celular ---------- */
+@media (max-width:760px){
+  .ic-porteiro-shell .ic-por-topbar{padding-right:0;flex-direction:column;align-items:stretch}
+  .ic-porteiro-shell .ic-por-topbar>div{flex:0 0 auto}
+  .ic-porteiro-shell .ic-handover-link{justify-content:center}
+}
+@media (max-width:600px){
+  .ic-porteiro-shell .app-dashboard-content{padding:16px!important}
+  .ic-porteiro-shell .ic-feature-panel{padding:20px}
+  .ic-porteiro-shell .ic-feature-panel h1{font-size:22px}
+}
+
+/* ---------- Encomendas: canal de avisos ---------- */
+.ic-porteiro-shell .ic-por-channel{
+  margin-bottom:20px;padding:20px 22px;border-radius:22px;background:#fff;
+  border:1px solid var(--ic-primary-soft-2,#ece3fb);box-shadow:0 12px 32px rgba(57,31,78,.06);
+  color:#3b2a4a;
+}
+.ic-porteiro-shell .ic-por-channel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.ic-porteiro-shell .ic-por-channel-head>div{flex:1 1 320px;min-width:0}
+.ic-porteiro-shell .ic-por-channel h3{margin:10px 0 6px;font-size:17px;color:#1f1235}
+.ic-porteiro-shell .ic-por-channel p{margin:0 0 6px;line-height:1.5;font-size:14px}
+.ic-porteiro-shell .ic-por-channel-note{color:#6b6280;font-size:13px!important}
+.ic-porteiro-shell .ic-por-channel-error{color:#b91c1c}
+.ic-porteiro-shell .ic-por-chip{display:inline-block;padding:5px 11px;border-radius:999px;font-size:12px;font-weight:800}
+.ic-porteiro-shell .ic-por-chip.is-ok{background:#dcfce7;color:#166534}
+.ic-porteiro-shell .ic-por-chip.is-warn{background:#fef3c7;color:#92400e}
+.ic-porteiro-shell .ic-por-channel details{margin-top:12px;padding:12px 14px;border-radius:14px;background:var(--ic-primary-soft-3,#faf7ff);border:1px solid var(--ic-primary-soft-2,#ece3fb)}
+.ic-porteiro-shell .ic-por-channel summary{cursor:pointer;font-weight:800;color:var(--ic-primary-strong,#5b21b6)}
+.ic-porteiro-shell .ic-por-table-wrap{overflow-x:auto;margin-top:10px}
+.ic-porteiro-shell .ic-por-table-wrap table{width:100%;border-collapse:collapse;font-size:13px;background:#fff;border-radius:12px;overflow:hidden}
+.ic-porteiro-shell .ic-por-table-wrap th,.ic-porteiro-shell .ic-por-table-wrap td{padding:9px 10px;text-align:left;border-bottom:1px solid #f1ebf8;white-space:nowrap}
+.ic-porteiro-shell .ic-por-table-wrap th{background:#f6f1fd;color:#4c1d95;font-weight:800}
+
+/* Botão secundário (contorno) usado nos painéis do porteiro */
+.ic-porteiro-shell .ic-por-btn-secondary{
+  min-height:40px;padding:9px 16px;border-radius:12px;cursor:pointer;
+  border:1px solid var(--ic-primary-border-soft,#d8c8f0);background:#fff;
+  color:var(--ic-primary-strong,#5b21b6);font:inherit;font-weight:800;font-size:13px;
+}
+.ic-porteiro-shell .ic-por-btn-secondary:hover{background:var(--ic-primary-soft-3,#faf7ff)}
+.ic-porteiro-shell .ic-por-btn-secondary:disabled{opacity:.6;cursor:wait}
+
+/* ---------- Encomendas: lista compacta de avisos pendentes ---------- */
+.ic-porteiro-shell .ic-por-notices{
+  margin:0 0 24px;padding:22px;border-radius:24px;background:#fff;
+  border:1px solid var(--ic-primary-soft-2,#ece3fb);box-shadow:0 12px 32px rgba(57,31,78,.06);
+}
+.ic-porteiro-shell .ic-por-notices header{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:14px}
+.ic-porteiro-shell .ic-por-notices h2{margin:0 0 4px;font-size:20px;color:var(--ic-primary-dark,#6d28d9)}
+.ic-porteiro-shell .ic-por-notices header p{margin:0;color:#6b6280;font-size:13px}
+.ic-porteiro-shell .ic-por-count{
+  flex:0 0 auto;min-width:38px;height:38px;padding:0 10px;border-radius:12px;display:grid;place-items:center;
+  background:var(--ic-primary-soft-3,#faf7ff);color:var(--ic-primary-strong,#5b21b6);font-weight:900;font-size:16px;
+}
+.ic-porteiro-shell .ic-por-notices ul{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.ic-porteiro-shell .ic-por-notices li{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;border-radius:16px;
+  background:var(--ic-primary-soft-3,#faf7ff);border:1px solid var(--ic-primary-soft-2,#ece3fb);
+}
+.ic-porteiro-shell .ic-por-notice-icon{flex:0 0 38px;height:38px;border-radius:12px;display:grid;place-items:center;background:#fef3c7;font-size:18px}
+.ic-porteiro-shell .ic-por-notice-info{flex:1 1 220px;min-width:0;display:flex;flex-direction:column;gap:2px}
+.ic-porteiro-shell .ic-por-notice-info strong{color:#1f1235;overflow-wrap:anywhere}
+.ic-porteiro-shell .ic-por-notice-info span{color:#6b6280;font-size:13px}
+.ic-porteiro-shell .ic-por-notices .ic-package-messaging{margin:0;padding:0;border:0;background:transparent;flex:0 0 auto}
+.ic-porteiro-shell .ic-por-notices .ic-package-messaging>button{min-height:40px;border-radius:12px;font-size:13px;font-weight:800}
+.ic-porteiro-shell .ic-por-notices .ic-package-messaging>p{margin:6px 0 0;font-size:12px;color:#6b6280;max-width:340px}
+.ic-porteiro-shell .ic-por-more{margin-top:12px;width:100%}
+.ic-porteiro-shell .ic-por-empty{margin:0;padding:14px;border-radius:14px;background:#f8fafc;color:#6b7280;text-align:center}
+@media (max-width:600px){
+  .ic-porteiro-shell .ic-por-notices{padding:18px}
+  .ic-porteiro-shell .ic-por-notices .ic-package-messaging{width:100%}
+  .ic-porteiro-shell .ic-por-notices .ic-package-messaging>button{width:100%}
+}
+
+/* ---------- Mapa de apartamentos: minicontadores sem quebrar palavra ---------- */
+.ic-porteiro-shell .ic-apt-metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+.ic-porteiro-shell .ic-apt-metric{
+  display:grid!important;grid-template-columns:auto 1fr;grid-template-areas:"icon num" "label label";
+  align-items:center;column-gap:8px;row-gap:4px;min-width:0;padding:10px 11px!important;
+}
+.ic-porteiro-shell .ic-apt-metric>span{grid-area:icon;width:28px!important;height:28px!important;font-size:14px}
+.ic-porteiro-shell .ic-apt-metric>div{display:contents}
+.ic-porteiro-shell .ic-apt-metric p{grid-area:label;margin:0!important;font-size:11.5px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ic-porteiro-shell .ic-apt-metric strong{grid-area:num;font-size:18px!important}
+
+/* ---------- Livro de Ocorrências: formulário estreito + lista larga no computador ---------- */
+@media (min-width:1100px){
+  .ic-porteiro-shell .ic-por-oco-grid{grid-template-columns:minmax(320px,400px) minmax(0,1fr)!important}
+}
+.ic-porteiro-shell .ic-por-oco-grid>*{min-width:0}
+
+/* ---------- Barra lateral no padrão do síndico (computador) ----------
+   Antes ela crescia junto com a página: em telas longas o rodapé
+   ("Central da Portaria" / "Encerrar sessão") ia parar lá embaixo,
+   deixando um espaço vazio; em telas curtas ficava colado no menu.
+   Agora, como no síndico: presa no topo, altura da tela, itens em
+   sequência e rolagem própria quando o menu não cabe. */
+@media (min-width:1025px){
+  .ic-porteiro-shell .app-dashboard-sidebar{
+    position:sticky!important;top:0;align-self:flex-start;
+    height:100vh!important;min-height:100vh!important;
+    justify-content:flex-start!important;
+    overflow-y:auto!important;overflow-x:hidden!important;
+  }
+}

@@ -1,8 +1,9 @@
 import {packageNotificationWarning} from "../../utils/packageNotificationStatus.js";
+import { notify } from "../GlobalDialogs.jsx";
 import { useEffect, useState } from "react";
 import packageApi from "../../Services/packageApi.js";
 
-function PackageModal({ apartamento, onClose }) {
+function PackageModal({ apartamento, apartmentIdSelecionado = null, rotulo = "", onClose }) {
   const [encomendas, setEncomendas] = useState([]);
   const [morador, setMorador] = useState(null);
   const [tipo, setTipo] = useState("");
@@ -91,11 +92,14 @@ function PackageModal({ apartamento, onClose }) {
         packageApi.residentsDirectory(),
       ]);
 
+      // Usa o id do apartamento escolhido no mapa; o número sozinho
+      // é ambíguo quando existe o mesmo número em blocos diferentes.
       const apartment =
         (apartments ?? []).find(
           (ap) =>
-            String(ap.number) ===
-            String(apartamento)
+            apartmentIdSelecionado
+              ? String(ap.id) === String(apartmentIdSelecionado)
+              : String(ap.number) === String(apartamento)
         );
 
       if (!apartment?.id) {
@@ -158,16 +162,15 @@ function PackageModal({ apartamento, onClose }) {
           )
       );
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível carregar as encomendas do apartamento."
-      );
+        "Não foi possível carregar as encomendas do apartamento.", "error");
     }
   }
 
   useEffect(() => {
     carregarEncomendas();
-  }, [apartamento]);
+  }, [apartamento, apartmentIdSelecionado]);
 
   function limparFormulario() {
     setTipo("");
@@ -182,9 +185,8 @@ function PackageModal({ apartamento, onClose }) {
       !tipo ||
       !descricao.trim()
     ) {
-      alert(
-        "Preencha o tipo e a descrição da encomenda."
-      );
+      notify(
+        "Preencha o tipo e a descrição da encomenda.", "error");
       return;
     }
 
@@ -209,32 +211,28 @@ function PackageModal({ apartamento, onClose }) {
         expectedAt: null,
       });
 
-      const warning=packageNotificationWarning(received); if(warning) alert(warning);
+      const warning=packageNotificationWarning(received); if(warning) notify(warning, "info");
       limparFormulario();
       setAbaAtiva("pendentes");
       await carregarEncomendas();
 
-      alert(
-        "Encomenda registrada e morador notificado."
-      );
+      notify(
+        "Encomenda registrada e morador notificado.", "success");
     } catch (error) {
-      alert(
+      notify(
         error?.message ??
-        "Não foi possível registrar a encomenda."
-      );
+        "Não foi possível registrar a encomenda.", "error");
     }
   }
 
   function retirarEncomenda() {
-    alert(
-      "Use 'Dar baixa com QR Code' ou 'Dar baixa com Código do Cliente' na tela principal da portaria."
-    );
+    notify(
+      "Use 'Dar baixa com QR Code' ou 'Dar baixa com Código do Cliente' na tela principal da portaria.", "info");
   }
 
   function excluirEncomenda() {
-    alert(
-      "A exclusão de encomendas é restrita ao síndico/administrador."
-    );
+    notify(
+      "A exclusão de encomendas é restrita ao síndico/administrador.", "info");
   }
 
   const pendentes =
@@ -267,7 +265,7 @@ function PackageModal({ apartamento, onClose }) {
             </span>
 
             <h2 style={styles.title}>
-              Apartamento {apartamento}
+              {rotulo || `Apartamento ${apartamento}`}
             </h2>
 
             <p style={styles.subtitle}>

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import dashboardApi from "../../Services/dashboardApi.js";
+import { dataHora, rotuloTurno } from "../../utils/porteiro.js";
+import { rotuloUnidade } from "../../utils/unidade.js";
 
 function DashboardPorteiro() {
   const [dados, setDados] = useState({ visitantes: 0, encomendas: 0, moradores: 0, esperadas: 0, ocorrencias: 0, ocorrenciasResolvidas: 0, visitantesDentro: 0, moradoresPrincipais: 0, dependentes: 0 });
@@ -11,7 +13,11 @@ function DashboardPorteiro() {
   async function carregarDashboard() {
     try {
       const { dashboard, residents, packages, occurrences, me } = await dashboardApi.doorman();
-      setPorteiro(me || null);
+      const usuario = me?.user ?? me ?? null;
+      setPorteiro(usuario ? {
+        nome: usuario.name ?? usuario.nome ?? "Porteiro",
+        turno: rotuloTurno(usuario.doorman?.shift),
+      } : null);
       const indicators = dashboard?.indicators || {};
       const moradores = Array.isArray(residents) ? residents : [];
       const encomendas = Array.isArray(packages) ? packages : [];
@@ -29,11 +35,35 @@ function DashboardPorteiro() {
         dependentes: Math.max(0, moradores.length - principais),
         esperadas, ocorrencias: ativas, ocorrenciasResolvidas: resolvidas
       });
+      // Monta um texto legível para cada movimentação (antes aparecia só "- • Sistema").
+      const unidade = (item) => rotuloUnidade(item?.apartment) || "";
+      const STATUS_VISITANTE = { WAITING: "aguardando autorização", AUTHORIZED: "autorizado", INSIDE: "entrou", EXITED: "saiu", DENIED: "recusado", CANCELED: "cancelado" };
       const recentes = [
-        ...(dashboard?.recentVisitors || []).map((v) => ({ ...v, tipo: "Visitante" })),
-        ...(dashboard?.recentPackages || []).map((e) => ({ ...e, tipo: "Encomenda" })),
-        ...(dashboard?.activeOccurrences || []).map((o) => ({ ...o, tipo: "Ocorrência" })),
-      ].slice(0, 8);
+        ...(dashboard?.recentVisitors || []).map((v) => ({
+          id: `v-${v.id}`,
+          tipo: "visitante",
+          mensagem: `Visitante ${v.name ?? ""}${STATUS_VISITANTE[v.status] ? ` ${STATUS_VISITANTE[v.status]}` : ""}`.trim(),
+          detalhe: unidade(v),
+          quando: v.exitedAt ?? v.enteredAt ?? v.updatedAt ?? v.createdAt,
+        })),
+        ...(dashboard?.recentPackages || []).map((e) => ({
+          id: `e-${e.id}`,
+          tipo: e.status === "DELIVERED" ? "encomenda_retirada" : "encomenda_recebida",
+          mensagem: `${e.status === "DELIVERED" ? "Encomenda retirada" : "Encomenda recebida"}${e.description ? `: ${e.description}` : ""}`,
+          detalhe: unidade(e),
+          quando: e.deliveredAt ?? e.receivedAt ?? e.createdAt,
+        })),
+        ...(dashboard?.activeOccurrences || []).map((o) => ({
+          id: `o-${o.id}`,
+          tipo: "ocorrencia",
+          mensagem: `Ocorrência: ${o.title ?? "sem título"}`,
+          detalhe: unidade(o),
+          quando: o.createdAt,
+        })),
+      ]
+        .sort((a, b) => new Date(b.quando || 0) - new Date(a.quando || 0))
+        .slice(0, 8)
+        .map((item) => ({ ...item, data: dataHora(item.quando) }));
       setMovimentacoes(recentes);
     } catch (error) {
       console.error("Erro ao carregar dashboard do porteiro:", error);
@@ -108,7 +138,7 @@ function DashboardPorteiro() {
 
       {/* CARDS */}
 
-      <div style={styles.cards}>
+      <div className="ic-por-stats" style={styles.cards}>
 
         <div style={styles.cardPrimary}>
 
@@ -214,7 +244,7 @@ function DashboardPorteiro() {
 
         <div style={styles.operationCard}>
 
-          <div>
+          <div style={{ flex: "1 1 260px", minWidth: 0 }}>
 
             <span style={styles.operationBadge}>
               📘 Livro de Ocorrências
@@ -385,6 +415,11 @@ function DashboardPorteiro() {
 
                   ? "🚶"
 
+                  : item.tipo ===
+                    "ocorrencia"
+
+                  ? "📘"
+
                   : "📌"}
 
               </div>
@@ -397,7 +432,7 @@ function DashboardPorteiro() {
 
                 <span style={styles.historyTime}>
 
-                  {item.data || item.criadoEm || "-"} • {item.porteiro || item.responsavel || item.origem || "Sistema"}
+                  {item.data}{item.detalhe ? ` • ${item.detalhe}` : ""}
 
                 </span>
 
@@ -771,6 +806,7 @@ const styles = {
     boxShadow: "0 14px 40px rgba(15,23,42,0.08)",
     border: "1px solid #eef2f7",
     display: "flex",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center",
     gap: "24px"
