@@ -316,6 +316,16 @@ export const createResidentSchema = z
       .optional()
       .default(true),
 
+    canInviteVisitors: z
+      .boolean()
+      .optional()
+      .default(true),
+
+    canRequestServices: z
+      .boolean()
+      .optional()
+      .default(true),
+
     status:
       userStatusSchema
         .optional()
@@ -381,6 +391,12 @@ export const updateResidentSchema = z
     canViewPackages:
       z.boolean().optional(),
 
+    canInviteVisitors:
+      z.boolean().optional(),
+
+    canRequestServices:
+      z.boolean().optional(),
+
     status:
       userStatusSchema.optional(),
   })
@@ -418,6 +434,12 @@ export const updateResidentPermissionsSchema =
         z.boolean().optional(),
 
       canViewPackages:
+        z.boolean().optional(),
+
+      canInviteVisitors:
+        z.boolean().optional(),
+
+      canRequestServices:
         z.boolean().optional(),
     })
     .strict()

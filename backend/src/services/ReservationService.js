@@ -10,6 +10,8 @@ import apartmentRepository from "../repositories/ApartmentRepository.js";
 
 import { ApiError } from "../utils/ApiError.js";
 
+const MAX_RESIDENT_ADVANCE_DAYS = 180;
+
 class ReservationService extends BaseService {
   constructor() {
     super(reservationRepository);
@@ -110,7 +112,7 @@ class ReservationService extends BaseService {
       day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
     }).formatToParts(new Date()).map(({ type, value }) => [type, value]));
     const today = `${parts.year}-${parts.month}-${parts.day}`;
-    const requested = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const requested = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
     if (requested < today || (requested === today && startTime <= `${parts.hour}:${parts.minute}`)) {
       throw new ApiError("A reserva deve começar após o momento atual.", 400);
     }
@@ -138,15 +140,46 @@ class ReservationService extends BaseService {
       );
     }
 
-    const reservationDate =
-      value instanceof Date
-        ? new Date(value)
-        : new Date(`${value}T00:00:00`);
+    // Sempre em UTC (meia-noite), independente do fuso do servidor.
+    if (value instanceof Date) {
+      if (Number.isNaN(value.getTime())) {
+        throw new ApiError(
+          "Data da reserva inválida.",
+          400
+        );
+      }
 
+      return new Date(
+        Date.UTC(
+          value.getUTCFullYear(),
+          value.getUTCMonth(),
+          value.getUTCDate()
+        )
+      );
+    }
+
+    const match =
+      /^(\d{4})-(\d{2})-(\d{2})/.exec(
+        String(value).trim()
+      );
+
+    const reservationDate = match
+      ? new Date(
+          Date.UTC(
+            Number(match[1]),
+            Number(match[2]) - 1,
+            Number(match[3])
+          )
+        )
+      : null;
+
+    // Recusa datas inexistentes (ex.: 31/02), que o JavaScript
+    // "empurraria" para o mês seguinte.
     if (
-      Number.isNaN(
-        reservationDate.getTime()
-      )
+      !reservationDate ||
+      reservationDate.getUTCFullYear() !== Number(match[1]) ||
+      reservationDate.getUTCMonth() !== Number(match[2]) - 1 ||
+      reservationDate.getUTCDate() !== Number(match[3])
     ) {
       throw new ApiError(
         "Data da reserva inválida.",
@@ -154,14 +187,71 @@ class ReservationService extends BaseService {
       );
     }
 
-    reservationDate.setHours(
-      0,
-      0,
-      0,
-      0
+    return reservationDate;
+  }
+
+  /**
+   * Antecedência máxima para o morador solicitar uma reserva.
+   */
+  validateResidentAdvance(date, authenticatedUser) {
+    if (authenticatedUser?.role !== "RESIDENT") {
+      return;
+    }
+
+    const limite = new Date();
+    limite.setUTCHours(0, 0, 0, 0);
+    limite.setUTCDate(
+      limite.getUTCDate() + MAX_RESIDENT_ADVANCE_DAYS
     );
 
-    return reservationDate;
+    if (date > limite) {
+      throw new ApiError(
+        `A reserva pode ser solicitada com até ${MAX_RESIDENT_ADVANCE_DAYS} dias de antecedência.`,
+        400
+      );
+    }
+  }
+
+  /**
+   * Converte violações das regras do banco (pedidos simultâneos)
+   * em mensagens claras, em vez de "Erro interno do servidor".
+   */
+  async persistWithConstraints(operation) {
+    try {
+      return await operation();
+    } catch (error) {
+      const texto = [
+        error?.message,
+        error?.code,
+        JSON.stringify(error?.meta ?? {}),
+        error?.cause?.message,
+        error?.cause?.code,
+      ]
+        .filter(Boolean)
+        .join(" ");
+
+      if (
+        texto.includes("Reservation_one_active_per_user_day") ||
+        (texto.includes("P2002") && texto.includes("requestedByUserId"))
+      ) {
+        throw new ApiError(
+          "O morador já possui uma reserva pendente ou aprovada nesta data.",
+          409
+        );
+      }
+
+      if (
+        texto.includes("Reservation_no_active_overlap") ||
+        texto.includes("23P01")
+      ) {
+        throw new ApiError(
+          "Este horário acabou de ser reservado. Escolha outro horário.",
+          409
+        );
+      }
+
+      throw error;
+    }
   }
 
   /**
@@ -538,6 +628,8 @@ class ReservationService extends BaseService {
 
     this.validateFutureSlot(reservationDate, startTime);
 
+    this.validateResidentAdvance(reservationDate, authenticatedUser);
+
     const guestsCount =
       this.normalizeGuestsCount(
         data.guestsCount
@@ -571,7 +663,8 @@ class ReservationService extends BaseService {
     });
 
     const reservation =
-      await reservationRepository
+      await this.persistWithConstraints(() =>
+        reservationRepository
         .createForCondominium(
           condominiumId,
           {
@@ -599,7 +692,8 @@ class ReservationService extends BaseService {
                 data.notes
               ),
           }
-        );
+        )
+      );
 
     await AuditLogService.logCreate({
       condominiumId,
@@ -711,7 +805,8 @@ class ReservationService extends BaseService {
     });
 
     let reservation =
-      await reservationRepository
+      await this.persistWithConstraints(() =>
+        reservationRepository
         .createForCondominium(
           condominiumId,
           {
@@ -734,7 +829,8 @@ class ReservationService extends BaseService {
                 data.notes
               ),
           }
-        );
+        )
+      );
 
     await AuditLogService.logCreate({
       condominiumId,
@@ -849,6 +945,7 @@ class ReservationService extends BaseService {
 
     if (updateData.reservationDate !== undefined || updateData.startTime !== undefined) {
       this.validateFutureSlot(reservationDate, startTime);
+      this.validateResidentAdvance(reservationDate, authenticatedUser);
     }
 
     const guestsCount =
@@ -888,7 +985,8 @@ class ReservationService extends BaseService {
     });
 
     const updated =
-      await reservationRepository
+      await this.persistWithConstraints(() =>
+        reservationRepository
         .updateById(
           id,
           condominiumId,
@@ -913,7 +1011,8 @@ class ReservationService extends BaseService {
                   )
                 : before.notes,
           }
-        );
+        )
+      );
 
     if (!updated) {
       throw new ApiError(
@@ -1192,11 +1291,13 @@ class ReservationService extends BaseService {
     });
 
     const reservation =
-      await reservationRepository
+      await this.persistWithConstraints(() =>
+        reservationRepository
         .reopen(
           id,
           condominiumId
-        );
+        )
+      );
 
     if (!reservation) {
       throw new ApiError(
@@ -1273,6 +1374,17 @@ class ReservationService extends BaseService {
       throw new ApiError(
         "Você não possui permissão para cancelar esta reserva.",
         403
+      );
+    }
+
+    if (
+      authenticatedUser?.role ===
+        "RESIDENT" &&
+      this.hasReservationEnded(before)
+    ) {
+      throw new ApiError(
+        "Esta reserva já aconteceu e não pode mais ser cancelada.",
+        409
       );
     }
 

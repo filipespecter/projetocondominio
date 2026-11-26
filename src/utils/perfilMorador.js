@@ -28,7 +28,7 @@ export function normalizarMorador(entrada) {
     permissoesMorador: {
       podeReservar: resident.canReserve !== false,
       podeAbrirSugestao: resident.canOpenOccurrence !== false,
-      podeVisualizarEncomendas: resident.canViewPackages !== false,
+      podeVisualizarEncomendas: resident.canViewPackages !== false, podeConvidarVisitantes: resident.canInviteVisitors !== false, podeSolicitarPrestadores: resident.canRequestServices !== false,
     },
   };
 }

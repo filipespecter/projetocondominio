@@ -978,6 +978,10 @@ class VisitorService extends BaseService {
       authenticatedUser
     );
 
+    if (resident.canInviteVisitors === false) {
+      throw new ApiError("Este morador não possui permissão para convidar visitantes.", 403);
+    }
+
     const validFrom = this.normalizeInvitationDate(
       data.validFrom,
       "Data/hora inicial"

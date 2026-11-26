@@ -73,7 +73,8 @@ class ReservationRepository extends BaseRepository {
         ? new Date(value)
         : new Date(value);
 
-    date.setHours(0, 0, 0, 0);
+    // Meia-noite em UTC: não depende do fuso do servidor.
+    date.setUTCHours(0, 0, 0, 0);
 
     return date;
   }

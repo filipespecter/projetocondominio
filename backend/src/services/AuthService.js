@@ -38,6 +38,32 @@ class AuthService {
       const c=safeUser.condominium;
       safeUser.condominium={...c,settings:{...(c.settings||{}),whatsapp:{}}};
     }
+
+    // Morador não precisa de dados internos da plataforma
+    // nem do contrato/aprovação do condomínio.
+    if (safeUser.role === "RESIDENT") {
+      for (const key of Object.keys(safeUser)) {
+        if (key.startsWith("platform")) {
+          delete safeUser[key];
+        }
+      }
+
+      if (safeUser.condominium) {
+        const condominium = { ...safeUser.condominium };
+        for (const key of [
+          "platformNotes",
+          "approvedByUserId",
+          "rejectedByUserId",
+          "rejectionReason",
+          "subscription",
+          "trialEndsAt",
+        ]) {
+          delete condominium[key];
+        }
+        safeUser.condominium = condominium;
+      }
+    }
+
     return safeUser;
   }
 

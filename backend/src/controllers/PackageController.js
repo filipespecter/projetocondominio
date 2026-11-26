@@ -1,3 +1,4 @@
+import { forResident, residentPackage } from "../utils/residentView.js";
 import PackageService from "../services/PackageService.js";
 
 function requestContext(req) {
@@ -75,7 +76,7 @@ class PackageController {
 
       return res.json({
         success: true,
-        data,
+        data: forResident(req.user, residentPackage, data),
       });
     } catch (error) {
       return next(error);
@@ -98,7 +99,10 @@ class PackageController {
 
       return res.json({
         success: true,
-        data,
+        data: {
+          ...data,
+          package: residentPackage(data.package),
+        },
       });
     } catch (error) {
       return next(error);

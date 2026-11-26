@@ -3,6 +3,7 @@ import { me as getAuthenticatedUser } from "../../Services/authApi.js";
 import occurrenceApi from "../../Services/occurrenceApi.js";
 import { notify } from "../../components/GlobalDialogs.jsx";
 import { normalizarMorador } from "../../utils/perfilMorador.js";
+import SemPermissaoMorador from "../../components/Morador/SemPermissaoMorador.jsx";
 
 function SugestoesMorador() {
   const estadoInicial={tipo:"Reclamação",categoria:"",prioridade:"Média",titulo:"",descricao:""};
@@ -150,6 +151,12 @@ function SugestoesMorador() {
       </div>
 
       <div style={styles.mainGrid}>
+        {morador?.permissoesMorador?.podeAbrirSugestao === false ? (
+          <SemPermissaoMorador
+            titulo="Envio de solicitações não liberado"
+            texto="Seu perfil pode acompanhar as solicitações, mas o envio não foi liberado pelo condomínio. Peça ao morador principal ou ao síndico, se precisar."
+          />
+        ) : (
         <div style={styles.formCard}>
           <div style={styles.sectionHeader}>
             <div>
@@ -279,6 +286,7 @@ function SugestoesMorador() {
             ocorrências, e o síndico poderá responder pelo painel administrativo.
           </p>
         </div>
+        )}
 
         <div style={styles.listCard}>
           <div style={styles.listHeader}>

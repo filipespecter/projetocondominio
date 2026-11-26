@@ -666,6 +666,8 @@ model Resident {
   canOpenOccurrence Boolean @default(true)
   whatsappOptIn Boolean @default(false)
   canViewPackages Boolean   @default(true)
+  canInviteVisitors Boolean @default(true)
+  canRequestServices Boolean @default(true)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   deletedAt    DateTime?

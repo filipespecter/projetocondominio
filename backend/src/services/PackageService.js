@@ -290,9 +290,16 @@ class PackageService extends BaseService {
           condominiumId
         );
 
+    if (resident && !resident.canViewPackages) {
+      throw new ApiError(
+        "Este morador não possui acesso ao módulo de encomendas.",
+        403
+      );
+    }
+
     if (
       !resident ||
-      !resident.canViewPackages || resident.apartmentId !==
+      resident.apartmentId !==
         packageRecord.apartmentId
     ) {
       throw new ApiError(
@@ -346,14 +353,15 @@ class PackageService extends BaseService {
         );
       }
 
-      packageRecord =
-        await packageRepository
-          .findByPickupCodeHash(
-            condominiumId,
-            PickupCredential.hash(
-              code
-            )
-          );
+      for (const codeHash of PickupCredential.codeHashCandidates(code)) {
+        packageRecord =
+          await packageRepository
+            .findByPickupCodeHash(
+              condominiumId,
+              codeHash
+            );
+        if (packageRecord) break;
+      }
     } else {
       throw new ApiError(
         "Método de retirada inválido.",

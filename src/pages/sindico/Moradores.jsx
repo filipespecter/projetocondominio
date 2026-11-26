@@ -15,12 +15,20 @@ function limparTelefone(valor) {
     .slice(0, 15);
 }
 
+const PERMISSOES_MORADOR = [
+  ["podeReservar", "Reservar áreas comuns"],
+  ["podeAbrirSugestao", "Enviar sugestões e reclamações"],
+  ["podeVisualizarEncomendas", "Ver encomendas e gerar QR de retirada"],
+  ["podeConvidarVisitantes", "Convidar visitantes"],
+  ["podeSolicitarPrestadores", "Solicitar prestadores de serviço"],
+];
+
 function Moradores() {
   const estadoInicialMorador = {
     id: null, nome: "", apto: "", apartamento: "", telefone: "", documento: "", email: "",
     usuario: "", senha: "", status: "Ativo", tipoMorador: "Proprietário",
     whatsappOptIn: false, moradorPrincipal: false, moradorSecundario:false, perfilMorador: "principal", apartamentoId: null,
-    permissoesMorador: { podeReservar: true, podeAbrirSugestao: true, podeVisualizarEncomendas: true }
+    permissoesMorador: { podeReservar: true, podeAbrirSugestao: true, podeVisualizarEncomendas: true, podeConvidarVisitantes: true, podeSolicitarPrestadores: true }
   };
 
   const [params,setParams]=useSearchParams();
@@ -86,7 +94,9 @@ function Moradores() {
       permissoesMorador: {
         podeReservar: r.canReserve !== false,
         podeAbrirSugestao: r.canOpenOccurrence !== false,
-        podeVisualizarEncomendas: r.canViewPackages !== false
+        podeVisualizarEncomendas: r.canViewPackages !== false,
+        podeConvidarVisitantes: r.canInviteVisitors !== false,
+        podeSolicitarPrestadores: r.canRequestServices !== false
       },
       status: statusFront[user.status ?? r.status] ?? user.status ?? r.status ?? "Ativo"
     };
@@ -172,6 +182,8 @@ function Moradores() {
       canReserve: novoMorador.permissoesMorador?.podeReservar !== false,
       canOpenOccurrence: novoMorador.permissoesMorador?.podeAbrirSugestao !== false,
       canViewPackages: novoMorador.permissoesMorador?.podeVisualizarEncomendas !== false,
+      canInviteVisitors: novoMorador.permissoesMorador?.podeConvidarVisitantes !== false,
+      canRequestServices: novoMorador.permissoesMorador?.podeSolicitarPrestadores !== false,
       status: statusBack[novoMorador.status] ?? "ACTIVE"
     };
     try {
@@ -736,6 +748,32 @@ function Moradores() {
                 />
               </div>
 
+              <fieldset style={styles.permissionsBox}>
+                <legend style={styles.permissionsLegend}>Permissões do morador</legend>
+                <p style={styles.permissionsHint}>Desmarque o que este morador não pode fazer no portal. Útil para dependentes.</p>
+                <div style={styles.permissionsGrid}>
+                  {PERMISSOES_MORADOR.map(([chave, rotulo]) => (
+                    <label key={chave} style={styles.checkRow}>
+                      <input
+                        type="checkbox"
+                        style={styles.checkInput}
+                        checked={novoMorador.permissoesMorador?.[chave] !== false}
+                        onChange={(e) =>
+                          setNovoMorador({
+                            ...novoMorador,
+                            permissoesMorador: {
+                              ...(novoMorador.permissoesMorador ?? {}),
+                              [chave]: e.target.checked,
+                            },
+                          })
+                        }
+                      />
+                      <span style={styles.checkText}>{rotulo}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+
               {!editId && <label style={{...styles.checkRow, gridColumn: "1 / -1"}}><input type="checkbox" style={styles.checkInput} checked={createAccess} onChange={e=>setCreateAccess(e.target.checked)}/><span style={styles.checkText}><strong>Criar acesso agora.</strong> Desmarcado: salvar somente o cadastro, sem liberar login.</span></label>}
               {editId && <div style={styles.formRowFull}><ResidentAccess key={editId} resident={novoMorador} onChanged={carregar}/></div>}
               <div style={styles.formRowFull}>
@@ -1236,6 +1274,35 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     gap: "7px"
+  },
+
+  permissionsBox: {
+    gridColumn: "1 / -1",
+    margin: 0,
+    padding: "16px",
+    border: "1px solid var(--ic-primary-soft-2, #ece3fb)",
+    borderRadius: "18px",
+    background: "white",
+    minWidth: 0
+  },
+
+  permissionsLegend: {
+    padding: "0 6px",
+    fontWeight: 800,
+    fontSize: "14px",
+    color: "var(--ic-primary-deep, #4c1d95)"
+  },
+
+  permissionsHint: {
+    margin: "0 0 12px",
+    color: "#6b7280",
+    fontSize: "13px"
+  },
+
+  permissionsGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: "10px"
   },
 
   checkRow: {

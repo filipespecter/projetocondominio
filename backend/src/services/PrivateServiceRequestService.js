@@ -7,6 +7,8 @@ import AuditLogService from "./AuditLogService.js";
 import NotificationService from "./NotificationService.js";
 import { ApiError } from "../utils/ApiError.js";
 
+const MAX_ADVANCE_DAYS = 180;
+
 class PrivateServiceRequestService {
   include() {
     return {
@@ -33,7 +35,10 @@ class PrivateServiceRequestService {
 
   parseDate(value) {
     const date = new Date(`${value}T00:00:00.000Z`);
-    if (Number.isNaN(date.getTime())) throw new ApiError("Data do serviço inválida.", 422);
+    // Recusa datas inexistentes (ex.: 31/02), que o JavaScript empurraria para o mês seguinte.
+    if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== String(value).slice(0, 10)) {
+      throw new ApiError("Data do serviço inválida.", 422);
+    }
     return date;
   }
 
@@ -72,10 +77,23 @@ class PrivateServiceRequestService {
 
   async create(user, data, requestContext = null) {
     const resident = await this.getResident(user);
+    if (resident.canRequestServices === false) {
+      throw new ApiError("Este morador não possui permissão para solicitar prestadores de serviço.", 403);
+    }
     const scheduledDate = this.parseDate(data.scheduledDate);
-    const now = new Date();
-    const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    // "Hoje" e "agora" no horário do Brasil (o servidor roda em UTC).
+    const agora = Object.fromEntries(new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit",
+      day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+    }).formatToParts(new Date()).map(({ type, value }) => [type, value]));
+    const today = new Date(`${agora.year}-${agora.month}-${agora.day}T00:00:00.000Z`);
     if (scheduledDate < today) throw new ApiError("A data do serviço não pode estar no passado.", 422);
+    if (scheduledDate.getTime() === today.getTime() && String(data.scheduledStartTime) <= `${agora.hour}:${agora.minute}`) {
+      throw new ApiError("O horário de início do serviço já passou.", 422);
+    }
+    const limite = new Date(today);
+    limite.setUTCDate(limite.getUTCDate() + MAX_ADVANCE_DAYS);
+    if (scheduledDate > limite) throw new ApiError(`O serviço pode ser agendado com até ${MAX_ADVANCE_DAYS} dias de antecedência.`, 422);
 
     const request = await prisma.privateServiceRequest.create({
       data: {

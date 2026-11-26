@@ -10,10 +10,14 @@ import {
 import packageApi from "../../Services/packageApi.js";
 import PackagePickupQr from "../../components/Morador/PackagePickupQr.jsx";
 import { notify } from "../../components/GlobalDialogs.jsx";
+import SemPermissaoMorador from "../../components/Morador/SemPermissaoMorador.jsx";
 
 function EncomendasMorador() {
   const [morador, setMorador] =
     useState(null);
+
+  const [semAcesso, setSemAcesso] =
+    useState(false);
 
   const [encomendas, setEncomendas] =
     useState([]);
@@ -96,13 +100,26 @@ function EncomendasMorador() {
 
   async function carregarDados() {
     try {
-      const [
-        user,
-        packageData,
-      ] = await Promise.all([
-        getAuthenticatedUser(),
-        packageApi.my(),
-      ]);
+      const user =
+        await getAuthenticatedUser();
+
+      // Dependente sem acesso a encomendas: mostra o aviso em vez de erro.
+      if (user?.resident?.canViewPackages === false) {
+        setMorador({
+          ...user,
+          nome:
+            user?.name ??
+            "Morador",
+        });
+        setEncomendas([]);
+        setSemAcesso(true);
+        return;
+      }
+
+      setSemAcesso(false);
+
+      const packageData =
+        await packageApi.my();
 
       setMorador({
         ...user,
@@ -255,6 +272,13 @@ function EncomendasMorador() {
         </div>
       </div>
 
+      {semAcesso ? (
+        <SemPermissaoMorador
+          titulo="Encomendas não liberadas para o seu perfil"
+          texto="O condomínio não liberou o acompanhamento de encomendas para este acesso. As encomendas do apartamento continuam disponíveis para o morador principal."
+        />
+      ) : (
+        <>
       <div style={styles.resumeGrid}>
         <div style={styles.cardPrimary}>
           <div>
@@ -551,6 +575,8 @@ function EncomendasMorador() {
           )}
         </div>
       </div>
+        </>
+      )}
 
       {credential && (
         <PackagePickupQr

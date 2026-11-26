@@ -290,6 +290,10 @@ class ResidentRepository extends BaseRepository {
           data.canOpenOccurrence ?? true,
         canViewPackages:
           data.canViewPackages ?? true,
+        canInviteVisitors:
+          data.canInviteVisitors ?? true,
+        canRequestServices:
+          data.canRequestServices ?? true,
       },
       {
         include: this.defaultInclude,
@@ -354,6 +358,24 @@ class ResidentRepository extends BaseRepository {
       updateData.canViewPackages =
         Boolean(
           data.canViewPackages
+        );
+    }
+
+    if (
+      data.canInviteVisitors !== undefined
+    ) {
+      updateData.canInviteVisitors =
+        Boolean(
+          data.canInviteVisitors
+        );
+    }
+
+    if (
+      data.canRequestServices !== undefined
+    ) {
+      updateData.canRequestServices =
+        Boolean(
+          data.canRequestServices
         );
     }
 
@@ -507,6 +529,26 @@ class ResidentRepository extends BaseRepository {
         );
     }
 
+    if (
+      permissions.canInviteVisitors !==
+      undefined
+    ) {
+      updateData.canInviteVisitors =
+        Boolean(
+          permissions.canInviteVisitors
+        );
+    }
+
+    if (
+      permissions.canRequestServices !==
+      undefined
+    ) {
+      updateData.canRequestServices =
+        Boolean(
+          permissions.canRequestServices
+        );
+    }
+
     const result =
       await this.updateMany(
         {
@@ -549,6 +591,8 @@ class ResidentRepository extends BaseRepository {
           canReserve: false,
           canOpenOccurrence: false,
           canViewPackages: false,
+          canInviteVisitors: false,
+          canRequestServices: false,
           deletedAt: new Date(),
         }
       );

@@ -54,6 +54,11 @@ test("reabrir QR retorna a mesma credencial enviada",async()=>{
  const service=new PackageCredentialService({$transaction:async fn=>fn(tx)});
  assert.deepEqual(await service.ensure("p","a"),credential);
 });
+test("código de retirada usa HMAC e aceita o hash legado na validação",()=>{
+ const code="863647";
+ assert.notEqual(PickupCredential.hashCode(code),PickupCredential.hash(code));
+ assert.deepEqual(PickupCredential.codeHashCandidates(code),[PickupCredential.hashCode(code),PickupCredential.hash(code)]);
+});
 test("encomenda entregue não permite recuperar credencial",async()=>{
  const tx={$queryRaw:async()=>[],package:{findFirst:async()=>null}};
  const service=new PackageCredentialService({$transaction:async fn=>fn(tx)});
@@ -64,7 +69,8 @@ test("geração persiste hashes e segredo criptografado na mesma transação",as
  const tx={$queryRaw:async()=>[],package:{findFirst:async args=>args.where.id?{}:null,update:async args=>{pkg=args.data;}},packagePickupSecret:{findFirst:async()=>null,upsert:async args=>{stored=args.create;}}};
  const service=new PackageCredentialService({$transaction:async fn=>fn(tx)});
  const result=await service.ensure("p","a");
- assert.equal(pkg.pickupCodeHash,PickupCredential.hash(result.code));
+ assert.equal(pkg.pickupCodeHash,PickupCredential.hashCode(result.code));
+ assert.notEqual(pkg.pickupCodeHash,PickupCredential.hash(result.code));
  assert.equal(pkg.pickupTokenHash,PickupCredential.hash(result.qrToken));
  assert.equal(unseal(stored.encrypted,"pickup:a:p").code,result.code);
 });

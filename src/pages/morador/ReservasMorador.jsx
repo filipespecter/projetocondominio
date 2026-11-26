@@ -650,7 +650,7 @@ function ReservasMorador() {
               )
             }}
             onClick={solicitarReserva}
-            disabled={opcoesAreas.length === 0}
+            disabled={!possuiPermissaoReserva() || opcoesAreas.length === 0}
           >
             Solicitar reserva
           </button>

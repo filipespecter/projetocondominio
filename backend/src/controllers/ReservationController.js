@@ -1,4 +1,5 @@
 import ReservationService from "../services/ReservationService.js";
+import { forResident, residentReservation } from "../utils/residentView.js";
 
 function requestContext(req) {
   return {
@@ -69,7 +70,7 @@ class ReservationController {
         req.user.condominiumId
       );
 
-      return res.json({ success: true, data });
+      return res.json({ success: true, data: forResident(req.user, residentReservation, data) });
     } catch (error) {
       return next(error);
     }
@@ -109,7 +110,7 @@ class ReservationController {
           success: true,
           message:
             "Solicitação de reserva criada com sucesso.",
-          data,
+          data: forResident(req.user, residentReservation, data),
         });
     } catch (error) {
       return next(error);
@@ -159,7 +160,7 @@ class ReservationController {
         success: true,
         message:
           "Reserva atualizada com sucesso.",
-        data,
+        data: forResident(req.user, residentReservation, data),
       });
     } catch (error) {
       return next(error);
@@ -249,7 +250,7 @@ class ReservationController {
         success: true,
         message:
           "Reserva cancelada com sucesso.",
-        data,
+        data: forResident(req.user, residentReservation, data),
       });
     } catch (error) {
       return next(error);

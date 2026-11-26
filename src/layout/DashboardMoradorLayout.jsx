@@ -12,6 +12,7 @@ import { FiHome, FiVolume2, FiPackage, FiCalendar, FiLogOut, FiMessageSquare, Fi
 import { useEffect, useState } from "react";
 import logoStar from "../assets/images/logo-star-infinity.png";
 import authApi from "../Services/authApi.js";
+import { rotuloUnidade } from "../utils/unidade.js";
 import { buildCondominiumThemeVariables } from "../utils/condominiumTheme.js";
 import NotificationCenter from "../components/NotificationCenter.jsx";
 import { useValidacaoEstilizada } from "../utils/validacaoEstilizada.js";
@@ -76,6 +77,10 @@ function DashboardMoradorLayout() {
               ?.apartment
               ?.unit ??
             "-",
+          unidade:
+            rotuloUnidade(
+              user.resident?.apartment
+            ),
         });
       } catch {
         if (mounted) {
@@ -176,9 +181,8 @@ function DashboardMoradorLayout() {
               </div>
 
               <div style={styles.userRole}>
-                Apartamento{" "}
-                {moradorLogado?.apartamento ||
-                  "-"}
+                {moradorLogado?.unidade ||
+                  `Apartamento ${moradorLogado?.apartamento || "-"}`}
               </div>
 
             </div>

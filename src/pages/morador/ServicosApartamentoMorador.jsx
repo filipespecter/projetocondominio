@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import privateServiceRequestApi from "../../Services/privateServiceRequestApi.js";
+import authApi from "../../Services/authApi.js";
+import SemPermissaoMorador from "../../components/Morador/SemPermissaoMorador.jsx";
 import { mascaraDocumento, mascaraTelefone } from "../../utils/mascaras.js";
 import "../../styles/infinityModules.css";
 
@@ -34,6 +36,14 @@ export default function ServicosApartamentoMorador() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState(null);
+  const [podeSolicitar, setPodeSolicitar] = useState(true);
+
+  useEffect(() => {
+    authApi
+      .me()
+      .then((u) => setPodeSolicitar(u?.resident?.canRequestServices !== false))
+      .catch(() => {});
+  }, []);
 
   async function load() {
     setLoading(true);
@@ -105,6 +115,7 @@ export default function ServicosApartamentoMorador() {
 
       {feedback && <div className={`icm-message icm-message-${feedback.type}`}>{feedback.text}</div>}
 
+      {podeSolicitar ? (
       <form className="icm-card icm-form" onSubmit={submit}>
         <div className="icm-section-heading">
           <div><span className="icm-eyebrow">NOVA SOLICITAÇÃO</span><h2>Quem irá ao apartamento?</h2></div>
@@ -124,6 +135,12 @@ export default function ServicosApartamentoMorador() {
         </div>
         <div className="icm-actions"><button className="icm-btn icm-btn-primary" disabled={saving}>{saving ? "Enviando..." : "Enviar para aprovação"}</button></div>
       </form>
+      ) : (
+        <SemPermissaoMorador
+          titulo="Solicitação de prestadores não liberada"
+          texto="Seu perfil pode acompanhar as solicitações do apartamento, mas o envio não foi liberado pelo condomínio. Peça ao morador principal ou ao síndico, se precisar."
+        />
+      )}
 
       <section className="icm-card icm-section-card">
         <div className="icm-section-heading"><div><span className="icm-eyebrow">ACOMPANHAMENTO</span><h2>Minhas solicitações</h2></div></div>

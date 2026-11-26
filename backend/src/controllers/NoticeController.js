@@ -1,3 +1,4 @@
+import { forResident, residentNotice } from "../utils/residentView.js";
 import NoticeService from "../services/NoticeService.js";
 
 function requestContext(req) {
@@ -91,7 +92,7 @@ class NoticeController {
 
       return res.json({
         success: true,
-        data,
+        data: forResident(req.user, residentNotice, data),
       });
     } catch (error) {
       return next(error);
@@ -110,7 +111,7 @@ class NoticeController {
 
       return res.json({
         success: true,
-        data,
+        data: forResident(req.user, residentNotice, data),
       });
     } catch (error) {
       return next(error);

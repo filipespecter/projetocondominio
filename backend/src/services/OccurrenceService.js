@@ -53,6 +53,15 @@ class OccurrenceService extends BaseService {
   }
 
   /**
+   * Tipos que o morador pode registrar (Reclamação ou Sugestão).
+   */
+  normalizeResidentType(type) {
+    return type === "SUGGESTION"
+      ? "SUGGESTION"
+      : "COMPLAINT";
+  }
+
+  /**
    * Prioridades existentes no schema.
    */
   validatePriority(priority) {
@@ -505,8 +514,12 @@ class OccurrenceService extends BaseService {
         authenticatedUser
       );
 
+    // Morador registra apenas Reclamação ou Sugestão; outros tipos
+    // (inclusive o padrão "OCCURRENCE" do validador) viram Reclamação.
     const type =
-      data.type ?? "OCCURRENCE";
+      authenticatedUser.role === "RESIDENT"
+        ? this.normalizeResidentType(data.type)
+        : data.type ?? "OCCURRENCE";
 
     const priority =
       data.priority ?? "MEDIUM";
@@ -527,6 +540,21 @@ class OccurrenceService extends BaseService {
     if (resident) {
       apartmentId =
         resident.apartmentId;
+    }
+
+    // O morador só escolhe categoria, tipo (reclamação/sugestão),
+    // prioridade, título e descrição. Responsável, turno e data
+    // de plantão são definidos pela administração.
+    if (
+      authenticatedUser.role ===
+      "RESIDENT"
+    ) {
+      data = {
+        ...data,
+        assignedToUserId: null,
+        shift: null,
+        dutyDate: null,
+      };
     }
 
     if (apartmentId) {
@@ -691,6 +719,42 @@ class OccurrenceService extends BaseService {
         "Você não possui permissão para alterar esta ocorrência.",
         403
       );
+    }
+
+    if (
+      authenticatedUser?.role ===
+      "RESIDENT"
+    ) {
+      // Depois que a administração começa a tratar,
+      // o morador não altera mais o registro.
+      if (before.status !== "NEW") {
+        throw new ApiError(
+          "Esta solicitação já está em análise e não pode mais ser editada.",
+          409
+        );
+      }
+
+      const permitidos = [
+        "title",
+        "description",
+        "category",
+        "type",
+        "priority",
+      ];
+
+      data = Object.fromEntries(
+        Object.entries(data ?? {})
+          .filter(([key]) =>
+            permitidos.includes(key)
+          )
+      );
+
+      if (data.type !== undefined) {
+        data.type =
+          this.normalizeResidentType(
+            data.type
+          );
+      }
     }
 
     const updateData = {

@@ -9,6 +9,7 @@ import occurrenceRepository from "../repositories/OccurrenceRepository.js";
 import notificationRepository from "../repositories/NotificationRepository.js";
 
 import { ApiError } from "../utils/ApiError.js";
+import { publicUser, residentNotice, residentPackage, residentReservation, residentVisitor } from "../utils/residentView.js";
 
 class DashboardService {
   /**
@@ -279,12 +280,22 @@ class DashboardService {
       );
     }
 
+    const resident =
+      await residentRepository.findByUserId(
+        userId,
+        condominiumId
+      );
+
+    // Respeita a permissão de encomendas configurada pelo síndico.
+    const canViewPackages =
+      resident?.canViewPackages !== false;
+
     const [
       apartment,
       packages,
       reservations,
       visitors,
-      publishedNotices,
+      visibleNotices,
       unreadNotifications,
     ] = await Promise.all([
       apartmentRepository.findById(
@@ -292,10 +303,12 @@ class DashboardService {
         condominiumId
       ),
 
-      packageRepository.findByApartment(
-        apartmentId,
-        condominiumId
-      ),
+      canViewPackages
+        ? packageRepository.findByApartment(
+            apartmentId,
+            condominiumId
+          )
+        : Promise.resolve([]),
 
       reservationRepository.findByRequestedUser(
         userId,
@@ -307,9 +320,14 @@ class DashboardService {
         condominiumId
       ),
 
-      noticeRepository.findPublished(
-        condominiumId
-      ),
+      // Mesma regra da tela de avisos: respeita o público-alvo
+      // (porteiros, administração, aviso individual, etc.).
+      noticeRepository.findVisibleForUser({
+        condominiumId,
+        role: "RESIDENT",
+        apartmentId,
+        recipientUserId: userId,
+      }),
 
       notificationRepository.countUnreadByUser(
         userId,
@@ -348,14 +366,26 @@ class DashboardService {
       );
 
     const apartmentNotices =
-      publishedNotices.filter(
-        (notice) =>
-          !notice.apartmentId ||
-          notice.apartmentId === apartmentId
-      );
+      visibleNotices;
+
+    // Dados dos outros moradores da unidade: só id e nome.
+    const apartmentView = {
+      ...apartment,
+      ...(Array.isArray(apartment.residents)
+        ? {
+            residents:
+              apartment.residents.map(
+                (item) => ({
+                  ...item,
+                  user: publicUser(item.user),
+                })
+              ),
+          }
+        : {}),
+    };
 
     return {
-      apartment,
+      apartment: apartmentView,
 
       indicators: {
         pendingPackages:
@@ -371,16 +401,24 @@ class DashboardService {
       },
 
       recentPackages:
-        packages.slice(0, 5),
+        packages
+          .slice(0, 5)
+          .map(residentPackage),
 
       recentReservations:
-        reservations.slice(0, 5),
+        reservations
+          .slice(0, 5)
+          .map(residentReservation),
 
       recentVisitors:
-        visitors.slice(0, 5),
+        visitors
+          .slice(0, 5)
+          .map(residentVisitor),
 
       recentNotices:
-        apartmentNotices.slice(0, 5),
+        apartmentNotices
+          .slice(0, 5)
+          .map(residentNotice),
     };
   }
 

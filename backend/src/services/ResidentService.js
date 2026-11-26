@@ -387,6 +387,14 @@ class ResidentService extends BaseService {
               canViewPackages:
                 data.canViewPackages ??
                 true,
+
+              canInviteVisitors:
+                data.canInviteVisitors ??
+                true,
+
+              canRequestServices:
+                data.canRequestServices ??
+                true,
             }
           );
 
@@ -562,6 +570,20 @@ class ResidentService extends BaseService {
     ) {
       residentData.canViewPackages =
         data.canViewPackages;
+    }
+
+    if (
+      data.canInviteVisitors !== undefined
+    ) {
+      residentData.canInviteVisitors =
+        data.canInviteVisitors;
+    }
+
+    if (
+      data.canRequestServices !== undefined
+    ) {
+      residentData.canRequestServices =
+        data.canRequestServices;
     }
 
     if (

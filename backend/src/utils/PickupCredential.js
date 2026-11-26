@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import env from "../config/env.js";
 
 class PickupCredential {
   static hash(value) {
@@ -6,6 +7,30 @@ class PickupCredential {
       .createHash("sha256")
       .update(String(value))
       .digest("hex");
+  }
+
+  /**
+   * Hash do código de 6 dígitos. Usa HMAC com chave do servidor:
+   * com SHA-256 puro, o código poderia ser descoberto testando
+   * as 1.000.000 combinações a partir do hash.
+   */
+  static hashCode(code) {
+    const secret = crypto
+      .createHash("sha256")
+      .update(`pickup-code:${env.JWT_REFRESH_SECRET}`)
+      .digest();
+    return crypto
+      .createHmac("sha256", secret)
+      .update(String(code))
+      .digest("hex");
+  }
+
+  /**
+   * Hashes aceitos na validação do código: o atual (HMAC) e o
+   * legado (SHA-256), para códigos gerados antes da atualização.
+   */
+  static codeHashCandidates(code) {
+    return [this.hashCode(code), this.hash(code)];
   }
 
   static generateToken() {
