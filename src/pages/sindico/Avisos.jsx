@@ -57,10 +57,27 @@ function Avisos() {
   const [editId, setEditId] =
     useState(null);
 
+  // Texto de resposta separado por comunicação (chave = id do item).
   const [
-    respostaTexto,
-    setRespostaTexto,
-  ] = useState("");
+    respostas,
+    setRespostas,
+  ] = useState({});
+
+  const textoResposta = (id) =>
+    respostas[id] ?? "";
+
+  const definirResposta = (id, texto) =>
+    setRespostas((atual) => ({
+      ...atual,
+      [id]: texto,
+    }));
+
+  const limparResposta = (id) =>
+    setRespostas((atual) => {
+      const copia = { ...atual };
+      delete copia[id];
+      return copia;
+    });
 
   const priorityFront = {
     URGENT: "Urgente",
@@ -481,7 +498,7 @@ function Avisos() {
         "Resolvido"
       ) {
         const resolution =
-          respostaTexto.trim() ||
+          textoResposta(item.id).trim() ||
           await promptDialog(
             "Informe a resolução:"
           );
@@ -500,7 +517,7 @@ function Avisos() {
             resolution.trim()
           );
 
-        setRespostaTexto("");
+        limparResposta(item.id);
       }
 
       await carregarCentral();
@@ -515,9 +532,10 @@ function Avisos() {
   async function responderItem(
     item
   ) {
-    if (
-      !respostaTexto.trim()
-    ) {
+    const texto =
+      textoResposta(item.id).trim();
+
+    if (!texto) {
       notify(
         "Digite a resposta ou resolução.", "error"
       );
@@ -528,10 +546,10 @@ function Avisos() {
       await occurrenceApi
         .resolve(
           item.id,
-          respostaTexto.trim()
+          texto
         );
 
-      setRespostaTexto("");
+      limparResposta(item.id);
       await carregarCentral();
     } catch (error) {
       notify(
@@ -595,7 +613,7 @@ function Avisos() {
       <div className="ic-pkg-table-wrap"><table className="ic-pkg-table"><thead><tr><th>Título</th><th>{received?"Origem":"Destinatário"}</th><th>Prioridade</th><th>Data</th><th>Ações</th></tr></thead><tbody>{rows.map(aviso=>{
         const priority=corPrioridade(aviso.prioridade),apt=apartamentos.find(a=>a.id===aviso.apartamentoId);
         const target=aviso.publico==="Um morador"?destinatarios.find(r=>r.user?.id===aviso.recipientUserId)?.user?.name||"Um morador":aviso.publico==="Apartamento"&&apt?`Bloco ${apt.block??"—"} · Apartamento ${apt.number}`:aviso.publico;
-        return <tr key={aviso.id}><td data-label="Título"><span className="ic-pkg-description"><FiCalendar/><strong>{aviso.titulo}</strong></span><small>{aviso.descricao}</small></td><td data-label="Destinatário / origem">{received?aviso.origem:target}</td><td data-label="Prioridade"><span className="ic-pkg-tag" style={{background:priority.background,color:priority.color}}>{priority.label}</span></td><td data-label="Data">{aviso.data}<small>{aviso.status}</small></td><td data-label="Ações"><details className="ic-pkg-action-menu"><summary aria-label="Mais ações"><FiMoreHorizontal/></summary>{received?<div><textarea aria-label="Resposta" value={respostaTexto} onChange={e=>setRespostaTexto(e.target.value)}/><button onClick={()=>responderItem(aviso)}>Responder</button><button onClick={()=>atualizarStatus(aviso,"Ciente")}>Ciente</button><button onClick={()=>atualizarStatus(aviso,"Em Tratamento")}>Em tratamento</button><button onClick={()=>atualizarStatus(aviso,"Resolvido")}>Resolver</button></div>:<div><button onClick={()=>editarAviso(aviso)}>Editar</button><button onClick={()=>excluirAviso(aviso.id)}>Excluir</button></div>}</details></td></tr>;
+        return <tr key={aviso.id}><td data-label="Título"><span className="ic-pkg-description"><FiCalendar/><strong>{aviso.titulo}</strong></span><small>{aviso.descricao}</small></td><td data-label="Destinatário / origem">{received?aviso.origem:target}</td><td data-label="Prioridade"><span className="ic-pkg-tag" style={{background:priority.background,color:priority.color}}>{priority.label}</span></td><td data-label="Data">{aviso.data}<small>{aviso.status}</small></td><td data-label="Ações"><details className="ic-pkg-action-menu"><summary aria-label="Mais ações"><FiMoreHorizontal/></summary>{received?<div><textarea aria-label="Resposta" value={textoResposta(aviso.id)} onChange={e=>definirResposta(aviso.id,e.target.value)}/><button onClick={()=>responderItem(aviso)}>Responder</button><button onClick={()=>atualizarStatus(aviso,"Ciente")}>Ciente</button><button onClick={()=>atualizarStatus(aviso,"Em Tratamento")}>Em tratamento</button><button onClick={()=>atualizarStatus(aviso,"Resolvido")}>Resolver</button></div>:<div><button onClick={()=>editarAviso(aviso)}>Editar</button><button onClick={()=>excluirAviso(aviso.id)}>Excluir</button></div>}</details></td></tr>;
       })}</tbody></table>{!rows.length&&<p className="ic-pkg-empty">Nenhum registro encontrado.</p>}</div>
     </section>
       {mostrarModal && (
