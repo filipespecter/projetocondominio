@@ -434,8 +434,8 @@ function PlatformUsers() {
             />
             <select style={styles.select} value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
               <option value="ALL">Todos os níveis</option>
-              <option value="PLATFORM_OWNER">Owner</option>
-              <option value="PLATFORM_ADMIN">Admin</option>
+              <option value="PLATFORM_OWNER">Proprietário</option>
+              <option value="PLATFORM_ADMIN">Administração</option>
               <option value="PLATFORM_SUPPORT">Suporte</option>
             </select>
             <select style={styles.select} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
@@ -548,8 +548,8 @@ function PlatformUsers() {
                     disabled={editing ? currentUser?.role !== "PLATFORM_OWNER" : !["PLATFORM_OWNER", "PLATFORM_ADMIN"].includes(currentUser?.role)}
                     onChange={(e) => change("role", e.target.value)}
                   >
-                    <option value="PLATFORM_SUPPORT">PLATFORM_SUPPORT — suporte</option>
-                    <option value="PLATFORM_ADMIN">PLATFORM_ADMIN — administração</option>
+                    <option value="PLATFORM_SUPPORT">Suporte da Central</option>
+                    <option value="PLATFORM_ADMIN">Administrador da Central</option>
                   </select>
                 </Field>
                 {!editing && (

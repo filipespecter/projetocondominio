@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import platformApi from "../../Services/platformApi.js";
+import { confirmDialog, notify } from "../../components/GlobalDialogs.jsx";
 import { PlatformButton, PlatformCard, PlatformEmpty, PlatformError, PlatformLoading, PlatformPageHeader } from "../../components/PlatformUi.jsx";
 
 const premiumCodes = new Set(["EXPENSES","EXPENSE_EXPORT","PACKAGE_PROOF","ADVANCED_REPORTS","BI_DASHBOARD","WHATSAPP"]);
@@ -30,23 +31,41 @@ function PlatformPlans(){
 
   async function toggle(plan){
     setError(""); setSuccess("");
+    const ativo=plan.active===true||plan.status==="ACTIVE"||plan.isActive===true;
+    const ok=await confirmDialog(
+      ativo
+        ?`Desativar o ${plan.name}? Ele deixa de aparecer para novos clientes e para trocas de plano. Quem já usa este plano não é alterado.`
+        :`Ativar o ${plan.name}? Ele volta a ficar disponível para novos clientes e para trocas de plano.`,
+      {title:ativo?"Desativar plano":"Ativar plano",danger:ativo,confirmText:ativo?"Desativar":"Ativar",cancelText:"Voltar"}
+    );
+    if(!ok) return;
     try{
-      if(plan.active===true||plan.status==="ACTIVE"||plan.isActive===true) await platformApi.plans.deactivate(plan.id);
+      if(ativo) await platformApi.plans.deactivate(plan.id);
       else await platformApi.plans.activate(plan.id);
       await load();
-    }catch(err){ setError(err?.message??"Não foi possível alterar o plano."); }
+    }catch(err){ notify(err?.message??"Não foi possível alterar o plano.","error"); }
   }
 
   async function changeClientPlan(plan){
     const condominiumId=selectedClientByPlan[plan.id];
-    if(!condominiumId){ setError("Selecione um cliente para vincular ou trocar o plano."); return; }
+    if(!condominiumId){ notify("Selecione um cliente para vincular ou trocar o plano.","error"); return; }
+    const client=clients.find(item=>item.id===condominiumId);
+    const ref=client?.subscription?.plan;
+    const atual=ref?(items.find(item=>item.id===ref.id||item.id===client?.subscription?.planId||item.name===ref.name)??ref):null;
+    if(atual?.id===plan.id){ notify(`${client?.name??"Este cliente"} já utiliza ${plan.name}.`,"error"); return; }
+    const rebaixamento=atual&&Number(atual.monthlyPriceInCents??0)>Number(plan.monthlyPriceInCents??0);
+    const ok=await confirmDialog(
+      `${client?.name??"Cliente"} passará de ${atual?.name??"sem plano"} para ${plan.name} (${money(plan.monthlyPriceInCents)}/mês).`+
+      (rebaixamento?" Os recursos exclusivos do plano atual serão bloqueados; os dados continuam guardados.":" Os dados e o ciclo de cobrança atual são mantidos."),
+      {title:rebaixamento?"Rebaixar plano do cliente":"Trocar plano do cliente",danger:Boolean(rebaixamento),confirmText:"Confirmar troca",cancelText:"Voltar"}
+    );
+    if(!ok) return;
     setChangingPlanId(plan.id); setError(""); setSuccess("");
     try{
       await platformApi.condominiums.changePlan(condominiumId,plan.id);
-      const client=clients.find(item=>item.id===condominiumId);
-      setSuccess(`${client?.name??"Cliente"} agora utiliza ${plan.name}.`);
+      setSuccess(`${client?.name??"Cliente"} agora utiliza ${plan.name}.`); notify(`${client?.name??"Cliente"} agora utiliza ${plan.name}.`,"success");
       await load();
-    }catch(err){ setError(err?.message??"Não foi possível trocar o plano do cliente."); }
+    }catch(err){ notify(err?.message??"Não foi possível trocar o plano do cliente.","error"); }
     finally{ setChangingPlanId(null); }
   }
 

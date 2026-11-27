@@ -7,6 +7,7 @@ import {
 import {
   NavLink,
   Outlet,
+  useLocation,
   useNavigate,
 } from "react-router-dom";
 
@@ -133,6 +134,13 @@ const menu = [
  * não misturar usuários internos da Star com
  * síndico/administrador de condomínio.
  */
+// Mesma regra usada para montar o menu e para bloquear a página.
+function podeAcessar(item, role) {
+  if (item.ownerOnly) return role === "PLATFORM_OWNER";
+  if (Array.isArray(item.roles)) return item.roles.includes(role);
+  return true;
+}
+
 function PlatformLayout() {
   const navigate =
     useNavigate();
@@ -146,6 +154,15 @@ function PlatformLayout() {
     sidebarOpen,
     setSidebarOpen,
   ] = useState(false);
+
+  // Só decide o acesso à página depois de saber o perfil.
+  const [
+    perfilCarregado,
+    setPerfilCarregado,
+  ] = useState(false);
+
+  const location =
+    useLocation();
 
   useEffect(() => {
     let mounted = true;
@@ -166,6 +183,10 @@ function PlatformLayout() {
             null
           );
         }
+      } finally {
+        if (mounted) {
+          setPerfilCarregado(true);
+        }
       }
     }
 
@@ -182,6 +203,20 @@ function PlatformLayout() {
     )
       .trim()
       .toUpperCase();
+
+  // Página aberta pelo endereço, mas fora do nível de acesso do usuário.
+  const caminhoAtual =
+    location.pathname.replace(/\/+$/, "") || "/platform";
+
+  const paginaRestrita =
+    menu.find(
+      (item) =>
+        (item.to === "/platform"
+          ? caminhoAtual === "/platform"
+          : caminhoAtual === item.to ||
+            caminhoAtual.startsWith(`${item.to}/`)) &&
+        !podeAcessar(item, role)
+    ) ?? null;
 
   const visibleMenu =
     useMemo(
@@ -388,7 +423,26 @@ function PlatformLayout() {
         </header>
 
         <section style={styles.content}>
-          <Outlet />
+          {!perfilCarregado ? null : paginaRestrita ? (
+            <div style={styles.restrito}>
+              <FiShield style={styles.restritoIcone} />
+              <h2 style={styles.restritoTitulo}>
+                Acesso restrito
+              </h2>
+              <p style={styles.restritoTexto}>
+                A área "{paginaRestrita.label}" não está disponível para o seu nível de acesso.
+              </p>
+              <button
+                type="button"
+                style={styles.restritoBotao}
+                onClick={() => navigate("/platform")}
+              >
+                Voltar ao Dashboard
+              </button>
+            </div>
+          ) : (
+            <Outlet />
+          )}
         </section>
       </main>
     </div>
@@ -425,6 +479,40 @@ const responsiveCss = `
 `;
 
 const styles = {
+  restrito: {
+    maxWidth: "520px",
+    margin: "40px auto",
+    padding: "34px 28px",
+    borderRadius: "22px",
+    background: "#ffffff",
+    border: "1px solid #ebe4f5",
+    boxShadow: "0 18px 45px rgba(38,20,66,0.08)",
+    textAlign: "center",
+  },
+  restritoIcone: {
+    width: "34px",
+    height: "34px",
+    color: "var(--ic-primary)",
+  },
+  restritoTitulo: {
+    margin: "12px 0 8px",
+    color: "#24113c",
+  },
+  restritoTexto: {
+    margin: "0 0 20px",
+    color: "#6b5f78",
+    lineHeight: 1.55,
+  },
+  restritoBotao: {
+    minHeight: "42px",
+    padding: "0 18px",
+    border: "0",
+    borderRadius: "12px",
+    background: "linear-gradient(135deg,var(--ic-primary-strong),var(--ic-primary-deep))",
+    color: "#ffffff",
+    fontWeight: "800",
+    cursor: "pointer",
+  },
   shell: {
     minHeight: "100vh",
     display: "flex",

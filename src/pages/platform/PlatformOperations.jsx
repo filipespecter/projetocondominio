@@ -57,6 +57,8 @@ function PlatformOperations() {
     setError,
   ] = useState("");
 
+  const [gerandoBackup, setGerandoBackup] = useState(false);
+
   async function load() {
     setLoading(true);
     setError("");
@@ -148,16 +150,22 @@ function PlatformOperations() {
   }
 
   async function backup() {
+    if (gerandoBackup) return;
+    setGerandoBackup(true);
+    setError("");
     try {
       await platformApi.operations
         .createBackup();
 
+      notify("Backup gerado com sucesso.", "success");
       await load();
     } catch (err) {
       setError(
         err?.message ??
         "Falha ao executar o backup."
       );
+    } finally {
+      setGerandoBackup(false);
     }
   }
 
@@ -201,8 +209,9 @@ function PlatformOperations() {
         action={
           <PlatformButton
             onClick={backup}
+            disabled={gerandoBackup}
           >
-            Backup manual
+            {gerandoBackup ? "Gerando backup..." : "Backup manual"}
           </PlatformButton>
         }
       />

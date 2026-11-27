@@ -385,7 +385,7 @@ function PlatformCondominiums() {
                       updateApproval("planId", e.target.value);
                       if (plan) { updateApproval("billingCycle", plan.billingCycle ?? "MONTHLY"); updateApproval("priceInCents", plan.monthlyPriceInCents ?? 0); }
                     }}>
-                      {plans.map((plan) => <option key={plan.id} value={plan.id}>{plan.name} — R$ {((plan.monthlyPriceInCents ?? 0)/100).toFixed(2)}</option>)}
+                      {plans.map((plan) => <option key={plan.id} value={plan.id}>{plan.name} — {((plan.monthlyPriceInCents ?? 0)/100).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</option>)}
                     </select>
                   </label>
                   <label style={styles.field}><span style={styles.label}>Status inicial</span>
@@ -398,7 +398,7 @@ function PlatformCondominiums() {
                   <label style={styles.field}><span style={styles.label}>Administrador *</span><input style={styles.input} value={approvalForm.adminName} onChange={(e)=>updateApproval("adminName",e.target.value)} required/></label>
                   <label style={styles.field}><span style={styles.label}>E-mail *</span><input style={styles.input} type="email" value={approvalForm.adminEmail} onChange={(e)=>{updateApproval("adminEmail",e.target.value); updateApproval("billingEmail",e.target.value)}} required/></label>
                   <label style={styles.field}><span style={styles.label}>WhatsApp *</span><input style={styles.input} value={approvalForm.adminPhone} onChange={(e)=>{updateApproval("adminPhone",e.target.value); updateApproval("billingPhone",e.target.value)}} required/></label>
-                  <label style={styles.field}><span style={styles.label}>Valor mensal (centavos)</span><input style={styles.input} type="number" min="0" value={approvalForm.priceInCents} onChange={(e)=>updateApproval("priceInCents",e.target.value)}/></label>
+                  <label style={styles.field}><span style={styles.label}>Valor mensal (R$)</span><input style={styles.input} type="number" min="0" step="0.01" value={approvalForm.priceInCents === "" ? "" : Number(approvalForm.priceInCents) / 100} onChange={(e)=>updateApproval("priceInCents",e.target.value === "" ? "" : Math.round(Number(e.target.value) * 100))}/></label>
                 </div>
               </div>
             )}
