@@ -12,7 +12,7 @@ import {
 
 import { FiTrendingUp, FiGrid, FiUsers, FiUser, FiTag, FiDollarSign, FiClipboard, FiServer, FiHeadphones, FiList, FiLogOut, FiShield, FiMenu, FiX } from "react-icons/fi";
 
-import logoStar from "../assets/images/logo-star-infinity.png";
+import logoStar from "../assets/images/logo-star-infinity-simbolo.png";
 import authApi from "../Services/authApi.js";
 
 const menu = [
@@ -111,7 +111,7 @@ const menu = [
     ],
   },
   {
-    label: "Jobs / Backups",
+    label: "Rotinas / Backups",
     icon: <FiList />,
     to: "/platform/operacoes",
     enabled: true,
@@ -219,21 +219,21 @@ function PlatformLayout() {
       role ===
       "PLATFORM_OWNER"
     ) {
-      return "PLATFORM OWNER";
+      return "Proprietário da plataforma";
     }
 
     if (
       role ===
       "PLATFORM_ADMIN"
     ) {
-      return "PLATFORM ADMIN";
+      return "Administrador da Central";
     }
 
     if (
       role ===
       "PLATFORM_SUPPORT"
     ) {
-      return "PLATFORM SUPPORT";
+      return "Suporte da Central";
     }
 
     return "CENTRAL STAR";
@@ -458,9 +458,17 @@ const styles = {
   },
 
   logo: {
-    width: "46px",
-    height: "46px",
+    width: "52px",
+    height: "52px",
     objectFit: "contain",
+    padding: "6px",
+    boxSizing: "border-box",
+    borderRadius: "16px",
+    background:
+      "linear-gradient(135deg,rgba(255,255,255,0.16),rgba(255,255,255,0.06))",
+    boxShadow:
+      "inset 0 0 0 1px rgba(255,255,255,0.14)",
+    flexShrink: 0,
   },
 
   brandTitle: {
@@ -490,7 +498,7 @@ const styles = {
     color: "#ead28d",
     fontSize: "11px",
     fontWeight: "700",
-    letterSpacing: "0.7px",
+    letterSpacing: "0.3px",
   },
 
   nav: {

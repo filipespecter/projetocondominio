@@ -231,7 +231,7 @@ function PlatformCondominiums() {
       <PlatformPageHeader
         eyebrow="CLIENTES"
         title="Solicitações de condomínios"
-        description="Solicitações PENDING carregadas diretamente do PostgreSQL."
+        description="Cadastros de novos condomínios aguardando análise e liberação de acesso."
         action={
           <PlatformButton
             variant="secondary"
@@ -309,8 +309,7 @@ function PlatformCondominiums() {
                     </td>
 
                     <td style={platformTableStyles.td}>
-                      {item.status ??
-                        "PENDING"}
+                      {{ PENDING: "Aguardando análise", ACTIVE: "Ativo", TRIAL: "Em teste", SUSPENDED: "Suspenso", CANCELED: "Cancelado", REJECTED: "Recusado" }[item.status ?? "PENDING"] ?? item.status}
                     </td>
 
                     <td style={platformTableStyles.td}>

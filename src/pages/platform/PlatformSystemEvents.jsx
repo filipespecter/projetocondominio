@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import platformApi from "../../Services/platformApi.js";
+import { rotuloSeveridade, rotuloTipoEvento } from "../../utils/central.js";
 import {
   PlatformButton,
   PlatformCard,
@@ -148,12 +149,12 @@ function PlatformSystemEvents() {
                   <tr key={item.id}>
                     <td style={platformTableStyles.td}>{formatDate(item.occurredAt ?? item.createdAt)}</td>
                     <td style={platformTableStyles.td}>
-                      <strong>{item.type ?? item.eventType ?? "Evento"}</strong>
+                      <strong>{rotuloTipoEvento(item.type ?? item.eventType)}</strong>
                       <div style={styles.small}>{item.message ?? "Sem descrição."}</div>
                       {item.route ? <div style={styles.small}>{item.httpMethod ?? ""} {item.route}</div> : null}
                     </td>
-                    <td style={platformTableStyles.td}>{item.severity ?? "-"}</td>
-                    <td style={platformTableStyles.td}>{item.resolvedAt ? "RESOLVIDO" : "EM ABERTO"}</td>
+                    <td style={platformTableStyles.td}>{rotuloSeveridade(item.severity)}</td>
+                    <td style={platformTableStyles.td}>{item.resolvedAt ? "Resolvido" : "Em aberto"}</td>
                     <td style={platformTableStyles.td}>
                       {item.resolvedAt ? (
                         <div style={styles.resolutionBox}>
@@ -203,7 +204,7 @@ function PlatformSystemEvents() {
 
             <div style={styles.body}>
               <div style={styles.eventBox}>
-                <strong>{resolutionTarget.type ?? resolutionTarget.eventType ?? "Evento"}</strong>
+                <strong>{rotuloTipoEvento(resolutionTarget.type ?? resolutionTarget.eventType)}</strong>
                 <span>{resolutionTarget.message ?? resolutionTarget.details ?? "Sem descrição adicional."}</span>
               </div>
 

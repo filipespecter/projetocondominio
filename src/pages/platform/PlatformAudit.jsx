@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import platformApi from "../../Services/platformApi.js";
+import { rotuloAcaoAuditoria, rotuloModulo, rotuloPerfil } from "../../utils/central.js";
+const BACKUP_STATUS = { SUCCESS: "Concluído", COMPLETED: "Concluído", VERIFIED: "Verificado", FAILED: "Falhou", RUNNING: "Em andamento", PENDING: "Pendente" };
+const BACKUP_TIPO = { MANUAL: "Manual", SCHEDULED: "Automático", AUTOMATIC: "Automático", PRE_RESET: "Antes de zerar" };
 import {
   PlatformButton,
   PlatformCard,
@@ -230,11 +233,11 @@ function PlatformAudit() {
                   <tr key={item.id}>
                     <td style={platformTableStyles.td}>{formatDate(item.createdAt)}</td>
                     <td style={platformTableStyles.td}>{item.userName ?? item.user?.name ?? "-"}</td>
-                    <td style={platformTableStyles.td}>{item.action ?? "-"}</td>
-                    <td style={platformTableStyles.td}>{item.module ?? "-"}</td>
+                    <td style={platformTableStyles.td}>{rotuloAcaoAuditoria(item.action)}</td>
+                    <td style={platformTableStyles.td}>{rotuloModulo(item.module)}</td>
                     <td style={platformTableStyles.td}>{item.details ?? "-"}</td>
                     <td style={platformTableStyles.td}>
-                      <div style={styles.actions}>
+                      <div style={styles.actionsRow}>
                         <PlatformButton variant="secondary" onClick={() => history(item)}>
                           Detalhes
                         </PlatformButton>
@@ -255,7 +258,7 @@ function PlatformAudit() {
         <div style={styles.cardTitle}>
           <div>
             <strong>Backups da plataforma</strong>
-            <p style={styles.helper}>Histórico operacional do PostgreSQL e arquivos de backup.</p>
+            <p style={styles.helper}>Cópias de segurança do banco de dados da plataforma.</p>
           </div>
           <PlatformButton variant="secondary" onClick={createBackup} disabled={busy}>
             Backup manual
@@ -280,8 +283,8 @@ function PlatformAudit() {
                   <tr key={backup.id}>
                     <td style={platformTableStyles.td}>{formatDate(backup.createdAt)}</td>
                     <td style={platformTableStyles.td}>{backup.fileName ?? "-"}</td>
-                    <td style={platformTableStyles.td}>{backup.status ?? "-"}</td>
-                    <td style={platformTableStyles.td}>{backup.trigger ?? "-"}</td>
+                    <td style={platformTableStyles.td}>{BACKUP_STATUS[backup.status] ?? backup.status ?? "-"}</td>
+                    <td style={platformTableStyles.td}>{BACKUP_TIPO[backup.trigger] ?? backup.trigger ?? "-"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -304,9 +307,9 @@ function PlatformAudit() {
               {[
                 ["Data", formatDate(selected.createdAt)],
                 ["Usuário", selected.userName ?? selected.user?.name ?? "-"],
-                ["Perfil", selected.userRole ?? "-"],
-                ["Ação", selected.action ?? "-"],
-                ["Módulo", selected.module ?? "-"],
+                ["Perfil", rotuloPerfil(selected.userRole)],
+                ["Ação", rotuloAcaoAuditoria(selected.action)],
+                ["Módulo", rotuloModulo(selected.module)],
                 ["Request ID", selected.requestId ?? "-"],
                 ["Referência", selected.referenceId ?? "-"],
                 ["IP", selected.ipAddress ?? "-"],
@@ -370,6 +373,7 @@ const styles = {
   helper: { color: "#6b7280", lineHeight: 1.6, margin: "7px 0 0" },
   success: { marginBottom: 16, padding: "12px 14px", borderRadius: 14, background: "#ecfdf5", border: "1px solid #bbf7d0", color: "#166534", fontWeight: 700 },
   actions: { display: "flex", gap: 8, flexWrap: "wrap" },
+  actionsRow: { display: "flex", gap: 8, flexWrap: "nowrap" },
   actionsRight: { display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap", marginTop: 18 },
   overlay: { position: "fixed", inset: 0, background: "rgba(15,8,30,.65)", backdropFilter: "blur(8px)", display: "grid", placeItems: "center", padding: 20, zIndex: 9999 },
   modal: { width: "min(760px,96vw)", maxHeight: "88vh", overflow: "auto", background: "white", borderRadius: 26, padding: 26, boxShadow: "0 35px 90px rgba(15,8,30,.3)" },

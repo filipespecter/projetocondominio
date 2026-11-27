@@ -188,7 +188,8 @@ function PlatformClients() {
         {items.length === 0 ? (
           <PlatformEmpty title="Nenhum cliente encontrado" description="Ajuste os filtros ou aprove uma solicitação de condomínio." />
         ) : (
-          <div style={styles.tableWrap}>
+          <div className="ic-cen-clientes" style={styles.tableWrap}>
+            <style>{clientesMobileCss}</style>
             <table style={styles.table}>
               <thead>
                 <tr>
@@ -204,29 +205,29 @@ function PlatformClients() {
               <tbody>
                 {items.map((client) => (
                   <tr key={client.id} style={styles.row}>
-                    <td style={styles.td}>
+                    <td data-label="Cliente" style={styles.td}>
                       <strong style={styles.clientName}>{client.name}</strong>
                       <span style={styles.muted}>{client.address?.city ?? "—"}{client.address?.state ? `/${client.address.state}` : ""}</span>
                     </td>
-                    <td style={styles.td}><strong>{client.subscription?.plan?.name ?? "—"}</strong></td>
-                    <td style={styles.td}>
+                    <td data-label="Plano" style={styles.td}><strong>{client.subscription?.plan?.name ?? "—"}</strong></td>
+                    <td data-label="Tempo ativo" style={styles.td}>
                       <span>{activeTime(client.activeDays)}</span>
                       <small style={styles.small}>desde {date(client.clientSince)}</small>
                     </td>
-                    <td style={styles.td}>
+                    <td data-label="Responsável" style={styles.td}>
                       <span>{client.contactName || client.administrator?.name || "—"}</span>
                       <small style={styles.small}>{client.email || client.administrator?.email || "—"}</small>
                     </td>
-                    <td style={styles.td}>
+                    <td data-label="Próxima cobrança" style={styles.td}>
                       <strong>{date(client.subscription?.nextDueDate)}</strong>
                       <small style={styles.small}>{money(client.subscription?.priceInCents)}</small>
                     </td>
-                    <td style={styles.td}>
+                    <td data-label="Situação" style={styles.td}>
                       <span style={{ ...styles.badge, ...badgeStyle(client.subscription?.billingStatus) }}>
                         {statusLabel(client.subscription?.billingStatus)}
                       </span>
                     </td>
-                    <td style={styles.td}>
+                    <td data-label="Ação" style={styles.td}>
                       <button type="button" style={styles.detailsButton} onClick={() => setSelected(client)}>Ver ficha</button>
                     </td>
                   </tr>
@@ -370,3 +371,17 @@ const styles = {
 };
 
 export default PlatformClients;
+
+const clientesMobileCss = `
+@media (max-width: 760px) {
+  .ic-cen-clientes { overflow: visible !important; }
+  .ic-cen-clientes table { min-width: 0 !important; border-spacing: 0 !important; }
+  .ic-cen-clientes thead { display: none; }
+  .ic-cen-clientes tbody, .ic-cen-clientes tr, .ic-cen-clientes td { display: block; width: 100%; box-sizing: border-box; }
+  .ic-cen-clientes tr { margin-bottom: 12px; border: 1px solid #ece6f7; border-radius: 16px; overflow: hidden; }
+  .ic-cen-clientes td { border: 0 !important; border-bottom: 1px solid #f3effa !important; padding: 10px 14px !important; }
+  .ic-cen-clientes td::before { content: attr(data-label); display: block; margin-bottom: 4px; font-size: 10px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: #8b7b96; }
+  .ic-cen-clientes td:last-child { border-bottom: 0 !important; }
+  .ic-cen-clientes td:last-child button { width: 100%; }
+}
+`;

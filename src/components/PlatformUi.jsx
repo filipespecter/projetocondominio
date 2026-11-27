@@ -228,6 +228,7 @@ const styles = {
     borderRadius: "10px",
     fontWeight: "800",
     fontSize: "12px",
+    whiteSpace: "nowrap",
   },
 };
 

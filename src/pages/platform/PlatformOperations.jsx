@@ -1,4 +1,4 @@
-import { confirmDialog, promptDialog } from "../../components/GlobalDialogs.jsx";
+import { confirmDialog, notify, promptDialog } from "../../components/GlobalDialogs.jsx";
 import {
   useEffect,
   useState,
@@ -181,7 +181,7 @@ function PlatformOperations() {
       const result = await platformApi.operations.resetHomologation(phrase);
       setDatabaseStats(result?.statistics ?? null);
       await load();
-      alert("Ambiente de homologação zerado com sucesso. O backup de segurança foi preservado.");
+      notify("Ambiente de homologação zerado com sucesso. O backup de segurança foi preservado.", "success");
     } catch (err) { setError(err?.message ?? "Não foi possível zerar o ambiente de homologação."); }
     finally { setResetting(false); }
   }
@@ -196,7 +196,7 @@ function PlatformOperations() {
     <div>
       <PlatformPageHeader
         eyebrow="INFRAESTRUTURA"
-        title="Jobs e backups"
+        title="Rotinas e backups"
         description="Monitoramento de rotinas automáticas, integridade operacional e backups da plataforma."
         action={
           <PlatformButton
@@ -211,27 +211,27 @@ function PlatformOperations() {
 
       <PlatformCard>
         <strong>
-          Scheduler
+          Rotinas automáticas
         </strong>
 
         <p style={styles.text}>
           Status:{" "}
           <b>
             {scheduler?.running
-              ? "ATIVO"
-              : "INATIVO"}
+              ? "Em execução"
+              : "Parado"}
           </b>
         </p>
 
         {jobs.length === 0 ? (
-          <PlatformEmpty text="Nenhum job registrado." />
+          <PlatformEmpty text="Nenhuma rotina registrada." />
         ) : (
           <div style={platformTableStyles.wrapper}>
             <table style={platformTableStyles.table}>
               <thead>
                 <tr>
                   <th style={platformTableStyles.th}>
-                    Job
+                    Rotina
                   </th>
                   <th style={platformTableStyles.th}>
                     Habilitado
@@ -254,8 +254,8 @@ function PlatformOperations() {
 
                     <td style={platformTableStyles.td}>
                       {job.enabled
-                        ? "SIM"
-                        : "NÃO"}
+                        ? "Sim"
+                        : "Não"}
                     </td>
 
                     <td style={platformTableStyles.td}>
@@ -334,7 +334,7 @@ function PlatformOperations() {
               <div key={label} style={styles.databaseMetric}><span>{label}</span><strong>{value ?? 0}</strong></div>
             ))}
           </div>
-          <p style={styles.dangerNote}>A limpeza só existe fora de produção, exige PLATFORM_OWNER, confirmação textual e backup prévio.</p>
+          <p style={styles.dangerNote}>A limpeza só existe fora de produção, exige o perfil de proprietário da plataforma, confirmação por texto e backup prévio.</p>
         </PlatformCard>
       )}
 
@@ -380,8 +380,7 @@ function PlatformOperations() {
                         "-"}
                     </td>
                     <td style={platformTableStyles.td}>
-                      {item.status ??
-                        "-"}
+                      {{ SUCCESS: "Concluído", COMPLETED: "Concluído", VERIFIED: "Verificado", FAILED: "Falhou", RUNNING: "Em andamento", PENDING: "Pendente" }[item.status] ?? item.status ?? "-"}
                     </td>
                     <td style={platformTableStyles.td}>
                       {item.createdAt

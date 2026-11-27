@@ -211,7 +211,7 @@ function PlatformFinance() {
         "PLATFORM_OWNER"
       ) {
         throw new Error(
-          "Acesso financeiro exclusivo do PLATFORM_OWNER."
+          "O financeiro é exclusivo do proprietário da plataforma."
         );
       }
 
@@ -684,7 +684,7 @@ function PlatformFinance() {
   return (
     <div>
       <PlatformPageHeader
-        eyebrow="OWNER ONLY"
+        eyebrow="EXCLUSIVO DO PROPRIETÁRIO"
         title="Financeiro da Star Infinity Code"
         description="Gestão executiva de cobranças, recebimentos, PIX, boleto e indicadores financeiros da Star Infinity Code."
         action={
@@ -788,7 +788,7 @@ function PlatformFinance() {
                   key={item.id}
                   value={item.id}
                 >
-                  {item.name} — {item.status}
+                  {item.name} — {{ ACTIVE: "Ativo", TRIAL: "Em teste", SUSPENDED: "Suspenso", CANCELED: "Cancelado", PENDING: "Aguardando análise" }[item.status] ?? item.status}
                 </option>
               )
             )}
@@ -1084,7 +1084,7 @@ function PlatformFinance() {
             </h3>
 
             <p style={styles.help}>
-              Uma cobrança PENDING pode ser enviada ao gateway. O método usado é o método principal ativo configurado acima.
+              Cobranças pendentes podem ser enviadas para pagamento (PIX ou boleto) usando o método principal configurado acima.
             </p>
           </div>
 
@@ -1226,7 +1226,7 @@ const styles = {
   statsGrid: {
     display: "grid",
     gridTemplateColumns:
-      "repeat(auto-fit,minmax(150px,1fr))",
+      "repeat(auto-fit,minmax(118px,1fr))",
     gap: "14px",
   },
 
