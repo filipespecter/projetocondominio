@@ -131,7 +131,7 @@ table { max-width: 100%; }
   .platform-main input, .platform-main select, .platform-main textarea { max-width: 100%; }
   .ic-login { padding: 12px !important; }
   .ic-login-form, .ic-login-info { padding: 22px 18px !important; }
-  .ic-login-info { display: none; }
+  .ic-login-info { display: none !important; }
   .app-dashboard-content > div { padding: 16px !important; }
   .recharts-responsive-container { min-width: 0 !important; }
 }

@@ -13,6 +13,7 @@ import {
 } from "react-icons/fa";
 
 import { useState, useEffect } from "react";
+import logoStarSimbolo from "../assets/images/logo-star-infinity-simbolo.png";
 import { completeFirstAccess } from "../utils/completeFirstAccess.js";
 
 
@@ -130,7 +131,7 @@ function Login() {
         "Condomínios e solicitações",
         "Planos, usuários e financeiro",
         "Auditoria e suporte",
-        "Jobs, backups e operações",
+        "Rotinas, backups e operações",
       ],
     },
 
@@ -637,8 +638,8 @@ function Login() {
       ) {
         setErro(
           tipo === "platform"
-            ? "Usuário ou senha inválidos"
-            : "Usuário ou senha incorretos. Confira os dados e tente novamente."
+            ? "Usuário ou senha incorretos. Confira os dados e tente novamente."
+            : "Usuário ou senha incorretos. Confira os dados e se você está no acesso certo (Síndico, Porteiro ou Morador)."
         );
 
         return;
@@ -1001,7 +1002,7 @@ function Login() {
           >
             {carregando
               ? "Entrando..."
-              : remainingSeconds > 0 ? "Aguarde para tentar novamente" : "Entrar no InfinityCondo →"}
+              : remainingSeconds > 0 ? "Aguarde para tentar novamente" : tipo === "platform" ? "Entrar na Central →" : "Entrar no InfinityCondo →"}
           </button>
 
           {/**
@@ -1059,7 +1060,11 @@ function Login() {
                 styles.infoLogoMark
               }
             >
-              ✦
+              <img
+                src={logoStarSimbolo}
+                alt="Star Infinity Code"
+                style={styles.infoLogoImage}
+              />
             </div>
 
             <span
@@ -1374,9 +1379,8 @@ const styles = {
   },
 
   backButton: {
-    position: "absolute",
-    top: "24px",
-    left: "24px",
+    alignSelf: "flex-start",
+    marginBottom: "18px",
     border:
       "1px solid var(--ic-primary-border-soft)",
     background: "#ffffff",
@@ -1405,6 +1409,14 @@ const styles = {
     display: "block",
     filter:
       "drop-shadow(0 0 24px rgb(var(--ic-primary-rgb) / 0.30))",
+  },
+
+  infoLogoImage: {
+    width: "100%",
+    height: "100%",
+    objectFit: "contain",
+    padding: "8px",
+    boxSizing: "border-box",
   },
 
   iconCircle: {
